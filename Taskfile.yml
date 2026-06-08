@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+vars:
+  BACKEND_DIR: backend
+  DESKTOP_DIR: desktop
+  SDK_PY_DIR: sdk/python
+  SDK_RS_DIR: sdk/rust
+  WEB_DIR: web
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  backend:build:
+    desc: Build backend Python package
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - pip install -e ".[dev]"
+
+  backend:test:
+    desc: Run backend tests
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - pytest
+
+  backend:lint:
+    desc: Lint backend code
+    dir: "{{.BACKEND_DIR}}"
+    cmds:
+      - ruff check src
+      - ruff format --check src
+
+  desktop:build:
+    desc: Build desktop Tauri app
+    dir: "{{.DESKTOP_DIR}}"
+    cmds:
+      - cd src-tauri && cargo build
+
+  sdk:py:build:
+    desc: Build Python SDK
+    dir: "{{.SDK_PY_DIR}}"
+    cmds:
+      - pip install -e ".[dev]"
+
+  sdk:rs:build:
+    desc: Build Rust SDK
+    dir: "{{.SDK_RS_DIR}}"
+    cmds:
+      - cargo build
+
+  web:build:
+    desc: Build web UI
+    dir: "{{.WEB_DIR}}"
+    cmds:
+      - npm install
+      - npm run build
+
+  web:test:
+    desc: Run web tests
+    dir: "{{.WEB_DIR}}"
+    cmds:
+      - npm test
+
+  lint:all:
+    desc: Lint all components
+    cmds:
+      - task backend:lint
+      - task web:build
+
+  test:all:
+    desc: Test all components
+    cmds:
+      - task backend:test
+      - task web:test
+
+  ci:
+    desc: CI-like run (build + test all components)
+    cmds:
+      - task backend:build
+      - task backend:test
+      - task sdk:py:build
+      - task sdk:rs:build
+      - task web:build
+      - task web:test
