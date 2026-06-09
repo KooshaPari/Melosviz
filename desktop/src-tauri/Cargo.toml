@@ -1,0 +1,8 @@
+[package]
+name = "melosviz-desktop"
+version = "0.1.0"
+description = "Melosviz desktop shell"
+edition = "2021"
+
+[dev-dependencies]
+ctrlc = "3.5.2"
