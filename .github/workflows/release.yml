@@ -1,0 +1,121 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  backend:
+    name: Backend (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: cd backend && pip install -e ".[dev]"
+      - run: cd backend && pytest
+
+  web:
+    name: Web (Node.js)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: cd web && npm ci
+      - run: cd web && npm run build
+
+  sdk-rust:
+    name: SDK (Rust)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cd sdk/rust && cargo build
+      - run: cd sdk/rust && cargo test
+
+  release:
+    name: Create Release
+    needs: [backend, web, sdk-rust]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Release Notes
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          PREV=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV" ]; then
+            RANGE="${PREV}..${TAG}"
+          else
+            RANGE=""
+          fi
+
+          generate_section() {
+            local title="$1"
+            local pattern="$2"
+            local commits
+            commits=$(git log --pretty=format:"- %s (%h)" "${RANGE}" | { grep -E "^- ${pattern}" || true; } | head -n50)
+            if [ -n "$commits" ]; then
+              echo "### ${title}"
+              echo "${commits}"
+              echo ""
+            fi
+          }
+
+          NOTES=""
+          NOTES+="$(generate_section "Features" "feat[(:]")"
+          NOTES+="$(generate_section "Fixes" "fix[(:]")"
+          NOTES+="$(generate_section "Documentation" "docs[(:]")"
+          NOTES+="$(generate_section "Refactoring" "refactor[(:]")"
+          NOTES+="$(generate_section "Tests" "test[(:]")"
+          NOTES+="$(generate_section "Chores" "chore[(:]")"
+
+          OTHER=$(git log --pretty=format:"- %s (%h)" "${RANGE}" | { grep -vE "^- (feat|fix|docs|refactor|test|chore)[(:]" || true; } | head -n50)
+          if [ -n "$OTHER" ]; then
+            NOTES+=$'\n'"### Other Changes"
+            NOTES+=$'\n'"${OTHER}"
+            NOTES+=$'\n'
+          fi
+
+          if [ -z "$NOTES" ]; then
+            NOTES="No conventional commits found in this release."
+          fi
+
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Build Web Artifacts
+        run: cd web && npm ci && npm run build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            web/dist/**
+          body: ${{ steps.changelog.outputs.body }}
+          generate_release_notes: false
+
+      - name: Publish Rust SDK to crates.io
+        run: |
+          if [ -f "sdk/rust/Cargo.toml" ]; then
+            cargo publish --manifest-path sdk/rust/Cargo.toml --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          fi
+        continue-on-error: true
