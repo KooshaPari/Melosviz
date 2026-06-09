@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melosviz"
+version = "0.1.0"
+description = "Melosviz backend package."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "numpy>=1.26",
+    "scipy>=1.13",
+    "librosa>=0.10",
+    "soundfile>=0.12",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+export = [
+    "matplotlib>=3.8",
+    "Pillow>=10.3",
+]
+
+[project.scripts]
+melosviz = "melosviz.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
