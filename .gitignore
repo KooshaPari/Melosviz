@@ -1,36 +1,51 @@
-# Build artifacts
-node_modules/
-dist/
-target/
-build/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.so
-*.egg-info/
+# Phenotype-org standard .gitignore — Python
+# Source: https://github.com/KooshaPari/phenotype-tooling/blob/main/templates/gitignore-python
 
-# Virtualenvs
+# Byte-compiled / optimized
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
 .venv/
 venv/
+ENV/
 env/
 
-# Test/cache
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+
+# Test / coverage
 .pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
 .mypy_cache/
 .ruff_cache/
-.coverage
-htmlcov/
 
-# Editor / OS
-.DS_Store
+# Editor
 .idea/
 .vscode/
 *.swp
-*.swo
-*~
 
-# Env / secrets
+# OS
+.DS_Store
+Thumbs.db
+
+# Repo-specific additions (preserved from prior .gitignore)
+!.env.example
 .env
 .env.*
-!.env.example
+*.swo
+*~
+node_modules
+target
