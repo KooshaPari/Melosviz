@@ -25,6 +25,12 @@ export = [
     "matplotlib>=3.8",
     "Pillow>=10.3",
 ]
+test = [
+    "httpx>=0.28",
+    "pytest-asyncio>=0.23",
+    "respx>=0.22",
+    "hypothesis>=6.100",
+]
 
 [project.scripts]
 melosviz = "melosviz.main:cli"
