@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
-from melosviz.analysis.models import GenreTheme, ThemePreset
+from ..analysis.models import GenreTheme, ThemePreset
 
 
 class ThemePresetRegistry:

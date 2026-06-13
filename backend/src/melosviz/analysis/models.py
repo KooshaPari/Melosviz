@@ -115,6 +115,47 @@ class AnalysisResult(BaseModel):
     frequency: Optional[FrequencyResult] = Field(default=None)
 
 
+class Note(BaseModel):
+    """A single MIDI note extracted from a track.
+
+    Times are stored in seconds. The ``pitch`` field follows the MIDI
+    convention (0-127) where 60 is middle C. ``velocity`` uses the MIDI
+    convention (1-127 for audible notes; 0 typically indicates a note-off).
+    """
+
+    pitch: int = Field(ge=0, le=127, description="MIDI note number (0-127)")
+    start: float = Field(ge=0, description="Onset time in seconds from start of track")
+    duration: float = Field(ge=0, description="Note length in seconds")
+    velocity: int = Field(
+        default=80,
+        ge=0,
+        le=127,
+        description="MIDI velocity (0-127); 0 is treated as note-off by convention",
+    )
+
+
+class NoteStream(BaseModel):
+    """A flat sequence of :class:`Note` objects extracted from a MIDI file.
+
+    Tracks are merged in file order. Notes are sorted by ``(start, pitch)``
+    for deterministic downstream rendering.
+    """
+
+    notes: List[Note] = Field(default_factory=list, description="All notes in the stream")
+    source_path: Optional[str] = Field(
+        default=None, description="Origin MIDI file path, if known"
+    )
+    ticks_per_beat: int = Field(
+        default=480, ge=1, description="PPQ resolution from the source file header"
+    )
+
+    def __len__(self) -> int:  # pragma: no cover - trivial
+        return len(self.notes)
+
+    def __iter__(self):  # pragma: no cover - trivial
+        return iter(self.notes)
+
+
 class CameraState(BaseModel):
     """Camera transform used by shots and keyframes."""
 
@@ -136,6 +177,21 @@ class ShotSpec(BaseModel):
     transition_out: Dict[str, Any] = Field(default_factory=dict, description="How this shot transitions out")
     overlay: List[Dict[str, Any]] = Field(default_factory=list, description="Overlay tracks: text, sprites, etc.")
     palette_shift: str = Field(default="", description="Color/shift over time")
+    shot_type: str = Field(
+        default="",
+        description="Visual shot archetype (establishing, performance, anthem, etc.)",
+    )
+    motif: str = Field(default="", description="Scene motif key used by the renderer")
+    beat_anchor: float = Field(default=0.0, ge=0, description="Beat-phase anchor [0,1) for this shot")
+    energy_profile: List[float] = Field(
+        default_factory=list,
+        description="Energy samples (start, mid, end) clamped to [0, 1]",
+    )
+    movement: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Camera-movement descriptor (type, speed, pattern, beat_lock)",
+    )
+    cut_style: str = Field(default="", description="Canonical cut name for transitions")
 
 
 class ThemePreset(BaseModel):
