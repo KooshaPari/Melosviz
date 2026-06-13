@@ -139,21 +139,56 @@ def test_export_video_mp4_uses_libx264(tmp_path: Path) -> None:
     assert "yuv420p" in cmd
 
 
-def test_export_video_mp4_uses_lavfi_color_source(tmp_path: Path) -> None:
-    """MP4 exports use the lavfi ``color`` source filter."""
+def test_export_video_mp4_uses_png_input_pattern(tmp_path: Path) -> None:
+    """MP4 exports feed ffmpeg an image2 demuxer pattern of PNG frames."""
     with _patch_resolve(), _patch_success() as mock_run:
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
     cmd = mock_run.call_args[0][0]
-    assert "-f" in cmd
-    assert "lavfi" in cmd
+    # The exporter should drive ffmpeg's image2 demuxer, not lavfi.
+    assert "-framerate" in cmd
     assert "-i" in cmd
-    # The -i argument is the color source spec.
+    # The input pattern must end with a printf-style frame number and a
+    # .png extension so ffmpeg's image2 demuxer picks up the sequence.
     input_idx = cmd.index("-i")
-    color_source = cmd[input_idx + 1]
-    assert color_source.startswith("color=c=")
-    assert _DEFAULT_VIDEO_COLOR in color_source
-    assert _DEFAULT_VIDEO_SIZE in color_source
-    assert f"d={_DEFAULT_VIDEO_DURATION}" in color_source
+    input_pattern = cmd[input_idx + 1]
+    assert input_pattern.endswith("frame_%05d.png")
+    # lavfi / color=c= must NOT appear in the new PNG-frame pipeline.
+    assert "lavfi" not in cmd
+    assert "color=c=" not in cmd
+
+
+def test_export_video_generates_png_frames_in_tempdir(
+    tmp_path: Path,
+) -> None:
+    """``export_video`` writes one PNG per frame into a tempdir before muxing."""
+    with _patch_resolve(), _patch_success() as mock_run:
+        result = export_video(
+            RenderSpec(
+                metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0}
+            ),
+            format="mp4",
+            output_dir=tmp_path,
+        )
+    # Final output exists (mock ffmpeg writes the placeholder).
+    assert result.exists()
+    # The mock's input pattern points at a frame_%05d.png file inside a
+    # frames tempdir; verify the cmd shape and that the tempdir was used.
+    cmd = mock_run.call_args[0][0]
+    input_idx = cmd.index("-i")
+    pattern_dir = Path(cmd[input_idx + 1]).parent
+    assert pattern_dir.is_absolute()
+
+
+def test_export_video_two_positional_args_signature(
+    tmp_path: Path,
+) -> None:
+    """The acceptance-test signature ``export_video(spec, 'mp4')`` works."""
+    with _patch_resolve(), _patch_success():
+        result = export_video(RenderSpec(), "mp4")
+    assert isinstance(result, Path)
+    assert result.suffix == ".mp4"
+    assert result.exists()
+    assert result.stat().st_size > 0
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +346,9 @@ def test_export_video_captures_subprocess_output(tmp_path: Path) -> None:
     kwargs = mock_run.call_args[1]
     assert kwargs.get("capture_output") is True
     assert kwargs.get("text") is True
-    assert kwargs.get("timeout") == 60
+    # Concatting PNG frames takes longer than the lavfi one-shot did, so
+    # the timeout is bumped to 120s to accommodate slower hardware.
+    assert kwargs.get("timeout") == 120
 
 
 def test_export_video_subprocess_invoked_exactly_once(tmp_path: Path) -> None:
