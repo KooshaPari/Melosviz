@@ -125,14 +125,23 @@ def _chord_track(
             "set_tempo", tempo=DEFAULT_MICROSECONDS_PER_QUARTER, time=0
         )
     ]
+    # All note-ons happen at the same tick (delta 0 from the previous).
     for pitch in pitches:
         messages.append(
             mido.Message("note_on", note=pitch, velocity=velocity, time=0)
         )
-    for pitch in pitches:
+    # First note-off advances time by ``duration_ticks``; subsequent
+    # note-offs are simultaneous (delta 0) so the chord ends together.
+    if pitches:
         messages.append(
-            mido.Message("note_off", note=pitch, velocity=0, time=duration_ticks)
+            mido.Message(
+                "note_off", note=pitches[0], velocity=0, time=duration_ticks
+            )
         )
+        for pitch in pitches[1:]:
+            messages.append(
+                mido.Message("note_off", note=pitch, velocity=0, time=0)
+            )
     messages.append(mido.MetaMessage("end_of_track", time=0))
     return messages
 
@@ -156,9 +165,9 @@ def test_parse_midi_single_note_from_bytes() -> None:
     note = stream.notes[0]
     assert note.pitch == 60
     assert note.velocity == 80
-    # 480 ticks at 480 PPQ @ 120 BPM = 0.5 seconds per quarter note
-    # -> one quarter note duration.
-    assert _approx_equal(note.start, 0.5), f"start={note.start}"
+    # The note starts at tick 0 and lasts 480 ticks. At 480 PPQ and
+    # 120 BPM (one quarter note = 0.5s) the duration is 0.5s.
+    assert _approx_equal(note.start, 0.0), f"start={note.start}"
     assert _approx_equal(note.duration, 0.5), f"duration={note.duration}"
     assert stream.source_path is None
     assert stream.ticks_per_beat == DEFAULT_TICKS_PER_BEAT
@@ -185,7 +194,10 @@ def test_parse_midi_single_note_from_pathlib_path(tmp_path: Path) -> None:
     stream = parse_midi(midi_path)  # already a Path
     assert len(stream) == 1
     assert stream.notes[0].pitch == 64
-    assert _approx_equal(stream.notes[0].start, 0.25)
+    # 240 ticks / 480 PPQ = 0.5 quarter notes; at 120 BPM that is
+    # 0.25 seconds of duration. The note starts at tick 0.
+    assert _approx_equal(stream.notes[0].start, 0.0)
+    assert _approx_equal(stream.notes[0].duration, 0.25)
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +382,7 @@ def test_parse_midi_overlapping_notes_are_preserved() -> None:
     """A sustained note overlapping a short melody yields all notes."""
     messages: List[mido.Message | mido.MetaMessage] = [
         mido.MetaMessage("set_tempo", tempo=DEFAULT_MICROSECONDS_PER_QUARTER, time=0),
+        # Note 60 starts at tick 0, ends at tick 1200 (held the whole time).
         mido.Message("note_on", note=60, velocity=70, time=0),
         mido.Message("note_on", note=64, velocity=80, time=240),
         mido.Message("note_off", note=64, velocity=0, time=240),
@@ -382,10 +395,11 @@ def test_parse_midi_overlapping_notes_are_preserved() -> None:
     stream = parse_midi(data)
     pitches = [n.pitch for n in stream.notes]
     assert pitches == [60, 64, 67]
-    # The sustained note (60) is held for 720 ticks = 0.75s.
     by_pitch = {n.pitch: n for n in stream.notes}
-    assert _approx_equal(by_pitch[60].duration, 0.75)
-    # The middle notes each last 240 ticks = 0.25s.
+    # Note 60 is held from tick 0 to tick 1200 — at 480 PPQ and 120 BPM
+    # (0.5s per quarter note) that is 1200/480 * 0.5 = 1.25s.
+    assert _approx_equal(by_pitch[60].duration, 1.25)
+    # The middle notes each last 240 ticks (0.5 quarter) = 0.25s.
     assert _approx_equal(by_pitch[64].duration, 0.25)
     assert _approx_equal(by_pitch[67].duration, 0.25)
 
@@ -486,7 +500,7 @@ def test_parse_midi_to_tuples_returns_tick_durations() -> None:
         mido.MetaMessage("set_tempo", tempo=DEFAULT_MICROSECONDS_PER_QUARTER, time=0),
         mido.Message("note_on", note=60, velocity=80, time=0),
         mido.Message("note_off", note=60, velocity=0, time=960),  # 2 quarters
-        mido.Message("end_of_track", time=0),
+        mido.MetaMessage("end_of_track", time=0),
     ]
     data = _make_midi_bytes([messages])
     tuples = parse_midi_to_tuples(data)
@@ -499,6 +513,7 @@ def test_parse_midi_to_tuples_sorted_by_start() -> None:
     """The tuple list is sorted by (start_ticks, pitch, velocity)."""
     messages: List[mido.Message | mido.MetaMessage] = [
         mido.MetaMessage("set_tempo", tempo=DEFAULT_MICROSECONDS_PER_QUARTER, time=0),
+        # Note 64 starts first (at tick 240), then note 60 (at tick 480).
         mido.Message("note_on", note=64, velocity=80, time=240),
         mido.Message("note_off", note=64, velocity=0, time=240),
         mido.Message("note_on", note=60, velocity=80, time=0),
@@ -509,7 +524,8 @@ def test_parse_midi_to_tuples_sorted_by_start() -> None:
     tuples = parse_midi_to_tuples(data)
     starts = [t[2] for t in tuples]
     assert starts == sorted(starts)
-    assert [t[0] for t in tuples] == [60, 64]
+    # 64 starts earlier than 60, so the sorted order is [64, 60].
+    assert [t[0] for t in tuples] == [64, 60]
 
 
 # ---------------------------------------------------------------------------

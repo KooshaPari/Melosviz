@@ -96,9 +96,73 @@ def _open_midi(source: MidiSource) -> Tuple[mido.MidiFile, str | None]:
     )
 
 
-def _tick_to_seconds(tick: int, ticks_per_beat: int, tempo_micros: int) -> float:
-    """Convert an absolute tick count to seconds under the given tempo."""
-    return mido.tick2second(tick, ticks_per_beat, tempo_micros)
+def _build_tempo_map(
+    track: mido.MidiTrack,
+    *,
+    initial_tempo_micros: int = DEFAULT_MICROSECONDS_PER_QUARTER,
+) -> List[Tuple[int, int]]:
+    """Walk a track and return a sorted ``(absolute_tick, tempo_micros)`` map.
+
+    The first entry is always ``(0, initial_tempo_micros)``; subsequent
+    entries record every ``set_tempo`` meta event in tick order. The
+    list is used by :func:`_tick_to_seconds` to convert absolute tick
+    positions to seconds, honouring mid-track tempo changes.
+    """
+    tempo_map: List[Tuple[int, int]] = [(0, int(initial_tempo_micros))]
+    current_tick = 0
+    current_tempo = int(initial_tempo_micros)
+    for msg in track:
+        current_tick += max(0, int(msg.time))
+        if msg.type == "set_tempo":
+            new_tempo = int(msg.tempo)
+            if new_tempo > 0 and new_tempo != current_tempo:
+                tempo_map.append((current_tick, new_tempo))
+                current_tempo = new_tempo
+    return tempo_map
+
+
+def _absolute_time_at_tick(
+    tick: int, ticks_per_beat: int, tempo_map: List[Tuple[int, int]]
+) -> float:
+    """Compute the cumulative time in seconds at ``tick``.
+
+    Tempo changes are recorded with their *change* tick; the change
+    applies to ticks *strictly greater* than that tick. So an event at
+    exactly the change tick still uses the previous tempo, and the
+    cumulative time at the change tick is the time using the previous
+    tempo only.
+    """
+    seconds = 0.0
+    prev_tick = 0
+    prev_tempo = tempo_map[0][1]
+    # Skip the (0, initial) entry — its tick is 0 and the region
+    # before it is empty.
+    for t, tempo in tempo_map[1:]:
+        if t > tick:
+            break
+        seconds += (t - prev_tick) * prev_tempo / 1_000_000.0 / ticks_per_beat
+        prev_tick = t
+        prev_tempo = tempo
+    seconds += (tick - prev_tick) * prev_tempo / 1_000_000.0 / ticks_per_beat
+    return seconds
+
+
+def _tempo_at_tick(tick: int, tempo_map: List[Tuple[int, int]]) -> int:
+    """Return the tempo (microseconds per quarter) in effect at ``tick``.
+
+    A change recorded at tick ``T`` is taken to be in effect at
+    ``T`` itself: events that co-occur with a ``set_tempo`` message in
+    the file see the new tempo. This matches the on-the-wire
+    behaviour of every DAW that emits a ``set_tempo`` immediately
+    before a note on the same delta.
+    """
+    current_tempo = tempo_map[0][1]
+    for t, tempo in tempo_map:
+        if t <= tick:
+            current_tempo = tempo
+        else:
+            break
+    return current_tempo
 
 
 def _track_to_note_tuples(
@@ -111,15 +175,12 @@ def _track_to_note_tuples(
     start_ticks, end_ticks)`` tuples for every note that closed inside
     the track (or is held through end-of-track).
 
-    The track-local tempo is initialised from ``initial_tempo_micros``
-    and updated whenever a ``set_tempo`` meta event is encountered, so
-    tempo changes are honoured for the *remainder* of the track. The
-    default matches the SMF convention: 120 BPM = 500_000
-    microseconds per quarter note.
+    The tick positions are stored in the file's native tick units; the
+    caller is responsible for converting them to seconds with a tempo
+    map (see :func:`_tick_to_seconds_with_map`).
     """
     notes: List[NoteTuple] = []
     current_tick = 0
-    current_tempo = initial_tempo_micros
 
     # pitch -> (start_tick, velocity) for notes that are currently held.
     pending: dict[int, Tuple[int, int]] = {}
@@ -134,8 +195,8 @@ def _track_to_note_tuples(
         msg_type = msg.type
 
         if msg_type == "set_tempo":
-            # ``msg.tempo`` is microseconds per quarter note.
-            current_tempo = int(msg.tempo)
+            # Tempo changes are recorded in the tempo map (built once
+            # by the caller) and have no effect on tick accumulation.
             continue
 
         if msg_type == "note_on" and msg.velocity > 0:
@@ -159,22 +220,23 @@ def _track_to_note_tuples(
 def _note_tuple_to_seconds(
     note_tuple: NoteTuple,
     ticks_per_beat: int,
-    tempo_micros: int,
+    tempo_map: List[Tuple[int, int]],
 ) -> Note:
     """Convert a ``(pitch, velocity, start_ticks, end_ticks)`` tuple
     to a :class:`Note` whose ``start`` and ``duration`` are in seconds.
 
-    For long notes that cross tempo changes, the start time uses the
-    tempo at the start tick and the end time uses the *current* track
-    tempo (a small simplification: a note that straddles a tempo change
-    in the same track is reported using the post-change tempo for the
-    end tick; in practice this is the common case and is stable enough
-    for downstream rendering).
+    ``start`` is the cumulative time at ``start_tick`` (accounting for
+    tempo changes earlier on the timeline). ``duration`` is computed
+    using the tempo in effect at the *start* of the note, so a tempo
+    change during a held note does not retroactively shrink it.
     """
     pitch, velocity, start_tick, end_tick = note_tuple
-    start = _tick_to_seconds(start_tick, ticks_per_beat, tempo_micros)
-    end = _tick_to_seconds(end_tick, ticks_per_beat, tempo_micros)
-    duration = max(0.0, end - start)
+    start = _absolute_time_at_tick(start_tick, ticks_per_beat, tempo_map)
+    tempo_at_start = _tempo_at_tick(start_tick, tempo_map)
+    duration = max(
+        0.0,
+        (end_tick - start_tick) * tempo_at_start / 1_000_000.0 / ticks_per_beat,
+    )
     return Note(pitch=pitch, velocity=velocity, start=start, duration=duration)
 
 
@@ -232,16 +294,19 @@ def parse_midi(path_or_bytes: MidiSource) -> NoteStream:
 
     notes: List[Note] = []
     for track in midi.tracks:
-        # Re-seed each track from the file-wide initial tempo so that
-        # tracks without their own ``set_tempo`` event still use the
-        # correct global tempo.
+        # Build a per-track tempo map so that tempo changes mid-track
+        # (and any global ``set_tempo`` in the first track) are
+        # honoured when converting note tuples to seconds.
+        tempo_map = _build_tempo_map(
+            track, initial_tempo_micros=initial_tempo
+        )
         for note_tuple in _track_to_note_tuples(
             track,
             ticks_per_beat,
             initial_tempo_micros=initial_tempo,
         ):
             notes.append(
-                _note_tuple_to_seconds(note_tuple, ticks_per_beat, initial_tempo)
+                _note_tuple_to_seconds(note_tuple, ticks_per_beat, tempo_map)
             )
 
     notes.sort(key=lambda n: (n.start, n.pitch, n.velocity))
