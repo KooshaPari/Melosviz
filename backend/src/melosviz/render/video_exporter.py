@@ -9,10 +9,54 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import cv2
-import numpy as np
+# ``cv2`` and ``numpy`` are only required by the heavy frame-rendering
+# helpers (``_draw_text_box``, ``_render_frame``). They are imported
+# defensively so that the lightweight ``export_video`` FFmpeg wrapper
+# remains importable in minimal environments (e.g., CI hosts that only
+# need to verify the ffmpeg path). The frame-rendering functions will
+# raise a clear ``ImportError`` if they are actually called without
+# ``cv2``/``numpy`` available.
+try:
+    import cv2  # type: ignore[import-not-found]
+except ImportError as _cv2_exc:  # pragma: no cover - environment dependent
+    cv2 = None  # type: ignore[assignment]
+    _CV2_IMPORT_ERROR: ImportError | None = _cv2_exc
+else:
+    _CV2_IMPORT_ERROR = None
+
+try:
+    import numpy as np  # type: ignore[import-not-found]
+except ImportError as _np_exc:  # pragma: no cover - environment dependent
+    np = None  # type: ignore[assignment]
+    _NP_IMPORT_ERROR: ImportError | None = _np_exc
+else:
+    _NP_IMPORT_ERROR = None
+
+
+def _require_cv2():
+    """Return the ``cv2`` module, raising a clear error if unavailable."""
+    if cv2 is None:
+        raise ImportError(
+            "OpenCV (cv2) is required for the frame-rendering helpers in "
+            "video_exporter.py. Install it via 'pip install opencv-python'."
+        ) from _CV2_IMPORT_ERROR
+    return cv2
+
+
+def _require_numpy():
+    """Return the ``numpy`` module, raising a clear error if unavailable."""
+    if np is None:
+        raise ImportError(
+            "numpy is required for the frame-rendering helpers in "
+            "video_exporter.py. Install it via 'pip install numpy'."
+        ) from _NP_IMPORT_ERROR
+    return np
+
+
+if TYPE_CHECKING:  # pragma: no cover - import only for type hints
+    from melosviz.analysis.models import RenderSpec
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +64,7 @@ __all__ = [
     "FFMpegNotFoundError",
     "RenderExportError",
     "export_music_video",
+    "export_video",
 ]
 
 
@@ -144,6 +189,7 @@ def _draw_text_box(
     origin: tuple[int, int],
     accent: tuple[int, int, int],
 ) -> None:
+    cv2 = _require_cv2()
     x, y = origin
     padding_x = 18
     padding_y = 14
@@ -192,6 +238,8 @@ def _render_frame(
     shot: dict[str, Any] | None,
     palette: list[str],
 ) -> np.ndarray:
+    cv2 = _require_cv2()
+    np = _require_numpy()
     base = _hex_to_bgr(
         palette[0] if palette else "#00f5ff"
     )
@@ -781,3 +829,134 @@ def export_music_video(
         ) from exc
     except Exception:
         pass
+
+
+# Minimal color-clip settings used by ``export_video`` for quick smoke tests.
+_DEFAULT_VIDEO_SIZE = "320x240"
+_DEFAULT_VIDEO_DURATION = 1
+_DEFAULT_VIDEO_COLOR = "blue"
+
+
+def export_video(
+    spec: "RenderSpec",
+    format: str = "mp4",
+    output_dir: Path | str = Path("/tmp"),
+) -> Path:
+    """Render a small synthetic test clip from a ``RenderSpec`` via ffmpeg.
+
+    This is the minimal FFmpeg wrapper used as a backend smoke test. It
+    shells out to ``ffmpeg`` using ``subprocess.run`` and the lavfi
+    ``color`` source to produce a short blue test clip. The ``spec`` is
+    accepted for API compatibility with the larger rendering pipeline; the
+    produced clip is intentionally minimal so it can be used in CI without
+    audio inputs, keyframes, or shots.
+
+    Args:
+        spec: ``RenderSpec`` describing the desired render. Not used to
+            drive the actual ffmpeg invocation — the output is a minimal
+            synthetic clip — but accepted so callers can pass the same
+            payload they would feed to richer renderers.
+        format: Output container. Supported values: ``"mp4"`` (default) and
+            ``"webm"``. Comparison is case-insensitive.
+        output_dir: Directory to write the output file into. Created if
+            it does not already exist. Defaults to ``/tmp``.
+
+    Returns:
+        Absolute :class:`Path` to the produced video file.
+
+    Raises:
+        FFMpegNotFoundError: If no working ``ffmpeg`` binary is found on
+            ``PATH`` (or via the ``MELOSVIZ_FFMPEG_BIN`` override).
+        RenderExportError: If ``format`` is unsupported or ffmpeg fails
+            to produce the output file.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    ffmpeg = _resolve_ffmpeg_binary()
+
+    fmt = format.lower().strip()
+    if fmt == "mp4":
+        extension = "mp4"
+        codec_args: list[str] = [
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+        ]
+    elif fmt == "webm":
+        extension = "webm"
+        codec_args = [
+            "-c:v",
+            "libvpx-vp9",
+            "-b:v",
+            "200k",
+        ]
+    else:
+        raise RenderExportError(
+            f"Unsupported export format: {format!r}. "
+            "Expected 'mp4' or 'webm'."
+        )
+
+    output_path = output_dir / f"melosviz-render.{extension}"
+
+    cmd: list[str] = [
+        ffmpeg,
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        f"color=c={_DEFAULT_VIDEO_COLOR}:"
+        f"s={_DEFAULT_VIDEO_SIZE}:"
+        f"d={_DEFAULT_VIDEO_DURATION}",
+        *codec_args,
+        str(output_path),
+    ]
+
+    logger.info("export_video: format=%s spec=%s cmd=%s", fmt, spec, cmd)
+
+    try:
+        completed = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+    except OSError as exc:
+        raise FFMpegNotFoundError(
+            f"Failed to start ffmpeg binary at {ffmpeg!r}: {exc}. "
+            "Ensure ffmpeg is installed and on PATH, or set the "
+            "MELOSVIZ_FFMPEG_BIN environment variable."
+        ) from exc
+
+    if completed.returncode != 0:
+        stderr_snippet = (completed.stderr or "").strip().splitlines()
+        tail = "\n".join(stderr_snippet[-5:]) if stderr_snippet else ""
+        raise RenderExportError(
+            f"ffmpeg export failed (rc={completed.returncode}) "
+            f"for format={fmt!r}. Tail of stderr:\n{tail}"
+        )
+
+    if not output_path.exists() or output_path.stat().st_size == 0:
+        raise RenderExportError(
+            f"ffmpeg reported success but no output was produced at "
+            f"{output_path}."
+        )
+
+    logger.info(
+        "export_video: wrote %s (%d bytes, format=%s)",
+        output_path,
+        output_path.stat().st_size,
+        fmt,
+    )
+    return output_path
+
+
+def is_ffmpeg_available() -> bool:
+    """Return ``True`` if a working ``ffmpeg`` binary is resolvable.
+
+    This is a thin convenience wrapper around
+    :func:`_validate_ffmpeg_available` for use in test skip conditions and
+    CLI probes. It never raises; a missing binary simply yields ``False``.
+    """
+    return _validate_ffmpeg_available()

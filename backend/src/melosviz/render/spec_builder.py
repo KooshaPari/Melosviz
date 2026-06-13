@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import colorsys
+import json
 import math
 import random
 import re
@@ -11,11 +12,84 @@ from typing import Any, Dict, List
 from melosviz.analysis.models import (
     AnalysisResult,
     CameraState,
+    GenreTheme,
+    RenderSpec,
     RenderStyle,
     ShotSpec,
-    TimelineEvent,
     ThemePreset,
+    TimelineEvent,
 )
+from melosviz.presets import ThemePresetRegistry
+
+__all__ = [
+    "VisualizationSpecBuilder",
+    "build_spec",
+    "render_spec_to_json",
+    "render_spec_from_json",
+]
+
+
+_DEFAULT_FPS = 30
+_DEFAULT_WIDTH = 1920
+_DEFAULT_HEIGHT = 1080
+_DEFAULT_SEED = 0
+_DEFAULT_THEME = GenreTheme.DARK_STREET
+
+
+def build_spec(analysis: AnalysisResult) -> RenderSpec:
+    """Build a :class:`RenderSpec` from a fully analyzed audio input.
+
+    The function applies sensible defaults (dark-street preset, 30fps,
+    1920x1080, seed 0) and delegates the heavy lifting to
+    :class:`VisualizationSpecBuilder`. The returned model is the canonical
+    shared payload consumed by the API, UI, and exporters.
+    """
+    if not isinstance(analysis, AnalysisResult):
+        raise TypeError(
+            f"build_spec expects AnalysisResult, got {type(analysis).__name__}"
+        )
+    registry = ThemePresetRegistry()
+    preset = registry.get_preset(_DEFAULT_THEME)
+    style = RenderStyle()
+    duration_sec = float(analysis.duration_seconds)
+    builder = VisualizationSpecBuilder()
+    payload = builder.build_spec(
+        analysis=analysis,
+        style=style,
+        preset=preset,
+        fps=_DEFAULT_FPS,
+        width=_DEFAULT_WIDTH,
+        height=_DEFAULT_HEIGHT,
+        duration_sec=duration_sec,
+        seed=_DEFAULT_SEED,
+    )
+    return RenderSpec(
+        metadata=dict(payload.get("metadata") or {}),
+        palette=list(payload.get("palette") or []),
+        layers=list(payload.get("layers") or []),
+        shots=list(payload.get("shots") or []),
+        timeline=list(payload.get("timeline") or []),
+        keyframes=list(payload.get("keyframes") or []),
+    )
+
+
+def render_spec_to_json(spec: RenderSpec) -> str:
+    """Serialize a :class:`RenderSpec` to a JSON string."""
+    if not isinstance(spec, RenderSpec):
+        raise TypeError(
+            f"render_spec_to_json expects RenderSpec, got {type(spec).__name__}"
+        )
+    return spec.model_dump_json()
+
+
+def render_spec_from_json(payload: str) -> RenderSpec:
+    """Deserialize a :class:`RenderSpec` from a JSON string."""
+    if not isinstance(payload, str):
+        raise TypeError(
+            f"render_spec_from_json expects str, got {type(payload).__name__}"
+        )
+    data = json.loads(payload)
+    return RenderSpec.model_validate(data)
 
 
 class VisualizationSpecBuilder:
@@ -337,7 +411,10 @@ class VisualizationSpecBuilder:
         dominant_bins = (
             analysis.frequency.dominant_bins if analysis.frequency else {}
         )
-        dominant_items = list(dominant_bins.items())
+        # Use lists (not tuples) so JSON round-trip is lossless:
+        # dict.items() yields tuples, but tuples serialize to JSON arrays and
+        # parse back as lists, breaking equality after a round-trip.
+        dominant_items = [[str(k), float(v)] for k, v in dominant_bins.items()]
         bpm_curve = self._compute_bpm_curve(float(bpm), frame_count, fps)
         layers = [
             {
@@ -592,7 +669,19 @@ class VisualizationSpecBuilder:
             "palette": palette,
             "layers": layers,
             "shots": [
-                ShotSpec(**shot) for shot in shots
+                ShotSpec(
+                    **{
+                        key: value
+                        for key, value in shot.items()
+                        if key != "palette_shift"
+                    },
+                    palette_shift=(
+                        json.dumps(shot.get("palette_shift"))
+                        if isinstance(shot.get("palette_shift"), (list, dict))
+                        else str(shot.get("palette_shift", ""))
+                    ),
+                )
+                for shot in shots
             ],
             "timeline": [
                 TimelineEvent(**event) for event in timeline

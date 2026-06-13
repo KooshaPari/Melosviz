@@ -7,5 +7,7 @@ from melosviz.analysis.models import (
     AnalysisType,
     BPMResult,
     FrequencyResult,
+    Note,
+    NoteStream,
     WaveformResult,
 )
