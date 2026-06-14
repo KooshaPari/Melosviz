@@ -1,0 +1,41 @@
+[1m============================= test session starts ==============================[0m
+platform darwin -- Python 3.14.0, pytest-9.0.3, pluggy-1.6.0 -- /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, respx-0.23.1, anyio-4.13.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+[1mcollecting ... [0mcollected 30 items
+
+tests/test_webgl_exporter.py::test_export_webgl_returns_bytes [32mPASSED[0m[32m     [  3%][0m
+tests/test_webgl_exporter.py::test_export_webgl_starts_with_glb_magic [32mPASSED[0m[32m [  6%][0m
+tests/test_webgl_exporter.py::test_export_webgl_header_is_correct [32mPASSED[0m[32m [ 10%][0m
+tests/test_webgl_exporter.py::test_export_webgl_has_json_and_bin_chunks [32mPASSED[0m[32m [ 13%][0m
+tests/test_webgl_exporter.py::test_export_webgl_json_chunk_is_valid_gltf_2 [32mPASSED[0m[32m [ 16%][0m
+tests/test_webgl_exporter.py::test_export_webgl_preserves_original_spec_in_extras [32mPASSED[0m[32m [ 20%][0m
+tests/test_webgl_exporter.py::test_export_webgl_embedded_shader_is_present [32mPASSED[0m[32m [ 23%][0m
+tests/test_webgl_exporter.py::test_export_webgl_animation_script_is_embedded [32mPASSED[0m[32m [ 26%][0m
+tests/test_webgl_exporter.py::test_export_webgl_bin_chunk_contains_quad_vertices [32mPASSED[0m[32m [ 30%][0m
+tests/test_webgl_exporter.py::test_export_webgl_bin_chunk_contains_texcoords [32mPASSED[0m[32m [ 33%][0m
+tests/test_webgl_exporter.py::test_export_webgl_bin_chunk_contains_indices [32mPASSED[0m[32m [ 36%][0m
+tests/test_webgl_exporter.py::test_export_webgl_bin_chunk_contains_keyframes [32mPASSED[0m[32m [ 40%][0m
+tests/test_webgl_exporter.py::test_export_webgl_chunks_are_4byte_aligned [32mPASSED[0m[32m [ 43%][0m
+tests/test_webgl_exporter.py::test_export_webgl_handles_empty_spec [32mPASSED[0m[32m [ 46%][0m
+tests/test_webgl_exporter.py::test_export_webgl_handles_dict_input [32mPASSED[0m[32m [ 50%][0m
+tests/test_webgl_exporter.py::test_export_webgl_rejects_non_dict_spec [32mPASSED[0m[32m [ 53%][0m
+tests/test_webgl_exporter.py::test_export_webgl_strips_color_hashes_correctly [32mPASSED[0m[32m [ 56%][0m
+tests/test_webgl_exporter.py::test_export_webgl_faster_than_budget_for_30s_clip [32mPASSED[0m[32m [ 60%][0m
+tests/test_webgl_exporter.py::test_export_webgl_30s_clip_round_trips [32mPASSED[0m[32m [ 63%][0m
+tests/test_webgl_exporter.py::test_export_webgl_to_file_creates_file [32mPASSED[0m[32m [ 66%][0m
+tests/test_webgl_exporter.py::test_export_webgl_to_file_creates_parent_dirs [32mPASSED[0m[32m [ 70%][0m
+tests/test_webgl_exporter.py::test_parse_glb_round_trips [32mPASSED[0m[32m          [ 73%][0m
+tests/test_webgl_exporter.py::test_parse_glb_rejects_truncated_blob [32mPASSED[0m[32m [ 76%][0m
+tests/test_webgl_exporter.py::test_parse_glb_rejects_bad_magic [32mPASSED[0m[32m    [ 80%][0m
+tests/test_webgl_exporter.py::test_parse_glb_rejects_wrong_length [32mPASSED[0m[32m [ 83%][0m
+tests/test_webgl_exporter.py::test_parse_glb_rejects_non_bytes [32mPASSED[0m[32m    [ 86%][0m
+tests/test_webgl_exporter.py::test_module_exports_public_api [32mPASSED[0m[32m      [ 90%][0m
+tests/test_webgl_exporter.py::test_export_html_still_works [32mPASSED[0m[32m        [ 93%][0m
+tests/test_webgl_exporter.py::test_export_webgl_with_unicode_metadata [32mPASSED[0m[32m [ 96%][0m
+tests/test_webgl_exporter.py::test_export_webgl_bin_layout_keys_present [32mPASSED[0m[32m [100%][0m
+
+[32m============================== [32m[1m30 passed[0m[32m in 0.78s[0m[32m ==============================[0m

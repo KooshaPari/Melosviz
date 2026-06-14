@@ -1,0 +1,19 @@
+{
+  "status": "completed",
+  "task_id": "WP-21",
+  "agent_id": "forge",
+  "files_changed": [
+    "melosviz/backend/tests/test_properties.py",
+    "melosviz/backend/pyproject.toml"
+  ],
+  "commit_sha": "2553756d5c7c14a03904d25caa7c4ec0e815230c",
+  "verification_result": {
+    "status": "passed",
+    "commands": [
+      "python -m pytest tests/test_properties.py -v --tb=short"
+    ],
+    "notes": "WP-21: Added hypothesis-driven property tests for melosviz backend invariants. 19 property tests covering note/frequency conversions, chord/scale detection, pydantic model validation, analysis engine waveform/BPM/frequency invariants, and render spec builder round-trips. All tests pass."
+  },
+  "started_at": "2026-06-13T09:30:00Z",
+  "completed_at": "2026-06-13T09:45:46Z"
+}

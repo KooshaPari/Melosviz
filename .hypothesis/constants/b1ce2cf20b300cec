@@ -1,0 +1,4 @@
+# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/io/midi.py
+# hypothesis_version: 6.151.10
+
+[0.0, 60.0, 1000000.0, 127, 480, 500000, 60000000, 'DEFAULT_TEMPO_BPM', 'MidiSource', 'NoteTuple', 'end_of_track', 'melosviz', 'note_off', 'note_on', 'off', 'on', 'parse_midi', 'parse_midi_to_tuples', 'set_tempo', 'track_name', 'write_midi']

@@ -1,0 +1,4 @@
+# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/analysis/models.py
+# hypothesis_version: 6.151.10
+
+[0.0, 1.0, 30.0, 120, 127, 128, 256, 480, 512, 1080, 1920, 2000, 2048, 8192, 16384, 60000, 'AnalyzeRequest', 'aac', 'after', 'ambient', 'balanced', 'before', 'bpm', 'chillout', 'classy', 'dark_street', 'default', 'dynamic', 'energetic', 'euphoria', 'export_format', 'flac', 'frequency', 'full', 'high', 'html', 'json', 'm4a', 'modern', 'mp3', 'ogg', 'retro_disco', 'urban', 'wav', 'waveform', 'webgl']

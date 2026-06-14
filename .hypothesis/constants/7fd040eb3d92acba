@@ -1,0 +1,4 @@
+# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/sdk/python/src/melosviz_sdk/client.py
+# hypothesis_version: 6.151.10
+
+[b'\r\n', 20.0, 30.0, 1080, 1920, '/v1/audio/visualize', '/v1/health', '/v1/jobs', '/v1/presets', 'AsyncClient', 'Content-Type', 'GET', 'POST', 'analysis', 'audio/wav', 'dark_street', 'duration_sec', 'export_format', 'file', 'fps', 'full', 'height', 'json', 'seed', 'theme', 'utf-8', 'width']

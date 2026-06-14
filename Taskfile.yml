@@ -39,6 +39,16 @@ tasks:
     cmds:
       - cd src-tauri && cargo build
 
+  desktop:sign-and-notarize:
+    desc: Build, sign, and notarize the desktop Tauri app (requires TEAM_ID, APPLE_ID, APP_PASSWORD)
+    dir: "{{.DESKTOP_DIR}}"
+    cmds:
+      - ../scripts/sign-and-notarize.sh
+    env:
+      TEAM_ID: "{{.TEAM_ID}}"
+      APPLE_ID: "{{.APPLE_ID}}"
+      APP_PASSWORD: "{{.APP_PASSWORD}}"
+
   sdk:py:build:
     desc: Build Python SDK
     dir: "{{.SDK_PY_DIR}}"

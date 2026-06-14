@@ -1,0 +1,4 @@
+# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/main.py
+# hypothesis_version: 6.151.10
+
+[30.0, 1080, 1920, 8000, '*', '--host', '--port', '--theme', '.wav', '/v1/audio/analyze', '/v1/audio/visualize', '/v1/health', '/v1/presets', '0.0.0.0', '0.1.0', 'Audio file not found', 'Melosviz API', 'analyze', 'command', 'dark_street', 'file', 'full', 'html', 'keyframes', 'melosviz', 'melosviz-', 'ok', 'serve', 'status', 'visualize']
