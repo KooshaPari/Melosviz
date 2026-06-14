@@ -18,5 +18,8 @@
         "fullscreen": false
       }
     ]
+  },
+  "plugins": {
+    "dialog": {}
   }
 }

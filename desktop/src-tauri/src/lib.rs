@@ -5,5 +5,9 @@
 
 pub mod commands;
 pub mod menu;
+pub mod dialog;
+pub mod notify;
+pub mod deeplink;
+pub mod updater;
 
 pub use commands::*;

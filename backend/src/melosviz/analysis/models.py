@@ -224,7 +224,7 @@ class VisualizeRequest(BaseModel):
     source_file: str = Field(default="")
     analysis: AnalysisType = Field(default=AnalysisType.FULL)
     style: RenderStyle = Field(default_factory=RenderStyle)
-    fps: int = Field(default=60, ge=1, le=120)
+    fps: int = Field(default=30, ge=1, le=120)
     width: int = Field(default=1920, ge=1)
     height: int = Field(default=1080, ge=1)
     duration_sec: float = Field(default=30.0, gt=0.0)

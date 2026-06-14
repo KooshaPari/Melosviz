@@ -19,6 +19,7 @@ from melosviz.analysis.models import (
     AnalyzeRequest,
     AnalysisType,
     GenreTheme,
+    RenderSpec,
     RenderStyle,
     VisualizeRequest,
     VisualizeResponse,
@@ -93,7 +94,7 @@ def presets() -> list[object]:
 @app.post("/v1/audio/analyze", response_model=AnalysisResult)
 def analyze_audio(
     file: UploadFile = File(...),
-    request: str = Form(...),
+    request: str = Form('{"analysis":"full"}'),
 ) -> AnalysisResult:
     """Analyze an uploaded audio file."""
     temp_path: Path | None = None
@@ -134,7 +135,7 @@ def analyze_audio(
 @app.post("/v1/audio/visualize")
 def visualize_audio(
     file: UploadFile = File(...),
-    payload: str = Form(...),
+    payload: str = Form("{}"),
     theme: str = Form("dark_street"),
     analysis: str = Form("full"),
     fps: int = Form(60),
@@ -148,8 +149,20 @@ def visualize_audio(
     temp_path: Path | None = None
     try:
         temp_path = _write_temp_audio(file)
-        payload_data = json.loads(payload)
-        request = VisualizeRequest.model_validate(payload_data)
+        base_payload = {
+            "analysis": analysis,
+            "fps": fps,
+            "width": width,
+            "height": height,
+            "duration_sec": duration_sec,
+            "export_format": export_format,
+            "seed": seed,
+        }
+        if payload and payload.strip():
+            payload_data = json.loads(payload)
+            if isinstance(payload_data, dict):
+                base_payload.update(payload_data)
+        request = VisualizeRequest.model_validate(base_payload)
         requested_theme = GenreTheme(theme)
         selected_preset = presets_registry.get_preset(requested_theme)
         analysis_request = AnalyzeRequest(
@@ -161,11 +174,10 @@ def visualize_audio(
             width=request.width,
             height=request.height,
             duration_sec=request.duration_sec,
-            export_format=request.export_format,
             seed=request.seed,
         )
         analysis_result = engine.full_analysis(temp_path, request=analysis_request)
-        render = builder.build_spec(
+        render_dict = builder.build_spec(
             analysis=analysis_result,
             style=request.style,
             preset=selected_preset,
@@ -173,16 +185,17 @@ def visualize_audio(
             width=request.width,
             height=request.height,
             duration_sec=request.duration_sec,
-            export_format=request.export_format,
             seed=request.seed,
         )
+        render = RenderSpec.model_validate(render_dict)
         return VisualizeResponse(
             status="ok",
             message="Visualization spec generated",
             analysis=analysis_result,
             selected_theme=selected_preset,
             render=render,
-            keyframes=len(render.keyframes),
+            frame_count=len(render.keyframes),
+            duration_sec=request.duration_sec,
         )
     except TemporaryUploadWriteError as exc:
         raise HTTPException(

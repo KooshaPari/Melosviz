@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -21,6 +22,104 @@ from melosviz.analysis.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# --- note / chord / scale helpers ---
+
+_NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+_CHORD_INTERVALS = {
+    (0, 4, 7): "major",
+    (0, 3, 7): "minor",
+    (0, 3, 6): "diminished",
+    (0, 4, 8): "augmented",
+    (0, 4, 7, 11): "major7",
+    (0, 3, 7, 10): "minor7",
+    (0, 4, 7, 10): "dominant7",
+    (0, 2, 7): "sus2",
+    (0, 5, 7): "sus4",
+}
+
+_SCALE_INTERVALS = {
+    (0, 2, 4, 5, 7, 9, 11): "major",
+    (0, 2, 3, 5, 7, 8, 10): "minor",
+    (0, 2, 3, 5, 7, 8, 11): "harmonic minor",
+    (0, 2, 3, 5, 7, 9, 11): "melodic minor",
+    (0, 2, 3, 5, 7, 9, 10): "dorian",
+    (0, 2, 4, 5, 7, 9, 10): "mixolydian",
+    (0, 1, 3, 5, 7, 8, 10): "phrygian",
+}
+
+
+def freq_to_note_number(freq_hz: float) -> int:
+    """Convert a frequency in Hz to the nearest MIDI note number."""
+    if freq_hz <= 0:
+        return 0
+    return max(0, round(69.0 + 12.0 * math.log2(freq_hz / 440.0)))
+
+
+def note_number_to_freq(note_number: int) -> float:
+    """Convert a MIDI note number to its frequency in Hz."""
+    return 440.0 * (2.0 ** ((note_number - 69) / 12.0))
+
+
+def note_name_from_number(note_number: int) -> str:
+    """Return the canonical note name (e.g. ``C#4``) for a MIDI note number."""
+    note_number = max(0, min(127, note_number))
+    name = _NOTE_NAMES[note_number % 12]
+    octave = (note_number // 12) - 1
+    return f"{name}{octave}"
+
+
+def _pitch_classes(notes: list[int]) -> set[int]:
+    return {n % 12 for n in notes}
+
+
+def _canonical_intervals(pitch_classes: set[int]) -> tuple[int, ...] | None:
+    if len(pitch_classes) < 3:
+        return None
+    for root in sorted(pitch_classes):
+        intervals = tuple(sorted((pc - root) % 12 for pc in pitch_classes))
+        if intervals in _CHORD_INTERVALS:
+            return intervals
+        if intervals in _SCALE_INTERVALS:
+            return intervals
+    return None
+
+
+def detect_chord(notes: list[int]) -> str | None:
+    """Return a chord name (e.g. ``C major``) or ``None``."""
+    pcs = _pitch_classes(notes)
+    if len(pcs) < 3:
+        return None
+    for root in sorted(pcs):
+        intervals = tuple(sorted((pc - root) % 12 for pc in pcs))
+        if intervals in _CHORD_INTERVALS:
+            return f"{_NOTE_NAMES[root]} {_CHORD_INTERVALS[intervals]}"
+    return None
+
+
+def detect_scale(notes: list[int]) -> str | None:
+    """Return a scale name (e.g. ``C major``) or ``None``."""
+    pcs = _pitch_classes(notes)
+    if len(pcs) < 3:
+        return None
+    for root in sorted(pcs):
+        intervals = tuple(sorted((pc - root) % 12 for pc in pcs))
+        if intervals in _SCALE_INTERVALS:
+            return f"{_NOTE_NAMES[root]} {_SCALE_INTERVALS[intervals]}"
+    return None
+
+
+def notes_from_frequency_result(freq_result: FrequencyResult) -> list[int]:
+    """Return sorted unique MIDI note numbers extracted from dominant bins."""
+    notes: set[int] = set()
+    for freq_str in freq_result.dominant_bins:
+        try:
+            freq = float(freq_str)
+        except ValueError:
+            continue
+        notes.add(freq_to_note_number(freq))
+    return sorted(notes)
 
 
 class AudioDecodeError(RuntimeError):
@@ -55,9 +154,9 @@ class AudioAnalysisEngine:
                 str(path), always_2d=True, dtype="float32"
             )
         except (sf.LibsndfileError, RuntimeError, ValueError, OSError, EOFError) as exc:
-            raise AudioDecodeError(f"Error opening '{source}': {exc}") from None
+            raise AudioDecodeError(f"Unable to decode audio file: {exc}") from None
         if audio.size == 0:
-            raise AudioDecodeError(f"Error opening '{source}': empty audio file")
+            raise AudioDecodeError(f"Unable to decode audio file: empty audio file")
         channels = int(audio.shape[1])
         if channels > 1:
             mono = np.mean(audio, axis=1, dtype=np.float32)
