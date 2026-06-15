@@ -492,9 +492,19 @@ def test_export_video_accepts_empty_renderspec(tmp_path: Path) -> None:
 
 
 def test_export_video_accepts_populated_renderspec(tmp_path: Path) -> None:
-    """A populated :class:`RenderSpec` is accepted; output is produced."""
+    """A populated :class:`RenderSpec` is accepted; output is produced.
+
+    The dimensions/fps/duration here are intentionally tiny (32x32, 4 fps,
+    0.25s → 1 frame). The test's purpose is to confirm that the
+    exporter *accepts* a populated spec end-to-end and produces a file
+    with the correct extension — it is not exercising PNG-frame
+    generation at scale, so a 32x32 single-frame render keeps the
+    suite under a second even on slow hardware. Larger dimensions are
+    covered by the dedicated scale/render tests, not by this contract
+    test.
+    """
     spec = RenderSpec(
-        metadata={"width": 1920, "height": 1080, "fps": 30, "duration": 30.0},
+        metadata={"width": 32, "height": 32, "fps": 4, "duration": 0.25},
         palette=["#00f5ff", "#ff2fd5", "#8a75ff"],
         layers=[{"id": "bg", "type": "shader"}],
     )
