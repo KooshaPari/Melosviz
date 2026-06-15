@@ -30,4 +30,3 @@ and acceptance material for MelosViz.
 - The package exposes preset helpers, audio analysis helpers, and an FFmpeg
   exporter
 - There is no published application shell or command-line interface yet
-
