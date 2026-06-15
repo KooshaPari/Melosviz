@@ -37,6 +37,7 @@ BUILTIN_PRESETS: List[str] = [
     "classical",
     "edm",
     "ambient",
+    "cinematic",
     "world",
 ]
 
