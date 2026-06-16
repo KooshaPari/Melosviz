@@ -173,4 +173,3 @@ jobs:
           # mutation: mutmut config in place, full run is slow for CI
           not-applicable: "a11y"
           working-directory: .
-
