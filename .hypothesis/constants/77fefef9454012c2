@@ -1,4 +1,0 @@
-# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/presets/__init__.py
-# hypothesis_version: 6.151.10
-
-['BUILTIN_PRESETS', 'ThemePresetRegistry', 'ambient', 'classical', 'edm', 'jazz', 'list_presets', 'load_preset', 'world']

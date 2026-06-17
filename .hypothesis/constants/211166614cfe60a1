@@ -1,4 +1,0 @@
-# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/io/__init__.py
-# hypothesis_version: 6.151.10
-
-['parse_midi', 'write_midi']

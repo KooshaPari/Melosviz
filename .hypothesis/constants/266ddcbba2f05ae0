@@ -1,4 +1,0 @@
-# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/presets/registry.py
-# hypothesis_version: 6.151.10
-
-['#00B9FF', '#00E5FF', '#00E8FF', '#00F5FF', '#040404', '#042D31', '#050505', '#05384A', '#07111F', '#081B2F', '#101010', '#102A43', '#120022', '#1B0040', '#1B013A', '#232323', '#233A63', '#26001E', '#4C2A85', '#7922FF', '#8A75FF', '#8D84FF', '#A39BFF', '#A8FF00', '#AFAFAF', '#B8860B', '#C8D2E5', '#C9A93B', '#CFFF00', '#E6FF5C', '#F8E0A0', '#FF2D95', '#FF2FD5', '#FF4FB8', '#FF6B00', '#FFB347', '#FFD166', 'Ambient', 'Chillout', 'Classy', 'Dark Street', 'Energetic', 'Euphoria', 'Retro Disco', 'Urban', 'ambient', 'angular', 'anthemic', 'blocky', 'chillout', 'classy', 'curves', 'dark_street', 'driven', 'elegant', 'energetic', 'euphoria', 'explosive', 'gentle', 'gritty', 'meditative', 'organic', 'playful', 'pulse', 'raw', 'retro_disco', 'starburst', 'urban', 'waves']

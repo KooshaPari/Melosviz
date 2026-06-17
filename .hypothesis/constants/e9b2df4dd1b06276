@@ -1,4 +1,0 @@
-# file: /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz/backend/src/melosviz/analysis/engine.py
-# hypothesis_version: 6.151.10
-
-[0.0, 1e-12, 1e-06, 0.01, 1.0, 2.0, 12.0, 20.0, 440.0, 1000.0, 127, 256, 512, 2048, 4000, 'A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'augmented', 'blues', 'chromatic', 'diminished', 'dominant7', 'dorian', 'float32', 'full', 'harmonic_minor', 'locrian', 'lydian', 'major', 'major7', 'melodic_minor', 'minor', 'minor7', 'mixolydian', 'natural_minor', 'pentatonic_major', 'pentatonic_minor', 'phrygian', 'sus2', 'sus4']

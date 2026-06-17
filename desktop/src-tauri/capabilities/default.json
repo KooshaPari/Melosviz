@@ -1,8 +1,0 @@
-{
-  "identifier": "default",
-  "description": "Default capabilities for Melosviz Desktop",
-  "windows": ["main"],
-  "permissions": [
-    "core:default"
-  ]
-}
