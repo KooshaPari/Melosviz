@@ -502,3 +502,278 @@ def test_export_video_accepts_populated_renderspec(tmp_path: Path) -> None:
         result = export_video(spec, format="webm", output_dir=tmp_path)
     assert result.exists()
     assert result.suffix == ".webm"
+
+
+# ---------------------------------------------------------------------------
+# Tests — cv2 / numpy frame rendering helpers
+# ---------------------------------------------------------------------------
+
+
+def test_hex_to_bgr_parses_six_digit() -> None:
+    """``_hex_to_bgr`` parses 6-digit hex correctly."""
+    from melosviz.render.video_exporter import _hex_to_bgr
+    assert _hex_to_bgr("#FF0000") == (0, 0, 255)
+    assert _hex_to_bgr("#00FF00") == (0, 255, 0)
+    assert _hex_to_bgr("#0000FF") == (255, 0, 0)
+
+
+def test_hex_to_bgr_parses_three_digit() -> None:
+    """``_hex_to_bgr`` expands 3-digit shorthand."""
+    from melosviz.render.video_exporter import _hex_to_bgr
+    assert _hex_to_bgr("#F00") == (0, 0, 255)
+    assert _hex_to_bgr("#0F0") == (0, 255, 0)
+
+
+def test_hex_to_bgr_returns_white_for_invalid() -> None:
+    """``_hex_to_bgr`` falls back to white for garbage input."""
+    from melosviz.render.video_exporter import _hex_to_bgr
+    assert _hex_to_bgr("not-a-color") == (255, 255, 255)
+    assert _hex_to_bgr("#GGGGGG") == (255, 255, 255)
+
+
+def test_mix_color_halfway() -> None:
+    """``_mix_color`` returns the midpoint at ratio 0.5."""
+    from melosviz.render.video_exporter import _mix_color
+    # Python uses banker's rounding (round half to even), so 127.5 rounds to 128.
+    assert _mix_color((0, 0, 0), (255, 255, 255), 0.5) == (128, 128, 128)
+
+
+def test_mix_color_clamped() -> None:
+    """``_mix_color`` clamps ratio to [0, 1]."""
+    from melosviz.render.video_exporter import _mix_color
+    assert _mix_color((0, 0, 0), (255, 255, 255), -1.0) == (0, 0, 0)
+    assert _mix_color((0, 0, 0), (255, 255, 255), 2.0) == (255, 255, 255)
+
+
+def test_frame_keyframe_at_time_empty() -> None:
+    """``_frame_keyframe_at_time`` returns defaults when keyframes is empty."""
+    from melosviz.render.video_exporter import _frame_keyframe_at_time
+    result = _frame_keyframe_at_time([], 1.0, 30)
+    assert result["energy"] == 0.5
+    assert result["hue"] == 190.0
+
+
+def test_frame_keyframe_at_time_lookup() -> None:
+    """``_frame_keyframe_at_time`` returns the closest frame."""
+    from melosviz.render.video_exporter import _frame_keyframe_at_time
+    kfs = [
+        {"time": 0.0, "energy": 0.1},
+        {"time": 1.0, "energy": 0.9},
+    ]
+    result = _frame_keyframe_at_time(kfs, 1.0, 30)
+    assert result["energy"] == 0.9
+
+
+def test_shot_at_time_empty() -> None:
+    """``_shot_at_time`` returns None for empty shots."""
+    from melosviz.render.video_exporter import _shot_at_time
+    assert _shot_at_time([], 1.0) is None
+
+
+def test_shot_at_time_dict_hit() -> None:
+    """``_shot_at_time`` finds a dict shot by time range."""
+    from melosviz.render.video_exporter import _shot_at_time
+    shots = [
+        {"start_time": 0.0, "end_time": 2.0, "section": "intro"},
+        {"start_time": 2.0, "end_time": 4.0, "section": "verse"},
+    ]
+    result = _shot_at_time(shots, 1.0)
+    assert result is not None
+    assert result["section"] == "intro"
+
+
+def test_shot_transition_empty() -> None:
+    """``_shot_transition`` returns default for no shot."""
+    from melosviz.render.video_exporter import _shot_transition
+    assert _shot_transition(None, 1.0) == ("match_cut", 0.0)
+
+
+def test_shot_transition_dict() -> None:
+    """``_shot_transition`` extracts transition from dict shot."""
+    from melosviz.render.video_exporter import _shot_transition
+    shot = {
+        "start_time": 0.0,
+        "end_time": 2.0,
+        "cut_style": "fade",
+        "transition_in": {"type": "fade", "intensity": 0.7},
+    }
+    kind, intensity = _shot_transition(shot, 0.1)
+    assert kind == "fade"
+    assert intensity == 0.7
+
+
+def test_shot_transition_late_phase() -> None:
+    """Late progress uses transition_out."""
+    from melosviz.render.video_exporter import _shot_transition
+    shot = {
+        "start_time": 0.0,
+        "end_time": 2.0,
+        "cut_style": "match_cut",
+        "transition_in": {"type": "hard_cut", "intensity": 0.5},
+        "transition_out": {"type": "fade", "intensity": 0.8},
+    }
+    kind, intensity = _shot_transition(shot, 1.9)
+    assert kind == "fade"
+    assert intensity == 0.8
+
+
+def test_write_raw_png_rgb(tmp_path: Path) -> None:
+    """``_write_raw_png_rgb`` writes a valid PNG file."""
+    from melosviz.render.video_exporter import _write_raw_png_rgb
+    path = tmp_path / "solid.png"
+    _write_raw_png_rgb(path, 4, 4, (255, 0, 0))
+    assert path.exists()
+    assert path.stat().st_size > 0
+
+
+def test_write_raw_png_rgb_invalid_dimensions() -> None:
+    """``_write_raw_png_rgb`` raises ValueError for invalid dimensions."""
+    from melosviz.render.video_exporter import _write_raw_png_rgb
+    with pytest.raises(ValueError):
+        _write_raw_png_rgb(Path("/dev/null"), 0, 4, (255, 0, 0))
+
+
+def test_pillow_available_returns_bool() -> None:
+    """``_pillow_available`` returns a boolean."""
+    from melosviz.render.video_exporter import _pillow_available
+    assert isinstance(_pillow_available(), bool)
+
+
+def test_save_solid_png(tmp_path: Path) -> None:
+    """``_save_solid_png`` writes a valid PNG file."""
+    from melosviz.render.video_exporter import _save_solid_png
+    path = tmp_path / "solid.png"
+    _save_solid_png(path, 4, 4, (255, 0, 0))
+    assert path.exists()
+    assert path.stat().st_size > 0
+
+
+def test_generate_png_frames(tmp_path: Path) -> None:
+    """``_generate_png_frames`` creates the expected number of frame files."""
+    from melosviz.render.video_exporter import _generate_png_frames
+    paths = _generate_png_frames(tmp_path, 3, 8, 8, ["#FF0000", "#00FF00"])
+    assert len(paths) == 3
+    for path in paths:
+        assert path.exists()
+    assert paths[0].name == "frame_00001.png"
+    assert paths[2].name == "frame_00003.png"
+
+
+def test_coerce_metadata_dict() -> None:
+    """``_coerce_metadata`` extracts metadata from a dict."""
+    from melosviz.render.video_exporter import _coerce_metadata
+    assert _coerce_metadata({"metadata": {"fps": 60}}) == {"fps": 60}
+
+
+def test_coerce_metadata_none() -> None:
+    """``_coerce_metadata`` returns empty dict for None."""
+    from melosviz.render.video_exporter import _coerce_metadata
+    assert _coerce_metadata(None) == {}
+
+
+def test_coerce_metadata_render_spec() -> None:
+    """``_coerce_metadata`` extracts metadata from a RenderSpec."""
+    from melosviz.render.video_exporter import _coerce_metadata
+    spec = RenderSpec(metadata={"fps": 60})
+    assert _coerce_metadata(spec) == {"fps": 60}
+
+
+def test_extract_palette_dict() -> None:
+    """``_extract_palette`` extracts palette from a dict."""
+    from melosviz.render.video_exporter import _extract_palette
+    assert _extract_palette({"palette": ["#FF0000", "#00FF00"]}) == ["#FF0000", "#00FF00"]
+
+
+def test_extract_palette_none() -> None:
+    """``_extract_palette`` returns defaults for None."""
+    from melosviz.render.video_exporter import _extract_palette
+    result = _extract_palette(None)
+    assert len(result) == 3
+    assert result[0] == "#00f5ff"
+
+
+def test_extract_palette_render_spec() -> None:
+    """``_extract_palette`` extracts palette from a RenderSpec."""
+    from melosviz.render.video_exporter import _extract_palette
+    spec = RenderSpec(palette=["#FFFFFF"])
+    assert _extract_palette(spec) == ["#FFFFFF"]
+
+
+def test_render_frame_small() -> None:
+    """``_render_frame`` produces a valid OpenCV frame for tiny inputs."""
+    import numpy as np
+    from melosviz.render.video_exporter import _render_frame
+    frame = _render_frame(
+        width=64,
+        height=64,
+        time_sec=0.5,
+        duration_sec=2.0,
+        keyframe={"energy": 0.5, "intensity": 0.6, "hue": 180.0, "bpm_sync": 0.5, "color_shift": "#00f5ff"},
+        shot={
+            "start_time": 0.0,
+            "end_time": 2.0,
+            "section": "intro",
+            "shot_type": "establishing",
+            "motif": "wide",
+            "cut_style": "match_cut",
+            "camera": {"zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0, "rotation": 0.0},
+            "movement": {"speed": 0.5, "type": "push_in", "pattern": 0.0, "beat_lock": 0.5},
+            "beat_anchor": 0.5,
+        },
+        palette=["#00f5ff", "#ff2fd5", "#8a75ff"],
+    )
+    assert isinstance(frame, np.ndarray)
+    assert frame.shape == (64, 64, 3)
+    assert frame.dtype == np.uint8
+
+
+def test_draw_text_box() -> None:
+    """``_draw_text_box`` renders text without crashing."""
+    import numpy as np
+    from melosviz.render.video_exporter import _draw_text_box
+    frame = np.zeros((200, 400, 3), dtype=np.uint8)
+    _draw_text_box(frame, ["Hello", "World"], (10, 10), (0, 255, 0))
+    assert frame.shape == (200, 400, 3)
+
+
+def test_render_frame_with_shot_spec() -> None:
+    """``_render_frame`` works with ShotSpec objects (not just dicts)."""
+    import numpy as np
+    from melosviz.render.video_exporter import _render_frame
+    from melosviz.analysis.models import ShotSpec, CameraState
+    shot = ShotSpec(
+        id="s1",
+        section="intro",
+        start_time=0.0,
+        end_time=2.0,
+        shot_type="establishing",
+        motif="wide",
+        beat_anchor=0.5,
+        energy_profile=[0.5, 0.5, 0.5],
+        movement={"speed": 0.5, "type": "push_in", "pattern": 0.0, "beat_lock": 0.5},
+        cut_style="match_cut",
+        camera=CameraState(zoom=1.0, pan_x=0.0, pan_y=0.0, rotation=0.0),
+        transition_in={"type": "cold_open", "duration": 0.35, "intensity": 1.0},
+        transition_out={"type": "fade", "duration": 0.28, "intensity": 0.5},
+        overlay=[],
+        palette_shift="",
+    )
+    frame = _render_frame(
+        width=64,
+        height=64,
+        time_sec=0.5,
+        duration_sec=2.0,
+        keyframe={"energy": 0.5, "intensity": 0.6, "hue": 180.0, "bpm_sync": 0.5, "color_shift": "#00f5ff"},
+        shot=shot,
+        palette=["#00f5ff", "#ff2fd5", "#8a75ff"],
+    )
+    assert isinstance(frame, np.ndarray)
+    assert frame.shape == (64, 64, 3)
+
+
+def test_clamp_helper() -> None:
+    """``_clamp`` bounds a value to [min, max]."""
+    from melosviz.render.video_exporter import _clamp
+    assert _clamp(5.0, 0.0, 10.0) == 5.0
+    assert _clamp(-1.0, 0.0, 10.0) == 0.0
+    assert _clamp(15.0, 0.0, 10.0) == 10.0

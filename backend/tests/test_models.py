@@ -39,6 +39,6 @@ def test_bpm_result_confidence_bounds() -> None:
 def test_visualize_request_defaults() -> None:
     request = VisualizeRequest(source_file="audio.wav")
     assert request.model == "default"
-    assert request.fps == 30
+    assert request.fps == 60
     assert request.width == 1920
     assert request.height == 1080

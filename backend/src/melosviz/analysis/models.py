@@ -156,6 +156,23 @@ class NoteStream(BaseModel):
         return iter(self.notes)
 
 
+class DetectResult(BaseModel):
+    """Result from MIDI note detection (chord/scale identification)."""
+
+    note_set: List[int] = Field(
+        default_factory=list,
+        description="Unique MIDI note numbers sorted ascending",
+    )
+    chord_set: Optional[str] = Field(
+        default=None,
+        description="Detected chord name (e.g. 'C major') or None",
+    )
+    scale_set: Optional[str] = Field(
+        default=None,
+        description="Detected scale name (e.g. 'C major') or None",
+    )
+
+
 class CameraState(BaseModel):
     """Camera transform used by shots and keyframes."""
 

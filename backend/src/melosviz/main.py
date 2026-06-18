@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Melosviz API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,7 +59,7 @@ def _write_temp_audio(file: UploadFile) -> Path:
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=suffix, prefix="melosviz-"
         ) as handle:
-            file.seek(0)
+            file.file.seek(0)
             shutil.copyfileobj(file.file, handle)
             return Path(handle.name)
     except Exception as exc:
@@ -173,7 +173,6 @@ def visualize_audio(
             width=request.width,
             height=request.height,
             duration_sec=request.duration_sec,
-            export_format=request.export_format,
             seed=request.seed,
         )
         return VisualizeResponse(
@@ -182,7 +181,8 @@ def visualize_audio(
             analysis=analysis_result,
             selected_theme=selected_preset,
             render=render,
-            keyframes=len(render.keyframes),
+            frame_count=len(render["keyframes"]),
+            duration_sec=request.duration_sec,
         )
     except TemporaryUploadWriteError as exc:
         raise HTTPException(
@@ -244,7 +244,6 @@ def cli() -> None:
             width=1920,
             height=1080,
             duration_sec=30.0,
-            export_format="html",
             seed=0,
         )
         print(
@@ -254,6 +253,6 @@ def cli() -> None:
                 analysis=engine.full_analysis(args.file),
                 selected_theme=preset,
                 render=render,
-                keyframes=len(render.keyframes),
+                keyframes=len(render["keyframes"]),
             ).model_dump_json(indent=2)
         )

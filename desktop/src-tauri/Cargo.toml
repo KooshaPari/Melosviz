@@ -1,8 +1,30 @@
 [package]
 name = "melosviz-desktop"
-version = "0.1.0"
-description = "Melosviz desktop shell"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+description = "Melosviz desktop shell — Tauri IPC bridge to the Python backend"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow = { workspace = true }
 
 [dev-dependencies]
 ctrlc = "3.5.2"
+
+[lib]
+name = "melosviz_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "melosviz-desktop"
+path = "src/main.rs"

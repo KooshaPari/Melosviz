@@ -106,9 +106,12 @@ def _hex_to_bgr(color: str) -> tuple[int, int, int]:
         clean = "".join(channel * 2 for channel in clean)
     if len(clean) != 6:
         return (255, 255, 255)
-    red = int(clean[0:2], 16)
-    green = int(clean[2:4], 16)
-    blue = int(clean[4:6], 16)
+    try:
+        red = int(clean[0:2], 16)
+        green = int(clean[2:4], 16)
+        blue = int(clean[4:6], 16)
+    except ValueError:
+        return (255, 255, 255)
     return (blue, green, red)
 
 

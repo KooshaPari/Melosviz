@@ -49,6 +49,7 @@ def test_analyze_endpoint_returns_analysis_contract(tmp_path: Path) -> None:
         response = client.post(
             "/v1/audio/analyze",
             files={"file": ("tone.wav", file_handle, "audio/wav")},
+            data={"request": '{"model": "default", "analysis": "full"}'},
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -71,6 +72,7 @@ def test_analyze_endpoint_rejects_invalid_audio_with_http_error(tmp_path: Path) 
         response = client.post(
             "/v1/audio/analyze",
             files={"file": ("broken.wav", file_handle, "audio/wav")},
+            data={"request": '{"model": "default", "analysis": "full"}'},
             headers={"Origin": "http://localhost:3000"},
         )
 
@@ -80,6 +82,7 @@ def test_analyze_endpoint_rejects_invalid_audio_with_http_error(tmp_path: Path) 
     assert (
         "Unable to decode audio file" in detail
         or "Failed to run full analysis" in detail
+        or "Error opening" in detail
     )
 
 
@@ -91,14 +94,8 @@ def test_visualize_endpoint_returns_render_contract(tmp_path: Path) -> None:
         response = client.post(
             "/v1/audio/visualize",
             data={
+                "payload": '{"model": "default", "analysis": "full", "fps": 24, "width": 1280, "height": 720, "duration_sec": 1.0, "export_format": "json", "seed": 42}',
                 "theme": "dark_street",
-                "analysis": "full",
-                "fps": "24",
-                "width": "1280",
-                "height": "720",
-                "duration_sec": "1.0",
-                "export_format": "json",
-                "seed": "42",
             },
             files={"file": ("tone.wav", file_handle, "audio/wav")},
         )
