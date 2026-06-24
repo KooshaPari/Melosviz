@@ -32,7 +32,7 @@ jobs:
         with:
           persist-credentials: false
       - name: "Run analysis"
-        uses: ossf/scorecard-action@05ac5b1b658a5dc16ebcacd56e7e9c9158254b35 # v2.3.3
+        uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
         with:
           results_file: results.sarif
           results_format: sarif
@@ -41,7 +41,7 @@ jobs:
           publish_results: true
       # Upload the results as a SARIF file to the "Code Scanning" tab.
       - name: "Upload artifact"
-        uses: actions/upload-artifact@97a0f4bc7fdc10fd5533b6296167a1ce6ab2742d # v3.1.6
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: SARIF file
           path: results.sarif
