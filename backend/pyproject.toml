@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melosviz"
+version = "0.1.0"
+description = "Melosviz backend package."
+readme = "README.md"
+requires-python = ">=3.10"
+# Keep runtime deps intentionally minimal: the FFmpeg-backed video
+# exporter in this package is implemented in pure standard library
+# (struct + zlib for PNG, shutil/subprocess for ffmpeg) so it works
+# in CI environments that only have a minimal Python image. Heavy
+# numerical / DSP deps (numpy, scipy, librosa, opencv, fastapi, ...)
+# are kept out of the install graph here so the test suite can run
+# anywhere; downstream services that need them can add them via
+# their own optional requirements. The only third-party runtime
+# dep is pydantic, which the :class:`melosviz.analysis.models.RenderSpec`
+# model is built on.
+dependencies = [
+    "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+]
+lint = [
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+# Include the PEP 561 ``py.typed`` marker so downstream type-checkers
+# (mypy, pyright, ...) treat the package as fully typed instead of
+# falling back to ``Any`` for unannotated functions.
+[tool.setuptools.package-data]
+"melosviz" = ["py.typed"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+# Keep the ruleset narrow: critical correctness + modern style only.
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",  # line length (handled by formatter)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]  # asserts are fine in tests
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+# RenderSpec is a pydantic model: don't let mypy trip on the dynamic
+# pydantic field assignment that ``cinematic.apply`` does.
+disable_error_code = ["method-assign"]

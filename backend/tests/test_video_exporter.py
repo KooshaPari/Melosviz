@@ -21,8 +21,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -30,15 +31,14 @@ import pytest
 from melosviz.analysis.models import RenderSpec
 from melosviz.render import video_exporter
 from melosviz.render.video_exporter import (
-    FFMpegNotFoundError,
-    RenderExportError,
     _DEFAULT_VIDEO_COLOR,
     _DEFAULT_VIDEO_DURATION,
     _DEFAULT_VIDEO_SIZE,
+    FFMpegNotFoundError,
+    RenderExportError,
     export_video,
     is_ffmpeg_available,
 )
-
 
 # ---------------------------------------------------------------------------
 # Constants & helpers
@@ -57,9 +57,7 @@ def _make_completed(
     )
 
 
-def _fake_ffmpeg_success(
-    cmd: list[str], **kwargs: Any
-) -> subprocess.CompletedProcess:
+def _fake_ffmpeg_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     """Side-effect that simulates a successful ffmpeg invocation.
 
     Writes a small placeholder file at the output path (the last element
@@ -163,9 +161,7 @@ def test_export_video_generates_png_frames_in_tempdir(
     """``export_video`` writes one PNG per frame into a tempdir before muxing."""
     with _patch_resolve(), _patch_success() as mock_run:
         result = export_video(
-            RenderSpec(
-                metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0}
-            ),
+            RenderSpec(metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0}),
             format="mp4",
             output_dir=tmp_path,
         )
@@ -291,9 +287,7 @@ def test_export_video_accepts_string_output_dir(tmp_path: Path) -> None:
     """``output_dir`` may be passed as a plain string."""
     target = tmp_path / "from-str"
     with _patch_resolve(), _patch_success():
-        result = export_video(
-            RenderSpec(), format="mp4", output_dir=str(target)
-        )
+        result = export_video(RenderSpec(), format="mp4", output_dir=str(target))
     assert result.parent == target
 
 
@@ -332,9 +326,7 @@ def test_export_video_command_includes_overwrite_flag(tmp_path: Path) -> None:
 def test_export_video_command_ends_with_output_path(tmp_path: Path) -> None:
     """The ffmpeg command ends with the destination output path."""
     with _patch_resolve(), _patch_success() as mock_run:
-        result = export_video(
-            RenderSpec(), format="mp4", output_dir=tmp_path
-        )
+        result = export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
     cmd = mock_run.call_args[0][0]
     assert Path(cmd[-1]) == result
 
@@ -369,9 +361,8 @@ def test_export_video_ffmpeg_nonzero_exit_raises(tmp_path: Path) -> None:
     with _patch_resolve(), patch(
         "melosviz.render.video_exporter.subprocess.run",
         side_effect=_fake_ffmpeg_failure(returncode=1),
-    ):
-        with pytest.raises(RenderExportError):
-            export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+    ), pytest.raises(RenderExportError):
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
 def test_export_video_ffmpeg_nonzero_exit_stderr_in_message(
@@ -383,36 +374,35 @@ def test_export_video_ffmpeg_nonzero_exit_stderr_in_message(
         side_effect=_fake_ffmpeg_failure(
             returncode=2, stderr="bad codec\nfake stack trace"
         ),
-    ):
-        with pytest.raises(RenderExportError) as excinfo:
-            export_video(RenderSpec(), format="webm", output_dir=tmp_path)
+    ), pytest.raises(RenderExportError) as excinfo:
+        export_video(RenderSpec(), format="webm", output_dir=tmp_path)
     assert "fake stack trace" in str(excinfo.value)
 
 
 def test_export_video_missing_output_file_raises(tmp_path: Path) -> None:
     """ffmpeg returns 0 but produces no file → :class:`RenderExportError`."""
+
     def _noop(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
         # Simulate ffmpeg returning success without creating a file.
         return _make_completed(returncode=0)
 
     with _patch_resolve(), patch(
         "melosviz.render.video_exporter.subprocess.run", side_effect=_noop
-    ):
-        with pytest.raises(RenderExportError):
-            export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+    ), pytest.raises(RenderExportError):
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
 def test_export_video_empty_output_file_raises(tmp_path: Path) -> None:
     """ffmpeg returns 0 but produces an empty file → :class:`RenderExportError`."""
+
     def _empty(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
         Path(cmd[-1]).write_bytes(b"")  # create empty file
         return _make_completed(returncode=0)
 
     with _patch_resolve(), patch(
         "melosviz.render.video_exporter.subprocess.run", side_effect=_empty
-    ):
-        with pytest.raises(RenderExportError):
-            export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+    ), pytest.raises(RenderExportError):
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
 def test_export_video_oserror_raises_ffmpeg_not_found(tmp_path: Path) -> None:
@@ -423,9 +413,8 @@ def test_export_video_oserror_raises_ffmpeg_not_found(tmp_path: Path) -> None:
 
     with _patch_resolve(), patch(
         "melosviz.render.video_exporter.subprocess.run", side_effect=_boom
-    ):
-        with pytest.raises(FFMpegNotFoundError):
-            export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+    ), pytest.raises(FFMpegNotFoundError):
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
 def test_export_video_binary_resolution_failure_propagates(
@@ -455,9 +444,7 @@ def test_export_video_logs_info_on_success(
     ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
     # At least one log record mentions "export_video".
-    matching = [
-        rec for rec in caplog.records if "export_video" in rec.getMessage()
-    ]
+    matching = [rec for rec in caplog.records if "export_video" in rec.getMessage()]
     assert matching, f"expected an export_video log record, got: {caplog.records}"
 
 
@@ -477,6 +464,19 @@ def test_is_ffmpeg_available_returns_bool() -> None:
     """``is_ffmpeg_available`` returns a boolean and does not raise."""
     result = is_ffmpeg_available()
     assert isinstance(result, bool)
+
+
+def test_default_video_constants_have_expected_values() -> None:
+    """The legacy ``_DEFAULT_VIDEO_*`` constants keep their original values.
+
+    These constants are documented in the module docstring / public API
+    and are used by downstream code to drive the colour-clip defaults.
+    Pin them here so a future refactor can't silently change the
+    smoke-test output (a regression that would break the staging CLI).
+    """
+    assert _DEFAULT_VIDEO_SIZE == "320x240"
+    assert _DEFAULT_VIDEO_DURATION == 1
+    assert _DEFAULT_VIDEO_COLOR == "blue"
 
 
 # ---------------------------------------------------------------------------
