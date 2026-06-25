@@ -9,12 +9,11 @@ and a 2.39:1 letterbox mask.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from ..analysis.models import RenderSpec
 
-
-CINEMATIC_PALETTE: List[str] = [
+CINEMATIC_PALETTE: list[str] = [
     "#0A0F1A",  # deep blue-black shadow
     "#13344D",  # teal shadow
     "#1F6F8B",  # cyan
@@ -24,7 +23,7 @@ CINEMATIC_PALETTE: List[str] = [
 ]
 
 
-def _layers() -> List[Dict[str, Any]]:
+def _layers() -> list[dict[str, Any]]:
     return [
         {
             "name": "letterbox_mask",
@@ -56,7 +55,7 @@ def _layers() -> List[Dict[str, Any]]:
     ]
 
 
-def _keyframes() -> List[Dict[str, Any]]:
+def _keyframes() -> list[dict[str, Any]]:
     return [
         {"time": 0.0, "zoom": 1.0, "pan_x": 0.0, "pan_y": 0.0, "glow": 0.3},
         {"time": 6.0, "zoom": 1.04, "pan_x": -0.03, "pan_y": 0.0, "glow": 0.45},
@@ -84,7 +83,11 @@ def apply(spec: RenderSpec) -> RenderSpec:
     spec.keyframes = _keyframes()
     spec.timeline = [
         *spec.timeline,
-        {"time": 0.0, "type": "section", "data": {"name": "establishing", "mood": "ominous"}},
+        {
+            "time": 0.0,
+            "type": "section",
+            "data": {"name": "establishing", "mood": "ominous"},
+        },
         {"time": 10.0, "type": "section", "data": {"name": "build", "mood": "tension"}},
         {"time": 26.0, "type": "section", "data": {"name": "climax", "mood": "impact"}},
     ]

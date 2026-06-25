@@ -15,7 +15,6 @@ import importlib
 import os
 import sys
 from types import ModuleType
-from typing import List
 
 # Ensure ``melosviz`` is importable as a top-level package even when this
 # package is loaded via the ``backend.src.melosviz.presets`` path. Several
@@ -32,7 +31,7 @@ if _SRC_ROOT not in sys.path:
 from .registry import ThemePresetRegistry  # noqa: E402,F401
 
 #: Built-in preset module names exposed by this package.
-BUILTIN_PRESETS: List[str] = [
+BUILTIN_PRESETS: list[str] = [
     "jazz",
     "classical",
     "edm",
@@ -42,7 +41,7 @@ BUILTIN_PRESETS: List[str] = [
 ]
 
 
-def list_presets() -> List[str]:
+def list_presets() -> list[str]:
     """Return the sorted list of available preset names."""
     return sorted(BUILTIN_PRESETS)
 
@@ -57,9 +56,7 @@ def load_preset(name: str) -> ModuleType:
     """
     key = name.strip().lower()
     if key not in BUILTIN_PRESETS:
-        raise KeyError(
-            f"Unknown preset {name!r}. Available: {list_presets()}"
-        )
+        raise KeyError(f"Unknown preset {name!r}. Available: {list_presets()}")
     return importlib.import_module(f".{key}", package=__name__)
 
 
