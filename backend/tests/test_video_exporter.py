@@ -249,9 +249,10 @@ def test_export_video_format_mixed_case_accepted(tmp_path: Path) -> None:
 
 def test_export_video_rejects_unknown_format(tmp_path: Path) -> None:
     """Unknown formats raise :class:`RenderExportError` and never run ffmpeg."""
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run"
-    ) as mock_run:
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+    ):
         with pytest.raises(RenderExportError):
             export_video(RenderSpec(), format="avi", output_dir=tmp_path)
         mock_run.assert_not_called()
@@ -259,9 +260,10 @@ def test_export_video_rejects_unknown_format(tmp_path: Path) -> None:
 
 def test_export_video_rejects_empty_format(tmp_path: Path) -> None:
     """Empty format string is rejected as unsupported."""
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run"
-    ) as mock_run:
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+    ):
         with pytest.raises(RenderExportError):
             export_video(RenderSpec(), format="", output_dir=tmp_path)
         mock_run.assert_not_called()
@@ -358,10 +360,14 @@ def test_export_video_subprocess_invoked_exactly_once(tmp_path: Path) -> None:
 
 def test_export_video_ffmpeg_nonzero_exit_raises(tmp_path: Path) -> None:
     """A non-zero ffmpeg exit code raises :class:`RenderExportError`."""
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run",
-        side_effect=_fake_ffmpeg_failure(returncode=1),
-    ), pytest.raises(RenderExportError):
+    with (
+        _patch_resolve(),
+        patch(
+            "melosviz.render.video_exporter.subprocess.run",
+            side_effect=_fake_ffmpeg_failure(returncode=1),
+        ),
+        pytest.raises(RenderExportError),
+    ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
@@ -369,12 +375,16 @@ def test_export_video_ffmpeg_nonzero_exit_stderr_in_message(
     tmp_path: Path,
 ) -> None:
     """The :class:`RenderExportError` raised on ffmpeg failure includes stderr tail."""
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run",
-        side_effect=_fake_ffmpeg_failure(
-            returncode=2, stderr="bad codec\nfake stack trace"
+    with (
+        _patch_resolve(),
+        patch(
+            "melosviz.render.video_exporter.subprocess.run",
+            side_effect=_fake_ffmpeg_failure(
+                returncode=2, stderr="bad codec\nfake stack trace"
+            ),
         ),
-    ), pytest.raises(RenderExportError) as excinfo:
+        pytest.raises(RenderExportError) as excinfo,
+    ):
         export_video(RenderSpec(), format="webm", output_dir=tmp_path)
     assert "fake stack trace" in str(excinfo.value)
 
@@ -386,9 +396,11 @@ def test_export_video_missing_output_file_raises(tmp_path: Path) -> None:
         # Simulate ffmpeg returning success without creating a file.
         return _make_completed(returncode=0)
 
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run", side_effect=_noop
-    ), pytest.raises(RenderExportError):
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run", side_effect=_noop),
+        pytest.raises(RenderExportError),
+    ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
@@ -399,9 +411,11 @@ def test_export_video_empty_output_file_raises(tmp_path: Path) -> None:
         Path(cmd[-1]).write_bytes(b"")  # create empty file
         return _make_completed(returncode=0)
 
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run", side_effect=_empty
-    ), pytest.raises(RenderExportError):
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run", side_effect=_empty),
+        pytest.raises(RenderExportError),
+    ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
@@ -411,9 +425,11 @@ def test_export_video_oserror_raises_ffmpeg_not_found(tmp_path: Path) -> None:
     def _boom(cmd: list[str], **kwargs: Any) -> None:
         raise OSError("simulated spawn failure")
 
-    with _patch_resolve(), patch(
-        "melosviz.render.video_exporter.subprocess.run", side_effect=_boom
-    ), pytest.raises(FFMpegNotFoundError):
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run", side_effect=_boom),
+        pytest.raises(FFMpegNotFoundError),
+    ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
 
 
@@ -422,9 +438,10 @@ def test_export_video_binary_resolution_failure_propagates(
 ) -> None:
     """If ``_resolve_ffmpeg_binary`` raises :class:`FFMpegNotFoundError`, it propagates."""
     sentinel_exc = FFMpegNotFoundError("ffmpeg is missing")
-    with _patch_resolve_raises(sentinel_exc), patch(
-        "melosviz.render.video_exporter.subprocess.run"
-    ) as mock_run:
+    with (
+        _patch_resolve_raises(sentinel_exc),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+    ):
         with pytest.raises(FFMpegNotFoundError):
             export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
         mock_run.assert_not_called()
@@ -439,8 +456,10 @@ def test_export_video_logs_info_on_success(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """A successful export emits an INFO log line about the output path."""
-    with _patch_resolve(), _patch_success(), caplog.at_level(
-        logging.INFO, logger="melosviz.render.video_exporter"
+    with (
+        _patch_resolve(),
+        _patch_success(),
+        caplog.at_level(logging.INFO, logger="melosviz.render.video_exporter"),
     ):
         export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
     # At least one log record mentions "export_video".
