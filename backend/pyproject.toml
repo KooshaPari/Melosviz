@@ -71,3 +71,6 @@ strict = true
 # RenderSpec is a pydantic model: don't let mypy trip on the dynamic
 # pydantic field assignment that ``cinematic.apply`` does.
 disable_error_code = ["method-assign"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

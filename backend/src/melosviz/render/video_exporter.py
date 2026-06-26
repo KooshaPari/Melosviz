@@ -391,7 +391,7 @@ def export_video(
         ]
     else:
         raise RenderExportError(
-            f"Unsupported export format: {format!r}. " "Expected 'mp4' or 'webm'."
+            f"Unsupported export format: {format!r}. Expected 'mp4' or 'webm'."
         )
 
     # ---- 2. Resolve ffmpeg ----------------------------------------------
@@ -474,8 +474,7 @@ def export_video(
 
         if not output_path.exists() or output_path.stat().st_size == 0:
             raise RenderExportError(
-                f"ffmpeg reported success but no output was produced at "
-                f"{output_path}."
+                f"ffmpeg reported success but no output was produced at {output_path}."
             )
 
         logger.info(
