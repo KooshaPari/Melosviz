@@ -1,10 +1,15 @@
-> **Work-state:** planning — `[#---------] 10%`
+> **Work-state:** planning - `[#---------]` 10%
 >
-> Music theory visualization and interactive education toolkit. Repository placeholder; concept design phase. Pending: core data structures, rendering engine, MIDI integration.
+> Melosviz is a music theory visualization and interactive learning toolkit for exploring notation, harmony, scales, and MIDI-driven ideas in a visual, educational format. This repository is currently a concept placeholder, with the product direction focused on a clear learning experience, responsive visualizations, and a future implementation path for rendering and input integration.
 
 # Melosviz
 
-**Music theory visualization and interactive learning** toolkit.
+## Usage / Quickstart
+
+1. Clone the repository.
+2. Review the concept and scope in this README.
+3. Follow the implementation roadmap as the project grows.
+4. No runnable app is published yet.
 
 ## Overview
 
