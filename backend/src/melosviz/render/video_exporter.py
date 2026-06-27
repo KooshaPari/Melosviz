@@ -26,6 +26,7 @@ Design notes
 from __future__ import annotations
 
 import logging
+import math
 import os
 import shutil
 import struct
@@ -272,6 +273,7 @@ def _generate_png_frames(
     width: int,
     height: int,
     palette: list[str],
+    envelope: list[float] | None = None,
 ) -> list[Path]:
     """Generate ``frame_count`` solid-colour PNG files in ``frame_dir``.
 
@@ -288,7 +290,16 @@ def _generate_png_frames(
         colors = [_hex_to_rgb_bytes(_DEFAULT_PALETTE_RGB[0])]
     paths: list[Path] = []
     for index in range(frame_count):
-        color = colors[index % len(colors)]
+        if envelope:
+            intensity = envelope[min(index, len(envelope) - 1)]
+        else:
+            intensity = 0.5 + 0.5 * math.sin((index / max(1, frame_count)) * math.tau)
+        base = colors[index % len(colors)]
+        color = (
+            max(0, min(255, int(base[0] * (0.4 + 0.6 * intensity) + 40 * intensity))),
+            max(0, min(255, int(base[1] * (0.4 + 0.6 * intensity) + 20 * intensity))),
+            max(0, min(255, int(base[2] * (0.4 + 0.6 * intensity) + 55 * intensity))),
+        )
         frame_path = frame_dir / f"frame_{index + 1:05d}.png"
         _save_solid_png(frame_path, width, height, color)
         paths.append(frame_path)
@@ -320,6 +331,20 @@ def _extract_palette(spec: Any) -> list[str]:
     if not palette:
         return list(_DEFAULT_PALETTE_RGB)
     return palette
+
+
+def _extract_envelope(spec: Any) -> list[float]:
+    metadata = _coerce_metadata(spec)
+    raw = metadata.get("amplitude_envelope")
+    if not isinstance(raw, list):
+        return []
+    envelope: list[float] = []
+    for value in raw:
+        try:
+            envelope.append(max(0.0, min(1.0, float(value))))
+        except (TypeError, ValueError):
+            envelope.append(0.0)
+    return envelope
 
 
 # ---------------------------------------------------------------------------
@@ -410,6 +435,7 @@ def export_video(
         duration_sec = _DEFAULT_DURATION_SEC
     total_frames = max(1, int(round(duration_sec * fps)))
     palette = _extract_palette(spec)
+    envelope = _extract_envelope(spec)
 
     # ---- 4. Resolve output directory ------------------------------------
     if output_dir is None:
@@ -433,7 +459,14 @@ def export_video(
     # ---- 5. Generate PNG frames in a tempdir -----------------------------
     with tempfile.TemporaryDirectory(prefix="melosviz-frames-") as tmp:
         frame_dir = Path(tmp)
-        _generate_png_frames(frame_dir, total_frames, width, height, palette)
+        _generate_png_frames(
+            frame_dir,
+            total_frames,
+            width,
+            height,
+            palette,
+            envelope=envelope,
+        )
         frame_pattern = frame_dir / "frame_%05d.png"
 
         # ---- 6. Concat frames with ffmpeg ---------------------------------
@@ -485,3 +518,17 @@ def export_video(
             total_frames,
         )
         return output_path
+
+
+def render_audio_video(
+    audio_path: str | Path,
+    format: str = "mp4",
+    output_dir: Path | str | None = None,
+) -> Path:
+    """Analyze a WAV file, apply the cinematic preset, and export video."""
+
+    from melosviz.analysis.audio import spec_from_wav
+    from melosviz.presets.cinematic import apply as apply_cinematic
+
+    spec = apply_cinematic(spec_from_wav(audio_path))
+    return export_video(spec, format=format, output_dir=output_dir)
