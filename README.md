@@ -1,46 +1,119 @@
-> **Work-state:** planning - `[#---------]` 10%
->
-> Melosviz is a music theory visualization and interactive learning toolkit for exploring notation, harmony, scales, and MIDI-driven ideas in a visual, educational format. This repository is currently a concept placeholder, with the product direction focused on a clear learning experience, responsive visualizations, and a future implementation path for rendering and input integration.
-
 # Melosviz
 
-## Usage / Quickstart
+Melosviz is a small Python package for music-visualization experiments. The
+current codebase is focused on two concrete pieces:
 
-1. Clone the repository.
-2. Review the concept and scope in this README.
-3. Follow the implementation roadmap as the project grows.
-4. No runnable app is published yet.
+- `melosviz.presets`, which provides mutation-style presets for
+  `RenderSpec`
+- `melosviz.render.video_exporter`, which turns a `RenderSpec` into a short
+  MP4 or WebM clip with FFmpeg
 
-## Overview
+There is no CLI or web app in this repository yet. The supported workflow is
+library usage from Python.
 
-Melosviz provides interactive visual representations of music theory concepts:
-- Staff notation rendering
-- Harmony and chord visualization
-- Scale and mode exploration
-- MIDI input/output
-- Interactive educational components
+## Repository Layout
 
-## Status
+- `backend/` - installable Python package source, tests, and packaging config
+- `docs/` - design/specification notes
+- `assets/brand/` - SVG brand assets
 
-**PLANNING** — Concept and architecture design. Initial repository placeholder.
+## Requirements
 
-## Key Goals
+- Python 3.10 or newer
+- FFmpeg on `PATH`, or set `MELOSVIZ_FFMPEG_BIN` to the binary you want to use
 
-- **Visual music theory**: Intuitive graphical representations of abstract concepts
-- **Interactive learning**: Hands-on exploration tools for students
-- **MIDI integration**: Real-time input from instruments and controllers
-- **Educational focus**: Suitable for diverse skill levels
+`ffmpeg` is required only for video export. Preset loading and `RenderSpec`
+manipulation work without it.
 
-## Technical Stack
+## Install
 
-- Language: TBD (likely Rust/WebAssembly or TypeScript)
-- Rendering: TBD (SVG, Canvas, or GPU-based)
-- MIDI: Web MIDI API or platform-specific libraries
+The package metadata lives in `backend/pyproject.toml`, so install from that
+directory:
 
-## Getting Started
+```bash
+cd backend
+pip install -e ".[test,lint]"
+```
 
-Repository structure and initial abstractions coming soon.
+If you only need the runtime package, install the base project instead:
 
-## License
+```bash
+cd backend
+pip install -e .
+```
 
-Phenotype organization. See main org LICENSE.
+## Usage
+
+### Load and apply a preset
+
+```python
+from melosviz.analysis.models import RenderSpec
+from melosviz.presets.cinematic import apply
+
+spec = apply(RenderSpec())
+print(spec.metadata["preset"])  # cinematic
+print(spec.palette)
+```
+
+### List built-in presets
+
+```python
+from melosviz.presets import list_presets
+
+print(list_presets())
+```
+
+### Export a video
+
+```python
+from pathlib import Path
+
+from melosviz.analysis.models import RenderSpec
+from melosviz.render.video_exporter import export_video
+
+spec = RenderSpec(
+    metadata={
+        "width": 1280,
+        "height": 720,
+        "fps": 30,
+        "duration": 1.0,
+    }
+)
+
+output = export_video(spec, format="mp4", output_dir=Path("exports"))
+print(output)
+```
+
+`export_video` accepts `format="mp4"` or `format="webm"` and returns the
+absolute path to the produced file.
+
+### Convert a WAV file into a render spec and export it
+
+```python
+from pathlib import Path
+
+from melosviz.analysis.audio import spec_from_wav
+from melosviz.presets.cinematic import apply
+from melosviz.render.video_exporter import export_video
+
+spec = apply(spec_from_wav(Path("input.wav")))
+output = export_video(spec, output_dir=Path("exports"))
+print(output)
+```
+
+## What Ships Today
+
+- `melosviz.analysis.models.RenderSpec` and `ThemePreset`
+- `melosviz.analysis.audio.analyze_wav()` and `spec_from_wav()`
+- `melosviz.presets.list_presets()` and `load_preset()`
+- `melosviz.presets.cinematic.apply()`
+- `melosviz.render.video_exporter.export_video()`
+- `melosviz.render.video_exporter.render_audio_video()`
+
+## Notes
+
+- The exporter writes a temporary PNG frame sequence and muxes it with FFmpeg.
+- `MELOSVIZ_FFMPEG_BIN` overrides FFmpeg resolution when `ffmpeg` is not on
+  `PATH`.
+- The package uses only the Python standard library plus `pydantic` at runtime.
+
