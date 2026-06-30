@@ -21,6 +21,23 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class HarmonicResult(BaseModel):
+    """Chord and scale detection result derived from dominant frequency peaks."""
+
+    chord: str | None = Field(
+        default=None,
+        description="Detected chord name (e.g. 'C major') or None",
+    )
+    scale: str | None = Field(
+        default=None,
+        description="Detected scale name (e.g. 'A minor') or None",
+    )
+    note_numbers: list[int] = Field(
+        default_factory=list,
+        description="MIDI note numbers derived from dominant spectral peaks",
+    )
+
+
 class GenreTheme(str, Enum):
     """Coarse visual style buckets used by the legacy theme registry."""
 
