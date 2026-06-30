@@ -18,7 +18,7 @@ const config: ElectrobunConfig = {
 
   build: {
     bun: {
-      entrypoint: "src/main.ts",
+      entrypoint: "src/index.ts",
     },
     views: {
       main: {
