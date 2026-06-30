@@ -81,7 +81,9 @@ function run(
 let venvCreated = false;
 for (const pyVer of pythonVersions) {
   console.log(`[postBuild] Trying uv venv --python ${pyVer}...`);
-  const r = run([uv, "venv", "--python", pyVer, ".venv"]);
+  // --clear: replace any pre-existing .venv (stale venv from a prior build
+  // otherwise aborts uv with "A virtual environment already exists").
+  const r = run([uv, "venv", "--clear", "--python", pyVer, ".venv"]);
   if (r.ok) {
     console.log(`[postBuild] venv created with python ${pyVer}`);
     venvCreated = true;
