@@ -312,7 +312,7 @@ def _generate_png_frames(
     colors: list[tuple[int, int, int]] = [
         _hex_to_rgb_bytes(color) for color in (palette or _DEFAULT_PALETTE_RGB)
     ]
-    if not colors:
+    if not colors:  # pragma: no cover — _DEFAULT_PALETTE_RGB always non-empty
         colors = [_hex_to_rgb_bytes(_DEFAULT_PALETTE_RGB[0])]
     paths: list[Path] = []
     for index in range(frame_count):
@@ -612,7 +612,7 @@ def export_video(
     colors: list[tuple[int, int, int]] = [
         _hex_to_rgb_bytes(c) for c in (palette or _DEFAULT_PALETTE_RGB)
     ]
-    if not colors:
+    if not colors:  # pragma: no cover — _DEFAULT_PALETTE_RGB is always non-empty
         colors = [_hex_to_rgb_bytes(_DEFAULT_PALETTE_RGB[0])]
 
     frame_colors: list[tuple[int, int, int]] = []

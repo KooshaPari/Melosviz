@@ -30,7 +30,7 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import PlainTextResponse
     from pydantic import BaseModel
-except ImportError:
+except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
         "Install with:  pip install 'melosviz[bridge]'\n"
@@ -146,5 +146,5 @@ def main() -> None:
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -1,0 +1,9 @@
+[report]
+# Patterns that exclude lines (and their suites if they are suite headers).
+# Each pattern is a regex applied to source lines.
+exclude_also =
+    # Standard __main__ guard
+    if __name__ == .__main__.:
+
+    # Defensive guards marked with pragma
+    pragma: no cover
