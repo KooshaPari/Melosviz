@@ -1,0 +1,89 @@
+/**
+ * MelosViz Brand Tokens
+ * Neon-on-dark festival visualizer palette.
+ * Import this file first, then override locally as needed.
+ */
+
+:root {
+  /* ── Background scale ─────────────────────────────────────────────── */
+  --mv-bg-base:        #0d0d10;   /* void — deepest layer */
+  --mv-bg-surface:     #13131a;   /* card / panel surface */
+  --mv-bg-panel:       #1a1a26;   /* nested panel / drawer */
+  --mv-bg-elevated:    #21212f;   /* popovers / menus */
+  --mv-bg-hover:       #28283a;   /* hover overlay */
+  --mv-bg-active:      #2e2e42;   /* pressed overlay */
+
+  /* ── Border ───────────────────────────────────────────────────────── */
+  --mv-border:         #2a2a3c;
+  --mv-border-subtle:  #1e1e2e;
+  --mv-border-focus:   #7c6af7;
+
+  /* ── Brand accent — violet spectrum ──────────────────────────────── */
+  --mv-accent-lo:      #312e81;   /* deep indigo */
+  --mv-accent-dim:     #4c40b0;   /* dimmed violet */
+  --mv-accent:         #7c6af7;   /* primary violet */
+  --mv-accent-hi:      #a78bfa;   /* light violet */
+  --mv-accent-glow:    rgba(124, 106, 247, 0.28);
+
+  /* ── Secondary neons ─────────────────────────────────────────────── */
+  --mv-neon-pink:      #f472b6;
+  --mv-neon-pink-dim:  rgba(244, 114, 182, 0.2);
+  --mv-neon-purple:    #c084fc;
+  --mv-neon-cyan:      #22d3ee;
+  --mv-neon-cyan-dim:  rgba(34, 211, 238, 0.15);
+
+  /* ── Gradient shorthands ─────────────────────────────────────────── */
+  --mv-grad-brand:     linear-gradient(135deg, #4c40b0 0%, #7c6af7 50%, #c084fc 100%);
+  --mv-grad-spectrum:  linear-gradient(90deg, #4c40b0 0%, #7c6af7 35%, #c084fc 70%, #f472b6 100%);
+  --mv-grad-radial:    radial-gradient(ellipse at center, #1a1430 0%, #0d0d10 70%);
+
+  /* ── Semantic status ─────────────────────────────────────────────── */
+  --mv-success:        #4ade80;
+  --mv-success-dim:    rgba(74, 222, 128, 0.12);
+  --mv-warn:           #f59e0b;
+  --mv-warn-dim:       rgba(245, 158, 11, 0.12);
+  --mv-error:          #f87171;
+  --mv-error-dim:      rgba(248, 113, 113, 0.10);
+  --mv-info:           #60a5fa;
+
+  /* ── Text scale ──────────────────────────────────────────────────── */
+  --mv-text-hi:        #f0f0f8;   /* headings, important labels */
+  --mv-text-mid:       #9090b0;   /* body, secondary */
+  --mv-text-lo:        #50505e;   /* disabled, placeholder */
+  --mv-text-accent:    #a78bfa;   /* inline accent text */
+
+  /* ── Typography ──────────────────────────────────────────────────── */
+  --mv-font-sans:      -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --mv-font-mono:      "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", ui-monospace, monospace;
+  --mv-font-display:   -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+
+  /* ── Spacing ─────────────────────────────────────────────────────── */
+  --mv-space-1:  4px;
+  --mv-space-2:  8px;
+  --mv-space-3:  12px;
+  --mv-space-4:  16px;
+  --mv-space-5:  20px;
+  --mv-space-6:  24px;
+  --mv-space-8:  32px;
+  --mv-space-10: 40px;
+
+  /* ── Radius ──────────────────────────────────────────────────────── */
+  --mv-radius-xs: 4px;
+  --mv-radius-sm: 6px;
+  --mv-radius-md: 10px;
+  --mv-radius-lg: 14px;
+  --mv-radius-xl: 20px;
+  --mv-radius-full: 9999px;
+
+  /* ── Shadows / glow ──────────────────────────────────────────────── */
+  --mv-shadow-sm:    0 1px 3px rgba(0,0,0,0.4);
+  --mv-shadow-md:    0 4px 12px rgba(0,0,0,0.5);
+  --mv-shadow-glow:  0 0 20px var(--mv-accent-glow);
+  --mv-shadow-pink:  0 0 16px rgba(244, 114, 182, 0.2);
+
+  /* ── Transitions ─────────────────────────────────────────────────── */
+  --mv-ease:      cubic-bezier(0.4, 0, 0.2, 1);
+  --mv-dur-fast:  120ms;
+  --mv-dur-base:  200ms;
+  --mv-dur-slow:  350ms;
+}
