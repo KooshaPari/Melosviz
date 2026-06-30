@@ -1,11 +1,20 @@
 # Melosviz Docs Index
 
-This directory currently contains the functional specification and acceptance
-material for the Python package.
+This directory contains the full specification, ADR records, traceability matrix,
+and acceptance material for MelosViz.
 
-## Documents
+## Architecture Decision Records
 
-- [`specs/SPEC.md`](specs/SPEC.md) - functional requirements and traceability
+- [`adr/0003-spec-first-conductor.md`](adr/0003-spec-first-conductor.md) - ADR 0003: Spec-First Conductor over Pro Toolchain (10 principles; MV-FR-A01–A10)
+
+## Traceability
+
+- [`TRACEABILITY.md`](TRACEABILITY.md) - Bidirectional traceability matrix (Rev 2; 49 MV-FR-* IDs; 100% documented)
+- [`COMPLETENESS.md`](COMPLETENESS.md) - Feature completeness audit (Rev 2; 88% shipped; traceability 100%)
+
+## Functional Specifications
+
+- [`specs/SPEC.md`](specs/SPEC.md) - functional requirements and traceability (FR-1–FR-6; preset + video exporter)
 - [`specs/acceptance/presets.feature`](specs/acceptance/presets.feature) -
   acceptance scenarios for presets
 - [`specs/acceptance/video_exporter.feature`](specs/acceptance/video_exporter.feature) -

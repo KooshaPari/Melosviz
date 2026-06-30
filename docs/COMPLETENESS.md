@@ -1,8 +1,10 @@
 # MelosViz Completeness Audit
 
 **Date:** 2026-06-30  
+**Revision:** 2 (traceability-100 update)  
 **Scope:** Feature enumeration vs. shipped/partial/missing  
-**Baseline:** origin/main d7836da (P0–P8 complete)
+**Baseline:** origin/main c91a508 (post-P8, qgate wired)  
+**Traceability Score:** **100% documented** — see `docs/TRACEABILITY.md` Rev 2 (49 requirement IDs; all links closed or explicitly explained)
 
 ---
 
@@ -166,7 +168,7 @@ MelosViz ships **all core features from the operator's original vision** (Progra
 | **Extended Research Features** | 16 opt-in/research features (MSAF, CLAP, 3DGS, etc.) | 14/16 (88%) + 2 PARTIAL | 3DGS loading done; training + 3DGUT TBD |
 | **Renderer Coverage** | 7 renderer backends | 3 SHIPPING + 3 STUBS + 1 RESERVED | Blender/TD/FFmpeg live; AE/ME/Firefly awaiting system; Unreal stage-only |
 | **Test Coverage** | Unit + integration + E2E (11 test modules) | 370+ tests; 85%+ branch coverage | Critical paths verified; adapter stubs not live-tested |
-| **Documentation** | Spec traceability + user guides | 80% (main docs present; ADR 0003 not yet in docs/adr/) | TRACEABILITY.md + LOCAL_RUN.md complete; ADR draft in .audit-run-v37/ |
+| **Documentation** | Spec traceability + user guides | **100%** (TRACEABILITY.md Rev 2: 49 MV-FR-* IDs; ADR 0003 formalized in docs/adr/; bidirectional matrix; lint script) | TRACEABILITY.md Rev 2 + LOCAL_RUN.md + docs/adr/0003-spec-first-conductor.md; all links closed |
 | **Quality-of-Life** | CLI, error handling, graceful fallback, config, CI | 90% (all except Docker) | Docker present but not primary path; optional |
 
 ---
