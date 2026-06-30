@@ -23,7 +23,37 @@ let backendPort: number = 0;
 let bridgeProc: ReturnType<typeof Bun.spawn> | null = null;
 let bridgeReady = false;
 
-const python = Bun.which("python3") ?? Bun.which("python") ?? "python3";
+// ---------------------------------------------------------------------------
+// Python resolver — prefer the bundled uv venv over system python3.
+//
+// The postBuild hook (scripts/postBuild.ts) creates <backend>/.venv with
+// melosviz[analysis,bridge] installed.  We use that interpreter so librosa,
+// numpy, fastapi, uvicorn etc. are always available regardless of what is
+// (or isn't) on the user's PATH.
+// ---------------------------------------------------------------------------
+
+function resolvePython(resolvedBackendDir: string): string {
+  // macOS / Linux
+  const venvPython = path.join(resolvedBackendDir, ".venv", "bin", "python3");
+  if (fs.existsSync(venvPython)) return venvPython;
+  // Windows
+  const venvPythonWin = path.join(
+    resolvedBackendDir,
+    ".venv",
+    "Scripts",
+    "python.exe"
+  );
+  if (fs.existsSync(venvPythonWin)) return venvPythonWin;
+  // Fallback: system python — will fail with a clear error if deps are missing
+  const sys =
+    Bun.which("python3") ?? Bun.which("python") ?? "python3";
+  console.warn(
+    `[MelosViz] Bundled .venv not found in ${resolvedBackendDir}; ` +
+      `falling back to system python: ${sys}. ` +
+      "If you see ModuleNotFoundError, re-run `bunx electrobun build` to populate the venv."
+  );
+  return sys;
+}
 
 // ---------------------------------------------------------------------------
 // Backend sidecar helpers
@@ -74,6 +104,7 @@ async function runVizCli(args: string[]): Promise<string> {
       "[MelosViz] Backend not found — cannot run CLI. Drop a WAV file after installing the backend."
     );
   }
+  const python = resolvePython(backendDir);
   const proc = Bun.spawn(
     [python, "-m", "melosviz.cli.main", ...args],
     {
@@ -221,6 +252,8 @@ async function startBackendBridge(): Promise<void> {
     return;
   }
 
+  const python = resolvePython(backendDir);
+  console.log(`[MelosViz] python        : ${python}`);
   bridgeProc = Bun.spawn(
     [python, bridgeScript, "--port", String(backendPort)],
     {

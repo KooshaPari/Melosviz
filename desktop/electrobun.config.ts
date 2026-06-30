@@ -39,6 +39,13 @@ const config: ElectrobunConfig = {
       icons: "assets/icons/MelosViz.iconset",
     },
   },
+
+  scripts: {
+    // Creates a uv venv with melosviz[analysis,bridge] deps inside the bundled
+    // backend directory so the app can run librosa/fastapi/uvicorn without
+    // relying on whatever python3 happens to be on the user's PATH.
+    postBuild: "scripts/postBuild.ts",
+  },
 };
 
 export default config;
