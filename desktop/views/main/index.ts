@@ -22,6 +22,13 @@ const rpc = Electroview.defineRPC<
   },
 });
 
+// REQUIRED: instantiate Electroview so the transport is wired.
+// Electroview.defineRPC() only creates the typed schema; the WebSocket
+// transport (bunSocket.send) is attached inside new Electroview({ rpc })
+// via rpc.setTransport(this.createTransport()).  Without this instance,
+// every rpc.request.* throws "transport did not provide 'send'".
+new Electroview({ rpc });
+
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
