@@ -170,10 +170,15 @@ const rpc = defineElectrobunRPC<
 // Main window — created FIRST, before any backend I/O
 // ---------------------------------------------------------------------------
 
+// Use the views:// custom scheme so WKWebView treats the context as secure —
+// window.crypto.subtle (required by electrobun's RPC encryption init) is only
+// available in a secure context.  The html: shorthand calls loadHTMLString
+// which produces an opaque "null" origin (insecure); url: "views://..." goes
+// through electrobun's registered URL scheme handler which is secure.
 const win = new BrowserWindow({
   title: "MelosViz",
   frame: { x: 100, y: 100, width: 1280, height: 800 },
-  html: "views/main/index.html",
+  url: "views://main/index.html",
   titleBarStyle: "hiddenInset",
   rpc,
 });
