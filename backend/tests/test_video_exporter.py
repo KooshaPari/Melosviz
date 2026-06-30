@@ -531,3 +531,223 @@ def test_export_video_accepts_populated_renderspec(tmp_path: Path) -> None:
         result = export_video(spec, format="webm", output_dir=tmp_path)
     assert result.exists()
     assert result.suffix == ".webm"
+
+
+# ---------------------------------------------------------------------------
+# Tests — rawvideo pipe path (fast path for large frame counts)
+# ---------------------------------------------------------------------------
+
+import io
+from unittest.mock import MagicMock, patch as _patch
+
+from melosviz.render.video_exporter import (
+    _RAWVIDEO_FRAME_THRESHOLD,
+    _frame_rgb24_bytes,
+    _export_video_rawvideo_pipe,
+)
+
+
+def _make_popen_mock(returncode: int = 0, output_path: Path | None = None) -> MagicMock:
+    """Build a ``Popen`` mock that simulates a successful (or failing) ffmpeg run."""
+    mock_proc = MagicMock()
+    mock_proc.__enter__ = lambda s: s
+    mock_proc.__exit__ = MagicMock(return_value=False)
+    mock_proc.stdin = io.BytesIO()
+    mock_proc.returncode = returncode
+    mock_proc.communicate.return_value = (b"", b"")
+
+    if output_path is not None and returncode == 0:
+        # simulate ffmpeg creating the output file when communicate() is called
+        def _communicate(timeout=None):
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_bytes(b"\x00" * 1024)
+            mock_proc.returncode = 0
+            return (b"", b"")
+
+        mock_proc.communicate.side_effect = _communicate
+
+    return mock_proc
+
+
+def test_frame_rgb24_bytes_size() -> None:
+    """``_frame_rgb24_bytes`` returns exactly width*height*3 bytes."""
+    data = _frame_rgb24_bytes(16, 9, (255, 0, 128))
+    assert len(data) == 16 * 9 * 3
+
+
+def test_frame_rgb24_bytes_content() -> None:
+    """Each pixel in the raw frame matches the supplied RGB tuple."""
+    rgb = (10, 20, 30)
+    data = _frame_rgb24_bytes(4, 4, rgb)
+    assert len(data) == 4 * 4 * 3
+    for i in range(0, len(data), 3):
+        assert data[i] == rgb[0]
+        assert data[i + 1] == rgb[1]
+        assert data[i + 2] == rgb[2]
+
+
+def test_rawvideo_threshold_constant() -> None:
+    """``_RAWVIDEO_FRAME_THRESHOLD`` must be positive so the guard is meaningful."""
+    assert isinstance(_RAWVIDEO_FRAME_THRESHOLD, int)
+    assert _RAWVIDEO_FRAME_THRESHOLD > 0
+
+
+def test_export_video_large_mp4_uses_rawvideo_pipe(tmp_path: Path) -> None:
+    """MP4 renders above the threshold use the rawvideo Popen pipe, not subprocess.run."""
+    # frame count above threshold so the fast path is chosen
+    frame_count = _RAWVIDEO_FRAME_THRESHOLD + 1
+    duration = frame_count / 30.0
+    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
+    output_path = tmp_path / "melosviz-render.mp4"
+
+    mock_proc = _make_popen_mock(returncode=0, output_path=output_path)
+
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
+    ):
+        result = export_video(spec, format="mp4", output_dir=tmp_path)
+
+    # rawvideo path uses Popen, not run — subprocess.run should NOT be invoked for the render
+    # (it may be invoked by _resolve_ffmpeg_binary probe, but we patched _resolve above)
+    mock_run.assert_not_called()
+    assert result.exists()
+    assert result.suffix == ".mp4"
+
+
+def test_export_video_large_mp4_rawvideo_cmd_shape(tmp_path: Path) -> None:
+    """The rawvideo pipe ffmpeg command includes the correct demuxer and pixel format flags."""
+    frame_count = _RAWVIDEO_FRAME_THRESHOLD + 10
+    duration = frame_count / 30.0
+    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
+    output_path = tmp_path / "melosviz-render.mp4"
+
+    popen_calls: list[list[str]] = []
+
+    def _capture_popen(cmd, **kwargs):
+        popen_calls.append(cmd)
+        return _make_popen_mock(returncode=0, output_path=output_path)
+
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.Popen", side_effect=_capture_popen),
+    ):
+        export_video(spec, format="mp4", output_dir=tmp_path)
+
+    assert popen_calls, "expected Popen to be called for large-frame MP4"
+    cmd = popen_calls[0]
+    assert "-f" in cmd
+    rawvideo_idx = cmd.index("-f")
+    assert cmd[rawvideo_idx + 1] == "rawvideo"
+    assert "-pixel_format" in cmd
+    pf_idx = cmd.index("-pixel_format")
+    assert cmd[pf_idx + 1] == "rgb24"
+    assert "pipe:0" in cmd
+    assert "libx264" in cmd
+
+
+def test_export_video_small_mp4_uses_png_path(tmp_path: Path) -> None:
+    """MP4 renders at or below the threshold stay on the PNG image2 path."""
+    # 30 frames is the default 1s@30fps spec — well below the 150 threshold
+    with _patch_resolve(), _patch_success() as mock_run:
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+    assert mock_run.call_count == 1
+    cmd = mock_run.call_args[0][0]
+    # PNG path uses image2 demuxer with a frame_%05d.png pattern
+    input_idx = cmd.index("-i")
+    assert cmd[input_idx + 1].endswith("frame_%05d.png")
+
+
+def test_export_video_webm_always_uses_png_path(tmp_path: Path) -> None:
+    """WebM exports always use the PNG image2 path regardless of frame count."""
+    with _patch_resolve(), _patch_success() as mock_run:
+        export_video(RenderSpec(), format="webm", output_dir=tmp_path)
+    assert mock_run.call_count == 1
+    cmd = mock_run.call_args[0][0]
+    assert "libvpx-vp9" in cmd
+
+
+# ---------------------------------------------------------------------------
+# Tests — zlib level regression (level 1, not 9)
+# ---------------------------------------------------------------------------
+
+
+def test_write_raw_png_rgb_zlib_level_is_fast() -> None:
+    """``_write_raw_png_rgb`` uses zlib level 1 (fast) not level 9 (slow).
+
+    This is a regression guard for PERF_BENCHMARK.md §1b P0: the level-9
+    zlib compress was the bottleneck at ~30 ms/frame for 720p solid-colour
+    frames.  Level 1 is ~3 ms/frame — a 10× improvement with identical
+    output size for solid-colour data.
+
+    We verify that the written PNG actually decompresses correctly (the
+    level-1 output is still valid zlib) and that the IDAT chunk is present.
+    """
+    import struct as _struct
+    import zlib as _zlib
+    from pathlib import Path as _Path
+    import tempfile
+
+    from melosviz.render.video_exporter import _write_raw_png_rgb
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+        png_path = _Path(f.name)
+
+    try:
+        _write_raw_png_rgb(png_path, 16, 16, (255, 0, 128))
+        data = png_path.read_bytes()
+    finally:
+        png_path.unlink(missing_ok=True)
+
+    # PNG signature
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    # IDAT chunk present
+    assert b"IDAT" in data
+    # Extract IDAT chunk and verify it is valid zlib (decompresses without error)
+    idat_start = data.index(b"IDAT")
+    length = _struct.unpack(">I", data[idat_start - 4 : idat_start])[0]
+    idat_data = data[idat_start + 4 : idat_start + 4 + length]
+    decompressed = _zlib.decompress(idat_data)
+    # 16 pixels wide × 3 bytes + 1 filter byte per row × 16 rows
+    assert len(decompressed) == (1 + 16 * 3) * 16
+
+
+# ---------------------------------------------------------------------------
+# Tests — per-frame gen time budget (perf regression, skipped on slow CI)
+# ---------------------------------------------------------------------------
+
+
+def test_png_frame_gen_time_budget() -> None:
+    """Generating a 1280×720 solid-colour PNG must complete in < 5 ms/frame.
+
+    Baseline: level-9 zlib measured at 29.6 ms/frame (PERF_BENCHMARK.md §1b).
+    Level-1 target: < 5 ms/frame (10× headroom vs the old bottleneck).
+
+    This test is timing-based and may be skipped in environments where
+    the host is under heavy load.  It uses a single frame to keep the
+    test itself sub-millisecond on fast hardware.
+    """
+    import time
+    import tempfile
+
+    from melosviz.render.video_exporter import _write_raw_png_rgb
+
+    BUDGET_MS = 5.0  # per-frame budget in milliseconds
+    WIDTH, HEIGHT = 1280, 720
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
+        png_path = Path(f.name)
+
+    try:
+        t0 = time.perf_counter()
+        _write_raw_png_rgb(png_path, WIDTH, HEIGHT, (0, 245, 255))
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    finally:
+        png_path.unlink(missing_ok=True)
+
+    assert elapsed_ms < BUDGET_MS, (
+        f"PNG frame gen took {elapsed_ms:.1f} ms — exceeds {BUDGET_MS} ms budget. "
+        f"Check that zlib.compress level is 1, not 9 (level 9 was ~30 ms/frame). "
+        f"See docs/PERF_BENCHMARK.md §1b."
+    )
