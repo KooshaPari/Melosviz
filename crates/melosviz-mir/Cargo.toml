@@ -1,0 +1,40 @@
+[package]
+name = "melosviz-mir"
+version = "0.1.0"
+edition = "2021"
+description = "Music Information Retrieval (MIR) crate for MelosViz — Rust-native STFT/onset/beat/chroma via rustfft+hound"
+rust-version = "1.80"
+
+[[bin]]
+name = "melosviz-mir"
+path = "src/main.rs"
+
+[lib]
+name = "melosviz_mir"
+path = "src/lib.rs"
+
+[dependencies]
+# FFT engine — rustfft 6.x is the stable latest; no deprecated planner API
+rustfft = "6"
+# WAV file decoding — hound 3.x
+hound = "3"
+# Serialisation (RenderSpec v2 output)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# CLI argument parsing
+clap = { version = "4", features = ["derive"] }
+# Error handling
+anyhow = "1"
+# Logging
+log = "0.4"
+env_logger = "0.11"
+# Complex number type (re-exported from rustfft but we use num-complex directly)
+num-complex = "0.4"
+
+[dev-dependencies]
+# Reference WAV generation for tests
+hound = "3"
+tempfile = "3"
+
+[features]
+default = []
