@@ -1,45 +1,84 @@
-import { useEffect, useRef, useState } from 'react'
-import { CanvasRenderer } from './canvasRenderer'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
+import { specToSceneParams } from './renderSpec'
+import type { RenderSpec, SceneParams } from './renderSpec'
+
+// Placeholder spec — drives the scene from the first frame.
+// Workstream C (semantic multi-scene) will replace this with a server-fetched
+// spec per uploaded track; workstreams A/B will populate spectral/beat fields.
+const PLACEHOLDER_SPEC: RenderSpec = {
+  durationSecs: 240,
+  bpm: 128,
+  keyframes: [
+    {
+      t: 0,
+      scene: 'Establishing',
+      camera: { distance: 8, azimuth: 0, elevation: 0.15 },
+      color: { primary: '#7c3aed', secondary: '#06b6d4', brightness: 0.7 },
+    },
+    {
+      t: 0.18,
+      scene: 'Performance',
+      camera: { distance: 5, azimuth: 0.4, elevation: 0.1 },
+      color: { primary: '#ec4899', secondary: '#f59e0b', brightness: 0.9 },
+    },
+    {
+      t: 0.45,
+      scene: 'Anthem',
+      camera: { distance: 4, azimuth: -0.3, elevation: 0.3 },
+      color: { primary: '#f97316', secondary: '#a3e635', brightness: 1.0 },
+    },
+    {
+      t: 0.72,
+      scene: 'Interlude',
+      camera: { distance: 7, azimuth: 0, elevation: 0.05 },
+      color: { primary: '#0ea5e9', secondary: '#818cf8', brightness: 0.6 },
+    },
+    {
+      t: 0.88,
+      scene: 'Outro',
+      camera: { distance: 10, azimuth: 0.2, elevation: 0.2 },
+      color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 },
+    },
+  ],
+}
+
+const DEFAULT_PARAMS: SceneParams = specToSceneParams(PLACEHOLDER_SPEC, 0)
 
 export default function App() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const rendererRef = useRef<CanvasRenderer | null>(null)
   const adapterRef = useRef<AudioAdapter | null>(null)
+  const startTimeRef = useRef<number>(performance.now())
   const [isPlaying, setIsPlaying] = useState(false)
   const [scene, setScene] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [params, setParams] = useState<SceneParams>(DEFAULT_PARAMS)
 
+  // Advance the render spec playhead every animation frame
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const renderer = new CanvasRenderer(canvas)
-    rendererRef.current = renderer
-
-    const adapter = new AudioAdapter((data) => {
-      renderer.updateAudioData(data)
-    })
-    adapterRef.current = adapter
-
     let raf: number
-    const loop = () => {
-      renderer.render()
-      raf = requestAnimationFrame(loop)
+    const tick = () => {
+      const elapsed = (performance.now() - startTimeRef.current) / 1000
+      setParams(specToSceneParams(PLACEHOLDER_SPEC, elapsed))
+      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(loop)
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
+  // Dispose audio on unmount
+  useEffect(() => {
     return () => {
-      cancelAnimationFrame(raf)
-      renderer.dispose()
-      adapter.dispose()
+      adapterRef.current?.dispose()
     }
   }, [])
 
   const handleStart = async () => {
     try {
       setError(null)
-      await adapterRef.current?.start()
+      if (!adapterRef.current) {
+        adapterRef.current = new AudioAdapter()
+      }
       setIsPlaying(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start audio')
@@ -51,10 +90,17 @@ export default function App() {
     setIsPlaying(false)
   }
 
-  const handleSceneChange = (s: number) => {
+  // Scene override: jump the playhead to the matching keyframe's t position
+  const handleSceneChange = useCallback((s: number) => {
     setScene(s)
-    rendererRef.current?.setScene(s)
-  }
+    // Index 0 = "Placeholder" (t=0), indices 1–5 map to keyframes 0–4
+    const kfIndex = Math.max(0, s - 1)
+    const kf = PLACEHOLDER_SPEC.keyframes[kfIndex]
+    if (kf) {
+      startTimeRef.current =
+        performance.now() - kf.t * PLACEHOLDER_SPEC.durationSecs * 1000
+    }
+  }, [])
 
   const scenes = [
     'Placeholder',
@@ -67,10 +113,7 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-      />
+      <SceneView params={params} className="absolute inset-0 w-full h-full" />
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
         <h1 className="text-xl font-bold tracking-tight text-white/90">
           Melosviz
@@ -115,7 +158,7 @@ export default function App() {
           </span>
         </div>
         <div className="text-xs text-white/30">
-          Web Audio API / WebGL
+          Three.js / R3F
         </div>
       </div>
     </div>

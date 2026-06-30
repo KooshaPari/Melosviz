@@ -54,12 +54,9 @@ export function attachShortcuts(map: ShortcutsMap): () => void {
  * React hook that attaches shortcuts and cleans up on unmount.
  * Safe to call inside a component body.
  */
-export function useShortcuts(map: ShortcutsMap): void {
+export function useShortcuts(map: ShortcutsMap): () => void {
   if (typeof window !== 'undefined') {
-    const cleanup = attachShortcuts(map)
-    // Return cleanup for React effect cleanup
-    // Note: in a real React component you'd use useEffect with this
-    // but since this is a framework-agnostic helper we return the cleanup
-    // and the caller should use it inside useEffect.
+    return attachShortcuts(map)
   }
+  return () => {}
 }
