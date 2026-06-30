@@ -1,0 +1,43 @@
+[package]
+name = "melosviz-render-wgpu"
+version = "0.1.0"
+edition = "2021"
+description = "Realtime preview renderer for MelosViz — wgpu/Metal backend, RenderSpec v2 input"
+rust-version = "1.80"
+
+[[bin]]
+name = "melosviz-render"
+path = "src/main.rs"
+
+[lib]
+name = "melosviz_render_wgpu"
+path = "src/lib.rs"
+
+[dependencies]
+# wgpu 24.x: Metal on macOS, Vulkan on Linux, DX12 on Windows (auto-selected)
+wgpu = { version = "24", features = ["metal"] }
+# Async runtime — wgpu's instance/adapter/device are async
+pollster = "0.4"
+# RenderSpec v2 deserialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Logging
+log = "0.4"
+env_logger = "0.11"
+# CLI argument parsing (for the melosviz-render binary)
+clap = { version = "4", features = ["derive"] }
+# Error handling
+anyhow = "1"
+# Hash for per-segment cache keys
+ahash = "0.8"
+# Byte order for rawvideo output
+bytemuck = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+# tempdir for headless tests
+tempfile = "3"
+
+[features]
+default = []
+# Enable headless offscreen rendering (required for export; windowed preview works without it)
+headless = []
