@@ -13,9 +13,10 @@ and exit with a non-zero code.
 
 Optional deps
 -------------
-``analyze`` uses ``melosviz.analysis.audio.spec_from_wav`` (stdlib-only path).
-The richer MIR analysis (librosa/demucs/…) is available automatically when
-those packages are installed.
+``analyze`` and ``build`` use ``melosviz.analysis.audio.spec_from_wav_rich``
+(the v2 path that produces scene_segments, dense_keyframes, and timeline_events).
+The richer MIR analysis (librosa/demucs/…) is used automatically when those
+packages are installed; the dep-light stdlib path is always available.
 """
 
 from __future__ import annotations
@@ -28,14 +29,14 @@ from pathlib import Path
 
 def _cmd_analyze(args: argparse.Namespace) -> int:
     """Analyze a WAV file and print the RenderSpec as JSON."""
-    from melosviz.analysis.audio import spec_from_wav
+    from melosviz.analysis.audio import spec_from_wav_rich
 
     wav_path = Path(args.wav)
     if not wav_path.exists():
         print(f"viz analyze: file not found: {wav_path}", file=sys.stderr)
         return 1
 
-    spec = spec_from_wav(wav_path)
+    spec = spec_from_wav_rich(wav_path)
     data = spec.model_dump() if hasattr(spec, "model_dump") else dict(spec)
     print(json.dumps(data, indent=2, default=str))
     return 0
@@ -43,7 +44,7 @@ def _cmd_analyze(args: argparse.Namespace) -> int:
 
 def _cmd_build(args: argparse.Namespace) -> int:
     """Analyze a WAV then assemble a render plan (mock adapters by default)."""
-    from melosviz.analysis.audio import spec_from_wav
+    from melosviz.analysis.audio import spec_from_wav_rich
     from melosviz.compose.assemble import assemble_render_plan
 
     wav_path = Path(args.wav)
@@ -51,7 +52,7 @@ def _cmd_build(args: argparse.Namespace) -> int:
         print(f"viz build: file not found: {wav_path}", file=sys.stderr)
         return 1
 
-    spec = spec_from_wav(wav_path)
+    spec = spec_from_wav_rich(wav_path)
     plan = assemble_render_plan(spec, mock_adapters=not args.real)
 
     out = json.dumps(plan, indent=2, default=str)
