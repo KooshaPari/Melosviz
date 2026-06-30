@@ -16,9 +16,11 @@ Validated: 2026-06-30 on macOS Darwin 27 (Apple Silicon), Python 3.13.13.
 | 3a | `spec_from_wav_rich` with librosa | PASS | Rich output: BPM, key, mode, danceability, spectral centroid, dense keyframes |
 | 3b | Test suite with librosa | PASS | 315/315 pass, 2 skipped |
 | 3c | Test suite without librosa | PARTIAL | 314/315 pass; 1 failure: `test_segment_energy_varies_across_segments` (flat 0.5 envelope) |
-| 4 | FFmpeg video export | BLOCKED | Local ffmpeg 8.1 broken (dyld symbol error for x265); `is_ffmpeg_available()` returns False |
-| 4a | Blender / TouchDesigner / AfterEffects | BLOCKED | Hardware/install dependency; not attempted |
-| 4b | Demucs stem separation | BLOCKED | Requires torch + GPU; not attempted |
+| 4 | FFmpeg video export | PASS | ffmpeg 8.1.2 working; 64x64 MP4 smoke clip produced (1662 bytes) |
+| 4a | Blender headless | PASS | Blender 4.4.3 installed via DMG; headless bpy smoke render OK (2643-byte PNG) |
+| 4b | Demucs stem separation | PASS | demucs 4.0.1 via pipx; CLI + Python import verified; CPU-only (no GPU required) |
+| 4c | librosa MIR | PASS | librosa 0.11.0 in backend uv venv; import verified |
+| 4d | TouchDesigner / AfterEffects / Firefly | OPERATOR-INSTALL | GUI/licensed; see Stage 4 install table |
 
 ## Commands (Exact)
 
@@ -127,15 +129,128 @@ Test suite result: `315 passed, 2 skipped`.
 
 ### Stage 4 — Real Renderers (hardware/install gates)
 
-| Adapter | Gate | Status |
-|---------|------|--------|
-| `video_exporter` (FFmpeg) | `ffmpeg` on PATH | BLOCKED — local ffmpeg 8.1 broken (dyld x265 symbol error) |
-| `blender_exporter` | Blender 4.x install | Not attempted |
-| `touchdesigner` runtime | TouchDesigner install | Not attempted |
-| `aftereffects_adapter` | After Effects + scripting | Not attempted |
-| `firefly_adapter` | Adobe Firefly API key | Not attempted |
-| `mediaencoder_adapter` | Adobe Media Encoder | Not attempted |
-| Demucs stems | `pip install demucs torch` + GPU | Not attempted |
+Updated: 2026-06-30. Bug 3 (ffmpeg dyld symbol error) has been resolved; ffmpeg 8.1.2
+re-installed from Homebrew now works. Blender 4.4.3 installed and verified headless.
+Demucs 4.0.1 installed via pipx and importable. Librosa 0.11.0 installed in backend venv.
+
+| Adapter | Gate | Status | Notes |
+|---------|------|--------|-------|
+| `video_exporter` (FFmpeg) | `ffmpeg` on PATH | PASS | ffmpeg 8.1.2; encode to MP4/WebM verified (1662-byte smoke clip at 64x64) |
+| `blender_exporter` | Blender 4.x headless | PASS | Blender 4.4.3 installed; headless bpy smoke render produces PNG frame (2643 bytes at 64x64) |
+| Demucs stems | `pipx install demucs` | PASS | demucs 4.0.1 installed; CLI available; Python import works (CPU-only; no torch GPU required for HTDemucs htdemucs model on CPU) |
+| librosa (MIR) | `pip/uv install librosa` | PASS | librosa 0.11.0 in backend venv; `import librosa` succeeds |
+| `touchdesigner` runtime | TouchDesigner install | OPERATOR-INSTALL | GUI app; no headless CLI available — see install instructions below |
+| `aftereffects_adapter` | After Effects + scripting | OPERATOR-INSTALL | GUI + Adobe license required |
+| `firefly_adapter` | Adobe Firefly API key | OPERATOR-INSTALL | Requires `ADOBE_FIREFLY_API_KEY` env var |
+| `mediaencoder_adapter` | Adobe Media Encoder | OPERATOR-INSTALL | GUI + Adobe license required |
+
+#### Stage 4 — FFmpeg smoke verify
+
+```bash
+ffmpeg -version 2>&1 | head -1
+# ffmpeg version 8.1.2
+
+ffmpeg -f lavfi -i color=black:s=64x64:d=0.1 -vframes 3 /tmp/melosviz_smoke.mp4 -y
+ls -la /tmp/melosviz_smoke.mp4
+# -rw-r--r-- 1662 Jun 30 ... /tmp/melosviz_smoke.mp4
+```
+
+#### Stage 4 — Blender install (headless, via DMG)
+
+The `brew install --cask blender` download may fail with a connection reset. Direct DMG
+install is reliable:
+
+```bash
+# Download Blender 4.4.3 ARM64 DMG (289 MB)
+curl -C - -L --retry 5 -o /tmp/blender-macos-arm64.dmg \
+  "https://download.blender.org/release/Blender4.4/blender-4.4.3-macos-arm64.dmg"
+
+# Mount and copy
+hdiutil attach /tmp/blender-macos-arm64.dmg -nobrowse
+cp -R /Volumes/Blender/Blender.app /Applications/
+hdiutil detach /Volumes/Blender
+
+# Verify headless mode
+/Applications/Blender.app/Contents/MacOS/Blender --version
+# Blender 4.4.3
+
+/Applications/Blender.app/Contents/MacOS/Blender --background \
+  --python-expr "print('bpy ok')"
+# Output: bpy ok
+```
+
+The blender_exporter resolves the binary automatically from:
+1. `MELOSVIZ_BLENDER_BIN` env var
+2. `shutil.which("blender")` (PATH lookup)
+3. `/Applications/Blender.app/Contents/MacOS/Blender` (macOS bundle fallback)
+
+Since Blender.app is in `/Applications`, the fallback path works without PATH changes.
+
+#### Stage 4 — Blender headless render smoke
+
+A minimal scene (64x64, 1 frame, empty scene + camera) renders in ~2 seconds:
+
+```python
+# run: /Applications/Blender.app/Contents/MacOS/Blender --background --python-expr "..."
+import bpy
+bpy.ops.wm.read_factory_settings(use_empty=True)
+sc = bpy.context.scene
+sc.render.resolution_x = 64
+sc.render.resolution_y = 64
+sc.frame_start = 1
+sc.frame_end = 1
+sc.render.image_settings.file_format = 'PNG'
+sc.render.filepath = '/tmp/melosviz-blender-smoke/smoke_'
+bpy.ops.object.camera_add()
+sc.camera = bpy.context.active_object
+bpy.ops.render.render(write_still=True)
+print('SMOKE_RENDER_OK')
+```
+
+Result: `SMOKE_RENDER_OK`, `/tmp/melosviz-blender-smoke/smoke_.png` (2643 bytes).
+
+#### Stage 4 — Demucs stems install
+
+```bash
+pipx install demucs
+# installed package demucs 4.0.1, using Python 3.14.5
+
+demucs --help   # verify CLI works
+
+# Python import verify:
+python3 -c "import demucs; print('demucs ok')"
+# demucs ok
+```
+
+Note: Demucs bundles its own torch dependency. The `htdemucs` model runs on CPU (slower
+than GPU but functional). First separation call downloads model weights (~83 MB) to
+`~/.cache/torch/hub/`. Set `DEMUCS_CACHE` to override.
+
+The melosviz audio module imports demucs at call time (not import time), so the package
+is always importable regardless of demucs presence.
+
+#### Stage 4 — librosa install in backend venv
+
+```bash
+cd backend
+uv venv --clear .venv --python 3.12
+uv pip install --python .venv/bin/python -e ".[test,lint]"
+uv pip install --python .venv/bin/python librosa
+
+.venv/bin/python -c "import librosa; print('librosa', librosa.__version__)"
+# librosa 0.11.0
+```
+
+#### Stage 4 — Operator-install GUI/licensed tools
+
+These require GUI installation or a paid license; no headless CLI install is available:
+
+| Tool | Install command | Needed for |
+|------|----------------|------------|
+| TouchDesigner | Download from https://derivative.ca/download | `runtime/touchdesigner/` live render adapter |
+| Adobe After Effects | Adobe Creative Cloud app | `render/aftereffects_adapter.py` |
+| Adobe Media Encoder | Adobe Creative Cloud app | `render/mediaencoder_adapter.py` |
+| Adobe Firefly | N/A (API key only) — `export ADOBE_FIREFLY_API_KEY=...` | `render/firefly_adapter.py` |
 
 ## Known Bugs Found During Validation
 
@@ -172,14 +287,12 @@ raises `AssemblyError: render_spec.scene_segments is empty`.
 **Fix needed:** CLI commands should call `spec_from_wav_rich` (the v2 path). The v1 path can
 be retained for compatibility but should not be the default for CLI invocations.
 
-### Bug 3: FFmpeg binary broken on this machine (environment-specific)
+### Bug 3: FFmpeg binary broken on this machine (environment-specific) — RESOLVED
 
-**Trigger:** Local Homebrew ffmpeg 8.1 has dyld symbol error for `_x265_api_get_215`.
+**Was:** Local Homebrew ffmpeg 8.1 had dyld symbol error for `_x265_api_get_215`.
 
-**Impact:** `is_ffmpeg_available()` returns False; video export is fully gated.
-
-**Not a code bug** — install-environment issue. Fix: `brew reinstall ffmpeg` or set
-`MELOSVIZ_FFMPEG_BIN` to a working binary.
+**Resolution (2026-06-30):** ffmpeg 8.1.2 re-installed from Homebrew. `ffmpeg -version`
+and a 64x64 MP4 encode both succeed. `is_ffmpeg_available()` now returns True.
 
 ## What Each Optional Dep Unlocks
 
@@ -188,9 +301,9 @@ be retained for compatibility but should not be the default for CLI invocations.
 | `audioop` / `audioop-lts` | Real RMS envelope in `analyze_wav` | Flat 0.5 envelope (silent degradation) |
 | `librosa` + `numpy` | Beat tracking, onset detection, spectral centroid, key/mode, danceability, MFCC valence/arousal, scene boundary detection | Uniform fallback values; tests mostly pass but `test_segment_energy_varies` fails |
 | `scipy` | Spectral novelty scene boundary detection (used by librosa path) | Falls back to equal-duration segments |
-| `ffmpeg` on PATH | `export_video()` producing real MP4/WebM | `FFMpegNotFoundError` |
-| `demucs` + `torch` | Real HTDemucs stem separation (drums/bass/vocals/other) | Spectral-fallback stems (if librosa present) or zero stems |
-| Blender 4.x | `blender_exporter` 3D scene rendering | Adapter raises `RuntimeError` or `ImportError` |
+| `ffmpeg` on PATH | `export_video()` producing real MP4/WebM | `FFMpegNotFoundError` | INSTALLED 8.1.2 |
+| `demucs` + `torch` | Real HTDemucs stem separation (drums/bass/vocals/other) | Spectral-fallback stems (if librosa present) or zero stems | INSTALLED demucs 4.0.1 (CPU) |
+| Blender 4.x | `blender_exporter` 3D scene rendering | Adapter raises `BlenderNotFoundError` | INSTALLED 4.4.3 (/Applications/Blender.app) |
 | TouchDesigner | `touchdesigner/` runtime adapter | Not invokable |
 | Adobe AE / ME | `aftereffects_adapter`, `mediaencoder_adapter` | Not invokable |
 | Adobe Firefly | `firefly_adapter` image generation | Not invokable |
