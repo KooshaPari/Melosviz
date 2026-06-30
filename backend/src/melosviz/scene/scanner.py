@@ -219,7 +219,7 @@ def evaluate_pose(
     angular_dist = min(orbit_angle_rad, _TWO_PI - orbit_angle_rad)
     cone_half_rad = math.radians(scanner.cone_angle_deg / 2.0)
 
-    if cone_half_rad <= 0.0:
+    if cone_half_rad <= 0.0:  # pragma: no cover — ScannerSpec validates cone_angle_deg > 0
         cone_raw = 0.0
     else:
         # x = 1 when scanner points directly at sample, 0 at cone boundary

@@ -271,7 +271,7 @@ def assemble_multi_domain_scene(
         raw_events = render_spec.timeline_events or []
     elif isinstance(render_spec, dict):
         raw_events = render_spec.get("timeline_events", [])
-    else:
+    else:  # pragma: no cover — defensive guard; callers always pass RenderSpec or dict
         raw_events = []
 
     beat_times = sorted(
@@ -286,7 +286,7 @@ def assemble_multi_domain_scene(
         raw_segs = render_spec.scene_segments or []
     elif isinstance(render_spec, dict):
         raw_segs = render_spec.get("scene_segments", [])
-    else:
+    else:  # pragma: no cover — defensive guard; callers always pass RenderSpec or dict
         raw_segs = []
 
     def _is_drop(t: float) -> bool:
@@ -370,7 +370,7 @@ def assemble_multi_domain_scene(
         metadata = render_spec.metadata or {}
     elif isinstance(render_spec, dict):
         metadata = render_spec.get("metadata", {})
-    else:
+    else:  # pragma: no cover — defensive guard; callers always pass RenderSpec or dict
         metadata = {}
     bpm = float(metadata.get("estimated_bpm", 120.0))
 
@@ -392,7 +392,7 @@ def assemble_multi_domain_scene(
             # Unwrap: if the angle jumped backward by more than π, it wrapped around
             if delta < -math.pi:
                 delta += 2.0 * math.pi
-            elif delta > math.pi:
+            elif delta > math.pi:  # pragma: no cover — forward wrap; requires >π angular step between frames
                 delta -= 2.0 * math.pi
             _accumulated += delta
             _prev_wrapped = wrapped

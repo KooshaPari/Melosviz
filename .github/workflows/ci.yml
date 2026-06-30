@@ -96,7 +96,7 @@ jobs:
         with:
           coverage-report: backend/coverage/lcov.info
           coverage-format: lcov
-          threshold: 85
+          threshold: 100
           # a11y: webview UI only testable on host (no headless Electron CI)
           # chaos: covered by test_qgate_backfill.py but not auto-categorised
           # mutation: mutmut config in place, full run is slow for CI

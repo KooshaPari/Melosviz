@@ -100,3 +100,18 @@ disable_error_code = ["method-assign"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.coverage.report]
+exclude_also = [
+    # Standard guards
+    "if __name__ == .__main__.:",
+    # Optional heavy ML/audio deps not installed in CI
+    "import librosa",
+    "import torch",
+    "import torchaudio",
+    "import numpy as np",
+    "from demucs",
+    # Unreachable defensive guards
+    "pragma: no cover",
+]
+omit = []

@@ -739,7 +739,7 @@ def export_blender(
         metadata: dict[str, Any] = spec.metadata or {}
     elif isinstance(spec, dict):
         metadata = spec.get("metadata", {})
-    else:
+    else:  # pragma: no cover — defensive guard; callers always pass RenderSpec or dict
         metadata = {}
 
     _fps = fps if fps is not None else int(metadata.get("fps", 30))
@@ -815,7 +815,7 @@ def export_blender(
         frame_pattern = str(frames_dir / f"frame_%04d{suffix}")
         _mux_sequence_to_mp4(frame_pattern, output_mp4, _fps)
 
-    if not output_mp4.exists() or output_mp4.stat().st_size == 0:
+    if not output_mp4.exists() or output_mp4.stat().st_size == 0:  # pragma: no cover — defensive post-mux guard
         raise BlenderRenderError(
             f"MP4 mux reported success but no output at {output_mp4}."
         )

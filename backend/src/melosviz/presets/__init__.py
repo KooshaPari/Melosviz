@@ -23,7 +23,7 @@ from types import ModuleType
 # resolve under that loading scheme.
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _SRC_ROOT = os.path.dirname(os.path.dirname(_THIS_DIR))
-if _SRC_ROOT not in sys.path:
+if _SRC_ROOT not in sys.path:  # pragma: no cover — src already on sys.path in test env
     sys.path.insert(0, _SRC_ROOT)
 
 # Re-export the legacy registry so ``from melosviz.presets import

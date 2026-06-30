@@ -7,7 +7,7 @@
 
 [coverage]
 # Threshold applied to every module recursively — no module hides behind the average.
-threshold = 85
+threshold = 100
 path = "backend/coverage/lcov.info"
 format = "lcov"
 

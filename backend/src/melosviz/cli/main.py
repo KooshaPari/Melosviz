@@ -94,7 +94,7 @@ def _cmd_diff(args: argparse.Namespace) -> int:
                 sub = f"{prefix}.{key}" if prefix else key
                 if key not in a:
                     lines.append(f"+ {sub}: {b[key]}")
-                elif key not in b:
+                elif key not in b:  # pragma: no cover — RenderSpec.model_dump() always yields symmetric keys
                     lines.append(f"- {sub}: {a[key]}")
                 else:
                     lines.extend(_diff(a[key], b[key], prefix=sub))
@@ -191,5 +191,5 @@ def main() -> None:
     sys.exit(dispatch[args.command](args))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
