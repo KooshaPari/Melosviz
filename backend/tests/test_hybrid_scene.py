@@ -15,6 +15,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from melosviz.scene.blender_scene import (
+    HybridDomainAssembly,
+    assemble_multi_domain_scene,
+    build_hybrid_bpy_segment,
+)
 from melosviz.scene.models import (
     ChannelCondition,
     Domain,
@@ -22,7 +27,6 @@ from melosviz.scene.models import (
     DomainOpacityRule,
     FalloffType,
     MaterialSpec,
-    OcclusionMode,
     ScannerNoise,
     ScannerRotation,
     ScannerSpec,
@@ -31,19 +35,9 @@ from melosviz.scene.models import (
     TransitionSpec,
 )
 from melosviz.scene.scanner import (
-    ChannelMaskFrame,
-    ScannerPose,
     _compute_orbit_angle,
-    _nearest_beat_distance,
     evaluate_pose,
-    evaluate_scanner,
 )
-from melosviz.scene.blender_scene import (
-    HybridDomainAssembly,
-    assemble_multi_domain_scene,
-    build_hybrid_bpy_segment,
-)
-
 
 # ---------------------------------------------------------------------------
 # (a) BPM-locked orbit: correct pose at beat boundaries
@@ -64,7 +58,6 @@ class TestScannerOrbitBpmLocked:
         )
 
     def test_at_t0_angle_is_phase_offset_only(self):
-        spec = self._spec(beats_per_rotation=4.0, phase_offset=0.0)
         angle, phase = _compute_orbit_angle(0.0, bpm=120.0, beats_per_rotation=4.0, phase_offset=0.0)
         assert angle == pytest.approx(0.0)
         assert phase == pytest.approx(0.0)
@@ -408,7 +401,10 @@ class TestFlashSafetyInHybridScene:
 
     def test_flash_safety_limits_rapid_transitions(self):
         """Verify apply_flash_safety caps the transition rate to ≤ 3 Hz."""
-        from melosviz.render.blender_exporter import apply_flash_safety, FLASH_SAFETY_MAX_HZ
+        from melosviz.render.blender_exporter import (
+            FLASH_SAFETY_MAX_HZ,
+            apply_flash_safety,
+        )
 
         fps = 30
         # Create an adversarial sequence: fully alternating 0.0 / 1.0 at 15 Hz
@@ -418,7 +414,7 @@ class TestFlashSafetyInHybridScene:
 
         # Count transitions (abs delta > 0.5) in the clamped sequence
         transitions = sum(
-            1 for a, b in zip(clamped, clamped[1:]) if abs(b - a) > 0.5
+            1 for a, b in zip(clamped, clamped[1:], strict=False) if abs(b - a) > 0.5
         )
         max_allowed = FLASH_SAFETY_MAX_HZ * (len(clamped) / fps)
         assert transitions <= max_allowed, (
@@ -462,7 +458,7 @@ class TestFlashSafetyInHybridScene:
         for domain in (Domain.PHOTO, Domain.SPLAT):
             opacities = [a.opacities[domain] for a in assemblies]
             transitions_count = sum(
-                1 for a, b in zip(opacities, opacities[1:]) if abs(b - a) > 0.5
+                1 for a, b in zip(opacities, opacities[1:], strict=False) if abs(b - a) > 0.5
             )
             max_allowed = FLASH_SAFETY_MAX_HZ * (len(opacities) / fps)
             assert transitions_count <= max_allowed, (

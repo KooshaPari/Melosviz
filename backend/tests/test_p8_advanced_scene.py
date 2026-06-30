@@ -79,8 +79,8 @@ class TestSplatAssetSpec:
 
     def test_blender_snippet_references_ply_path(self) -> None:
         """The bpy snippet emitted for the splat domain must reference the .ply path."""
-        from melosviz.scene.models import SplatAssetSpec
         from melosviz.scene.blender_scene import build_splat_bpy_snippet
+        from melosviz.scene.models import SplatAssetSpec
 
         spec = SplatAssetSpec(asset_path="/data/scene/club.ply", max_splats=200_000)
         snippet = build_splat_bpy_snippet(spec)
@@ -114,7 +114,7 @@ class TestSemanticScanner:
         assert "reflective" in values
 
     def test_minimal_target_rule(self) -> None:
-        from melosviz.scene.models import SemanticTargetRule, SemanticLabel
+        from melosviz.scene.models import SemanticLabel, SemanticTargetRule
 
         rule = SemanticTargetRule(
             when_stem="vocals",
@@ -126,7 +126,7 @@ class TestSemanticScanner:
         assert rule.effect_channel == "reveal_performer"
 
     def test_target_rule_with_onset_condition(self) -> None:
-        from melosviz.scene.models import SemanticTargetRule, SemanticLabel
+        from melosviz.scene.models import SemanticLabel, SemanticTargetRule
 
         rule = SemanticTargetRule(
             when_onset="hat",
@@ -139,9 +139,9 @@ class TestSemanticScanner:
 
     def test_semantic_scanner_spec_construction(self) -> None:
         from melosviz.scene.models import (
+            SemanticLabel,
             SemanticScannerSpec,
             SemanticTargetRule,
-            SemanticLabel,
         )
 
         spec = SemanticScannerSpec(
@@ -164,12 +164,12 @@ class TestSemanticScanner:
 
     def test_vocals_rule_fires_on_vocals_stem(self) -> None:
         """When vocal stem energy is high, performer-silhouette reveal fires."""
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -191,12 +191,12 @@ class TestSemanticScanner:
         assert channels["reveal_performer"] > 0.0
 
     def test_vocals_rule_suppressed_on_low_vocals(self) -> None:
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -220,12 +220,12 @@ class TestSemanticScanner:
 
     def test_hat_onset_rule_fires(self) -> None:
         """Hi-hat onset produces reflective-material boost."""
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -246,12 +246,12 @@ class TestSemanticScanner:
         assert channels.get("boost_reflective", 0.0) > 0.0
 
     def test_hat_onset_rule_suppressed_when_no_onset(self) -> None:
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -273,12 +273,12 @@ class TestSemanticScanner:
 
     def test_wall_default_rule(self) -> None:
         """Wall-preference rule: fires when neither vocals nor strong onset present."""
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -297,12 +297,12 @@ class TestSemanticScanner:
         assert channels.get("hit_wall", 0.0) > 0.0
 
     def test_multiple_rules_can_fire_simultaneously(self) -> None:
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec = SemanticScannerSpec(
             target_rules=[
@@ -330,12 +330,12 @@ class TestSemanticScanner:
         assert channels.get("boost_reflective", 0.0) > 0.0
 
     def test_effect_gain_scales_channel(self) -> None:
-        from melosviz.scene.scanner import evaluate_semantic_rules
         from melosviz.scene.models import (
-            SemanticTargetRule,
             SemanticLabel,
             SemanticScannerSpec,
+            SemanticTargetRule,
         )
+        from melosviz.scene.scanner import evaluate_semantic_rules
 
         spec_low = SemanticScannerSpec(
             target_rules=[
@@ -408,7 +408,7 @@ class TestProceduralCamera:
 
     def test_camera_language_maps_to_intensity(self) -> None:
         """High-energy sections (drop) get cut_frenzy or handheld_push; intros get slow_reveal."""
-        from melosviz.scene.camera import generate_camera_path, CAMERA_LANGUAGE_MAP
+        from melosviz.scene.camera import CAMERA_LANGUAGE_MAP
 
         # Verify the vocabulary map exists and has the 4 P7 quartile languages
         assert "slow_reveal" in CAMERA_LANGUAGE_MAP
@@ -528,15 +528,15 @@ class TestP8Integration:
 
     def test_semantic_rules_do_not_break_blender_scene(self) -> None:
         """assemble_multi_domain_scene still works when semantic scanner is present."""
+        from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import (
+            Domain,
+            DomainOpacityRule,
+            MaterialSpec,
             ScannerSpec,
             SceneSpec,
             TransitionSpec,
-            MaterialSpec,
-            Domain,
-            DomainOpacityRule,
         )
-        from melosviz.scene.blender_scene import assemble_multi_domain_scene
 
         scanner = ScannerSpec()
         scene = SceneSpec()
@@ -557,16 +557,16 @@ class TestP8Integration:
 
     def test_flash_safety_holds_with_semantic_scanner(self) -> None:
         """Opacity changes between consecutive frames must not exceed flash-safety threshold."""
+        from melosviz.render.blender_exporter import FLASH_SAFETY_MAX_HZ
+        from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import (
+            Domain,
+            DomainOpacityRule,
+            MaterialSpec,
             ScannerSpec,
             SceneSpec,
             TransitionSpec,
-            MaterialSpec,
-            Domain,
-            DomainOpacityRule,
         )
-        from melosviz.scene.blender_scene import assemble_multi_domain_scene
-        from melosviz.render.blender_exporter import FLASH_SAFETY_MAX_HZ
 
         scanner = ScannerSpec()
         scene = SceneSpec()
@@ -614,10 +614,18 @@ class TestP8Integration:
 
     def test_blender_snippet_for_splat_embeds_in_hybrid_scene(self) -> None:
         """build_splat_bpy_snippet output can be appended to the P4 hybrid bpy script."""
-        from melosviz.scene.models import SplatAssetSpec
-        from melosviz.scene.blender_scene import build_splat_bpy_snippet, build_hybrid_bpy_segment
+        from melosviz.scene.blender_scene import (
+            build_hybrid_bpy_segment,
+            build_splat_bpy_snippet,
+        )
         from melosviz.scene.models import (
-            ScannerSpec, SceneSpec, TransitionSpec, MaterialSpec, Domain, DomainOpacityRule
+            Domain,
+            DomainOpacityRule,
+            MaterialSpec,
+            ScannerSpec,
+            SceneSpec,
+            SplatAssetSpec,
+            TransitionSpec,
         )
 
         splat_spec = SplatAssetSpec(asset_path="/data/club.ply")
@@ -657,8 +665,8 @@ class TestP4Regression:
     """Ensure P4 scanner evaluate_scanner / evaluate_pose still work unchanged."""
 
     def test_evaluate_pose_smoke(self) -> None:
-        from melosviz.scene.scanner import evaluate_pose
         from melosviz.scene.models import ScannerSpec
+        from melosviz.scene.scanner import evaluate_pose
 
         scanner = ScannerSpec()
         pose = evaluate_pose(scanner, t=1.0, bpm=128.0, beat_times=[0.47, 0.94, 1.41])
@@ -666,8 +674,8 @@ class TestP4Regression:
         assert "reveal_splat" in pose.active_channels
 
     def test_evaluate_scanner_smoke(self) -> None:
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.scene.models import ScannerSpec
+        from melosviz.scene.scanner import evaluate_scanner
 
         class _RS:
             metadata = {"estimated_bpm": 128.0, "duration": 2.0, "fps": 30}
@@ -680,10 +688,15 @@ class TestP4Regression:
             assert "reveal_splat" in f.channels
 
     def test_blender_scene_assembly_smoke(self) -> None:
-        from melosviz.scene.models import (
-            ScannerSpec, SceneSpec, TransitionSpec, MaterialSpec, Domain, DomainOpacityRule
-        )
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
+        from melosviz.scene.models import (
+            Domain,
+            DomainOpacityRule,
+            MaterialSpec,
+            ScannerSpec,
+            SceneSpec,
+            TransitionSpec,
+        )
 
         class _RS:
             metadata = {"estimated_bpm": 128.0, "duration": 1.0, "fps": 30}

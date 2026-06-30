@@ -19,7 +19,6 @@ from typing import Any
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
@@ -158,8 +157,8 @@ class TestAEAdapterJobSpec:
         assert "rotobrush3_source" not in layer_names
 
     def test_rotobrush3_hook_present_with_source_video(self) -> None:
-        from melosviz.render.aftereffects_adapter import build_ae_job_spec
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import build_ae_job_spec
 
         spec = _minimal_spec()
         d = spec.model_dump()
@@ -189,7 +188,7 @@ class TestAEParamMapping:
             {"t": 0.94, "beat_strength": 1.0, "energy": 0.9},
         ]
         csv_content = build_beats_csv(kfs)
-        lines = [l for l in csv_content.strip().splitlines() if l]
+        lines = [ln for ln in csv_content.strip().splitlines() if ln]
         # header + 2 beat rows (t=0.0 and t=0.94)
         assert len(lines) == 3
         assert "0.0" in lines[1]
@@ -204,7 +203,7 @@ class TestAEParamMapping:
             {"t": 0.94, "onset_strength": 0.7, "brightness": 0.8},
         ]
         csv_content = build_onsets_csv(kfs)
-        lines = [l for l in csv_content.strip().splitlines() if l]
+        lines = [ln for ln in csv_content.strip().splitlines() if ln]
         assert len(lines) == 3  # header + 2 rows
 
     def test_segment_csv_contains_mogrt_template_column(self) -> None:
@@ -338,6 +337,7 @@ class TestMEAdapter:
     ) -> None:
         """When AME absent, ffmpeg fallback must log a WARNING — not be silent."""
         import logging
+
         from melosviz.render.mediaencoder_adapter import assemble_with_ffmpeg
         from melosviz.render.video_exporter import is_ffmpeg_available
 
@@ -346,11 +346,12 @@ class TestMEAdapter:
 
         # Create tiny dummy segment files (not real video — ffmpeg will fail)
         # We only need to verify the WARNING is emitted, not that ffmpeg succeeds.
-        with caplog.at_level(logging.WARNING, logger="melosviz.render.mediaencoder_adapter"):
-            try:
-                assemble_with_ffmpeg([tmp_path / "fake.mp4"], tmp_path / "out.mp4")
-            except Exception:
-                pass  # ffmpeg will fail on empty file — that's expected
+        import contextlib
+
+        with caplog.at_level(logging.WARNING, logger="melosviz.render.mediaencoder_adapter"), \
+                contextlib.suppress(Exception):
+            assemble_with_ffmpeg([tmp_path / "fake.mp4"], tmp_path / "out.mp4")
+            # ffmpeg will fail on empty file — that's expected
 
         assert any("AME not available" in r.message for r in caplog.records), (
             "Expected explicit AME-absent WARNING log from assemble_with_ffmpeg"
@@ -375,8 +376,8 @@ class TestMEAdapter:
 
 class TestExplicitErrors:
     def test_ae_spec_error_on_missing_duration(self) -> None:
-        from melosviz.render.aftereffects_adapter import AESpecError, build_ae_job_spec
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import AESpecError, build_ae_job_spec
 
         spec = RenderSpec(metadata={"fps": 30}, palette=[])  # no duration
         with pytest.raises(AESpecError, match="duration"):
@@ -389,8 +390,11 @@ class TestExplicitErrors:
             build_ame_job_spec(_minimal_spec(), None)  # type: ignore[arg-type]
 
     def test_firefly_spec_error_on_missing_duration(self) -> None:
-        from melosviz.render.firefly_adapter import FireflySpecError, build_firefly_job_specs
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import (
+            FireflySpecError,
+            build_firefly_job_specs,
+        )
 
         spec = RenderSpec(metadata={"fps": 30}, palette=[])
         with pytest.raises(FireflySpecError, match="duration"):
@@ -480,6 +484,7 @@ class TestFireflyAdapter:
     ) -> None:
         """force_video_export=True must log a WARNING — never silent."""
         import logging
+
         from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.render.video_exporter import is_ffmpeg_available
 
