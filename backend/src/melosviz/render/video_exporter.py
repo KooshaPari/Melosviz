@@ -334,6 +334,15 @@ def _extract_palette(spec: Any) -> list[str]:
 
 
 def _extract_envelope(spec: Any) -> list[float]:
+    # Prefer v2 dense_keyframes energy channel when available — richer signal.
+    if spec is not None:
+        dense = getattr(spec, "dense_keyframes", None)
+        if isinstance(dense, list) and dense:
+            try:
+                return [max(0.0, min(1.0, float(kf.get("energy", 0.0)))) for kf in dense]
+            except (TypeError, ValueError, AttributeError):
+                pass
+    # Fall back to v1 amplitude_envelope in metadata.
     metadata = _coerce_metadata(spec)
     raw = metadata.get("amplitude_envelope")
     if not isinstance(raw, list):
