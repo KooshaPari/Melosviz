@@ -24,6 +24,7 @@ dependencies = [
 
 [project.scripts]
 viz = "melosviz.cli.main:main"
+melosviz = "melosviz.cli.main:main"
 
 [project.optional-dependencies]
 test = [
@@ -48,6 +49,12 @@ stems = [
 ]
 all = [
     "melosviz[analysis,stems]",
+]
+# Desktop bridge — FastAPI HTTP layer used by the Electrobun desktop shell.
+# pip install "melosviz[bridge]"
+bridge = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
 ]
 
 [tool.setuptools.packages.find]
