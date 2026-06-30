@@ -25,7 +25,7 @@ from melosviz.scene.models import (
     SceneSpec,
     TransitionSpec,
 )
-from melosviz.scene.scanner import ScannerPose, ChannelMaskFrame, evaluate_scanner
+from melosviz.scene.scanner import ChannelMaskFrame, ScannerPose, evaluate_scanner
 
 __all__ = [
     "Domain",

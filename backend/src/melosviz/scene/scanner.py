@@ -65,8 +65,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from melosviz.scene.models import FalloffType, ScannerSpec, ScannerType
-
+from melosviz.scene.models import FalloffType, ScannerSpec
 
 # ---------------------------------------------------------------------------
 # Output data types

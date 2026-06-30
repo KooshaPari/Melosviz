@@ -24,6 +24,7 @@ to raw energy in :func:`~melosviz.render.blender_exporter.apply_flash_safety`.
 from __future__ import annotations
 
 import logging
+import math
 import textwrap
 from typing import Any
 
@@ -32,8 +33,8 @@ from melosviz.scene.models import (
     Domain,
     DomainMaterialLook,
     MaterialSpec,
-    SceneSpec,
     ScannerSpec,
+    SceneSpec,
     TransitionSpec,
 )
 from melosviz.scene.scanner import ChannelMaskFrame, evaluate_scanner
@@ -195,10 +196,7 @@ def assemble_multi_domain_scene(
             metadata = render_spec.get("metadata", {})
         bpm = float(metadata.get("estimated_bpm", 120.0))
         spb = 60.0 / bpm if bpm > 0 else 0.5
-        for bt in beat_times:
-            if abs(t - bt) < spb * window_frac:
-                return True
-        return False
+        return any(abs(t - bt) < spb * window_frac for bt in beat_times)
 
     # 2-4. Resolve opacities per frame and pick materials
     # We also track previous opacities per domain to apply flash-safety.
@@ -252,7 +250,7 @@ def assemble_multi_domain_scene(
     # Flash-safety post-pass on domain opacities (treat as "strength" column)
     for domain in Domain:
         seq = raw_opacity_seq[domain]
-        clamped = apply_flash_safety(seq, fps=fps, max_hz=FLASH_SAFETY_MAX_HZ)
+        clamped = apply_flash_safety(seq, fps=fps, max_flash_hz=FLASH_SAFETY_MAX_HZ)
         raw_opacity_seq[domain] = clamped
 
     # Reconstruct scanner angles from mask_frames (we need poses)
@@ -266,9 +264,27 @@ def assemble_multi_domain_scene(
 
     from melosviz.scene.scanner import evaluate_pose  # local import avoids circularity
 
+    # Use cumulative (unwrapped) angle so the sequence is monotonically
+    # increasing — wrapping back to 0 at every full rotation would make the
+    # angle identical for frames that land on integer multiples of the period.
+    _prev_wrapped: float = 0.0
+    _accumulated: float = 0.0
     for i, frame in enumerate(mask_frames):
         pose = evaluate_pose(scanner, frame.t, bpm, beat_times)
-        raw_angle_seq[i] = pose.orbit_angle_rad
+        wrapped = pose.orbit_angle_rad
+        if i == 0:
+            _prev_wrapped = wrapped
+            _accumulated = wrapped
+        else:
+            delta = wrapped - _prev_wrapped
+            # Unwrap: if the angle jumped backward by more than π, it wrapped around
+            if delta < -math.pi:
+                delta += 2.0 * math.pi
+            elif delta > math.pi:
+                delta -= 2.0 * math.pi
+            _accumulated += delta
+            _prev_wrapped = wrapped
+        raw_angle_seq[i] = _accumulated
 
     # 5. Build final assembly list
     for i, frame in enumerate(mask_frames):

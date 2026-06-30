@@ -186,7 +186,8 @@ def is_blender_available() -> bool:
 def apply_flash_safety(
     energy_values: list[float],
     fps: float,
-    max_flash_hz: float = FLASH_SAFETY_MAX_HZ,
+    max_hz: float | None = None,
+    max_flash_hz: float | None = None,
 ) -> list[float]:
     """Clamp full-frame luminance flash rate to ``max_flash_hz`` flashes/sec.
 
@@ -202,28 +203,43 @@ def apply_flash_safety(
     Args:
         energy_values: Per-frame normalised energy [0, 1], length == frames.
         fps: Frames per second of the animation.
-        max_flash_hz: Maximum allowed flash rate.
+        max_hz: Maximum allowed flash rate (preferred alias).
+        max_flash_hz: Deprecated alias for ``max_hz``; ignored when ``max_hz`` is set.
 
     Returns:
         A new list with the same length where rapid large flashes are
         suppressed.
     """
+    # Resolve which limit to use: max_hz takes precedence; fall back to
+    # max_flash_hz for callers that still use the old keyword; default to
+    # the module constant.
+    _limit: float
+    if max_hz is not None:
+        _limit = max_hz
+    elif max_flash_hz is not None:
+        _limit = max_flash_hz
+    else:
+        _limit = FLASH_SAFETY_MAX_HZ
+
     if not energy_values or fps <= 0:
         return list(energy_values)
 
     values = list(energy_values)
-    min_gap_frames = fps / max_flash_hz  # minimum frames between large flashes
+    min_gap_frames = fps / _limit  # minimum frames between large flashes
 
-    # Flash threshold: a large upward transition > 50 % range.
+    # Flash threshold: a large luminance change (either direction) > 50 % range.
+    # Both sudden brightness spikes AND drops can trigger photosensitive responses.
     flash_threshold = 0.5
 
     last_flash_frame: int = -int(min_gap_frames) - 1
     for i in range(1, len(values)):
         delta = values[i] - values[i - 1]
-        if delta > flash_threshold:
+        if abs(delta) > flash_threshold:
             frames_since_last = i - last_flash_frame
             if frames_since_last < min_gap_frames:
-                # Too close to previous flash — suppress this peak.
+                # Too close to previous flash — suppress this transition by
+                # blending toward the previous value to preserve motion feel
+                # while eliminating the abrupt jump.
                 prev_val = values[i - 1]
                 next_val = values[i + 1] if i + 1 < len(values) else values[i - 1]
                 values[i] = (prev_val + next_val) / 2.0
