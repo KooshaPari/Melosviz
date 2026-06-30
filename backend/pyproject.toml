@@ -31,6 +31,9 @@ lint = [
     "mypy>=1.10",
 ]
 
+[project.scripts]
+viz = "melosviz.cli.main:cli"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
