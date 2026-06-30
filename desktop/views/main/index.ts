@@ -5,16 +5,18 @@
  * Handles the full UI lifecycle: pick WAV → analyze → build plan → render → preview.
  */
 
-import { defineElectrobunRPC } from "electrobun/view";
+import { Electroview } from "electrobun/view";
 import type { BunRequests, WebviewRequests } from "../../src/rpc";
 
 // ---------------------------------------------------------------------------
 // RPC bootstrap (webview side)
 // ---------------------------------------------------------------------------
 
-const rpc = defineElectrobunRPC<
+// defineElectrobunRPC is not re-exported from electrobun/view in 1.18.1;
+// use the equivalent Electroview.defineRPC static helper instead.
+const rpc = Electroview.defineRPC<
   { bun: BunRequests; webview: WebviewRequests }
->("webview", {
+>({
   handlers: {
     requests: {},
   },
