@@ -22,6 +22,9 @@ dependencies = [
     "pydantic>=2.7",
 ]
 
+[project.scripts]
+viz = "melosviz.cli.main:main"
+
 [project.optional-dependencies]
 test = [
     "pytest>=7.0",
@@ -29,6 +32,22 @@ test = [
 lint = [
     "ruff>=0.6",
     "mypy>=1.10",
+]
+# Heavy optional deps — install only what your pipeline needs:
+#   pip install "melosviz[analysis]"   → librosa + numpy + scipy (MIR-enriched path)
+#   pip install "melosviz[stems]"      → demucs + torch (stem separation)
+#   pip install "melosviz[all]"        → everything above
+analysis = [
+    "librosa>=0.10",
+    "numpy>=1.26",
+    "scipy>=1.13",
+]
+stems = [
+    "demucs>=4.0",
+    "torch>=2.0",
+]
+all = [
+    "melosviz[analysis,stems]",
 ]
 
 [tool.setuptools.packages.find]
