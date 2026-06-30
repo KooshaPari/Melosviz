@@ -17,7 +17,11 @@ format = "lcov"
 
 # unit: pytest, all in tests/ directory
 # integration: tests that span multiple modules (subset of pytest suite)
-# e2e: test_e2e_pipeline_smoke.py (synthetic WAV → full pipeline)
+# e2e:
+#   backend/tests/test_e2e_pipeline_smoke.py (synthetic WAV → full pipeline, in-process)
+#   desktop/tests/e2e_desktop.test.ts (REAL desktop-app e2e — launcher log invariants +
+#       bridge HTTP round-trips; runs on macOS host only, skipped in Linux CI)
+#   Catches bugs: crypto.subtle (Bug #1), blank-view (Bug #2), RPC transport (Bug #3).
 # chaos: test_qgate_backfill.py::TestChaosResilience (failure injection)
 # perf: test_qgate_backfill.py::TestPerfSmoke (<15s init, <5s edit budgets)
 # property: test_qgate_backfill.py::TestPropertyPresets (hypothesis)
@@ -27,7 +31,20 @@ format = "lcov"
 
 # a11y: Webview UI is WKWebView via Electrobun — no headless Chromium in CI.
 #   The webview frontend is tested manually on host. Not feasible in Linux CI.
+# desktop-e2e: desktop/tests/e2e_desktop.test.ts requires macOS + display + bun;
+#   runs on host (see README), CI-skipped (Linux runner, no AppKit).
 not_applicable = ["a11y"]
+
+[e2e]
+# backend e2e: Python pipeline smoke test — runs in Linux CI
+backend_suite = "backend/tests/test_e2e_pipeline_smoke.py"
+# desktop e2e: Bun test suite driving the real Electrobun app
+# - Requires macOS + bun + python (fastapi/uvicorn) in PATH
+# - Run: cd desktop && bun test tests/e2e_desktop.test.ts
+# - Catches: crypto.subtle (Bug #1), blank view (Bug #2), RPC transport (Bug #3)
+# - CI: macOS host only (see .github/workflows/ci.yml desktop-e2e job)
+desktop_suite = "desktop/tests/e2e_desktop.test.ts"
+desktop_ci_platform = "macos"  # skip on linux (no AppKit/display)
 
 [mutation]
 # mutmut — configured but slow; run locally or nightly

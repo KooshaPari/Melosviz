@@ -77,6 +77,74 @@ jobs:
           # Exit 0 (warn-only) on medium issues; exit 1 only on high/critical
           python -m bandit -r src/ -lll -iii --quiet
 
+  desktop-e2e:
+    name: Desktop e2e — bridge HTTP layer (Linux, no display)
+    # This job runs the bridge/HTTP-layer subset of the desktop e2e suite on Linux.
+    # The launcher-log invariants (window created, blank-view, RPC-transport) require
+    # macOS + AppKit and are validated on host (see desktop/tests/e2e_desktop.test.ts
+    # and docs/QGATE_BASELINE.md "manual/host-only checks").
+    # Linux CI covers: bridge /health, /analyze (RenderSpec shape), /build (render plan).
+    #
+    # Billing note: standard ubuntu-latest runner — no macOS billing triggered.
+    runs-on: ubuntu-22.04
+    needs: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install backend + bridge deps
+        working-directory: backend
+        run: pip install -e ".[bridge,analysis]"
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: latest
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: bun install
+
+      - name: Start bridge sidecar
+        # Spin up the Python FastAPI bridge on a fixed port so the Bun e2e
+        # tests can probe it directly (no Electrobun app process needed on Linux).
+        run: |
+          python -m melosviz.bridge.server --port 18765 &
+          BRIDGE_PID=$!
+          echo "BRIDGE_PID=$BRIDGE_PID" >> $GITHUB_ENV
+          echo "BRIDGE_PORT=18765" >> $GITHUB_ENV
+          # Wait up to 15 s for the bridge to become ready
+          for i in $(seq 1 30); do
+            sleep 0.5
+            curl -sf http://127.0.0.1:18765/health && break
+          done
+        working-directory: backend
+
+      - name: Run bridge e2e tests (Bun)
+        # Run only the bridge HTTP layer tests — the launcher-log tests are
+        # skipped automatically on Linux (no Electrobun app process here).
+        working-directory: desktop
+        env:
+          BRIDGE_PORT: "18765"
+          MELOSVIZ_BACKEND_DIR: ${{ github.workspace }}/backend
+          CI: "1"
+        run: |
+          # bun test exits non-zero on any failure — rely on exit code directly.
+          # BRIDGE_ONLY=1 + BRIDGE_PORT are set so the launcher-log tests auto-skip
+          # (no display/AppKit on Linux); bridge HTTP tests run and must pass.
+          BRIDGE_ONLY=1 bun test tests/e2e_desktop.test.ts --timeout 60000
+
+      - name: Stop bridge sidecar
+        if: always()
+        run: kill $BRIDGE_PID 2>/dev/null || true
+
   quality-gate:
     name: qgate — granular-recursive quality gate (85%)
     needs: backend
