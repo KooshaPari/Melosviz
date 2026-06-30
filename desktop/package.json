@@ -1,0 +1,14 @@
+{
+  "name": "melosviz-desktop",
+  "version": "0.1.0",
+  "description": "MelosViz native desktop app — Electrobun shell + Python backend sidecar",
+  "private": true,
+  "scripts": {
+    "dev": "bunx electrobun dev",
+    "build": "bunx electrobun build",
+    "package": "bunx electrobun package"
+  },
+  "dependencies": {
+    "electrobun": "^1.18.1"
+  }
+}
