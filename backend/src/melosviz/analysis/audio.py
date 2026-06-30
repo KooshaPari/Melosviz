@@ -113,7 +113,10 @@ def analyze_wav(path: str | Path, bucket_count: int = 120) -> AudioAnalysis:
     mono, sample_rate, channels, duration_sec, sample_width = _read_wav_mono(wav_path)
 
     if _HAS_AUDIOOP and _audioop is not None:
-        segment_size = max(1, len(mono) // max(1, bucket_count))
+        # Align segment_size to a whole number of frames so audioop.rms never
+        # raises "not a whole number of frames" (bug: audioop alignment crash).
+        raw_size = len(mono) // max(1, bucket_count)
+        segment_size = max(sample_width, (raw_size // sample_width) * sample_width)
         envelope: list[float] = []
         peak_rms = 0.0
         for index in range(0, len(mono), segment_size):
@@ -125,8 +128,28 @@ def analyze_wav(path: str | Path, bucket_count: int = 120) -> AudioAnalysis:
             envelope.append(float(rms))
         normalized = _normalize_samples(array("f", envelope))
     else:
-        normalized = [0.5] * bucket_count
-        peak_rms = 0.5
+        # Compute real RMS envelope via pure Python (wave module, no audioop).
+        # Each window covers bucket_size samples; result is normalised to [0, 1].
+        n_samples = len(mono) // sample_width
+        bucket_size = max(1, n_samples // max(1, bucket_count))
+        envelope_raw: list[float] = []
+        for bucket in range(bucket_count):
+            start = bucket * bucket_size * sample_width
+            end = start + bucket_size * sample_width
+            chunk = mono[start:end]
+            if not chunk:
+                envelope_raw.append(0.0)
+                continue
+            total = 0.0
+            n_read = 0
+            for off in range(0, len(chunk) - sample_width + 1, sample_width):
+                val = int.from_bytes(chunk[off : off + sample_width], "little", signed=True)
+                total += val * val
+                n_read += 1
+            envelope_raw.append(math.sqrt(total / max(1, n_read)))
+        peak = max(envelope_raw) or 1.0
+        normalized = [v / peak for v in envelope_raw]
+        peak_rms = 1.0  # already normalised above
 
     bpm = None
     if duration_sec > 0 and len(normalized) > 4:
