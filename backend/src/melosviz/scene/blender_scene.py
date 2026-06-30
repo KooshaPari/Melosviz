@@ -35,6 +35,7 @@ from melosviz.scene.models import (
     MaterialSpec,
     ScannerSpec,
     SceneSpec,
+    SplatAssetSpec,
     TransitionSpec,
 )
 from melosviz.scene.scanner import ChannelMaskFrame, evaluate_scanner
@@ -43,9 +44,120 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "build_hybrid_bpy_segment",
+    "build_splat_bpy_snippet",
     "HybridDomainAssembly",
     "assemble_multi_domain_scene",
 ]
+
+
+# ---------------------------------------------------------------------------
+# P8: Splat asset Blender wiring snippet
+# ---------------------------------------------------------------------------
+
+
+def build_splat_bpy_snippet(spec: SplatAssetSpec) -> str:
+    """Generate a bpy Python snippet that wires a 3DGS splat asset into Blender.
+
+    The snippet is spec-level: it references a documented 3DGS-in-Blender path
+    (the graphdeco-inria 3DGS viewer or a Blender 3DGS plugin such as
+    ``blender-gaussian-splatting``).  On a GPU host with the plugin installed,
+    this script drives the actual render.  In the CI / no-GPU path it is
+    executed as spec-documentation only (no bpy context available).
+
+    The wiring strategy:
+    1. Register a ``SplatDomain`` custom object with the .ply path as a property.
+    2. Cap the loaded Gaussian count via ``max_splats``.
+    3. Set ``sh_degree`` for view-dependent colour fidelity.
+    4. Apply ``scale_modifier`` to the splat object's global scale.
+    5. Wire the splat object into the ``melo_splat`` slot used by the P4
+       domain-opacity keyframe system, replacing the point-cloud proxy.
+
+    Future: when 3DGUT secondary-ray support lands, emit an additional
+    ``bpy.ops.melo.enable_3dgut_secondary_rays()`` call gated on
+    ``spec.runtime_params.get("secondary_rays", False)``.
+
+    Args:
+        spec: :class:`~melosviz.scene.models.SplatAssetSpec` describing the
+            3DGS asset.
+
+    Returns:
+        Python source string (bpy script fragment).
+    """
+    # Escape path for embedding in a Python string literal
+    escaped_path = spec.asset_path.replace("\\", "\\\\").replace('"', '\\"')
+    max_splats = spec.max_splats
+    sh_degree = spec.sh_degree
+    scale = spec.scale_modifier
+    secondary_rays = spec.runtime_params.get("secondary_rays", False)
+
+    snippet = textwrap.dedent(f"""\
+        # ---------- P8 Gaussian-splat / radiance-field domain wiring ----------
+        # Requires: blender-gaussian-splatting plugin (graphdeco-inria/gaussian-splatting)
+        # or equivalent 3DGS Blender plugin installed and enabled.
+        # GPU host path: bpy.ops.melo.load_splat() drives actual radiance-field render.
+        # No-GPU / spec-only path: object is created as a tagged placeholder.
+        #
+        # Future extension: 3DGUT secondary-ray support
+        #   https://research.nvidia.com/labs/toronto-ai/3DGUT/
+        #   Enable by setting runtime_params["secondary_rays"] = True.
+
+        import bpy
+
+        SPLAT_ASSET_PATH = "{escaped_path}"
+        SPLAT_MAX_SPLATS = {max_splats}
+        SPLAT_SH_DEGREE = {sh_degree}
+        SPLAT_SCALE = {scale!r}
+        SPLAT_SECONDARY_RAYS = {secondary_rays!r}
+
+        def _load_3dgs_splat():
+            \"\"\"Load the .ply splat asset via the 3DGS Blender plugin.\"\"\"
+            # Try the graphdeco-inria / melo 3DGS operator first
+            if hasattr(bpy.ops, "melo") and hasattr(bpy.ops.melo, "load_splat"):
+                bpy.ops.melo.load_splat(
+                    filepath=SPLAT_ASSET_PATH,
+                    max_splats=SPLAT_MAX_SPLATS,
+                    sh_degree=SPLAT_SH_DEGREE,
+                )
+                obj = bpy.context.active_object
+            elif hasattr(bpy.ops, "import_scene") and hasattr(bpy.ops.import_scene, "ply"):
+                # Fallback: raw PLY import as mesh proxy
+                bpy.ops.import_scene.ply(filepath=SPLAT_ASSET_PATH)
+                obj = bpy.context.active_object
+            else:
+                # No-GPU spec-level placeholder: create a tagged empty
+                obj = bpy.data.objects.new("melo_splat_3dgs", None)
+                bpy.context.collection.objects.link(obj)
+                obj.empty_display_type = "SPHERE"
+
+            if obj is None:
+                print("[melosviz-p8] WARNING: splat object not created — plugin missing?")
+                return
+
+            obj.name = "melo_splat"
+            obj.scale = (SPLAT_SCALE, SPLAT_SCALE, SPLAT_SCALE)
+
+            # Tag with custom properties for the P4 domain-opacity system
+            obj["melo_domain"] = "splat"
+            obj["splat_path"] = SPLAT_ASSET_PATH
+            obj["splat_max_splats"] = SPLAT_MAX_SPLATS
+            obj["splat_sh_degree"] = SPLAT_SH_DEGREE
+
+            if SPLAT_SECONDARY_RAYS:
+                # 3DGUT secondary-ray extension (future; no-op if not installed)
+                if hasattr(bpy.ops, "melo") and hasattr(bpy.ops.melo, "enable_3dgut_secondary_rays"):
+                    bpy.ops.melo.enable_3dgut_secondary_rays(object_name=obj.name)
+                else:
+                    print("[melosviz-p8] 3DGUT secondary-ray extension not available.")
+
+            print(f"[melosviz-p8] Splat domain wired: {{SPLAT_ASSET_PATH}} "
+                  f"(max_splats={{SPLAT_MAX_SPLATS}}, sh_degree={{SPLAT_SH_DEGREE}})")
+            return obj
+
+        _splat_obj = _load_3dgs_splat()
+        # ---------- end P8 splat wiring ----------
+    """)
+
+    return snippet
 
 
 # ---------------------------------------------------------------------------

@@ -65,7 +65,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from melosviz.scene.models import FalloffType, ScannerSpec
+from melosviz.scene.models import FalloffType, ScannerSpec, SemanticScannerSpec
 
 # ---------------------------------------------------------------------------
 # Output data types
@@ -345,3 +345,64 @@ def evaluate_scanner(
         frames.append(ChannelMaskFrame(t=t, channels=dict(pose.active_channels)))
 
     return frames
+
+
+# ---------------------------------------------------------------------------
+# P8: Semantic scanner evaluator
+# ---------------------------------------------------------------------------
+
+
+def evaluate_semantic_rules(
+    spec: SemanticScannerSpec,
+    audio_ctx: dict[str, Any],
+    base_cone_influence: float,
+) -> dict[str, float]:
+    """Evaluate :class:`~melosviz.scene.models.SemanticScannerSpec` target rules.
+
+    For each :class:`~melosviz.scene.models.SemanticTargetRule` in *spec*,
+    checks whether the stem/onset conditions are met given *audio_ctx*, then
+    emits a channel value derived from *base_cone_influence*.
+
+    Rules fire when:
+    - Both ``when_stem`` and ``when_onset`` are ``None`` → unconditional.
+    - ``when_stem`` set → ``audio_ctx["stems"].get(when_stem, 0.0) >= stem_threshold``.
+    - ``when_onset`` set → ``audio_ctx["onsets"].get(when_onset, 0.0) >= onset_threshold``.
+    - Both set → both conditions must hold simultaneously.
+
+    Output channel value = ``min(1.0, base_cone_influence * effect_gain)`` when the
+    rule fires, else the channel is not written (or kept at 0.0).
+
+    Args:
+        spec: Semantic scanner spec with target rules.
+        audio_ctx: Per-frame audio context dict with keys:
+            - ``"stems"``: dict mapping stem name → energy float in [0, 1].
+            - ``"onsets"``: dict mapping onset class → strength float in [0, 1].
+        base_cone_influence: Geometric cone influence from the underlying
+            :func:`evaluate_pose` call (float in [0, 1]).
+
+    Returns:
+        Dict mapping effect channel name → float in [0, 1].
+    """
+    stems: dict[str, float] = audio_ctx.get("stems", {})
+    onsets: dict[str, float] = audio_ctx.get("onsets", {})
+
+    channels: dict[str, float] = {}
+
+    for rule in spec.target_rules:
+        stem_ok = True
+        onset_ok = True
+
+        if rule.when_stem is not None:
+            stem_val = stems.get(rule.when_stem, 0.0)
+            stem_ok = stem_val >= rule.stem_threshold
+
+        if rule.when_onset is not None:
+            onset_val = onsets.get(rule.when_onset, 0.0)
+            onset_ok = onset_val >= rule.onset_threshold
+
+        if stem_ok and onset_ok:
+            value = min(1.0, base_cone_influence * rule.effect_gain)
+            # If multiple rules write the same channel, take the max
+            channels[rule.effect_channel] = max(channels.get(rule.effect_channel, 0.0), value)
+
+    return channels

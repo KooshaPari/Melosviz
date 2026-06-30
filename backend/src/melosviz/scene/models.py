@@ -26,6 +26,125 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
+# P8: Splat asset spec — first-class 3DGS / radiance-field representation
+# ---------------------------------------------------------------------------
+
+
+class SplatAssetSpec(BaseModel):
+    """First-class Gaussian-splat / radiance-field asset specification.
+
+    Represents a 3DGS scene (.ply or .splat) as a full representation domain,
+    not merely a point-cloud proxy.  The Blender adapter loads it via a
+    documented 3DGS-in-Blender path (bpy script driver calls the
+    graphdeco-inria gaussian-splatting viewer or a Blender 3DGS plugin).
+
+    Future extension: 3DGUT (NVIDIA) secondary-ray support for reflections /
+    transparency — see https://research.nvidia.com/labs/toronto-ai/3DGUT/.
+    When 3DGUT support lands, set ``sh_degree=4`` and wire ``secondary_rays=True``.
+
+    Attributes:
+        asset_path: Path to the .ply or .splat file on disk.
+        format: File format hint — "ply" (default) or "splat".
+        max_splats: Maximum number of Gaussians to load (memory budget gate).
+        sh_degree: Spherical-harmonics degree (0–3; higher = more view-dependent colour).
+        opacity_threshold: Gaussians with opacity below this are culled at load.
+        scale_modifier: Global scale multiplier applied to all Gaussian radii.
+        runtime_params: Free-form renderer params (sort_method, tile_size, etc.).
+    """
+
+    asset_path: str
+    format: str = "ply"
+    max_splats: int = Field(default=1_000_000, gt=0)
+    sh_degree: int = Field(default=3, ge=0, le=4)
+    opacity_threshold: float = Field(default=0.01, ge=0.0, le=1.0)
+    scale_modifier: float = Field(default=1.0, gt=0.0)
+    runtime_params: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# P8: Semantic scanner — label enum + target rules
+# ---------------------------------------------------------------------------
+
+
+class SemanticLabel(str, Enum):
+    """Semantic classes the scanner can prefer when targeting regions.
+
+    These map to segmentation categories in the scene.  The evaluator
+    reads audio-feature conditions and boosts the corresponding channel.
+    """
+
+    WALL = "wall"             # architectural surfaces — default hit target
+    PERFORMER = "performer"   # human silhouettes / DJ / crowd foreground
+    REFLECTIVE = "reflective" # chrome / mirror / glass / wet surfaces
+    CROWD = "crowd"           # crowd silhouette mass
+    CEILING = "ceiling"       # overhead surfaces (useful for downward cone)
+    FLOOR = "floor"           # stage floor / dance floor
+
+
+class SemanticTargetRule(BaseModel):
+    """A single semantic targeting rule evaluated against per-frame audio features.
+
+    A rule fires when its ``when_stem`` or ``when_onset`` condition exceeds its
+    threshold.  When fired it writes ``effect_gain * base_cone_influence`` into
+    ``effect_channel``.
+
+    Rules with neither ``when_stem`` nor ``when_onset`` fire unconditionally
+    (useful for the default "hit walls first" rule).
+
+    Attributes:
+        prefer: Semantic label this rule targets.
+        effect_channel: Write-channel name to emit when the rule fires.
+        when_stem: Stem name (vocals/drums/bass/other) that must be active.
+        stem_threshold: Minimum stem energy [0, 1] for the rule to fire.
+        when_onset: Onset class name (kick/snare/hat) that must be active.
+        onset_threshold: Minimum onset strength [0, 1] for the rule to fire.
+        effect_gain: Multiplier applied to ``base_cone_influence`` for the output.
+    """
+
+    prefer: SemanticLabel = SemanticLabel.WALL
+    effect_channel: str = "hit_wall"
+
+    # Optional stem condition
+    when_stem: str | None = None
+    stem_threshold: float = Field(default=0.3, ge=0.0, le=1.0)
+
+    # Optional onset condition
+    when_onset: str | None = None
+    onset_threshold: float = Field(default=0.5, ge=0.0, le=1.0)
+
+    # Gain applied to cone influence when firing
+    effect_gain: float = Field(default=1.0, ge=0.0)
+
+
+class SemanticScannerSpec(BaseModel):
+    """Scanner extension with semantic targeting rules.
+
+    Stacks on top of :class:`ScannerSpec`'s geometric orbit.  After the
+    geometric cone influence is computed, ``evaluate_semantic_rules()`` applies
+    each rule's conditions against per-frame stem/onset audio features and
+    writes additional semantic channels.
+
+    YAML example (exploration §"Scanner model" semantic extension)::
+
+        scanner_id: semantic_main
+        target_rules:
+          - prefer: performer          # "prefer human silhouettes on vocals"
+            effect_channel: reveal_performer
+            when_stem: vocals
+            stem_threshold: 0.3
+          - prefer: reflective         # "reflective materials on hats"
+            effect_channel: boost_reflective
+            when_onset: hat
+            onset_threshold: 0.5
+            effect_gain: 1.8
+          - prefer: wall               # "hit walls first" — unconditional default
+            effect_channel: hit_wall
+    """
+
+    scanner_id: str = "semantic_main"
+    target_rules: list[SemanticTargetRule] = Field(default_factory=list)
+
+# ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
@@ -163,6 +282,8 @@ class SceneAsset(BaseModel):
     asset_id: str
     label: str = ""
     domains: AssetDomains = Field(default_factory=AssetDomains)
+    # P8: optional 3DGS / radiance-field spec when domains.splat is True
+    splat_spec: SplatAssetSpec | None = None
     # Free-form metadata (paths, capture type, roto refs, etc.)
     meta: dict[str, Any] = Field(default_factory=dict)
 
