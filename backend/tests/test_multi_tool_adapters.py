@@ -482,20 +482,31 @@ class TestFireflyAdapter:
     def test_force_video_export_fallback_is_explicit(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """force_video_export=True must log a WARNING — never silent."""
+        """force_video_export=True must log a WARNING — never silent.
+
+        We mock the low-level video export so the test only verifies the
+        warning/flag behaviour, not ffmpeg binary availability or output format
+        compatibility (those are tested separately in test_video_exporter.py).
+        """
         import logging
+        from unittest.mock import patch
 
         from melosviz.render.firefly_adapter import FireflyAdapter
-        from melosviz.render.video_exporter import is_ffmpeg_available
 
-        if not is_ffmpeg_available():
-            pytest.skip("ffmpeg not available in this environment")
+        # Stub out the underlying export_video so no subprocess is spawned.
 
-        adapter = FireflyAdapter()
-        with caplog.at_level(logging.WARNING, logger="melosviz.render.firefly_adapter"):
-            result = adapter.render(
-                _minimal_spec(), output_path=tmp_path, force_video_export=True
-            )
+        stub_out = tmp_path / "stub.mp4"
+        stub_out.touch()
+
+        with patch(
+            "melosviz.render.video_exporter.export_video",
+            return_value=stub_out,
+        ):
+            adapter = FireflyAdapter()
+            with caplog.at_level(logging.WARNING, logger="melosviz.render.firefly_adapter"):
+                result = adapter.render(
+                    _minimal_spec(), output_path=tmp_path, force_video_export=True
+                )
 
         assert result.used_video_export_fallback is True
         assert any("force_video_export" in r.message for r in caplog.records)

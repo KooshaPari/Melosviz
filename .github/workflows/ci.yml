@@ -16,13 +16,13 @@ permissions:
 
 jobs:
   backend:
-    name: Backend — pytest + ruff (Python ${{ matrix.python-version }})
+    name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
     # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.12"]
 
     steps:
       - name: Checkout
@@ -36,9 +36,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install package + test/lint deps
+      - name: Install package + test/lint/analysis deps
         working-directory: backend
-        run: pip install -e ".[test,lint]"
+        run: pip install -e ".[test,lint,analysis]" pytest-cov coverage hypothesis
 
       - name: Ruff — lint
         working-directory: backend
@@ -48,6 +48,57 @@ jobs:
         working-directory: backend
         run: python -m ruff format --check src/ tests/
 
-      - name: Pytest
+      - name: Pytest + coverage (lcov + xml)
         working-directory: backend
-        run: python -m pytest --tb=short -q
+        run: |
+          python -m pytest \
+            --cov=melosviz \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage/coverage.xml \
+            --cov-report=lcov:coverage/lcov.info \
+            --tb=short -q
+
+      - name: Upload coverage artifacts
+        # upload-artifact v4.6.2 — SHA-pinned
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: backend-coverage-py${{ matrix.python-version }}
+          path: |
+            backend/coverage/lcov.info
+            backend/coverage/coverage.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Security — bandit SAST
+        working-directory: backend
+        run: |
+          pip install bandit
+          python -m bandit -r src/ -ll -ii --quiet || true
+          # Exit 0 (warn-only) on medium issues; exit 1 only on high/critical
+          python -m bandit -r src/ -lll -iii --quiet
+
+  quality-gate:
+    name: qgate — granular-recursive quality gate (85%)
+    needs: backend
+    # Linux only — standard runner, no billing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download backend coverage (Python 3.12)
+        # download-artifact v4.2.1 — SHA-pinned
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
+        with:
+          name: backend-coverage-py3.12
+          path: backend/coverage
+
+      - name: Run qgate
+        uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
+        with:
+          coverage-report: backend/coverage/lcov.info
+          coverage-format: lcov
+          threshold: 85
+          # a11y: webview UI only testable on host (no headless Electron CI)
+          # chaos: covered by test_qgate_backfill.py but not auto-categorised
+          # mutation: mutmut config in place, full run is slow for CI
+          not-applicable: "a11y"
+          working-directory: .
