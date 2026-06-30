@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1430"/>
+      <stop offset="100%" stop-color="#0d0d10"/>
+    </radialGradient>
+    <!-- Accent glow -->
+    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#4c40b0"/>
+      <stop offset="40%" stop-color="#7c6af7"/>
+      <stop offset="70%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+    <!-- Purple glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Outer ring gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c6af7" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#f472b6" stop-opacity="0.4"/>
+    </linearGradient>
+    <clipPath id="roundClip">
+      <rect width="512" height="512" rx="110" ry="110"/>
+    </clipPath>
+  </defs>
+
+  <!-- App icon rounded rect bg -->
+  <rect width="512" height="512" rx="110" ry="110" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid lines -->
+  <g opacity="0.06" stroke="#7c6af7" stroke-width="1" clip-path="url(#roundClip)">
+    <line x1="0" y1="128" x2="512" y2="128"/>
+    <line x1="0" y1="256" x2="512" y2="256"/>
+    <line x1="0" y1="384" x2="512" y2="384"/>
+    <line x1="128" y1="0" x2="128" y2="512"/>
+    <line x1="256" y1="0" x2="256" y2="512"/>
+    <line x1="384" y1="0" x2="384" y2="512"/>
+  </g>
+
+  <!-- Spectrum bars — neon visualizer motif -->
+  <!-- Center baseline at y=288 -->
+  <g filter="url(#glow)" opacity="0.95">
+    <!-- Bar heights from center, symmetric waveform shape -->
+    <!-- x positions: 60px apart, 8 bars total, centered -->
+    <!-- Bar 1 (leftmost) -->
+    <rect x="62" y="248" width="28" height="80" rx="5" fill="url(#waveGrad)" opacity="0.5"/>
+    <!-- Bar 2 -->
+    <rect x="104" y="218" width="28" height="110" rx="5" fill="url(#waveGrad)" opacity="0.65"/>
+    <!-- Bar 3 -->
+    <rect x="146" y="168" width="28" height="160" rx="5" fill="url(#waveGrad)" opacity="0.8"/>
+    <!-- Bar 4 — tallest -->
+    <rect x="188" y="128" width="28" height="200" rx="5" fill="url(#waveGrad)"/>
+    <!-- Bar 5 — tallest -->
+    <rect x="230" y="108" width="28" height="220" rx="5" fill="url(#waveGrad)"/>
+    <!-- Bar 6 -->
+    <rect x="272" y="128" width="28" height="200" rx="5" fill="url(#waveGrad)"/>
+    <!-- Bar 7 -->
+    <rect x="314" y="158" width="28" height="170" rx="5" fill="url(#waveGrad)" opacity="0.85"/>
+    <!-- Bar 8 -->
+    <rect x="356" y="198" width="28" height="130" rx="5" fill="url(#waveGrad)" opacity="0.7"/>
+    <!-- Bar 9 -->
+    <rect x="398" y="228" width="28" height="100" rx="5" fill="url(#waveGrad)" opacity="0.55"/>
+    <!-- Bar 10 (rightmost) -->
+    <rect x="440" y="248" width="28" height="80" rx="5" fill="url(#waveGrad)" opacity="0.45"/>
+  </g>
+
+  <!-- Horizontal glow line at baseline -->
+  <line x1="56" y1="328" x2="476" y2="328" stroke="url(#waveGrad)" stroke-width="2" opacity="0.4"/>
+
+  <!-- Small dot accents at bar tops -->
+  <g fill="#c084fc" filter="url(#glow)">
+    <circle cx="76" cy="246" r="4" opacity="0.7"/>
+    <circle cx="118" cy="216" r="4" opacity="0.75"/>
+    <circle cx="160" cy="166" r="4" opacity="0.8"/>
+    <circle cx="202" cy="126" r="5" opacity="0.9"/>
+    <circle cx="244" cy="106" r="6"/>
+    <circle cx="286" cy="126" r="5" opacity="0.9"/>
+    <circle cx="328" cy="156" r="4" opacity="0.85"/>
+    <circle cx="370" cy="196" r="4" opacity="0.75"/>
+    <circle cx="412" cy="226" r="4" opacity="0.7"/>
+    <circle cx="454" cy="246" r="4" opacity="0.6"/>
+  </g>
+
+  <!-- "M" letterform glyph (small, bottom-right, brand mark) -->
+  <!-- Removed in favor of clean waveform — brand mark is the waveform itself -->
+
+  <!-- Outer border ring -->
+  <rect x="3" y="3" width="506" height="506" rx="108" ry="108"
+        fill="none" stroke="url(#ringGrad)" stroke-width="3" opacity="0.5"/>
+</svg>

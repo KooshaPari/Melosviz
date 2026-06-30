@@ -29,6 +29,11 @@ const config: ElectrobunConfig = {
       // bundle the Python backend alongside the app
       "../backend": "backend",
     },
+    // App icon: all macOS sizes (16–1024) generated via rsvg-convert + iconutil
+    // from assets/brand/logo.svg; electrobun runs iconutil to produce AppIcon.icns.
+    mac: {
+      icons: "assets/icons/MelosViz.iconset",
+    },
   },
 };
 
