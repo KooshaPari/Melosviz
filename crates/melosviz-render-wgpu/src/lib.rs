@@ -34,16 +34,40 @@
 //! Quality differs (rasterised vs path-traced) but the visual *nature* is the
 //! same, satisfying the "true-to-final-in-nature" preview requirement.
 //!
-//! # Performance targets (Apple M1 Pro, estimated)
+//! # Tier-1 (primary): wgpu realtime — performance targets (Apple M1 Pro)
 //!
 //! | Resolution | Per-frame | FPS | 5400-frame render |
 //! |------------|-----------|-----|-------------------|
-//! | 1280×720   | ~2–5 ms   | 200–500 | ~11–27 s |
-//! | 1920×1080  | ~4–8 ms   | 125–250 | ~22–43 s |
+//! | 1280×720   | ~2–5 ms **est.** | 200–500 | **~11–27 s est.** |
+//! | 1920×1080  | ~4–8 ms **est.** | 125–250 | **~22–43 s est.** |
 //!
-//! These are estimates from Metal/wgpu workload characterisation; no wgpu
-//! GPU was available to measure during implementation. See
-//! `docs/PERF_BENCHMARK.md §3b` for the derivation.
+//! **Honest labelling:** these are estimates from Metal/wgpu workload
+//! characterisation (see `docs/PERF_BENCHMARK.md §3b`). No GPU adapter was
+//! available in this environment to produce measured numbers. GPU tests are
+//! `#[ignore]`-tagged and must be run on a host with Metal/Vulkan:
+//! `cargo test --lib -- --ignored`.
+//!
+//! # Interim fallback (while wgpu headless is being validated on host)
+//!
+//! If `WgpuRenderer::new()` fails (no GPU adapter / headless CI environment),
+//! the operator is NOT blocked. The EEVEE-Next persistent-process scrub path
+//! (measured in `docs/PERF_BENCHMARK.md §2c / [E4]`) provides immediate usable
+//! preview:
+//!
+//! ```text
+//! EEVEE-Next 1-fps scrub preview (Blender 4.4.3 headless, 1-sample, confirmed):
+//!   30s segment × 1fps scrub = 30 frames × 52.9 ms/frame = 1.6 s  ← hits <5s/edit
+//!   2fps scrub: 60 frames × 52.9 ms = 3.2 s                       ← still <5s/edit
+//! Full 30fps re-render of same 30s segment: 47.6 s (does NOT hit target)
+//! ```
+//!
+//! The interim path is a Python-only path driven by the existing Blender adapter
+//! (`backend/src/melosviz/render/blender_exporter.py`) with engine set to
+//! `BLENDER_EEVEE_NEXT` and samples=1. It shares the same `RenderSpec` JSON.
+//! No code changes needed to activate it — the conductor already has
+//! `blender_exporter.py`. Once `melosviz-render` binary is validated on the
+//! host (via `cargo test --lib -- --ignored`), the conductor can switch to
+//! the wgpu path for full 30fps realtime.
 //!
 //! # Incremental edit cache
 //!
