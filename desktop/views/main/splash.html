@@ -128,5 +128,23 @@
 
     <div class="splash-text">Initializing…</div>
   </div>
+
+  <script>
+    // Performance monitoring for splash screen initialization
+    if (performance && performance.mark && performance.measure) {
+      performance.mark('splash-start');
+
+      window.addEventListener('load', () => {
+        performance.mark('splash-complete');
+        performance.measure('splash-render', 'splash-start', 'splash-complete');
+
+        const measures = performance.getEntriesByType('measure');
+        const splashTime = measures.find(m => m.name === 'splash-render');
+        if (splashTime) {
+          console.log(`[MelosViz] Splash screen rendered in ${splashTime.duration.toFixed(2)}ms`);
+        }
+      });
+    }
+  </script>
 </body>
 </html>
