@@ -449,4 +449,174 @@ mod tests {
         let last = spec.scene_segments.last().unwrap();
         assert_eq!(last.label, "outro");
     }
+
+    #[test]
+    fn analyze_empty_signal() {
+        let wav = WavMono {
+            samples: vec![],
+            sample_rate: 44100,
+            channels: 1,
+            duration_sec: 0.0,
+        };
+        let spec = analyze(&wav, MirParams::default());
+        // Should not panic; spec should be valid
+        assert_eq!(spec.metadata.duration, 0.0);
+    }
+
+    #[test]
+    fn analyze_single_sample() {
+        let wav = WavMono {
+            samples: vec![0.5],
+            sample_rate: 44100,
+            channels: 1,
+            duration_sec: 1.0 / 44100.0,
+        };
+        let spec = analyze(&wav, MirParams::default());
+        // Should handle gracefully
+        assert_eq!(spec.metadata.duration, 1.0 / 44100.0);
+    }
+
+    #[test]
+    fn analyze_silence() {
+        let n = 44100; // 1 second
+        let wav = WavMono {
+            samples: vec![0.0; n],
+            sample_rate: 44100,
+            channels: 1,
+            duration_sec: 1.0,
+        };
+        let spec = analyze(&wav, MirParams::default());
+        // All values should be finite, no NaN or panic
+        for kf in &spec.dense_keyframes {
+            assert!(kf.spectral_centroid.is_finite());
+            assert!(kf.energy.is_finite());
+            assert!(kf.onset_strength.is_finite());
+        }
+    }
+
+    #[test]
+    fn analyze_extreme_frequency_ultrasonic() {
+        // 25 kHz ultrasonic (above Nyquist at 44.1 kHz)
+        let wav = make_sine_wav(25000.0, 1.0, 44100);
+        let spec = analyze(&wav, MirParams::default());
+        // Should complete without panic
+        assert_eq!(spec.metadata.sample_rate, 44100);
+    }
+
+    #[test]
+    fn analyze_very_low_frequency() {
+        // 0.5 Hz infrasound
+        let wav = make_sine_wav(0.5, 5.0, 44100);
+        let spec = analyze(&wav, MirParams::default());
+        // Should not divide by zero or panic
+        assert!(spec.mir.tempo_bpm.is_some());
+    }
+
+    #[test]
+    fn analyze_high_amplitude_no_overflow() {
+        let sr = 44100u32;
+        let n = sr as usize;
+        // Samples at full scale (would overflow if not careful)
+        let samples: Vec<f32> = vec![1.0; n];
+        let wav = WavMono { samples, sample_rate: sr, channels: 1, duration_sec: 1.0 };
+        let spec = analyze(&wav, MirParams::default());
+        // Should not overflow; all values should be finite
+        for kf in &spec.dense_keyframes {
+            assert!(kf.energy.is_finite(), "energy overflowed: {}", kf.energy);
+            assert!(kf.spectral_centroid.is_finite());
+        }
+    }
+
+    #[test]
+    fn stft_zero_length_input() {
+        let mags = crate::dsp::stft(&[], 2048, 512);
+        assert_eq!(mags.1, 1025, "n_bins should be n_fft/2+1");
+        assert_eq!(mags.0.len(), 0, "magnitude vector should be empty for empty input");
+    }
+
+    #[test]
+    fn stft_single_frame() {
+        let samples: Vec<f32> = vec![0.5; 2048];
+        let (mags, n_bins, hop) = crate::dsp::stft(&samples, 2048, 512);
+        assert_eq!(n_bins, 1025);
+        assert_eq!(hop, 512);
+        // Should produce 1 frame
+        assert_eq!(mags.len(), 1025);
+        // All magnitude values should be finite
+        for &m in &mags {
+            assert!(m.is_finite() && m >= 0.0, "invalid magnitude: {}", m);
+        }
+    }
+
+    #[test]
+    fn stft_non_power_of_two() {
+        // 1234 samples with 1000-sample FFT (not power of 2)
+        let samples: Vec<f32> = vec![0.1; 1234];
+        let (mags, n_bins, _) = crate::dsp::stft(&samples, 1000, 250);
+        // Should still work (rustfft handles non-power-of-2)
+        assert!(n_bins > 0);
+        assert!(mags.len() > 0);
+    }
+
+    #[test]
+    fn rms_envelope_empty() {
+        let env = crate::dsp::rms_envelope(&[], 10);
+        assert_eq!(env.len(), 10);
+        for &e in &env {
+            assert_eq!(e, 0.0);
+        }
+    }
+
+    #[test]
+    fn rms_envelope_single_frame() {
+        let samples = vec![0.5; 100];
+        let env = crate::dsp::rms_envelope(&samples, 1);
+        assert_eq!(env.len(), 1);
+        assert!(env[0] > 0.0 && env[0] <= 1.0);
+    }
+
+    #[test]
+    fn spectral_centroid_silence() {
+        let mags = vec![0.0; 1000];
+        let centroid = crate::dsp::spectral_centroid(&mags, 500, 2, 44100, 1000, 10);
+        // Should not panic, return valid values
+        assert_eq!(centroid.len(), 10);
+        for &c in &centroid {
+            assert!(c.is_finite());
+        }
+    }
+
+    #[test]
+    fn mir_params_fpsbound_clamping() {
+        // Test that n_dense_fps is clamped [10, 30]
+        let params = MirParams {
+            n_dense_fps: 5, // Too low
+            n_fft: 2048,
+            hop_length: 512,
+        };
+        let wav = make_sine_wav(440.0, 1.0, 44100);
+        let spec = analyze(&wav, params);
+        // FPS is clamped, so dense_keyframes should respect bounds
+        assert!(spec.metadata.n_dense_fps >= 10 && spec.metadata.n_dense_fps <= 30);
+    }
+
+    #[test]
+    fn analyze_no_nans_or_infs() {
+        let wav = make_sine_wav(440.0, 2.0, 44100);
+        let spec = analyze(&wav, MirParams::default());
+        // All numeric fields should be finite
+        for kf in &spec.dense_keyframes {
+            assert!(
+                kf.energy.is_finite()
+                    && kf.spectral_centroid.is_finite()
+                    && kf.onset_strength.is_finite(),
+                "keyframe contains NaN/Inf"
+            );
+        }
+        // Metadata
+        assert!(spec.metadata.analysis_peak_rms.is_finite());
+        for env_val in &spec.metadata.amplitude_envelope {
+            assert!(env_val.is_finite());
+        }
+    }
 }
