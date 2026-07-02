@@ -6,6 +6,7 @@
  */
 
 import { Electroview } from "electrobun/view";
+import "@radix-ui/themes/styles.css";
 import type { BunRequests, WebviewRequests } from "../../src/rpc";
 
 // ---------------------------------------------------------------------------
