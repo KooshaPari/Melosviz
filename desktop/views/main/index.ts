@@ -16,11 +16,13 @@ import type { BunRequests, WebviewRequests } from "../../src/rpc";
 // use the equivalent Electroview.defineRPC static helper instead.
 const rpc = Electroview.defineRPC<
   { bun: BunRequests; webview: WebviewRequests }
->({
-  handlers: {
-    requests: {},
-  },
-});
+>(
+  {
+    handlers: {
+      requests: {},
+    },
+  } as any
+);
 
 // REQUIRED: instantiate Electroview so the transport is wired.
 // Electroview.defineRPC() only creates the typed schema; the WebSocket
@@ -95,7 +97,7 @@ function hideRenderOverlay() {
 }
 
 function showPipelineView() {
-  qs("#welcome").style.display = "none";
+  (qs("#welcome") as HTMLElement).style.display = "none";
   qs<HTMLElement>("#pipeline-view").classList.add("active");
 }
 
@@ -414,33 +416,45 @@ async function onBuildPlan() {
 }
 
 async function onRenderVideo() {
-  if (!renderPlan || !wavPath) return;
+  if (!renderPlan || !wavPath || !renderSpec) return;
   clearError();
   setStatus("Rendering video…", "busy");
   setProgress(5, "Starting render pipeline…");
-  showRenderOverlay("Spawning conductor pipeline");
+  showRenderOverlay("Initializing renderer");
   const outDir = outPath ?? `${document.location.hostname}/MelosViz-output`;
   try {
-    setOverlayProgress(15, "Spawning conductor…");
-    const result = await rpc.request.renderVideo({ wavPath, outDir });
-    setOverlayProgress(100, "Complete");
+    let videoPath: string;
+
+    // Try wgpu realtime renderer first (faster, GPU-accelerated)
+    try {
+      setOverlayProgress(20, "Spawning wgpu renderer…");
+      const specJson = JSON.stringify(renderSpec);
+      videoPath = await rpc.request.renderWithWgpu({ renderSpec: specJson, outDir });
+      setOverlayProgress(100, "wgpu render complete");
+    } catch (wgpuErr) {
+      // Fall back to Python conductor if wgpu binary not available
+      console.warn("[MelosViz] wgpu render failed, falling back to Python:", wgpuErr);
+      setOverlayProgress(15, "Falling back to Python conductor…");
+      const result = await rpc.request.renderVideo({ wavPath, outDir });
+      const mp4Match = result.match(/([^\n\r]+\.mp4)/);
+      if (!mp4Match) throw new Error("Could not find MP4 path in render output");
+      videoPath = mp4Match[1].trim();
+      setOverlayProgress(100, "Python conductor complete");
+    }
+
     setProgress(100, "Render complete");
     setStatus("Render complete", "ready");
     hideRenderOverlay();
 
-    // result is stdout from viz render — look for a .mp4 path
-    const mp4Match = result.match(/([^\n\r]+\.mp4)/);
-    if (mp4Match) {
-      lastVideoPath = mp4Match[1].trim();
-      const vid = qs<HTMLVideoElement>("#preview-video");
-      vid.src = `file://${lastVideoPath}`;
-      vid.classList.remove("hidden");
-      qs("#video-placeholder").classList.add("hidden");
-      const actions = qs<HTMLElement>("#video-actions");
-      actions.classList.remove("hidden");
-      actions.style.display = "flex";
-      markTabHasData("video");
-    }
+    lastVideoPath = videoPath;
+    const vid = qs<HTMLVideoElement>("#preview-video");
+    vid.src = `file://${videoPath}`;
+    vid.classList.remove("hidden");
+    qs("#video-placeholder").classList.add("hidden");
+    const actions = qs<HTMLElement>("#video-actions");
+    actions.classList.remove("hidden");
+    actions.style.display = "flex";
+    markTabHasData("video");
     switchTab("video");
   } catch (err) {
     hideRenderOverlay();

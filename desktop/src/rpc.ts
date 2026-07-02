@@ -14,6 +14,7 @@ export type BunRequests = RPCSchema<{
     analyzeWav:  { params: { wavPath: string };                    response: string };
     buildPlan:   { params: { wavPath: string; outDir?: string };   response: string };
     renderVideo: { params: { wavPath: string; outDir: string };    response: string };
+    renderWithWgpu: { params: { renderSpec: string; outDir: string }; response: string };
     pickFile:    { params: { accept?: string };                    response: string | null };
     pickDirectory: { params: Record<string, never>;               response: string | null };
     revealInFinder: { params: { filePath: string };               response: void };

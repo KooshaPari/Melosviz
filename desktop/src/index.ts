@@ -171,6 +171,53 @@ const rpc = defineElectrobunRPC<
         return runVizCli(["render", wavPath, "--out", outDir]);
       },
 
+      async renderWithWgpu({ renderSpec, outDir }) {
+        // Write RenderSpec to a temp JSON file
+        const specPath = path.join(outDir, `.melosviz-spec-${Date.now()}.json`);
+        await Bun.write(specPath, renderSpec);
+
+        // Find the melosviz-render binary (built from crates/melosviz-render-wgpu)
+        const renderBinary = path.join(
+          import.meta.dir,
+          "..",
+          "..",
+          "target",
+          "release",
+          "melosviz-render"
+        );
+
+        if (!fs.existsSync(renderBinary)) {
+          throw new Error(
+            `[MelosViz] melosviz-render binary not found at ${renderBinary}. ` +
+              `Run 'cargo build --release' in the crates/melosviz-render-wgpu directory.`
+          );
+        }
+
+        const videoPath = path.join(outDir, `melosviz-preview-${Date.now()}.mp4`);
+        const proc = Bun.spawn([renderBinary, "--spec", specPath, "--output", videoPath], {
+          env: { ...process.env, RUST_LOG: "info" },
+          stdout: "inherit",
+          stderr: "inherit",
+        });
+
+        const exitCode = await proc.exited;
+        if (exitCode !== 0) {
+          throw new Error(
+            `[MelosViz] melosviz-render failed (exit ${exitCode})`
+          );
+        }
+
+        // Clean up temp spec file
+        try {
+          fs.unlinkSync(specPath);
+        } catch {
+          // Best effort cleanup
+        }
+
+        // Return the MP4 path so the webview can load it
+        return videoPath;
+      },
+
       async pickFile({ accept }) {
         const paths = await openFileDialog({
           allowedFileTypes: accept === "wav" ? "wav" : "*",
