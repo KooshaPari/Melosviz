@@ -116,3 +116,19 @@ exclude_also = [
     "pragma: no cover",
 ]
 omit = []
+
+# -----------------------------------------------------------------------------
+# mutmut 3.x (mutation testing) — keeps in sync with backend/mutmut.toml.
+# Target: >=75% kill-score (see ../../.qgate.toml [mutation].target_score).
+# -----------------------------------------------------------------------------
+[tool.mutmut]
+paths_to_mutate = ["src/melosviz/"]
+tests_dir = ["tests/"]
+# Type-check on surviving mutants — mypy catches more than tests alone.
+type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
+# Skip CLI entry-points, re-export stubs, and package __init__ modules.
+do_not_mutate = [
+    "src/melosviz/cli/.*\\.py$",
+    "src/melosviz/runtime/touchdesigner/__init__\\.py$",
+    "src/melosviz/.*/__init__\\.py$",
+]

@@ -34,3 +34,7 @@ Thumbs.db
 .coverage
 htmlcov/
 *.sarif
+
+# Antigame mutation-engine reports — generated each run, do not commit.
+.mutations/
+backend/coverage/

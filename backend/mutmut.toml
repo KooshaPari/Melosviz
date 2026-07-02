@@ -1,50 +1,38 @@
 # mutmut 3.x configuration for MelosViz backend (Python).
 #
 # Run from backend/:
-#   mutmut run                                  # full mutation sweep
-#   mutmut run --paths-to-mutate src/melosviz/analysis/
-#   mutmut results --since <date>               # view survivors
-#   mutmut show <id>                            # show a specific mutant
+#   python -m mutmut run                            # full mutation sweep
+#   python -m mutmut results                        # show survivors
+#   python -m mutmut show <id>                      # show a specific mutant
 #
 # Target: >=75% mutation kill-score (set in .qgate.toml [mutation].target_score).
-# Survivor mutants must either be killed by tightening tests or marked
-# "no_test_required" via mutmut skip-class / skip-when.
+# Survivor mutants must either be killed by tightening tests or filtered
+# through `do_not_mutate` (path-style regex matched against source-file paths).
 #
-# We exclude modules with only-in-CI dependencies (optional heavy ML stacks)
-# so mutants don't generate false survivors on missing imports.
+# NOTE: mutmut 3.x reads config from pyproject.toml [tool.mutmut]. This file
+# is preserved for CI scripts that grep documentation, and is mirrored in
+# pyproject.toml under [tool.mutmut]. Keep both in sync.
+#
+# Real schema (verified against mutmut 3.5.0 Config dataclass):
+#   paths_to_mutate            list[str]  source dirs to mutate
+#   tests_dir                  list[str]  test-dir roots
+#   do_not_mutate              list[str]  path-regex filter (mutate ONLY what matches)
+#   also_copy                  list[str]  extra paths to copy for the mutant env
+#   pytest_add_cli_args        list[str]  extra CLI args for every pytest invocation
+#   mutate_only_covered_lines  bool       skip lines outside coverage
+#   type_check_command         list[str]  external type-check (e.g. mypy) — runs
+#                                         before considering a mutant alive
+#   max_stack_depth            int        recursion guard
+#   debug                      bool       verbose tracing
 
-[mutmut]
-paths_to_mutate = "src/melosviz/"
-tests_dir = "tests/"
-runner = "python -m pytest -x -q -o addopts=''"
-backup = false
-# Pre-collect dict so unittest doesn't try to spawn mutmut subprocesses recursively
-dict_generation = false
-# Parallelism: 1 by default; bump via --jobs N on faster machines.
-shorter_mutations = false
-multiprocess = false
-# Mutation operators enabled (mutmut 3.x names)
-# - AOR (arithmetic operator replacement)
-# - ROR (relational operator replacement)
-# - LCR (logical-connector replacement)
-# - UOR / BOR (unary / bitwise operator replacement)
-# - NUM (number replacement: 0, 1, -1)
-# - STD (string-literal / dict / set / tuple decode - delete)
-# - MCR (method-call replace: drop call)
-# - DDL (decorator deletion)
-mutations = ["AOR", "ROR", "LCR", "UOR", "BOR", "NUM", "STD", "MCR", "DDL"]
-
-# Per-file skip patterns: don't mutate generated/test-helper code
-[[mutmut.skip]]
-path_regex = "src/melosviz/cli/.*\\.py"
-reason = "CLI glue — no business logic, only entry-point dispatchers"
-
-[[mutmut.skip]]
-path_regex = "src/melosviz/runtime/touchdesigner/__init__\\.py"
-reason = "Adapter init module — re-exports only"
-
-[mutmut.coverage]
-# Track line/branch coverage across the mutation run so survivors that
-# hide behind uncovered branches are surfaced explicitly.
-runner = "python -m pytest --cov=melosviz --cov-branch --no-cov-on-fail"
-report = "term-missing"
+paths_to_mutate = ["src/melosviz/"]
+tests_dir = ["tests/"]
+# Type-check on surviving mutants (mypy catches more than tests alone).
+type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
+# Keep mutation locality tight — glob paths use prefix, then we
+# explicitly skip CLI dispatcher + re-export stubs below.
+do_not_mutate = [
+    "src/melosviz/cli/.*\\.py$",          # CLI glue / entry-points
+    "src/melosviz/runtime/touchdesigner/__init__\\.py$",  # re-export only
+    "src/melosviz/.*/__init__\\.py$",      # package init stubs (no logic)
+]
