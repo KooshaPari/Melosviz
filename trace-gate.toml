@@ -1,0 +1,46 @@
+# FR (Functional Requirement) Coverage Gate Configuration
+#
+# Enforces traceability between code changes and documented functional requirements.
+# See: https://github.com/KooshaPari/phenotype-pm-core
+#
+# This configuration file specifies:
+# - Source directories to scan for FR decorators / annotations
+# - Minimum coverage thresholds
+# - Allowed exceptions and exemptions
+
+[gate]
+# Source directories to scan (relative to repo root)
+src_dirs = ["src"]
+
+# Minimum percentage of code that must be traced to FRs (0-100)
+min_coverage = 75
+
+# Fail on any uncovered lines, or warn and continue
+strict_mode = true
+
+# Optional: list of exemption paths (glob patterns, relative to src/)
+exemptions = [
+  "*/tests/*",
+  "*/mock/*",
+  "**/generated/*"
+]
+
+[decorators]
+# Supported FR decorator formats:
+# - Rust: #[fr::trace("FR-123")], #[fr::implements("FR-123")]
+# - File: @fr FR-123, @implements FR-123
+
+# Link to Tracera instance for FR validation (optional)
+tracera_url = "https://tracera.phenotype.space"
+
+# Report configuration
+[report]
+# Generate HTML report (optional)
+output_format = "text"
+output_file = "target/fr-coverage.txt"
+
+# Fail the gate if coverage drops below threshold
+fail_on_regression = true
+
+# Previous coverage baseline (set after first successful run)
+# coverage_baseline = 85.0
