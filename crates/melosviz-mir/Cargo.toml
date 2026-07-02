@@ -35,6 +35,12 @@ num-complex = "0.4"
 # Reference WAV generation for tests
 hound = "3"
 tempfile = "3"
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [features]
 default = []
+
+[[bench]]
+name = "analyzer"
+harness = false
