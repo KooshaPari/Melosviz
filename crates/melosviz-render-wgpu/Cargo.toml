@@ -36,10 +36,8 @@ bytemuck = { version = "1", features = ["derive"] }
 [dev-dependencies]
 # tempdir for headless tests
 tempfile = "3"
-# Criterion benchmarking
+# Criterion benchmarking framework
 criterion = { version = "0.5", features = ["html_reports"] }
-# Async runtime for benchmarks (same as main deps)
-pollster = "0.4"
 
 [features]
 default = []
@@ -48,4 +46,8 @@ headless = []
 
 [[bench]]
 name = "frame_setup"
+harness = false
+
+[[bench]]
+name = "frame_time"
 harness = false
