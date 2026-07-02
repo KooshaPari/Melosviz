@@ -15,6 +15,9 @@ permissions:
   contents: read
 
 jobs:
+  trace-gate:
+    name: FR Coverage Gate
+    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@main
   backend:
     name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
     # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
@@ -170,3 +173,4 @@ jobs:
           # mutation: mutmut config in place, full run is slow for CI
           not-applicable: "a11y"
           working-directory: .
+
