@@ -1,0 +1,38 @@
+# mutmut 3.x configuration for MelosViz backend (Python).
+#
+# Run from backend/:
+#   python -m mutmut run                            # full mutation sweep
+#   python -m mutmut results                        # show survivors
+#   python -m mutmut show <id>                      # show a specific mutant
+#
+# Target: >=75% mutation kill-score (set in .qgate.toml [mutation].target_score).
+# Survivor mutants must either be killed by tightening tests or filtered
+# through `do_not_mutate` (path-style regex matched against source-file paths).
+#
+# NOTE: mutmut 3.x reads config from pyproject.toml [tool.mutmut]. This file
+# is preserved for CI scripts that grep documentation, and is mirrored in
+# pyproject.toml under [tool.mutmut]. Keep both in sync.
+#
+# Real schema (verified against mutmut 3.5.0 Config dataclass):
+#   paths_to_mutate            list[str]  source dirs to mutate
+#   tests_dir                  list[str]  test-dir roots
+#   do_not_mutate              list[str]  path-regex filter (mutate ONLY what matches)
+#   also_copy                  list[str]  extra paths to copy for the mutant env
+#   pytest_add_cli_args        list[str]  extra CLI args for every pytest invocation
+#   mutate_only_covered_lines  bool       skip lines outside coverage
+#   type_check_command         list[str]  external type-check (e.g. mypy) — runs
+#                                         before considering a mutant alive
+#   max_stack_depth            int        recursion guard
+#   debug                      bool       verbose tracing
+
+paths_to_mutate = ["src/melosviz/"]
+tests_dir = ["tests/"]
+# Type-check on surviving mutants (mypy catches more than tests alone).
+type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
+# Keep mutation locality tight — glob paths use prefix, then we
+# explicitly skip CLI dispatcher + re-export stubs below.
+do_not_mutate = [
+    "src/melosviz/cli/.*\\.py$",          # CLI glue / entry-points
+    "src/melosviz/runtime/touchdesigner/__init__\\.py$",  # re-export only
+    "src/melosviz/.*/__init__\\.py$",      # package init stubs (no logic)
+]

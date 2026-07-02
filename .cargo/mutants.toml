@@ -1,0 +1,81 @@
+# cargo-mutants configuration for MelosViz workspace.
+#
+# cargo-mutants exercises every mutation operator on each function and
+# verifies that the existing test suite kills the mutant. Run from the repo
+# root:
+#
+#   cargo mutants --workspace --no-shuffle -j 4 \
+#                  --in-place          --rebaseline \
+#                  --output mutants.out
+#
+# or per-crate:
+#   cargo mutants -p melosviz-mir --test-threads 4
+#   cargo mutants -p melosviz-render-wgpu --test-threads 4
+#
+# Target: >=75% mutation kill-score across both crates
+# (matches .qgate.toml [mutation].target_score).
+
+# Files / modules cargo-mutants should NOT mutate (build scripts, benches,
+# generated code, examples). Tests are NOT skipped by default — mutation
+# operators are applied to source modules and the existing test suite is
+# the discriminator.
+exclude_globs = [
+    "**/target/**",
+    "**/build.rs",
+    "**/examples/**",
+    "**/benches/**",
+]
+
+# Inspect every source file; do not bail on a single surviving mutant so
+# the run finishes and reports the score.
+no_shuffle = true
+
+# Mutation operators enabled by default (cargo-mutants 25.x default set is
+# already broad). Restricting to a tighter subset speeds up nightly runs:
+#
+#   - "arithmetic": +/-/*/%
+#   - "boolean": && / ||
+#   - "bitwise":   & / | / ^ / << / >>
+#   - "comparison": ==, !=, <, <=, >, >=
+#   - "constants": replace literals with 0 / 1 / bool::default
+#   - "if":        flip then-branch / else-branch
+#   - "match":     swap match arms, drop arms
+#   - "negation":  !x -> x, x -> !x
+#   - "return":    early-return removal
+#   - "swap":      function-call swap with `default`
+#   - "unreachable_replace_with_default"
+#   - "unused_loop_body"
+enabled_operators = [
+    "arithmetic",
+    "boolean",
+    "bitwise",
+    "comparison",
+    "constants",
+    "if",
+    "match",
+    "negation",
+    "return",
+    "swap",
+    "unreachable_replace_with_default",
+]
+
+# Per-crate test-thread budget: keep total workers modest to share CI
+# resources with the Python mutants run.
+[per_crate]
+"melosviz-mir" = { test_threads = 4 }
+"melosviz-render-wgpu" = { test_threads = 2 }
+
+# Cargo profile cargo-mutants uses to compile mutants as quickly as possible.
+[profile.dev]
+opt-level = 0
+debug = false
+debug-assertions = false
+incremental = true
+codegen-units = 256
+
+[profile.test]
+opt-level = 0
+debug = false
+debug-assertions = false
+incremental = true
+codegen-units = 256
