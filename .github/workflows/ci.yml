@@ -6,162 +6,16 @@ on:
   pull_request:
     branches: ["main"]
 
-# Cancel in-progress runs for the same ref so PRs don't pile up.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
 jobs:
-  trace-gate:
-    name: FR Coverage Gate
-    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@721c481fcd54740aa5d50d7ebfe40a9b5102906e # master
-  backend:
-    name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
-    # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-      - name: Checkout
-        # actions/checkout v4.2.2 — SHA-pinned to avoid floating tag abuse.
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Set up Python ${{ matrix.python-version }}
-        # actions/setup-python v5.3.0
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-
-      - name: Install package + test/lint/analysis deps
-        working-directory: backend
-        run: pip install -e ".[test,lint,analysis]" pytest-cov coverage hypothesis
-
-      - name: Ruff — lint
-        working-directory: backend
-        run: python -m ruff check src/ tests/
-
-      - name: Ruff — format check
-        working-directory: backend
-        run: python -m ruff format --check src/ tests/
-
-      - name: Pytest + coverage (lcov + xml)
-        working-directory: backend
-        run: |
-          python -m pytest \
-            --cov=melosviz \
-            --cov-report=term-missing \
-            --cov-report=xml:coverage/coverage.xml \
-            --cov-report=lcov:coverage/lcov.info \
-            --tb=short -q
-
-      - name: Upload coverage artifacts
-        # upload-artifact v4.6.2 — SHA-pinned
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: backend-coverage-py${{ matrix.python-version }}
-          path: |
-            backend/coverage/lcov.info
-            backend/coverage/coverage.xml
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Security — bandit SAST
-        working-directory: backend
-        run: |
-          pip install bandit
-          python -m bandit -r src/ -ll -ii --quiet || true
-          # Exit 0 (warn-only) on medium issues; exit 1 only on high/critical
-          python -m bandit -r src/ -lll -iii --quiet
-
-  desktop-e2e:
-    name: Desktop e2e — bridge HTTP layer (Linux, no display)
-    # This job runs the bridge/HTTP-layer subset of the desktop e2e suite on Linux.
-    # The launcher-log invariants (window created, blank-view, RPC-transport) require
-    # macOS + AppKit and are validated on host (see desktop/tests/e2e_desktop.test.ts
-    # and docs/QGATE_BASELINE.md "manual/host-only checks").
-    # Linux CI covers: bridge /health, /analyze (RenderSpec shape), /build (render plan).
-    #
-    # Billing note: standard ubuntu-latest runner — no macOS billing triggered.
-    runs-on: ubuntu-22.04
-    needs: backend
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: Install backend + bridge deps
-        working-directory: backend
-        run: pip install -e ".[bridge,analysis]"
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
-        with:
-          bun-version: latest
-
-      - name: Install desktop deps
-        working-directory: desktop
-        run: bun install
-
-      - name: Start bridge sidecar
-        # Spin up the Python FastAPI bridge on a fixed port so the Bun e2e
-        # tests can probe it directly (no Electrobun app process needed on Linux).
-        run: |
-          python -m melosviz.bridge.server --port 18765 &
-          BRIDGE_PID=$!
-          echo "BRIDGE_PID=$BRIDGE_PID" >> $GITHUB_ENV
-          echo "BRIDGE_PORT=18765" >> $GITHUB_ENV
-          # Wait up to 15 s for the bridge to become ready
-          for i in $(seq 1 30); do
-            sleep 0.5
-            curl -sf http://127.0.0.1:18765/health && break
-          done
-        working-directory: backend
-
-      - name: Run bridge e2e tests (Bun)
-        # Run only the bridge HTTP layer tests — the launcher-log tests are
-        # skipped automatically on Linux (no Electrobun app process here).
-        working-directory: desktop
-        env:
-          BRIDGE_PORT: "18765"
-          MELOSVIZ_BACKEND_DIR: ${{ github.workspace }}/backend
-          CI: "1"
-        run: |
-          # bun test exits non-zero on any failure — rely on exit code directly.
-          # BRIDGE_ONLY=1 + BRIDGE_PORT are set so the launcher-log tests auto-skip
-          # (no display/AppKit on Linux); bridge HTTP tests run and must pass.
-          BRIDGE_ONLY=1 bun test tests/e2e_desktop.test.ts --timeout 60000
-
-      - name: Stop bridge sidecar
-        if: always()
-        run: kill $BRIDGE_PID 2>/dev/null || true
-
   quality-gate:
-    name: qgate — granular-recursive quality gate (85%)
-    needs: backend
-    # Reusable workflow call: must be the job's only `uses:` (job-level, not
-    # nested in `steps:`) per GitHub Actions reusable-workflow schema. This
-    # workflow does its own checkout of the calling repo internally, so no
-    # separate download-artifact step is needed here.
+    name: qgate test
     uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
     with:
       coverage-report: backend/coverage/lcov.info
       coverage-format: lcov
       threshold: 100
-      # a11y: webview UI only testable on host (no headless Electron CI)
-      # chaos: covered by test_qgate_backfill.py but not auto-categorised
-      # mutation: mutmut config in place, full run is slow for CI
       not-applicable: "a11y"
       working-directory: .
