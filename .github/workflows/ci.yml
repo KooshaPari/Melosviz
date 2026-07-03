@@ -151,25 +151,17 @@ jobs:
   quality-gate:
     name: qgate — granular-recursive quality gate (85%)
     needs: backend
-    # Linux only — standard runner, no billing
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download backend coverage (Python 3.12)
-        # download-artifact v4.2.1 — SHA-pinned
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
-        with:
-          name: backend-coverage-py3.12
-          path: backend/coverage
-
-      - name: Run qgate
-        uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
-        with:
-          coverage-report: backend/coverage/lcov.info
-          coverage-format: lcov
-          threshold: 100
-          # a11y: webview UI only testable on host (no headless Electron CI)
-          # chaos: covered by test_qgate_backfill.py but not auto-categorised
-          # mutation: mutmut config in place, full run is slow for CI
-          not-applicable: "a11y"
-          working-directory: .
+    # Reusable workflow call: must be the job's only `uses:` (job-level, not
+    # nested in `steps:`) per GitHub Actions reusable-workflow schema. This
+    # workflow does its own checkout of the calling repo internally, so no
+    # separate download-artifact step is needed here.
+    uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
+    with:
+      coverage-report: backend/coverage/lcov.info
+      coverage-format: lcov
+      threshold: 100
+      # a11y: webview UI only testable on host (no headless Electron CI)
+      # chaos: covered by test_qgate_backfill.py but not auto-categorised
+      # mutation: mutmut config in place, full run is slow for CI
+      not-applicable: "a11y"
+      working-directory: .
