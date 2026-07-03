@@ -24,6 +24,25 @@
 //!   Output: raw RGBA bytes written to stdout (no header/framing).
 //!   Errors: written to stderr; exit code 1.
 //!
+//! ## `export-png` ← T2I "see-it" lane: single viewable PNG
+//!   Render one frame from a RenderSpec and write a PNG the operator can open
+//!   directly (no raw bytes, no ffmpeg).
+//!
+//!   ```text
+//!   melosviz-render export-png --spec spec.json --frame 0 --out frame0.png
+//!   open frame0.png
+//!   ```
+//!
+//! ## `demo-frames` ← T2I "see-it" lane: frame sequence + contact sheet
+//!   Render a range of frames, write each as a numbered PNG in `--out-dir`,
+//!   and write a horizontal contact-sheet `sheet.png` in the same directory.
+//!
+//!   ```text
+//!   melosviz-render demo-frames --spec spec.json \
+//!       --frame-start 0 --frame-end 30 --out-dir demo_out/
+//!   open demo_out/sheet.png
+//!   ```
+//!
 //! # Python integration
 //!
 //! ```python
@@ -66,6 +85,17 @@ enum Commands {
     ///   melosviz-render export-frame --spec <path> --frame <N>
     /// and reads `width × height × 4` RGBA bytes from stdout.
     ExportFrame(ExportFrameArgs),
+    /// Render one frame and write a viewable PNG file (T2I see-it lane).
+    ///
+    ///   melosviz-render export-png --spec spec.json --frame 0 --out frame0.png
+    ///   open frame0.png
+    ExportPng(ExportPngArgs),
+    /// Render a frame range to numbered PNGs + a contact-sheet (T2I see-it lane).
+    ///
+    ///   melosviz-render demo-frames --spec spec.json \
+    ///       --frame-start 0 --frame-end 30 --out-dir demo_out/
+    ///   open demo_out/sheet.png
+    DemoFrames(DemoFramesArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -106,6 +136,56 @@ struct ExportFrameArgs {
     height: Option<u32>,
 }
 
+#[derive(Parser, Debug)]
+struct ExportPngArgs {
+    /// Path to a RenderSpec v2 JSON file.
+    #[arg(short, long)]
+    spec: PathBuf,
+
+    /// Frame index to render (0-based; defaults to 0).
+    #[arg(long, default_value_t = 0)]
+    frame: u32,
+
+    /// Output PNG path.
+    #[arg(long, default_value = "frame0.png")]
+    out: PathBuf,
+
+    /// Override output width (default: from spec metadata).
+    #[arg(long)]
+    width: Option<u32>,
+
+    /// Override output height (default: from spec metadata).
+    #[arg(long)]
+    height: Option<u32>,
+}
+
+#[derive(Parser, Debug)]
+struct DemoFramesArgs {
+    /// Path to a RenderSpec v2 JSON file.
+    #[arg(short, long)]
+    spec: PathBuf,
+
+    /// First frame to render (0-based, inclusive; default 0).
+    #[arg(long, default_value_t = 0)]
+    frame_start: u32,
+
+    /// Last frame to render (exclusive; default 30).
+    #[arg(long, default_value_t = 30)]
+    frame_end: u32,
+
+    /// Output directory for numbered PNGs and sheet.png.
+    #[arg(long, default_value = "demo_out")]
+    out_dir: PathBuf,
+
+    /// Contact-sheet thumbnail width per frame (0 = auto: frame_width/8).
+    #[arg(long, default_value_t = 0)]
+    thumb_width: u32,
+
+    /// Contact-sheet thumbnail height per frame (0 = auto: frame_height/8).
+    #[arg(long, default_value_t = 0)]
+    thumb_height: u32,
+}
+
 fn main() -> Result<()> {
     env_logger::init();
     let cli = Cli::parse();
@@ -113,6 +193,8 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::RenderMp4(args) => run_render_mp4(args),
         Commands::ExportFrame(args) => run_export_frame(args),
+        Commands::ExportPng(args) => run_export_png(args),
+        Commands::DemoFrames(args) => run_demo_frames(args),
     }
 }
 
@@ -178,5 +260,77 @@ fn run_export_frame(args: ExportFrameArgs) -> Result<()> {
         "export-frame: wrote {} bytes ({width}x{height} RGBA) to stdout",
         rgba_bytes.len()
     );
+    Ok(())
+}
+
+fn run_export_png(args: ExportPngArgs) -> Result<()> {
+    let spec_json = std::fs::read_to_string(&args.spec)
+        .map_err(|e| anyhow::anyhow!("Cannot read spec file {:?}: {e}", args.spec))?;
+    let spec = melosviz_render_wgpu::spec::RenderSpec::from_json(&spec_json)
+        .map_err(|e| anyhow::anyhow!("Invalid RenderSpec JSON: {e}"))?;
+
+    let width = args.width.unwrap_or(spec.metadata.width).max(1);
+    let height = args.height.unwrap_or(spec.metadata.height).max(1);
+    let frame_idx = args.frame;
+
+    log::info!(
+        "melosviz-render export-png: spec={:?} frame={} {}x{} out={:?}",
+        args.spec,
+        frame_idx,
+        width,
+        height,
+        args.out,
+    );
+
+    pollster::block_on(async {
+        let timeline = melosviz_render_wgpu::timeline::Timeline::from_spec(&spec);
+        let uniforms = timeline.sample(frame_idx).with_frame_index(frame_idx);
+        melosviz_render_wgpu::export::export_frame_to_png(width, height, &uniforms, &args.out).await
+    })?;
+
+    eprintln!("Wrote: {}", args.out.display());
+    Ok(())
+}
+
+fn run_demo_frames(args: DemoFramesArgs) -> Result<()> {
+    let spec_json = std::fs::read_to_string(&args.spec)
+        .map_err(|e| anyhow::anyhow!("Cannot read spec file {:?}: {e}", args.spec))?;
+    let spec = melosviz_render_wgpu::spec::RenderSpec::from_json(&spec_json)
+        .map_err(|e| anyhow::anyhow!("Invalid RenderSpec JSON: {e}"))?;
+
+    log::info!(
+        "melosviz-render demo-frames: spec={:?} frames={}..{} out-dir={:?}",
+        args.spec,
+        args.frame_start,
+        args.frame_end,
+        args.out_dir,
+    );
+
+    let written = pollster::block_on(async {
+        melosviz_render_wgpu::export::export_frames_to_dir(
+            &spec,
+            args.frame_start,
+            args.frame_end,
+            &args.out_dir,
+            args.thumb_width,
+            args.thumb_height,
+        )
+        .await
+    })?;
+
+    eprintln!(
+        "Wrote {} files to {}:",
+        written.len(),
+        args.out_dir.display()
+    );
+    for p in &written {
+        eprintln!("  {}", p.display());
+    }
+    if let Some(sheet) = written
+        .iter()
+        .find(|p| p.file_name().is_some_and(|n| n == "sheet.png"))
+    {
+        eprintln!("\nSee-it: open {}", sheet.display());
+    }
     Ok(())
 }

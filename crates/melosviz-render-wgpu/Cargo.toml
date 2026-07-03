@@ -32,6 +32,9 @@ anyhow = "1"
 ahash = "0.8"
 # Byte order for rawvideo output
 bytemuck = { version = "1", features = ["derive"] }
+# PNG encoding for export-png / demo-frames subcommands
+# wraps: image 0.25
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [dev-dependencies]
 # tempdir for headless tests
