@@ -49,7 +49,11 @@ fn palette_rgb_for_frame(spec: &RenderSpec, frame_idx: u32) -> (f32, f32, f32) {
         .map(|s| s.as_str())
         .unwrap_or("#00e6ff");
 
-    (hex_channel(hex, 0), hex_channel(hex, 1), hex_channel(hex, 2))
+    (
+        hex_channel(hex, 0),
+        hex_channel(hex, 1),
+        hex_channel(hex, 2),
+    )
 }
 
 /// Build [`FrameUniforms`] for `frame_idx` from a [`RenderSpec`].
@@ -109,7 +113,11 @@ mod tests {
     fn energy_flows_from_spec_to_uniforms() {
         let spec = make_spec_with_keyframe(0.75, 0.6, 0.4, 0.3);
         let u = conductor_uniforms_for_frame(&spec, 0);
-        assert!((u.energy - 0.75).abs() < 1e-5, "energy mismatch: {}", u.energy);
+        assert!(
+            (u.energy - 0.75).abs() < 1e-5,
+            "energy mismatch: {}",
+            u.energy
+        );
     }
 
     #[test]
@@ -127,17 +135,37 @@ mod tests {
     fn stems_flow_from_spec_to_uniforms() {
         let spec = make_spec_with_keyframe(0.5, 0.5, 0.8, 0.7);
         let u = conductor_uniforms_for_frame(&spec, 0);
-        assert!((u.stem_drums - 0.8).abs() < 1e-5, "stem_drums: {}", u.stem_drums);
-        assert!((u.stem_bass - 0.7).abs() < 1e-5, "stem_bass: {}", u.stem_bass);
-        assert!((u.stem_vocals - 0.2).abs() < 1e-5, "stem_vocals: {}", u.stem_vocals);
-        assert!((u.stem_other - 0.1).abs() < 1e-5, "stem_other: {}", u.stem_other);
+        assert!(
+            (u.stem_drums - 0.8).abs() < 1e-5,
+            "stem_drums: {}",
+            u.stem_drums
+        );
+        assert!(
+            (u.stem_bass - 0.7).abs() < 1e-5,
+            "stem_bass: {}",
+            u.stem_bass
+        );
+        assert!(
+            (u.stem_vocals - 0.2).abs() < 1e-5,
+            "stem_vocals: {}",
+            u.stem_vocals
+        );
+        assert!(
+            (u.stem_other - 0.1).abs() < 1e-5,
+            "stem_other: {}",
+            u.stem_other
+        );
     }
 
     #[test]
     fn frame_index_is_injected() {
         let spec = make_spec_with_keyframe(0.5, 0.5, 0.5, 0.5);
         let u = conductor_uniforms_for_frame(&spec, 15);
-        assert!((u.frame_index - 15.0).abs() < 1e-5, "frame_index: {}", u.frame_index);
+        assert!(
+            (u.frame_index - 15.0).abs() < 1e-5,
+            "frame_index: {}",
+            u.frame_index
+        );
     }
 
     #[test]
@@ -146,9 +174,21 @@ mod tests {
         let spec = make_spec_with_keyframe(0.5, 0.5, 0.5, 0.5);
         let u = conductor_uniforms_for_frame(&spec, 0);
         // #FF8040 → R=0xFF/255, G=0x80/255, B=0x40/255
-        assert!((u.palette_r - 1.0).abs() < 0.005, "palette_r: {}", u.palette_r);
-        assert!((u.palette_g - 0.5019).abs() < 0.005, "palette_g: {}", u.palette_g);
-        assert!((u.palette_b - 0.2510).abs() < 0.005, "palette_b: {}", u.palette_b);
+        assert!(
+            (u.palette_r - 1.0).abs() < 0.005,
+            "palette_r: {}",
+            u.palette_r
+        );
+        assert!(
+            (u.palette_g - 0.5019).abs() < 0.005,
+            "palette_g: {}",
+            u.palette_g
+        );
+        assert!(
+            (u.palette_b - 0.2510).abs() < 0.005,
+            "palette_b: {}",
+            u.palette_b
+        );
     }
 
     #[test]
@@ -178,9 +218,21 @@ mod tests {
         };
         let u = conductor_uniforms_for_frame(&spec, 0);
         // #00E6FF → R=0, G=0xE6/255≈0.902, B=1.0
-        assert!((u.palette_r - 0.0).abs() < 0.005, "palette_r: {}", u.palette_r);
-        assert!((u.palette_g - 0.902).abs() < 0.005, "palette_g: {}", u.palette_g);
-        assert!((u.palette_b - 1.0).abs() < 0.005, "palette_b: {}", u.palette_b);
+        assert!(
+            (u.palette_r - 0.0).abs() < 0.005,
+            "palette_r: {}",
+            u.palette_r
+        );
+        assert!(
+            (u.palette_g - 0.902).abs() < 0.005,
+            "palette_g: {}",
+            u.palette_g
+        );
+        assert!(
+            (u.palette_b - 1.0).abs() < 0.005,
+            "palette_b: {}",
+            u.palette_b
+        );
     }
 
     #[test]
@@ -241,10 +293,22 @@ mod tests {
         let spec = RenderSpec::from_json(json).expect("parse spec");
         let u = conductor_uniforms_for_frame(&spec, 0);
         assert!((u.energy - 0.65).abs() < 1e-5, "energy: {}", u.energy);
-        assert!((u.beat_strength - 0.8).abs() < 1e-5, "beat: {}", u.beat_strength);
+        assert!(
+            (u.beat_strength - 0.8).abs() < 1e-5,
+            "beat: {}",
+            u.beat_strength
+        );
         assert!((u.stem_drums - 0.9).abs() < 1e-5, "drums: {}", u.stem_drums);
         // #FF0080 → R=1.0, G=0.0, B=0.502
-        assert!((u.palette_r - 1.0).abs() < 0.005, "palette_r: {}", u.palette_r);
-        assert!((u.palette_g - 0.0).abs() < 0.005, "palette_g: {}", u.palette_g);
+        assert!(
+            (u.palette_r - 1.0).abs() < 0.005,
+            "palette_r: {}",
+            u.palette_r
+        );
+        assert!(
+            (u.palette_g - 0.0).abs() < 0.005,
+            "palette_g: {}",
+            u.palette_g
+        );
     }
 }
