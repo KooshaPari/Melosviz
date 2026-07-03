@@ -410,6 +410,181 @@ def _try_import_demucs() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Crash-isolated beat tracking
+# ---------------------------------------------------------------------------
+# numba 0.66.0 (the latest cp314 wheel) is broken on CPython 3.14 — the JIT
+# path in librosa.beat.beat_track() triggers a SIGSEGV (exit 139) that
+# cannot be caught by try/except inside the same process.  The workaround is
+# to run beat_track in a *child process* (spawn context) so the parent can
+# detect the crash via a non-zero exit code and fall back gracefully.
+#
+# When numba is eventually fixed upstream, the subprocess path will simply
+# succeed again — no code change required.  librosa.beat.beat_track remains
+# the primary path; the numpy fallback is only activated on child crash.
+# ---------------------------------------------------------------------------
+
+def _beat_track_worker(y_list: list[float], sr: int, result_path: str) -> None:
+    """Worker function executed in a spawned child process.
+
+    Writes (tempo_bpm, beat_times_list) as a JSON file to *result_path* on
+    success.  If numba segfaults the process dies — the parent detects this
+    via exitcode and uses the numpy fallback instead.
+    """
+    import json as _json
+    import librosa  # type: ignore[import-not-found]
+    import numpy as _np
+
+    y = _np.array(y_list, dtype=_np.float32)
+    tempo_raw, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+    tempo_bpm = float(_np.atleast_1d(tempo_raw)[0])
+    beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
+    with open(result_path, "w") as fh:
+        _json.dump({"tempo_bpm": tempo_bpm, "beat_times": beat_times}, fh)
+
+
+def _numpy_beat_fallback(y: Any, sr: int) -> tuple[float, list[float]]:
+    """Pure-numpy tempo/beat estimator — never imports or triggers numba.
+
+    Algorithm
+    ---------
+    1. Onset envelope: spectral flux (positive first-difference of the
+       log-magnitude STFT summed over frequency bins).  STFT itself is
+       implemented via numpy.fft — no numba path.
+    2. Tempo: dominant lag from the autocorrelation of the onset envelope,
+       converted to BPM.  Clamped to [40, 240] BPM.
+    3. Beats: peak-pick indices on the onset envelope using a simple
+       threshold (mean + 0.5 * std) with a minimum inter-peak distance
+       derived from the estimated tempo period.
+
+    Parameters
+    ----------
+    y:
+        Mono audio signal as a numpy float32/float64 array.
+    sr:
+        Sample rate in Hz.
+
+    Returns
+    -------
+    tempo_bpm:
+        Estimated tempo in BPM (float, 40–240).
+    beat_times:
+        List of beat times in seconds.
+    """
+    import numpy as _np
+
+    # --- 1. Onset envelope via spectral flux ---
+    hop_length = 512
+    n_fft = 2048
+    n_hops = max(1, (len(y) - n_fft) // hop_length + 1)
+
+    # Build log-magnitude STFT (numpy-only; no librosa/numba)
+    mag_prev = _np.zeros(n_fft // 2 + 1)
+    onset_env: list[float] = []
+    for i in range(n_hops):
+        frame = y[i * hop_length : i * hop_length + n_fft]
+        if len(frame) < n_fft:
+            frame = _np.pad(frame, (0, n_fft - len(frame)))
+        window = _np.hanning(n_fft)
+        spec = _np.abs(_np.fft.rfft(frame * window))
+        log_spec = _np.log1p(spec)
+        flux = float(_np.sum(_np.maximum(log_spec - mag_prev, 0.0)))
+        onset_env.append(flux)
+        mag_prev = log_spec
+
+    env = _np.array(onset_env, dtype=_np.float64)
+    # normalise
+    env_max = float(env.max()) or 1.0
+    env = env / env_max
+
+    # --- 2. Tempo from autocorrelation ---
+    # BPM range [40, 240] → lag range in hops
+    lag_min = max(1, int(60.0 / 240.0 * sr / hop_length))
+    lag_max = max(lag_min + 1, int(60.0 / 40.0 * sr / hop_length))
+    lag_max = min(lag_max, len(env) - 1)
+
+    if lag_max > lag_min:
+        acf = _np.correlate(env, env, mode="full")
+        acf = acf[len(acf) // 2 :]  # keep non-negative lags
+        window_acf = acf[lag_min : lag_max + 1]
+        best_lag = int(_np.argmax(window_acf)) + lag_min
+        tempo_bpm = float(60.0 * sr / hop_length / max(best_lag, 1))
+        tempo_bpm = max(40.0, min(240.0, tempo_bpm))
+    else:
+        tempo_bpm = 120.0  # safe default
+
+    # --- 3. Beat peak-pick ---
+    beat_period_hops = max(1, int(60.0 / tempo_bpm * sr / hop_length))
+    threshold = float(env.mean()) + 0.5 * float(env.std())
+    beat_hop_indices: list[int] = []
+    last_beat = -beat_period_hops
+    for i, v in enumerate(env):
+        if v >= threshold and (i - last_beat) >= beat_period_hops // 2:
+            beat_hop_indices.append(i)
+            last_beat = i
+
+    beat_times = [round(float(i * hop_length / sr), 4) for i in beat_hop_indices]
+    return tempo_bpm, beat_times
+
+
+def _safe_beat_track(y: Any, sr: int, librosa: Any) -> tuple[float, list[float]]:
+    """Run librosa.beat.beat_track in a child process to survive numba segfaults.
+
+    Returns (tempo_bpm, beat_times) from librosa on success, or from the
+    pure-numpy fallback (_numpy_beat_fallback) if the child crashes.
+
+    The child uses a *spawn* start method so it gets a clean process image —
+    any SIGSEGV from numba's JIT kills only the child; the parent catches the
+    non-zero exit code and activates the fallback.
+
+    Parameters
+    ----------
+    y:
+        Numpy float array (mono audio).
+    sr:
+        Sample rate in Hz.
+    librosa:
+        The already-imported librosa module (used only for frames_to_time on
+        the success path — no numba risk there).
+    """
+    import json as _json
+    import multiprocessing
+    import os
+    import tempfile
+
+    try:
+        # Use the spawn start method to get a clean child that won't inherit
+        # any already-initialised numba state from the parent.
+        ctx = multiprocessing.get_context("spawn")
+    except Exception:
+        return _numpy_beat_fallback(y, sr)
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tmp:
+        result_path = tmp.name
+
+    try:
+        proc = ctx.Process(
+            target=_beat_track_worker,
+            args=(y.tolist(), sr, result_path),
+        )
+        proc.start()
+        proc.join(timeout=60)  # 60 s hard limit — generous for long tracks
+
+        if proc.exitcode == 0:
+            with open(result_path) as fh:
+                data = _json.load(fh)
+            return float(data["tempo_bpm"]), list(data["beat_times"])
+        # Child crashed (exit 139 = SIGSEGV) or timed out — use numpy fallback
+        return _numpy_beat_fallback(y, sr)
+    except Exception:
+        return _numpy_beat_fallback(y, sr)
+    finally:
+        try:
+            os.unlink(result_path)
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # MIR helpers (librosa-backed with RMS fallbacks)
 # ---------------------------------------------------------------------------
 
@@ -802,10 +977,10 @@ def analyze_wav_rich(
             y, sr = librosa.load(str(wav_path), sr=None, mono=True)
             duration_sec = float(len(y) / sr)
 
-            # Beat tracking
-            tempo_raw, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-            tempo_bpm = float(np.atleast_1d(tempo_raw)[0])
-            beat_times = librosa.frames_to_time(beat_frames, sr=sr).tolist()
+            # Beat tracking — run in a child process to survive numba segfaults
+            # on CPython 3.14 (numba 0.66.0 SIGSEGV; exit 139).  Falls back to
+            # _numpy_beat_fallback automatically when the child crashes.
+            tempo_bpm, beat_times = _safe_beat_track(y, sr, librosa)
             if len(beat_times) > 1:
                 ibi = np.diff(beat_times)
                 tempo_curve = (60.0 / np.maximum(ibi, 1e-6)).tolist()
