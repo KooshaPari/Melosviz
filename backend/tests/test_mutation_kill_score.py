@@ -16,31 +16,23 @@ mutation operator it kills, so a survivor can be triaged by operator.
 
 from __future__ import annotations
 
-import json
 import math
 import wave
 from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import patch
-
-import pytest
 
 from melosviz.analysis.models import (
     DenseKeyframe,
-    MIRSummary,
-    MoodVector,
     RenderSpec,
-    SceneSegment,
-    StemFrame,
-    TimelineEvent,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers — minimal test assets with bit-level assertions.
 # ---------------------------------------------------------------------------
 
-def _make_wav(path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440) -> Path:
+
+def _make_wav(
+    path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440
+) -> Path:
     """Write a <seconds>-long mono sine WAV.  Returns the same path."""
     import struct
 
@@ -73,8 +65,7 @@ def _make_render_spec(*, with_v2: bool = True) -> RenderSpec:
     if with_v2:
         # 8 dense keyframes spanning 4 seconds
         spec.dense_keyframes = [
-            {"t": round(t * 0.5, 3), "energy": 0.5, "brightness": 0.5}
-            for t in range(8)
+            {"t": round(t * 0.5, 3), "energy": 0.5, "brightness": 0.5} for t in range(8)
         ]
         spec.timeline_events = [
             {"t": 0.0, "kind": "beat", "strength": 0.9},
@@ -92,6 +83,7 @@ def _make_render_spec(*, with_v2: bool = True) -> RenderSpec:
 # ---------------------------------------------------------------------------
 # AOR (Arithmetic Operator Replacement) — e.g. + ↔ -, * ↔ /
 # ---------------------------------------------------------------------------
+
 
 class TestAOR_Killers:
     """Assure that swapping + for -, * for / in DSP / coords trips a test."""
@@ -113,18 +105,16 @@ class TestAOR_Killers:
 # ROR (Relational Operator Replacement) — == ↔ !=, < ↔ <= etc.
 # ---------------------------------------------------------------------------
 
+
 class TestROR_Killers:
     """Relational operator mutations — killers around predicates."""
 
     def test_render_spec_v2_round_trip_preserves_dense_keyframes(self) -> None:
         spec = _make_render_spec()
         spec.dense_keyframes = [
-            {"t": round(i * 0.1, 3), "energy": i / 10.0}
-            for i in range(20)
+            {"t": round(i * 0.1, 3), "energy": i / 10.0} for i in range(20)
         ]
-        roundtrip = RenderSpec.model_validate(
-            RenderSpec.model_dump(spec)
-        )
+        roundtrip = RenderSpec.model_validate(RenderSpec.model_dump(spec))
         # 0.1-spaced t values must survive exactly — catches == → != around compare.
         assert len(roundtrip.dense_keyframes) == 20
         assert roundtrip.dense_keyframes[0]["t"] == 0.0
@@ -135,15 +125,14 @@ class TestROR_Killers:
 # BOOL (boolean literal flip) — True ↔ False
 # ---------------------------------------------------------------------------
 
+
 class TestBOOL_Killers:
     """Boolean-flips around default factories and feature switches."""
 
     def test_render_spec_default_extra_is_ignored(self) -> None:
         # spec.model_config["extra"] == "ignore" must be enforced.
         # Mutating "ignore" → "allow" lets extra fields through.
-        spec = RenderSpec.model_validate(
-            {"metadata": {}, "extra_undeclared": "boom"}
-        )
+        spec = RenderSpec.model_validate({"metadata": {}, "extra_undeclared": "boom"})
         # Strict extra handling: ignored fields vanish.
         assert not hasattr(spec, "extra_undeclared")
 
@@ -151,6 +140,7 @@ class TestBOOL_Killers:
 # ---------------------------------------------------------------------------
 # NUM (numeric literal mutation)
 # ---------------------------------------------------------------------------
+
 
 class TestNUM_Killers:
     """Numeric-literal mutations around magic numbers and durations."""
@@ -171,11 +161,13 @@ class TestNUM_Killers:
 # STR_LIT — string literal mutations ("" → "x")
 # ---------------------------------------------------------------------------
 
+
 class TestSTR_LIT_Killers:
     """String-literal mutations on default presets / theme strings."""
 
     def test_genre_theme_values_are_distinct(self) -> None:
         from melosviz.analysis.models import GenreTheme
+
         values = {g.value for g in GenreTheme}
         # If any string literal "" → "x" mutation happened, set membership shifts.
         assert len(values) == len(list(GenreTheme))
@@ -189,6 +181,7 @@ class TestSTR_LIT_Killers:
 # ---------------------------------------------------------------------------
 # BRANCH (if/else branch flip)
 # ---------------------------------------------------------------------------
+
 
 class TestBRANCH_Killers:
     """Branch flips in conditional logic."""
@@ -205,11 +198,13 @@ class TestBRANCH_Killers:
 # Integration: ensures that mutating a downstream consumer breaks.
 # ---------------------------------------------------------------------------
 
+
 class TestEndToEnd_MutationGuard:
     """End-to-end guards — anything that swaps < for <= or == must fail."""
 
     def test_video_exporter_writes_file_when_keys_valid(self, tmp_path: Path) -> None:
         from melosviz.render.video_exporter import export_video
+
         spec = _make_render_spec()
         wav = _make_wav(tmp_path / "track.wav", seconds=1.0)
         spec.metadata["source_audio"] = str(wav)

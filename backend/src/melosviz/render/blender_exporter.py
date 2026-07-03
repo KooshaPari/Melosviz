@@ -347,18 +347,20 @@ def build_bpy_script(
         if isinstance(raw_stems, dict):
             stems = {k: float(v) for k, v in raw_stems.items()}
 
-        kf_data.append({
-            "frame": frame,
-            "energy": safe_energy[idx] if idx < len(safe_energy) else 0.5,
-            "brightness": float(kf.get("brightness", 0.5)),
-            "valence": float(kf.get("valence", 0.5)),
-            "arousal": float(kf.get("arousal", 0.5)),
-            "beat_strength": float(kf.get("beat_strength", 0.0)),
-            "onset_strength": float(kf.get("onset_strength", 0.0)),
-            "spectral_centroid": float(kf.get("spectral_centroid", 2000.0)),
-            "stems": stems,
-            "interp": _interp_type(str(kf.get("easing", "linear"))),
-        })
+        kf_data.append(
+            {
+                "frame": frame,
+                "energy": safe_energy[idx] if idx < len(safe_energy) else 0.5,
+                "brightness": float(kf.get("brightness", 0.5)),
+                "valence": float(kf.get("valence", 0.5)),
+                "arousal": float(kf.get("arousal", 0.5)),
+                "beat_strength": float(kf.get("beat_strength", 0.0)),
+                "onset_strength": float(kf.get("onset_strength", 0.0)),
+                "spectral_centroid": float(kf.get("spectral_centroid", 2000.0)),
+                "stems": stems,
+                "interp": _interp_type(str(kf.get("easing", "linear"))),
+            }
+        )
 
     # ---- Build segment colour table -----------------------------------------
     seg_data: list[dict[str, Any]] = []
@@ -375,15 +377,17 @@ def build_bpy_script(
             valence = 0.5
             arousal = 0.5
         dominant_stem = str(seg.get("dominant_stem", "other"))
-        seg_data.append({
-            "frame_start": int(round(start * fps)) + 1,
-            "frame_end": int(round(end * fps)) + 1,
-            "label": label,
-            "energy_mean": seg_energy,
-            "valence": valence,
-            "arousal": arousal,
-            "dominant_stem": dominant_stem,
-        })
+        seg_data.append(
+            {
+                "frame_start": int(round(start * fps)) + 1,
+                "frame_end": int(round(end * fps)) + 1,
+                "label": label,
+                "energy_mean": seg_energy,
+                "valence": valence,
+                "arousal": arousal,
+                "dominant_stem": dominant_stem,
+            }
+        )
 
     # ---- Convert palette to RGB floats for embedding -----------------------
     palette_rgb = [_hex_to_rgb(c) for c in (palette or ["#00f5ff"])]
@@ -666,10 +670,14 @@ def _mux_sequence_to_mp4(
     cmd = [
         ffmpeg,
         "-y",
-        "-framerate", str(fps),
-        "-i", frame_pattern,
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
+        "-framerate",
+        str(fps),
+        "-i",
+        frame_pattern,
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
         str(output_path),
     ]
     logger.debug("_mux_sequence_to_mp4: cmd=%s", cmd)
@@ -780,8 +788,9 @@ def export_blender(
         # ---- Run Blender headless ------------------------------------------
         cmd = [
             blender,
-            "-b",            # headless / background mode
-            "--python", str(script_path),
+            "-b",  # headless / background mode
+            "--python",
+            str(script_path),
         ]
         try:
             result = subprocess.run(
@@ -815,7 +824,9 @@ def export_blender(
         frame_pattern = str(frames_dir / f"frame_%04d{suffix}")
         _mux_sequence_to_mp4(frame_pattern, output_mp4, _fps)
 
-    if not output_mp4.exists() or output_mp4.stat().st_size == 0:  # pragma: no cover — defensive post-mux guard
+    if (
+        not output_mp4.exists() or output_mp4.stat().st_size == 0
+    ):  # pragma: no cover — defensive post-mux guard
         raise BlenderRenderError(
             f"MP4 mux reported success but no output at {output_mp4}."
         )

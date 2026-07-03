@@ -392,7 +392,9 @@ def assemble_multi_domain_scene(
             # Unwrap: if the angle jumped backward by more than π, it wrapped around
             if delta < -math.pi:
                 delta += 2.0 * math.pi
-            elif delta > math.pi:  # pragma: no cover — forward wrap; requires >π angular step between frames
+            elif (
+                delta > math.pi
+            ):  # pragma: no cover — forward wrap; requires >π angular step between frames
                 delta -= 2.0 * math.pi
             _accumulated += delta
             _prev_wrapped = wrapped

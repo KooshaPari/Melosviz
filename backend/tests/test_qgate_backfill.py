@@ -44,7 +44,10 @@ def _make_wav(path: Path, duration_s: float = 1.0, sample_rate: int = 44100) -> 
     # Simple 440 Hz sine wave
     import math
 
-    samples = [int(32767 * math.sin(2 * math.pi * 440 * i / sample_rate)) for i in range(num_frames)]
+    samples = [
+        int(32767 * math.sin(2 * math.pi * 440 * i / sample_rate))
+        for i in range(num_frames)
+    ]
     with wave.open(str(path), "w") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
@@ -208,7 +211,9 @@ class TestCLICommands:
     def test_cmd_diff_missing_file(self, tmp_path) -> None:
         from melosviz.cli.main import _cmd_diff
 
-        args = SimpleNamespace(spec_a=str(tmp_path / "a.json"), spec_b=str(tmp_path / "b.json"))
+        args = SimpleNamespace(
+            spec_a=str(tmp_path / "a.json"), spec_b=str(tmp_path / "b.json")
+        )
         rc = _cmd_diff(args)
         assert rc == 1
 
@@ -342,10 +347,13 @@ class TestConductorRegistry:
         from melosviz.render.blender_exporter import BlenderNotFoundError
 
         shim = _BlenderAdapterShim()
-        with patch(
-            "melosviz.render.blender_exporter.export_blender",
-            side_effect=BlenderNotFoundError("blender not found"),
-        ), pytest.raises(BlenderNotFoundError):
+        with (
+            patch(
+                "melosviz.render.blender_exporter.export_blender",
+                side_effect=BlenderNotFoundError("blender not found"),
+            ),
+            pytest.raises(BlenderNotFoundError),
+        ):
             shim.render(_minimal_render_spec(), output_path=tmp_path)
 
     def test_video_export_adapter_shim_render(self, tmp_path) -> None:
@@ -535,14 +543,19 @@ class TestOrchestrator:
         # _output_dir defaults to /tmp/melosviz-conductor when not given
         assert orch._output_dir is not None
 
-    def test_orchestrator_adapter_error_wraps_as_conductor_error(self, tmp_path) -> None:
+    def test_orchestrator_adapter_error_wraps_as_conductor_error(
+        self, tmp_path
+    ) -> None:
         from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
-        with patch(
-            "melosviz.render.video_exporter.export_video",
-            side_effect=ValueError("simulated adapter inner error"),
-        ), pytest.raises(ConductorError, match="adapter.*failed"):
+        with (
+            patch(
+                "melosviz.render.video_exporter.export_video",
+                side_effect=ValueError("simulated adapter inner error"),
+            ),
+            pytest.raises(ConductorError, match="adapter.*failed"),
+        ):
             orch.render(_minimal_render_spec(), scene_types=["video_export"])
 
     def test_orchestrator_assembly_encode_skips_in_loop(self, tmp_path) -> None:
@@ -691,6 +704,7 @@ class TestTDBridge:
         # OSC send raises OSError — bridge should log and continue
         with patch.object(bridge._osc, "send", side_effect=OSError("unreachable")):
             from melosviz.analysis.models import RenderSpec
+
             spec = RenderSpec(
                 metadata={"fps": 24, "duration": 1.0},
                 palette=[],
@@ -715,10 +729,13 @@ class TestVideoExporter:
     def test_export_video_no_ffmpeg_raises(self, tmp_path) -> None:
         from melosviz.render.video_exporter import FFMpegNotFoundError, export_video
 
-        with patch(
-            "melosviz.render.video_exporter._resolve_ffmpeg_binary",
-            side_effect=FFMpegNotFoundError("no ffmpeg"),
-        ), pytest.raises(FFMpegNotFoundError):
+        with (
+            patch(
+                "melosviz.render.video_exporter._resolve_ffmpeg_binary",
+                side_effect=FFMpegNotFoundError("no ffmpeg"),
+            ),
+            pytest.raises(FFMpegNotFoundError),
+        ):
             export_video(_minimal_render_spec(), output_dir=tmp_path)
 
     def test_export_video_palette_cycle(self, tmp_path) -> None:
@@ -810,9 +827,13 @@ except ImportError:
 @pytest.mark.skipif(not HAS_HYPOTHESIS, reason="hypothesis not installed")
 class TestPropertyPresets:
     @given(
-        bpm=st.floats(min_value=60.0, max_value=200.0, allow_nan=False, allow_infinity=False),
+        bpm=st.floats(
+            min_value=60.0, max_value=200.0, allow_nan=False, allow_infinity=False
+        ),
         fps=st.integers(min_value=1, max_value=60),
-        duration=st.floats(min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False),
+        duration=st.floats(
+            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
+        ),
     )
     @settings(max_examples=30)
     def test_cinematic_apply_always_sets_palette(
@@ -836,7 +857,9 @@ class TestPropertyPresets:
         from melosviz.analysis.models import RenderSpec
         from melosviz.presets.cinematic import apply
 
-        initial_events = [{"time": float(i), "type": "beat", "data": {}} for i in range(palette_size)]
+        initial_events = [
+            {"time": float(i), "type": "beat", "data": {}} for i in range(palette_size)
+        ]
         spec = RenderSpec(
             metadata={"fps": 24, "duration": 30.0},
             palette=[],
@@ -898,10 +921,13 @@ class TestChaosResilience:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
-        with patch(
-            "melosviz.render.video_exporter.export_video",
-            side_effect=RuntimeError("simulated adapter failure"),
-        ), pytest.raises((RuntimeError, Exception)):
+        with (
+            patch(
+                "melosviz.render.video_exporter.export_video",
+                side_effect=RuntimeError("simulated adapter failure"),
+            ),
+            pytest.raises((RuntimeError, Exception)),
+        ):
             orch.render(_minimal_render_spec(), scene_types=["video_export"])
 
     def test_td_bridge_osc_send_failure_propagates_as_warning(self) -> None:

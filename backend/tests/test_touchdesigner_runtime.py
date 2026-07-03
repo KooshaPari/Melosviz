@@ -6,25 +6,20 @@ Tests cover:
 """
 
 import json
+
 import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 from melosviz.runtime.touchdesigner.generator import (
-    OperatorNode,
-    OperatorGroup,
-    NetworkSpec,
-    GenerateResult,
-    generate_network,
-    render_spec_to_network,
     REQUIRED_GROUP_NAMES,
+    NetworkSpec,
+    OperatorGroup,
+    OperatorNode,
 )
 from melosviz.runtime.touchdesigner.live_scheduler import (
+    DEFAULT_LOOKAHEAD_MS,
     LiveScheduler,
     build_live_scheduler_spec,
-    DEFAULT_LOOKAHEAD_MS,
 )
-
 
 # =============================================================================
 # OperatorNode and OperatorGroup serialization tests
@@ -115,9 +110,7 @@ class TestNetworkSpec:
         """Minimal NetworkSpec with required groups."""
         spec = NetworkSpec(
             project_name="test_project",
-            groups=[
-                OperatorGroup(name=gname) for gname in REQUIRED_GROUP_NAMES
-            ],
+            groups=[OperatorGroup(name=gname) for gname in REQUIRED_GROUP_NAMES],
         )
         d = spec.to_dict()
         assert d["version"] == "1.0"
@@ -127,9 +120,7 @@ class TestNetworkSpec:
 
     def test_network_spec_with_metadata(self):
         """NetworkSpec stores and serializes metadata."""
-        spec = NetworkSpec(
-            meta={"estimated_bpm": 120.0, "duration": 180.0}
-        )
+        spec = NetworkSpec(meta={"estimated_bpm": 120.0, "duration": 180.0})
         d = spec.to_dict()
         assert d["meta"]["estimated_bpm"] == 120.0
         assert d["meta"]["duration"] == 180.0
@@ -255,15 +246,37 @@ class TestLiveSchedulerBuildSpec:
         plan = {
             "transitions": [5.0, 15.0, 25.0],
             "segments": [
-                {"beat_aligned_start": 5.0, "scene_type": "intro", "material": "soft", "camera_language": "wide", "intensity": 0.3},
-                {"beat_aligned_start": 15.0, "scene_type": "build", "material": "bright", "camera_language": "mid", "intensity": 0.6},
-                {"beat_aligned_start": 25.0, "scene_type": "drop", "material": "hard", "camera_language": "close", "intensity": 0.9},
+                {
+                    "beat_aligned_start": 5.0,
+                    "scene_type": "intro",
+                    "material": "soft",
+                    "camera_language": "wide",
+                    "intensity": 0.3,
+                },
+                {
+                    "beat_aligned_start": 15.0,
+                    "scene_type": "build",
+                    "material": "bright",
+                    "camera_language": "mid",
+                    "intensity": 0.6,
+                },
+                {
+                    "beat_aligned_start": 25.0,
+                    "scene_type": "drop",
+                    "material": "hard",
+                    "camera_language": "close",
+                    "intensity": 0.9,
+                },
             ],
         }
         spec = scheduler.build_spec(plan)
 
         assert len(spec["scene_change_events"]) == 3
-        assert [e["beat_time"] for e in spec["scene_change_events"]] == [5.0, 15.0, 25.0]
+        assert [e["beat_time"] for e in spec["scene_change_events"]] == [
+            5.0,
+            15.0,
+            25.0,
+        ]
 
     def test_build_spec_osc_args(self):
         """build_spec includes OSC args for scene-change message."""

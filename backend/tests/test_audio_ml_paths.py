@@ -24,7 +24,6 @@ from __future__ import annotations
 import math
 import struct
 import wave
-from array import array
 from pathlib import Path
 from unittest import mock
 
@@ -72,13 +71,17 @@ def _write_sine_wav(
         h.setframerate(sample_rate)
         frames = bytearray()
         for n in range(n_frames):
-            sample = int(amplitude * math.sin(2.0 * math.pi * freq_hz * n / sample_rate))
+            sample = int(
+                amplitude * math.sin(2.0 * math.pi * freq_hz * n / sample_rate)
+            )
             frames += struct.pack("<h", sample)
         h.writeframes(bytes(frames))
     return path
 
 
-def _write_silence_wav(path: Path, duration_sec: float = 0.5, sample_rate: int = 22050) -> Path:
+def _write_silence_wav(
+    path: Path, duration_sec: float = 0.5, sample_rate: int = 22050
+) -> Path:
     """Write a 16-bit mono PCM WAV file containing silence."""
     n_frames = int(duration_sec * sample_rate)
     with wave.open(str(path), "wb") as h:
@@ -161,7 +164,9 @@ class TestTryImportHelpers:
         assert _try_import_demucs() is True
 
     def test_try_import_demucs_returns_false_when_missing(self) -> None:
-        with mock.patch.dict("sys.modules", {"demucs": None, "demucs.pretrained": None}):
+        with mock.patch.dict(
+            "sys.modules", {"demucs": None, "demucs.pretrained": None}
+        ):
             assert _try_import_demucs() is False
 
 
@@ -277,7 +282,9 @@ class TestLibrosaSegmentBoundaries:
                 np.ones(sr, dtype=np.float32) * 0.8,
             ]
         )
-        segs = _librosa_segment_boundaries(librosa, np, y, sr, n_segments=4, duration_sec=3.0)
+        segs = _librosa_segment_boundaries(
+            librosa, np, y, sr, n_segments=4, duration_sec=3.0
+        )
         assert len(segs) == 4
         for start, end in segs:
             assert 0.0 <= start <= 3.0
@@ -289,7 +296,9 @@ class TestLibrosaSegmentBoundaries:
 
         sr = 22050
         y = np.ones(sr, dtype=np.float32)  # 1s of constant tone (no novelty)
-        segs = _librosa_segment_boundaries(librosa, np, y, sr, n_segments=6, duration_sec=1.0)
+        segs = _librosa_segment_boundaries(
+            librosa, np, y, sr, n_segments=6, duration_sec=1.0
+        )
         assert len(segs) == 6
 
 
@@ -323,8 +332,15 @@ class TestBuildDenseKeyframes:
         beat = [0.0] * n
         beat[3] = 1.0
         kfs = _build_dense_keyframes(
-            n, 1.0, [0.5] * n, [0.5] * n, [0.5] * n, [0.5] * n,
-            [0.0] * n, beat, [1000.0] * n,
+            n,
+            1.0,
+            [0.5] * n,
+            [0.5] * n,
+            [0.5] * n,
+            [0.5] * n,
+            [0.0] * n,
+            beat,
+            [1000.0] * n,
             {name: [0.0] * n for name in STEM_NAMES},
         )
         assert kfs[3]["beat_strength"] == 1.0
@@ -412,7 +428,16 @@ class TestSpectralStemFallback:
 class TestSeparateStemsDemucs:
     def test_returns_zero_stems_on_exception(self, sine_wav: Path) -> None:
         # Force the inner imports to raise → exception branch → zero stems
-        with mock.patch.dict("sys.modules", {"demucs": None, "demucs.apply": None, "demucs.pretrained": None, "torch": None, "torchaudio": None}):
+        with mock.patch.dict(
+            "sys.modules",
+            {
+                "demucs": None,
+                "demucs.apply": None,
+                "demucs.pretrained": None,
+                "torch": None,
+                "torchaudio": None,
+            },
+        ):
             chans = _separate_stems_demucs(sine_wav, 1.0, n_frames=5)
         assert set(chans) == {"drums", "bass", "vocals", "other"}
         for name in STEM_NAMES:
@@ -425,15 +450,19 @@ class TestSeparateStemsDemucs:
         fake_torch.no_grad.return_value.__enter__ = mock.MagicMock()
         fake_torch.no_grad.return_value.__exit__ = mock.MagicMock()
 
-        fake_apply_model = mock.MagicMock(return_value=mock.MagicMock(
-            squeeze=lambda dim: mock.MagicMock(
-                numpy=lambda: __import__("numpy").zeros((4, 1000), dtype="float32")
+        fake_apply_model = mock.MagicMock(
+            return_value=mock.MagicMock(
+                squeeze=lambda dim: mock.MagicMock(
+                    numpy=lambda: __import__("numpy").zeros((4, 1000), dtype="float32")
+                )
             )
-        ))
-        fake_get_model = mock.MagicMock(return_value=mock.MagicMock(
-            samplerate=22050,
-            eval=mock.MagicMock(),
-        ))
+        )
+        fake_get_model = mock.MagicMock(
+            return_value=mock.MagicMock(
+                samplerate=22050,
+                eval=mock.MagicMock(),
+            )
+        )
         fake_torchaudio = mock.MagicMock()
         fake_torchaudio.load.return_value = (
             __import__("numpy").zeros((1, 22050), dtype="float32"),
@@ -487,7 +516,9 @@ class TestAnalyzeWavRichE2E:
         return deterministic zero stems and assert the wiring routes the stems
         through correctly.
         """
-        with mock.patch.object(audio, "_separate_stems_demucs", return_value=_zero_stem_channels(10)) as spy:
+        with mock.patch.object(
+            audio, "_separate_stems_demucs", return_value=_zero_stem_channels(10)
+        ) as spy:
             spec = analyze_wav_rich(sine_wav, n_dense_fps=10, use_demucs=True)
         assert spy.called
         assert spec.metadata["sample_rate"] == 22050
@@ -517,7 +548,14 @@ class TestAnalyzeWavRichE2E:
         # novelty peaks than 4 in this short signal, so accept ≥ 1 (always ≥ intro+outro).
         assert len(spec.scene_segments) >= 1
         for seg in spec.scene_segments:
-            assert seg["label"] in {"intro", "outro", "drop", "chorus", "verse", "breakdown"}
+            assert seg["label"] in {
+                "intro",
+                "outro",
+                "drop",
+                "chorus",
+                "verse",
+                "breakdown",
+            }
 
     def test_metadata_contains_amplitude_envelope(self, sine_wav: Path) -> None:
         spec = analyze_wav_rich(sine_wav, n_dense_fps=10, use_demucs=False)

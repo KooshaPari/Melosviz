@@ -72,7 +72,11 @@ class Orchestrator:
         output_dir: Path | str | None = None,
         skip_assembly: bool = False,
     ) -> None:
-        self._output_dir = Path(output_dir) if output_dir is not None else Path("/tmp/melosviz-conductor")
+        self._output_dir = (
+            Path(output_dir)
+            if output_dir is not None
+            else Path("/tmp/melosviz-conductor")
+        )
         self._skip_assembly = skip_assembly
 
     def render(
@@ -143,7 +147,9 @@ class Orchestrator:
             scene_out_dir = self._output_dir / scene_type
             scene_out_dir.mkdir(parents=True, exist_ok=True)
 
-            logger.info("Orchestrator: dispatching scene_type=%r → %s", scene_type, adapter_cls)
+            logger.info(
+                "Orchestrator: dispatching scene_type=%r → %s", scene_type, adapter_cls
+            )
             try:
                 adapter = adapter_cls()
                 result = adapter.render(render_spec, output_path=scene_out_dir)

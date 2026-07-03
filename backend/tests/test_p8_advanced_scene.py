@@ -361,7 +361,9 @@ class TestSemanticScanner:
         audio_ctx = {"stems": {}, "onsets": {"hat": 0.7}}
         ch_low = evaluate_semantic_rules(spec_low, audio_ctx, base_cone_influence=0.5)
         ch_high = evaluate_semantic_rules(spec_high, audio_ctx, base_cone_influence=0.5)
-        assert ch_high.get("boost_reflective", 0.0) > ch_low.get("boost_reflective", 0.0)
+        assert ch_high.get("boost_reflective", 0.0) > ch_low.get(
+            "boost_reflective", 0.0
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -390,8 +392,20 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "intro", "start": 0.0, "end": 10.0, "mood": "chill", "dominant_stem": "other"},
-            {"label": "drop", "start": 10.0, "end": 25.0, "mood": "intense", "dominant_stem": "drums"},
+            {
+                "label": "intro",
+                "start": 0.0,
+                "end": 10.0,
+                "mood": "chill",
+                "dominant_stem": "other",
+            },
+            {
+                "label": "drop",
+                "start": 10.0,
+                "end": 25.0,
+                "mood": "intense",
+                "dominant_stem": "drums",
+            },
         ]
         path = generate_camera_path(segments, duration=25.0)
         assert isinstance(path, list)
@@ -401,7 +415,13 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "intro", "start": 0.0, "end": 15.0, "mood": "chill", "dominant_stem": "other"},
+            {
+                "label": "intro",
+                "start": 0.0,
+                "end": 15.0,
+                "mood": "chill",
+                "dominant_stem": "other",
+            },
         ]
         path = generate_camera_path(segments, duration=15.0)
         assert path[0].t == pytest.approx(0.0, abs=1e-3)
@@ -420,8 +440,14 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "drop", "start": 0.0, "end": 10.0, "mood": "intense", "dominant_stem": "drums",
-             "energy_mean": 0.9},
+            {
+                "label": "drop",
+                "start": 0.0,
+                "end": 10.0,
+                "mood": "intense",
+                "dominant_stem": "drums",
+                "energy_mean": 0.9,
+            },
         ]
         path = generate_camera_path(segments, duration=10.0)
         # The drop should produce cut_frenzy or handheld_push
@@ -433,8 +459,14 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "intro", "start": 0.0, "end": 10.0, "mood": "chill", "dominant_stem": "other",
-             "energy_mean": 0.1},
+            {
+                "label": "intro",
+                "start": 0.0,
+                "end": 10.0,
+                "mood": "chill",
+                "dominant_stem": "other",
+                "energy_mean": 0.1,
+            },
         ]
         path = generate_camera_path(segments, duration=10.0)
         langs = {kf.camera_language for kf in path}
@@ -444,9 +476,27 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "intro", "start": 0.0, "end": 8.0, "mood": "chill", "dominant_stem": "other"},
-            {"label": "build", "start": 8.0, "end": 16.0, "mood": "building", "dominant_stem": "bass"},
-            {"label": "drop", "start": 16.0, "end": 30.0, "mood": "intense", "dominant_stem": "drums"},
+            {
+                "label": "intro",
+                "start": 0.0,
+                "end": 8.0,
+                "mood": "chill",
+                "dominant_stem": "other",
+            },
+            {
+                "label": "build",
+                "start": 8.0,
+                "end": 16.0,
+                "mood": "building",
+                "dominant_stem": "bass",
+            },
+            {
+                "label": "drop",
+                "start": 16.0,
+                "end": 30.0,
+                "mood": "intense",
+                "dominant_stem": "drums",
+            },
         ]
         path = generate_camera_path(segments, duration=30.0)
         times = [kf.t for kf in path]
@@ -456,7 +506,13 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "intro", "start": 0.0, "end": 5.0, "mood": "chill", "dominant_stem": "other"},
+            {
+                "label": "intro",
+                "start": 0.0,
+                "end": 5.0,
+                "mood": "chill",
+                "dominant_stem": "other",
+            },
         ]
         path = generate_camera_path(segments, duration=5.0)
         for kf in path:
@@ -467,8 +523,14 @@ class TestProceduralCamera:
         from melosviz.scene.camera import generate_camera_path
 
         segments = [
-            {"label": "drop", "start": 0.0, "end": 20.0, "mood": "intense", "dominant_stem": "drums",
-             "energy_mean": 0.95},
+            {
+                "label": "drop",
+                "start": 0.0,
+                "end": 20.0,
+                "mood": "intense",
+                "dominant_stem": "drums",
+                "energy_mean": 0.95,
+            },
         ]
         path = generate_camera_path(segments, duration=20.0)
         for kf in path:
@@ -481,14 +543,29 @@ class TestProceduralCamera:
         class _FakeSpec:
             metadata = {"estimated_bpm": 128.0, "duration": 20.0}
             scene_segments = [
-                type("S", (), {"label": "drop", "start": 0.0, "end": 20.0,
-                               "mood": "intense", "dominant_stem": "drums",
-                               "energy_mean": 0.9})()
+                type(
+                    "S",
+                    (),
+                    {
+                        "label": "drop",
+                        "start": 0.0,
+                        "end": 20.0,
+                        "mood": "intense",
+                        "dominant_stem": "drums",
+                        "energy_mean": 0.9,
+                    },
+                )()
             ]
 
         segments = [
-            {"label": "drop", "start": 0.0, "end": 20.0, "mood": "intense",
-             "dominant_stem": "drums", "energy_mean": 0.9},
+            {
+                "label": "drop",
+                "start": 0.0,
+                "end": 20.0,
+                "mood": "intense",
+                "dominant_stem": "drums",
+                "energy_mean": 0.9,
+            },
         ]
         path = generate_camera_path(segments, duration=20.0, render_spec=_FakeSpec())
         assert len(path) >= 1
@@ -504,6 +581,7 @@ class TestP8Integration:
 
     def _make_minimal_render_spec(self) -> Any:
         """Return a minimal RenderSpec-like object for integration tests."""
+
         class FakeSpec:
             metadata = {
                 "estimated_bpm": 128.0,
@@ -518,10 +596,22 @@ class TestP8Integration:
             ]
             dense_keyframes = [{"t": i / 30.0} for i in range(30 * 3)]  # 3s
             scene_segments = [
-                {"label": "intro", "start": 0.0, "end": 1.5, "mood": "chill",
-                 "dominant_stem": "other", "energy_mean": 0.2},
-                {"label": "drop", "start": 1.5, "end": 3.0, "mood": "intense",
-                 "dominant_stem": "drums", "energy_mean": 0.9},
+                {
+                    "label": "intro",
+                    "start": 0.0,
+                    "end": 1.5,
+                    "mood": "chill",
+                    "dominant_stem": "other",
+                    "energy_mean": 0.2,
+                },
+                {
+                    "label": "drop",
+                    "start": 1.5,
+                    "end": 3.0,
+                    "mood": "intense",
+                    "dominant_stem": "drums",
+                    "energy_mean": 0.9,
+                },
             ]
 
         return FakeSpec()
@@ -543,12 +633,22 @@ class TestP8Integration:
         transitions = [
             TransitionSpec(
                 opacity_rules=[
-                    DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-                    DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
+                    DomainOpacityRule(
+                        domain=Domain.PHOTO,
+                        channel="reveal_splat",
+                        base=1.0,
+                        scale=-1.0,
+                    ),
+                    DomainOpacityRule(
+                        domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                    ),
                 ]
             )
         ]
-        materials = [MaterialSpec(domain=Domain.PHOTO), MaterialSpec(domain=Domain.MESH)]
+        materials = [
+            MaterialSpec(domain=Domain.PHOTO),
+            MaterialSpec(domain=Domain.MESH),
+        ]
 
         assemblies = assemble_multi_domain_scene(
             scanner, scene, transitions, materials, self._make_minimal_render_spec()
@@ -573,15 +673,30 @@ class TestP8Integration:
         transitions = [
             TransitionSpec(
                 opacity_rules=[
-                    DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-                    DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
+                    DomainOpacityRule(
+                        domain=Domain.PHOTO,
+                        channel="reveal_splat",
+                        base=1.0,
+                        scale=-1.0,
+                    ),
+                    DomainOpacityRule(
+                        domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                    ),
                 ]
             )
         ]
-        materials = [MaterialSpec(domain=Domain.PHOTO), MaterialSpec(domain=Domain.MESH)]
+        materials = [
+            MaterialSpec(domain=Domain.PHOTO),
+            MaterialSpec(domain=Domain.MESH),
+        ]
         fps = 30
         assemblies = assemble_multi_domain_scene(
-            scanner, scene, transitions, materials, self._make_minimal_render_spec(), fps=fps
+            scanner,
+            scene,
+            transitions,
+            materials,
+            self._make_minimal_render_spec(),
+            fps=fps,
         )
 
         # Count rapid polarity changes (dark→bright→dark) in photo opacity
@@ -593,8 +708,12 @@ class TestP8Integration:
             if abs(photo_opacities[i] - photo_opacities[i - 1]) > 0.4:
                 transitions_count += 1
         duration_secs = len(assemblies) / fps
-        flash_hz = transitions_count / (2.0 * max(duration_secs, 1.0))  # transitions/2 = cycles
-        assert flash_hz <= FLASH_SAFETY_MAX_HZ + 0.5  # 0.5 tolerance for test discretisation
+        flash_hz = transitions_count / (
+            2.0 * max(duration_secs, 1.0)
+        )  # transitions/2 = cycles
+        assert (
+            flash_hz <= FLASH_SAFETY_MAX_HZ + 0.5
+        )  # 0.5 tolerance for test discretisation
 
     def test_camera_path_integrates_with_compose_pipeline(self) -> None:
         """generate_camera_path produces keyframes usable in the compose assembler."""
@@ -602,8 +721,13 @@ class TestP8Integration:
 
         spec = self._make_minimal_render_spec()
         segments = [
-            {"label": s["label"], "start": s["start"], "end": s["end"],
-             "mood": s["mood"], "dominant_stem": s["dominant_stem"]}
+            {
+                "label": s["label"],
+                "start": s["start"],
+                "end": s["end"],
+                "mood": s["mood"],
+                "dominant_stem": s["dominant_stem"],
+            }
             for s in spec.scene_segments
         ]
         path = generate_camera_path(segments, duration=3.0)
@@ -637,13 +761,16 @@ class TestP8Integration:
         transitions = [
             TransitionSpec(
                 opacity_rules=[
-                    DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
+                    DomainOpacityRule(
+                        domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                    ),
                 ]
             )
         ]
         materials = [MaterialSpec(domain=Domain.SPLAT)]
 
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
+
         assemblies = assemble_multi_domain_scene(
             scanner, scene, transitions, materials, self._make_minimal_render_spec()
         )
@@ -707,9 +834,18 @@ class TestP4Regression:
         assemblies = assemble_multi_domain_scene(
             ScannerSpec(),
             SceneSpec(),
-            [TransitionSpec(opacity_rules=[
-                DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-            ])],
+            [
+                TransitionSpec(
+                    opacity_rules=[
+                        DomainOpacityRule(
+                            domain=Domain.PHOTO,
+                            channel="reveal_splat",
+                            base=1.0,
+                            scale=-1.0,
+                        ),
+                    ]
+                )
+            ],
             [MaterialSpec(domain=Domain.PHOTO)],
             _RS(),
         )

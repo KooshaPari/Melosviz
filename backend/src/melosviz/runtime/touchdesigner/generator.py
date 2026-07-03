@@ -228,24 +228,34 @@ def _build_io_group() -> OperatorGroup:
 
 def _build_timeline_group(render_spec: RenderSpec) -> OperatorGroup:
     """Build /timeline: BPM clock, beat CHOPs, section DAT, event router."""
-    bpm = render_spec.metadata.get("estimated_bpm", 120.0) if render_spec.metadata else 120.0
+    bpm = (
+        render_spec.metadata.get("estimated_bpm", 120.0)
+        if render_spec.metadata
+        else 120.0
+    )
 
     # Build section rows from scene_segments
     section_rows: list[dict[str, Any]] = []
-    for seg in (render_spec.scene_segments or []):
-        section_rows.append({
-            "label": getattr(seg, "label", str(getattr(seg, "index", ""))),
-            "start": getattr(seg, "start", 0.0),
-            "end": getattr(seg, "end", 0.0),
-            "mood": getattr(seg, "mood", ""),
-            "dominant_stem": getattr(seg, "dominant_stem", ""),
-        })
+    for seg in render_spec.scene_segments or []:
+        section_rows.append(
+            {
+                "label": getattr(seg, "label", str(getattr(seg, "index", ""))),
+                "start": getattr(seg, "start", 0.0),
+                "end": getattr(seg, "end", 0.0),
+                "mood": getattr(seg, "mood", ""),
+                "dominant_stem": getattr(seg, "dominant_stem", ""),
+            }
+        )
 
     # Build beat channel from timeline_events
     beat_times: list[float] = []
     onset_times: list[float] = []
-    for ev in (render_spec.timeline_events or []):
-        ev_type = getattr(ev, "type", None) or ev.get("type", "") if isinstance(ev, dict) else ""
+    for ev in render_spec.timeline_events or []:
+        ev_type = (
+            getattr(ev, "type", None) or ev.get("type", "")
+            if isinstance(ev, dict)
+            else ""
+        )
         ev_t = getattr(ev, "t", None) if not isinstance(ev, dict) else ev.get("t", 0.0)
         if ev_type == "beat":
             beat_times.append(float(ev_t or 0.0))
@@ -339,12 +349,18 @@ def _build_fields_group(
     if scanner_specs:
         for i, sc in enumerate(scanner_specs, start=1):
             cone_angle = getattr(sc, "shape", None)
-            cone_deg = getattr(cone_angle, "cone_angle_deg", 22.0) if cone_angle else 22.0
+            cone_deg = (
+                getattr(cone_angle, "cone_angle_deg", 22.0) if cone_angle else 22.0
+            )
             rot = getattr(sc, "rotation", None)
             bpr = getattr(rot, "beats_per_rotation", 8.0) if rot else 8.0
             noise = getattr(sc, "noise", None)
             pulse_gain = getattr(noise, "beat_pulse_gain", 0.35) if noise else 0.35
-            bpm = render_spec.metadata.get("estimated_bpm", 120.0) if render_spec.metadata else 120.0
+            bpm = (
+                render_spec.metadata.get("estimated_bpm", 120.0)
+                if render_spec.metadata
+                else 120.0
+            )
             operators.append(
                 OperatorNode(
                     op_type="scriptCHOP",
@@ -356,9 +372,16 @@ def _build_fields_group(
                         "beats_per_rotation": bpr,
                         "beat_pulse_gain": pulse_gain,
                         "bpm": bpm,
-                        "write_channels": getattr(sc, "write_channels", [
-                            "reveal_splat", "hide_photo", "boost_wireframe", "edge_emission",
-                        ]),
+                        "write_channels": getattr(
+                            sc,
+                            "write_channels",
+                            [
+                                "reveal_splat",
+                                "hide_photo",
+                                "boost_wireframe",
+                                "edge_emission",
+                            ],
+                        ),
                     },
                     wires_from=["timeline/beat_chops"],
                     comment=f"Disco-ball volumetric mask generator #{i}",
@@ -366,7 +389,11 @@ def _build_fields_group(
             )
     else:
         # Default: two generic scanners
-        bpm = render_spec.metadata.get("estimated_bpm", 120.0) if render_spec.metadata else 120.0
+        bpm = (
+            render_spec.metadata.get("estimated_bpm", 120.0)
+            if render_spec.metadata
+            else 120.0
+        )
         for i, sc_id in enumerate(["disco_main", "crowd_sweep"], start=1):
             operators.append(
                 OperatorNode(
@@ -380,7 +407,10 @@ def _build_fields_group(
                         "beat_pulse_gain": 0.35,
                         "bpm": bpm,
                         "write_channels": [
-                            "reveal_splat", "hide_photo", "boost_wireframe", "edge_emission",
+                            "reveal_splat",
+                            "hide_photo",
+                            "boost_wireframe",
+                            "edge_emission",
                         ],
                     },
                     wires_from=["timeline/beat_chops"],
@@ -458,7 +488,11 @@ def _build_materials_group(render_spec: RenderSpec) -> OperatorGroup:
 
 def _build_mix_group(render_spec: RenderSpec) -> OperatorGroup:
     """Build /mix: domain blend (Composite TOP), edge FX, particles, bloom."""
-    bpm = render_spec.metadata.get("estimated_bpm", 120.0) if render_spec.metadata else 120.0
+    bpm = (
+        render_spec.metadata.get("estimated_bpm", 120.0)
+        if render_spec.metadata
+        else 120.0
+    )
 
     return OperatorGroup(
         name="mix",
@@ -527,8 +561,12 @@ def _build_camera_group(render_spec: RenderSpec) -> OperatorGroup:
                 op_type="cameraCOMP",
                 name="camera_rig",
                 params={
-                    "tx": 0.0, "ty": 1.5, "tz": 4.5,
-                    "rx": -10.0, "ry": 0.0, "rz": 0.0,
+                    "tx": 0.0,
+                    "ty": 1.5,
+                    "tz": 4.5,
+                    "rx": -10.0,
+                    "ry": 0.0,
+                    "rz": 0.0,
                     "fov": 70.0,
                     "near": 0.1,
                     "far": 1000.0,
@@ -633,14 +671,22 @@ def render_spec_to_network(
     Returns:
         A :class:`NetworkSpec` describing the complete operator graph.
     """
-    bpm = render_spec.metadata.get("estimated_bpm", 120.0) if render_spec.metadata else 120.0
-    duration = render_spec.metadata.get("duration", 0.0) if render_spec.metadata else 0.0
+    bpm = (
+        render_spec.metadata.get("estimated_bpm", 120.0)
+        if render_spec.metadata
+        else 120.0
+    )
+    duration = (
+        render_spec.metadata.get("duration", 0.0) if render_spec.metadata else 0.0
+    )
 
     network = NetworkSpec(
         version="1.0",
         project_name="melosviz_runtime",
         meta={
-            "source_audio": render_spec.metadata.get("source_audio", "") if render_spec.metadata else "",
+            "source_audio": render_spec.metadata.get("source_audio", "")
+            if render_spec.metadata
+            else "",
             "estimated_bpm": bpm,
             "duration": duration,
             "dense_keyframe_count": len(render_spec.dense_keyframes or []),

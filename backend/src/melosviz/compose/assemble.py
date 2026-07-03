@@ -80,6 +80,7 @@ FLASH_MIN_INTERVAL_S: float = 1.0 / 3.0
 # Errors
 # ---------------------------------------------------------------------------
 
+
 class AssemblyError(RuntimeError):
     """Raised when the assembly pipeline detects an unresolvable error."""
 
@@ -87,6 +88,7 @@ class AssemblyError(RuntimeError):
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def assemble_render_plan(
     render_spec: RenderSpec,
@@ -212,6 +214,7 @@ def assemble_render_plan(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
 
 def _extract_beat_times(spec_dict: dict[str, Any]) -> list[float]:
     """Extract beat timestamps from timeline_events or dense_keyframes."""

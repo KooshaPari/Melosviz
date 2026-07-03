@@ -49,6 +49,7 @@ def _write_wav(path: Path, duration_sec: float = 4.0, sr: int = 22050) -> Path:
         wf.setsampwidth(2)
         wf.setframerate(sr)
         import array as arr
+
         samples = arr.array("h")
         for i in range(n_frames):
             t = i / sr
@@ -75,6 +76,7 @@ def _write_varied_wav(path: Path, duration_sec: float = 8.0, sr: int = 22050) ->
         wf.setsampwidth(2)
         wf.setframerate(sr)
         import array as arr
+
         samples = arr.array("h")
         for i in range(n_frames):
             t = i / sr
@@ -168,11 +170,14 @@ class TestRenderSpecV2Models:
                 {"t": 0.5, "type": "section", "strength": 1.0, "label": "drop"},
             ],
             scene_segments=[
-                SceneSegment(
-                    index=0, label="intro", start=0.0, end=5.0
-                ).model_dump()
+                SceneSegment(index=0, label="intro", start=0.0, end=5.0).model_dump()
             ],
-            stem_channels={"drums": [0.9, 0.1], "bass": [0.5, 0.5], "vocals": [], "other": []},
+            stem_channels={
+                "drums": [0.9, 0.1],
+                "bass": [0.5, 0.5],
+                "vocals": [],
+                "other": [],
+            },
             mir=MIRSummary(tempo_bpm=128.0, key="C", mode="major").model_dump(),
         )
         raw = json.dumps(spec.model_dump())
@@ -281,7 +286,9 @@ class TestAnalyzeWavRichStdlibOnly:
         n = len(spec.dense_keyframes)
         for stem_name, ch in spec.stem_channels.items():
             assert len(ch) == n, f"{stem_name} channel length mismatch"
-            assert all(isinstance(v, float) for v in ch), f"{stem_name}: non-float values"
+            assert all(isinstance(v, float) for v in ch), (
+                f"{stem_name}: non-float values"
+            )
 
     def test_scene_segments_present(self, tmp_path: Path) -> None:
         """scene_segments must be populated (at least 1)."""
@@ -301,7 +308,14 @@ class TestAnalyzeWavRichStdlibOnly:
         assert "start" in seg
         assert "end" in seg
         assert seg["label"] in (
-            "intro", "verse", "chorus", "drop", "bridge", "breakdown", "outro", "unknown"
+            "intro",
+            "verse",
+            "chorus",
+            "drop",
+            "bridge",
+            "breakdown",
+            "outro",
+            "unknown",
         )
 
     def test_scene_segments_have_required_fields(self, tmp_path: Path) -> None:
@@ -440,15 +454,17 @@ class TestVideoExporterConsumesV2:
 
         def _fake_ffmpeg_success(cmd: list[str], **kwargs: Any):  # type: ignore[no-untyped-def]
             import subprocess
+
             Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
             Path(cmd[-1]).write_bytes(b"\x00" * 4096)
-            return subprocess.CompletedProcess(args=[], returncode=0, stderr="", stdout="")
+            return subprocess.CompletedProcess(
+                args=[], returncode=0, stderr="", stdout=""
+            )
 
         spec = RenderSpec(
             metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0},
             dense_keyframes=[
-                DenseKeyframe(t=i / 4.0, energy=i / 3.0).model_dump()
-                for i in range(4)
+                DenseKeyframe(t=i / 4.0, energy=i / 3.0).model_dump() for i in range(4)
             ],
         )
 
@@ -477,7 +493,9 @@ class TestVideoExporterConsumesV2:
         def _fake_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:  # type: ignore[misc]
             Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
             Path(cmd[-1]).write_bytes(b"\x00" * 4096)
-            return subprocess.CompletedProcess(args=[], returncode=0, stderr="", stdout="")
+            return subprocess.CompletedProcess(
+                args=[], returncode=0, stderr="", stdout=""
+            )
 
         spec = RenderSpec(
             metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0},

@@ -196,13 +196,12 @@ class _WsTransport:
     async def connect(self) -> None:
         try:
             import websockets  # type: ignore[import]
+
             uri = f"ws://{self._host}:{self._port}"
             self._ws = await websockets.connect(uri)
             logger.debug("WS connected to %s", uri)
         except ImportError:
-            logger.warning(
-                "websockets not installed; WS transport will use raw TCP."
-            )
+            logger.warning("websockets not installed; WS transport will use raw TCP.")
             self._ws = None
 
     async def send(self, payload: dict[str, Any]) -> None:
@@ -280,10 +279,10 @@ class TDBridge:
         """
         events: list[dict[str, Any]] = []
 
-        for ev in (render_spec.timeline_events or []):
+        for ev in render_spec.timeline_events or []:
             events.append(serialise_timeline_event(ev))
 
-        for kf in (render_spec.dense_keyframes or []):
+        for kf in render_spec.dense_keyframes or []:
             events.append(serialise_dense_keyframe(kf))
 
         # Sort by time

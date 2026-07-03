@@ -9,12 +9,12 @@ Tests cover:
 """
 
 import pytest
-from melosviz.presets import (
-    load_preset,
-    list_presets,
-    BUILTIN_PRESETS,
-)
 
+from melosviz.presets import (
+    BUILTIN_PRESETS,
+    list_presets,
+    load_preset,
+)
 
 # =============================================================================
 # List and availability tests
@@ -62,6 +62,7 @@ class TestLoadPreset:
     def test_load_cinematic_returns_module(self):
         """load_preset('cinematic') returns a module object."""
         import types
+
         preset = load_preset("cinematic")
         assert isinstance(preset, types.ModuleType)
 
@@ -210,7 +211,7 @@ class TestPresetDataIntegrity:
 
         load_preset("cinematic")
 
-        assert BUILTIN_PRESETS == original
+        assert original == BUILTIN_PRESETS
 
     def test_repeated_loads_preserve_structure(self):
         """Repeated loads of cinematic preserve module structure."""

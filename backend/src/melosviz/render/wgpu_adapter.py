@@ -35,6 +35,7 @@ with a clear message.  Tests that require a live GPU should check
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -124,7 +125,9 @@ def resolve_render_binary() -> str:
     if env_bin:
         env_path = Path(env_bin)
         if env_path.is_file() and os.access(env_path, os.X_OK):
-            logger.info("melosviz-render resolved from %s: %s", WGPU_BINARY_ENV_VAR, env_bin)
+            logger.info(
+                "melosviz-render resolved from %s: %s", WGPU_BINARY_ENV_VAR, env_bin
+            )
             return str(env_path)
         raise WgpuNotAvailableError(
             f"{WGPU_BINARY_ENV_VAR} is set to {env_bin!r} but the file does not "
@@ -209,7 +212,7 @@ def is_wgpu_available() -> bool:
 
 
 def render_frame_bytes(
-    spec: "RenderSpec | dict[str, Any]",
+    spec: RenderSpec | dict[str, Any],
     frame_index: int = 0,
     width: int | None = None,
     height: int | None = None,
@@ -301,8 +304,7 @@ def render_frame_bytes(
                     f"melosviz-render exit code {result.returncode}: no GPU adapter "
                     "available in this environment. Run on a host with Metal/Vulkan "
                     "or set MELOSVIZ_RENDER_BIN to a build with software rasterizer "
-                    "support.\nstderr:\n"
-                    + "\n".join(stderr_text.splitlines()[-10:])
+                    "support.\nstderr:\n" + "\n".join(stderr_text.splitlines()[-10:])
                 )
             raise WgpuExportError(
                 f"melosviz-render export-frame failed (exit code {result.returncode}) "
@@ -325,10 +327,8 @@ def render_frame_bytes(
         return rgba_bytes
     finally:
         # Always clean up the temporary spec file.
-        try:
+        with contextlib.suppress(OSError):
             Path(spec_path).unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +336,7 @@ def render_frame_bytes(
 # ---------------------------------------------------------------------------
 
 
-def _spec_to_json(spec: "RenderSpec | dict[str, Any]") -> str:
+def _spec_to_json(spec: RenderSpec | dict[str, Any]) -> str:
     """Serialise a RenderSpec (pydantic model or dict) to a JSON string."""
     if isinstance(spec, dict):
         return json.dumps(spec)

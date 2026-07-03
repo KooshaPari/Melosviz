@@ -191,9 +191,7 @@ class LiveScheduler:
     # Private
     # ------------------------------------------------------------------
 
-    def _build_td_network_patch(
-        self, events: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    def _build_td_network_patch(self, events: list[dict[str, Any]]) -> dict[str, Any]:
         """Return a minimal TD network patch spec for the scene scheduler."""
         return {
             "operators": [
