@@ -13,9 +13,3 @@ jobs:
   quality-gate:
     name: qgate test
     uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
-    with:
-      coverage-report: backend/coverage/lcov.info
-      coverage-format: lcov
-      threshold: 100
-      not-applicable: "a11y"
-      working-directory: .
