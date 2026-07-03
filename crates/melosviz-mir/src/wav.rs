@@ -73,7 +73,12 @@ pub fn load_wav_mono(path: &Path) -> Result<WavMono> {
     }
 
     let duration_sec = n_frames as f64 / spec.sample_rate as f64;
-    Ok(WavMono { samples: mono, sample_rate: spec.sample_rate, channels, duration_sec })
+    Ok(WavMono {
+        samples: mono,
+        sample_rate: spec.sample_rate,
+        channels,
+        duration_sec,
+    })
 }
 
 #[cfg(test)]
@@ -215,7 +220,10 @@ mod tests {
         writer.finalize().unwrap();
         let wav = load_wav_mono(tmp.path()).unwrap();
         assert_eq!(wav.samples.len(), 2);
-        assert!((wav.samples[0] - 1.0).abs() < 0.01, "max should scale to ~1.0");
+        assert!(
+            (wav.samples[0] - 1.0).abs() < 0.01,
+            "max should scale to ~1.0"
+        );
         assert!(wav.samples[1] < 0.0, "min should scale to negative");
         // Check no NaN or inf
         for &s in &wav.samples {
@@ -281,7 +289,11 @@ mod tests {
         assert_eq!(wav.samples.len(), 5);
         // Each frame should be average of L + R
         for &s in &wav.samples {
-            assert!(s > 0.0 && s < 1.0, "averaged stereo sample out of range: {}", s);
+            assert!(
+                s > 0.0 && s < 1.0,
+                "averaged stereo sample out of range: {}",
+                s
+            );
         }
     }
 
@@ -321,7 +333,10 @@ mod tests {
         assert_eq!(wav.samples.len(), 2);
         // Both samples should be in [-1, 1] with no NaN
         for &s in &wav.samples {
-            assert!((s >= -1.0 && s <= 1.0) || s.is_nan() == false, "24-bit sample out of range");
+            assert!(
+                (s >= -1.0 && s <= 1.0) || s.is_nan() == false,
+                "24-bit sample out of range"
+            );
         }
     }
 

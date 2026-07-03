@@ -69,7 +69,11 @@ mod tests {
 
     fn make_spec(keyframes: Vec<DenseKeyframe>) -> RenderSpec {
         RenderSpec {
-            metadata: RenderMetadata { fps: 30, duration: 10.0, ..Default::default() },
+            metadata: RenderMetadata {
+                fps: 30,
+                duration: 10.0,
+                ..Default::default()
+            },
             dense_keyframes: keyframes,
             ..Default::default()
         }
@@ -91,7 +95,12 @@ mod tests {
             energy: 0.75,
             spectral_centroid: 0.5,
             beat_strength: 1.0,
-            stems: StemFrame { drums: 0.9, bass: 0.0, vocals: 0.0, other: 0.0 },
+            stems: StemFrame {
+                drums: 0.9,
+                bass: 0.0,
+                vocals: 0.0,
+                other: 0.0,
+            },
         }]);
         let tl = Timeline::from_spec(&spec);
         let u = tl.sample(0);
@@ -114,13 +123,20 @@ mod tests {
                 energy: 1.0,
                 spectral_centroid: 1.0,
                 beat_strength: 1.0,
-                stems: StemFrame { drums: 1.0, ..Default::default() },
+                stems: StemFrame {
+                    drums: 1.0,
+                    ..Default::default()
+                },
             },
         ]);
         let tl = Timeline::from_spec(&spec);
         // Frame 15 = t=0.5 → midpoint between the two keyframes
         let u = tl.sample(15);
-        assert!((u.energy - 0.5).abs() < 1e-4, "energy should be 0.5, got {}", u.energy);
+        assert!(
+            (u.energy - 0.5).abs() < 1e-4,
+            "energy should be 0.5, got {}",
+            u.energy
+        );
         assert!((u.spectral_centroid - 0.5).abs() < 1e-4);
         assert!((u.stem_drums - 0.5).abs() < 1e-4);
     }
@@ -128,8 +144,16 @@ mod tests {
     #[test]
     fn test_sample_beyond_last_keyframe_clamps() {
         let spec = make_spec(vec![
-            DenseKeyframe { t: 0.0, energy: 0.0, ..Default::default() },
-            DenseKeyframe { t: 1.0, energy: 1.0, ..Default::default() },
+            DenseKeyframe {
+                t: 0.0,
+                energy: 0.0,
+                ..Default::default()
+            },
+            DenseKeyframe {
+                t: 1.0,
+                energy: 1.0,
+                ..Default::default()
+            },
         ]);
         let tl = Timeline::from_spec(&spec);
         // Frame 9999 well beyond last kf → should use last keyframe value

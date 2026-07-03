@@ -75,7 +75,6 @@ fn main() -> Result<()> {
     pollster::block_on(async {
         let renderer = melosviz_render_wgpu::renderer::WgpuRenderer::new(width, height).await?;
         let mut cache = melosviz_render_wgpu::segment_cache::SegmentCache::new();
-        melosviz_render_wgpu::export::export_to_mp4(&renderer, &spec, &mut cache, &cli.output)
-            .await
+        melosviz_render_wgpu::export::export_to_mp4(&renderer, &spec, &mut cache, &cli.output).await
     })
 }

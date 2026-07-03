@@ -17,11 +17,7 @@ use std::f32::consts::PI;
 /// column-major matrix: `magnitudes[frame * n_fft_bins + bin]`.
 ///
 /// Uses a Hann window of length `n_fft` with `hop_length` advance per frame.
-pub fn stft(
-    samples: &[f32],
-    n_fft: usize,
-    hop_length: usize,
-) -> (Vec<f32>, usize, usize) {
+pub fn stft(samples: &[f32], n_fft: usize, hop_length: usize) -> (Vec<f32>, usize, usize) {
     let n_bins = n_fft / 2 + 1; // one-sided spectrum
     let n_frames = if samples.len() >= n_fft {
         (samples.len() - n_fft) / hop_length + 1
@@ -40,7 +36,11 @@ pub fn stft(
         let start = frame * hop_length;
         // Apply Hann window and copy into FFT buffer.
         for (i, b) in buf.iter_mut().enumerate() {
-            let s = if start + i < samples.len() { samples[start + i] } else { 0.0 };
+            let s = if start + i < samples.len() {
+                samples[start + i]
+            } else {
+                0.0
+            };
             *b = Complex32::new(s * window[i], 0.0);
         }
         fft.process(&mut buf);
@@ -54,7 +54,9 @@ pub fn stft(
 }
 
 fn hann_window(n: usize) -> Vec<f32> {
-    (0..n).map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n - 1) as f32).cos())).collect()
+    (0..n)
+        .map(|i| 0.5 * (1.0 - (2.0 * PI * i as f32 / (n - 1) as f32).cos()))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +118,11 @@ pub fn spectral_centroid(
             if total < 1e-10 {
                 return 0.0;
             }
-            mag_slice.iter().enumerate().map(|(b, &m)| b as f32 * bin_hz * m).sum::<f32>()
+            mag_slice
+                .iter()
+                .enumerate()
+                .map(|(b, &m)| b as f32 * bin_hz * m)
+                .sum::<f32>()
                 / total
         })
         .collect();
@@ -146,11 +152,7 @@ pub fn onset_strength(
     for frame in 1..n_stft_frames {
         let prev = &magnitudes[(frame - 1) * n_bins..frame * n_bins];
         let curr = &magnitudes[frame * n_bins..(frame + 1) * n_bins];
-        let f: f32 = curr
-            .iter()
-            .zip(prev)
-            .map(|(c, p)| (c - p).max(0.0))
-            .sum();
+        let f: f32 = curr.iter().zip(prev).map(|(c, p)| (c - p).max(0.0)).sum();
         flux_raw[frame] = f;
     }
 
@@ -191,8 +193,7 @@ pub fn onset_times_from_flux(
         }
         let w_start = i.saturating_sub(window_frames / 2);
         let w_end = (i + window_frames / 2).min(flux.len());
-        let local_mean: f32 = flux[w_start..w_end].iter().sum::<f32>()
-            / (w_end - w_start) as f32;
+        let local_mean: f32 = flux[w_start..w_end].iter().sum::<f32>() / (w_end - w_start) as f32;
         let threshold = local_mean * 1.4 + 0.02;
         if flux[i] > threshold && flux[i] >= flux[i - 1] && flux[i] >= flux[i + 1] {
             peaks.push(i as f32 * hop_sec);
@@ -222,11 +223,7 @@ pub struct BeatResult {
 ///
 /// `flux` is the per-STFT-frame onset flux, `hop_length` is STFT hop in
 /// samples, `sample_rate` is Hz.
-pub fn estimate_beats(
-    flux: &[f32],
-    hop_length: usize,
-    sample_rate: u32,
-) -> BeatResult {
+pub fn estimate_beats(flux: &[f32], hop_length: usize, sample_rate: u32) -> BeatResult {
     let hop_sec = hop_length as f32 / sample_rate as f32;
     let n = flux.len();
     if n < 4 {
@@ -246,7 +243,12 @@ pub fn estimate_beats(
     let mut best_lag = min_lag;
     let mut best_ac = 0.0f32;
     for lag in min_lag..=max_lag {
-        let ac: f32 = flux.iter().take(n - lag).zip(flux.iter().skip(lag)).map(|(a, b)| a * b).sum();
+        let ac: f32 = flux
+            .iter()
+            .take(n - lag)
+            .zip(flux.iter().skip(lag))
+            .map(|(a, b)| a * b)
+            .sum();
         if ac > best_ac {
             best_ac = ac;
             best_lag = lag;
@@ -282,8 +284,7 @@ pub fn estimate_beats(
     }
     beat_times.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-    let downbeat_times: Vec<f32> =
-        beat_times.iter().step_by(4).cloned().collect();
+    let downbeat_times: Vec<f32> = beat_times.iter().step_by(4).cloned().collect();
 
     // Per-beat tempo from inter-beat intervals.
     let tempo_curve: Vec<f32> = if beat_times.len() > 1 {
@@ -295,7 +296,12 @@ pub fn estimate_beats(
         vec![tempo_bpm]
     };
 
-    BeatResult { tempo_bpm, beat_times, downbeat_times, tempo_curve }
+    BeatResult {
+        tempo_bpm,
+        beat_times,
+        downbeat_times,
+        tempo_curve,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -303,11 +309,7 @@ pub fn estimate_beats(
 // ---------------------------------------------------------------------------
 
 /// Map beat times to a per-dense-frame beat strength array.
-pub fn beat_strength_array(
-    beat_times: &[f32],
-    n_frames: usize,
-    duration_sec: f32,
-) -> Vec<f32> {
+pub fn beat_strength_array(beat_times: &[f32], n_frames: usize, duration_sec: f32) -> Vec<f32> {
     let mut arr = vec![0.0f32; n_frames];
     for &bt in beat_times {
         let fi = ((bt / duration_sec) * (n_frames - 1) as f32).round() as usize;
@@ -363,27 +365,38 @@ pub fn chroma_vector(
     chroma
 }
 
-const NOTE_NAMES: [&str; 12] =
-    ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const NOTE_NAMES: [&str; 12] = [
+    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B",
+];
 
 /// Krumhansl-Schmuckler major and minor key profiles (normalised).
 ///
 /// Major profile: C major. Minor profile: C natural minor.
 /// Reference: Krumhansl (1990) "Cognitive Foundations of Musical Pitch".
-const KS_MAJOR: [f32; 12] = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09,
-                               2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
-const KS_MINOR: [f32; 12] = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53,
-                               2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
+const KS_MAJOR: [f32; 12] = [
+    6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
+];
+const KS_MINOR: [f32; 12] = [
+    6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17,
+];
 
 /// Pearson correlation between two equal-length slices.
 fn pearson(a: &[f32], b: &[f32]) -> f32 {
     let n = a.len() as f32;
     let a_mean = a.iter().sum::<f32>() / n;
     let b_mean = b.iter().sum::<f32>() / n;
-    let num: f32 = a.iter().zip(b).map(|(x, y)| (x - a_mean) * (y - b_mean)).sum();
+    let num: f32 = a
+        .iter()
+        .zip(b)
+        .map(|(x, y)| (x - a_mean) * (y - b_mean))
+        .sum();
     let da: f32 = a.iter().map(|x| (x - a_mean).powi(2)).sum::<f32>().sqrt();
     let db: f32 = b.iter().map(|x| (x - b_mean).powi(2)).sum::<f32>().sqrt();
-    if da < 1e-10 || db < 1e-10 { 0.0 } else { num / (da * db) }
+    if da < 1e-10 || db < 1e-10 {
+        0.0
+    } else {
+        num / (da * db)
+    }
 }
 
 /// Estimate musical key and mode (major/minor) via Krumhansl-Schmuckler profiles.
@@ -474,7 +487,11 @@ pub fn spectral_stems(
 
     fn norm_resample(v: &[f32], n: usize) -> Vec<f32> {
         let peak = v.iter().cloned().fold(0.0f32, f32::max);
-        let normed: Vec<f32> = if peak > 0.0 { v.iter().map(|x| x / peak).collect() } else { v.to_vec() };
+        let normed: Vec<f32> = if peak > 0.0 {
+            v.iter().map(|x| x / peak).collect()
+        } else {
+            v.to_vec()
+        };
         linear_resample(&normed, n)
     }
 
@@ -516,7 +533,11 @@ pub fn linear_resample(src: &[f32], target_len: usize) -> Vec<f32> {
     let n = src.len() as f32 - 1.0;
     (0..target_len)
         .map(|i| {
-            let t = if target_len > 1 { i as f32 * n / (target_len - 1) as f32 } else { 0.0 };
+            let t = if target_len > 1 {
+                i as f32 * n / (target_len - 1) as f32
+            } else {
+                0.0
+            };
             let lo = t.floor() as usize;
             let hi = (lo + 1).min(src.len() - 1);
             let frac = t - lo as f32;
@@ -532,7 +553,9 @@ mod tests {
 
     fn sine_samples(freq: f32, dur_sec: f32, sr: u32) -> Vec<f32> {
         let n = (dur_sec * sr as f32) as usize;
-        (0..n).map(|i| (2.0 * PI * freq * i as f32 / sr as f32).sin()).collect()
+        (0..n)
+            .map(|i| (2.0 * PI * freq * i as f32 / sr as f32).sin())
+            .collect()
     }
 
     #[test]
@@ -600,7 +623,11 @@ mod tests {
             beats.tempo_bpm
         );
         // Should detect at least 8 beats in 10 s.
-        assert!(beats.beat_times.len() >= 8, "too few beats: {}", beats.beat_times.len());
+        assert!(
+            beats.beat_times.len() >= 8,
+            "too few beats: {}",
+            beats.beat_times.len()
+        );
     }
 
     #[test]

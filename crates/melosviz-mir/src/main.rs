@@ -7,17 +7,17 @@
 
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use melosviz_mir::{
-    analyze,
-    mir::MirParams,
-    wav::load_wav_mono,
-};
+use melosviz_mir::{analyze, mir::MirParams, wav::load_wav_mono};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
 #[derive(Parser, Debug)]
-#[command(name = "melosviz-mir", version, about = "Rust MIR analysis → RenderSpec v2")]
+#[command(
+    name = "melosviz-mir",
+    version,
+    about = "Rust MIR analysis → RenderSpec v2"
+)]
 struct Args {
     /// Input WAV file path.
     #[arg(long)]
@@ -45,8 +45,8 @@ fn main() -> Result<()> {
     }
 
     let t0 = Instant::now();
-    let wav = load_wav_mono(&args.wav)
-        .with_context(|| format!("loading WAV: {}", args.wav.display()))?;
+    let wav =
+        load_wav_mono(&args.wav).with_context(|| format!("loading WAV: {}", args.wav.display()))?;
     let t_load = t0.elapsed();
 
     eprintln!(
@@ -91,7 +91,9 @@ fn main() -> Result<()> {
     if args.out == "-" {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        handle.write_all(json.as_bytes()).context("writing JSON to stdout")?;
+        handle
+            .write_all(json.as_bytes())
+            .context("writing JSON to stdout")?;
         handle.write_all(b"\n").ok();
     } else {
         std::fs::write(&args.out, &json)

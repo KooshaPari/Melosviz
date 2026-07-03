@@ -38,7 +38,10 @@ pub struct SegmentKey {
 impl SegmentKey {
     /// Construct a `SegmentKey` from a segment id and a pre-computed parameter hash.
     pub fn new(segment_id: impl Into<String>, param_hash: u64) -> Self {
-        Self { segment_id: segment_id.into(), param_hash }
+        Self {
+            segment_id: segment_id.into(),
+            param_hash,
+        }
     }
 }
 
@@ -269,7 +272,10 @@ mod tests {
     fn test_compute_param_hash_differs_on_energy_change() {
         let h1 = SegmentCache::compute_param_hash("chorus", 2, "beat_reactive", 0.8, 0.9);
         let h2 = SegmentCache::compute_param_hash("chorus", 2, "beat_reactive", 0.5, 0.9);
-        assert_ne!(h1, h2, "different energy values should produce different hashes");
+        assert_ne!(
+            h1, h2,
+            "different energy values should produce different hashes"
+        );
     }
 
     #[test]
@@ -281,6 +287,9 @@ mod tests {
         // Clone the Arc — should not allocate new pixel memory
         let a = cache.get(&key).unwrap();
         let b = cache.get(&key).unwrap();
-        assert!(Arc::ptr_eq(&a, &b), "get() should return clones of the same Arc");
+        assert!(
+            Arc::ptr_eq(&a, &b),
+            "get() should return clones of the same Arc"
+        );
     }
 }

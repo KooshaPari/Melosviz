@@ -55,7 +55,14 @@ pub fn analyze(wav: &WavMono, params: MirParams) -> RenderSpec {
 
     // --- 3. Spectral centroid ----------------------------------------------
     let sc_hz = if n_stft_frames > 0 {
-        spectral_centroid(&mags, n_bins, n_stft_frames, wav.sample_rate, n_fft, n_dense_frames)
+        spectral_centroid(
+            &mags,
+            n_bins,
+            n_stft_frames,
+            wav.sample_rate,
+            n_fft,
+            n_dense_frames,
+        )
     } else {
         vec![0.0; n_dense_frames]
     };
@@ -86,8 +93,7 @@ pub fn analyze(wav: &WavMono, params: MirParams) -> RenderSpec {
             tempo_curve: vec![120.0],
         }
     };
-    let beat_arr =
-        beat_strength_array(&beats.beat_times, n_dense_frames, duration_sec.max(0.001));
+    let beat_arr = beat_strength_array(&beats.beat_times, n_dense_frames, duration_sec.max(0.001));
 
     // --- 6. Chroma / key / mode --------------------------------------------
     let (key, mode) = if n_stft_frames > 0 {
@@ -99,7 +105,13 @@ pub fn analyze(wav: &WavMono, params: MirParams) -> RenderSpec {
 
     // --- 7. Spectral stem approximation ------------------------------------
     let [drums, bass, vocals, other] = if n_stft_frames > 0 {
-        spectral_stems(&mags, n_bins, n_stft_frames, wav.sample_rate, n_dense_frames)
+        spectral_stems(
+            &mags,
+            n_bins,
+            n_stft_frames,
+            wav.sample_rate,
+            n_dense_frames,
+        )
     } else {
         [
             vec![0.0; n_dense_frames],
@@ -226,18 +238,24 @@ pub fn analyze(wav: &WavMono, params: MirParams) -> RenderSpec {
                 end: round3(end),
                 energy_mean: round4(em),
                 brightness_mean: round4(bm),
-                mood: MoodVector { valence: round4(vm), arousal: round4(am) },
+                mood: MoodVector {
+                    valence: round4(vm),
+                    arousal: round4(am),
+                },
                 dominant_stem: dom.to_string(),
             };
             // Emit section timeline event.
-            (seg, TimelineEvent {
-                t: round4(start),
-                event_type: "section".into(),
-                strength: 1.0,
-                bar: None,
-                label: Some(label),
-                segment_index: Some(idx),
-            })
+            (
+                seg,
+                TimelineEvent {
+                    t: round4(start),
+                    event_type: "section".into(),
+                    strength: 1.0,
+                    bar: None,
+                    label: Some(label),
+                    segment_index: Some(idx),
+                },
+            )
         })
         .map(|(seg, ev)| {
             timeline_events.push(ev);
@@ -255,11 +273,9 @@ pub fn analyze(wav: &WavMono, params: MirParams) -> RenderSpec {
 
     // --- 13. Danceability heuristic ---------------------------------------
     let beat_regularity = if beats.beat_times.len() > 2 {
-        let ibis: Vec<f32> =
-            beats.beat_times.windows(2).map(|w| w[1] - w[0]).collect();
+        let ibis: Vec<f32> = beats.beat_times.windows(2).map(|w| w[1] - w[0]).collect();
         let mean_ibi = ibis.iter().sum::<f32>() / ibis.len() as f32;
-        let variance =
-            ibis.iter().map(|x| (x - mean_ibi).powi(2)).sum::<f32>() / ibis.len() as f32;
+        let variance = ibis.iter().map(|x| (x - mean_ibi).powi(2)).sum::<f32>() / ibis.len() as f32;
         let std = variance.sqrt();
         (1.0 - std / mean_ibi.max(1e-6)).max(0.0)
     } else {
@@ -380,9 +396,15 @@ mod tests {
 
     fn make_sine_wav(freq: f32, dur_sec: f32, sr: u32) -> WavMono {
         let n = (dur_sec * sr as f32) as usize;
-        let samples: Vec<f32> =
-            (0..n).map(|i| (2.0 * PI * freq * i as f32 / sr as f32).sin()).collect();
-        WavMono { samples, sample_rate: sr, channels: 1, duration_sec: dur_sec as f64 }
+        let samples: Vec<f32> = (0..n)
+            .map(|i| (2.0 * PI * freq * i as f32 / sr as f32).sin())
+            .collect();
+        WavMono {
+            samples,
+            sample_rate: sr,
+            channels: 1,
+            duration_sec: dur_sec as f64,
+        }
     }
 
     #[test]
@@ -402,7 +424,11 @@ mod tests {
         let wav = make_sine_wav(440.0, 1.0, 44100);
         let spec = analyze(&wav, MirParams::default());
         // Average spectral_centroid should be near 440 Hz.
-        let avg_sc: f32 = spec.dense_keyframes.iter().map(|kf| kf.spectral_centroid).sum::<f32>()
+        let avg_sc: f32 = spec
+            .dense_keyframes
+            .iter()
+            .map(|kf| kf.spectral_centroid)
+            .sum::<f32>()
             / spec.dense_keyframes.len() as f32;
         assert!(
             (avg_sc - 440.0).abs() < 120.0,
@@ -424,7 +450,12 @@ mod tests {
                     + (2.0 * PI * 392.0 * t).sin()
             })
             .collect();
-        let wav = WavMono { samples, sample_rate: sr, channels: 1, duration_sec: 2.0 };
+        let wav = WavMono {
+            samples,
+            sample_rate: sr,
+            channels: 1,
+            duration_sec: 2.0,
+        };
         let spec = analyze(&wav, MirParams::default());
         assert_eq!(spec.mir.key.as_deref(), Some("C"));
         assert_eq!(spec.mir.mode.as_deref(), Some("major"));
@@ -518,7 +549,12 @@ mod tests {
         let n = sr as usize;
         // Samples at full scale (would overflow if not careful)
         let samples: Vec<f32> = vec![1.0; n];
-        let wav = WavMono { samples, sample_rate: sr, channels: 1, duration_sec: 1.0 };
+        let wav = WavMono {
+            samples,
+            sample_rate: sr,
+            channels: 1,
+            duration_sec: 1.0,
+        };
         let spec = analyze(&wav, MirParams::default());
         // Should not overflow; all values should be finite
         for kf in &spec.dense_keyframes {
@@ -531,7 +567,11 @@ mod tests {
     fn stft_zero_length_input() {
         let mags = crate::dsp::stft(&[], 2048, 512);
         assert_eq!(mags.1, 1025, "n_bins should be n_fft/2+1");
-        assert_eq!(mags.0.len(), 0, "magnitude vector should be empty for empty input");
+        assert_eq!(
+            mags.0.len(),
+            0,
+            "magnitude vector should be empty for empty input"
+        );
     }
 
     #[test]

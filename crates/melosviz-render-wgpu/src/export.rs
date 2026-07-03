@@ -44,14 +44,22 @@ pub async fn export_to_mp4(
     let mut child = Command::new("ffmpeg")
         .args([
             "-y",
-            "-f", "rawvideo",
-            "-pixel_format", "rgba",
-            "-video_size", &format!("{width}x{height}"),
-            "-framerate", &fps.to_string(),
-            "-i", "pipe:0",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-preset", "fast",
+            "-f",
+            "rawvideo",
+            "-pixel_format",
+            "rgba",
+            "-video_size",
+            &format!("{width}x{height}"),
+            "-framerate",
+            &fps.to_string(),
+            "-i",
+            "pipe:0",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-preset",
+            "fast",
             output_path.to_str().unwrap_or("output.mp4"),
         ])
         .stdin(Stdio::piped())
@@ -69,10 +77,12 @@ pub async fn export_to_mp4(
     for frame_idx in 0..total_frames {
         let uniforms = timeline.sample(frame_idx).with_frame_index(frame_idx);
         let rgba_bytes = renderer.render_frame_to_bytes(&uniforms).await?;
-        stdin.write_all(&rgba_bytes).map_err(|e| anyhow::anyhow!("Pipe write error: {e}"))?;
+        stdin
+            .write_all(&rgba_bytes)
+            .map_err(|e| anyhow::anyhow!("Pipe write error: {e}"))?;
     }
 
-    drop(stdin);  // Signal EOF to ffmpeg.
+    drop(stdin); // Signal EOF to ffmpeg.
 
     let output = child.wait_with_output()?;
     if !output.status.success() {
@@ -116,7 +126,9 @@ mod tests {
 
             let renderer = WgpuRenderer::new(64, 48).await.unwrap();
             let mut cache = SegmentCache::new();
-            export_to_mp4(&renderer, &spec, &mut cache, &output).await.unwrap();
+            export_to_mp4(&renderer, &spec, &mut cache, &output)
+                .await
+                .unwrap();
 
             assert!(output.exists());
             assert!(output.metadata().unwrap().len() > 0);
