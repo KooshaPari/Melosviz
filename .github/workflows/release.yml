@@ -1,0 +1,141 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# One release per tag: builds happen in parallel, then a single release job
+# collates all artifacts and creates the GitHub Release.
+permissions:
+  contents: write
+
+jobs:
+  macos-desktop:
+    name: macOS — desktop app DMG
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        # actions/checkout v4.2.2 — SHA-pinned
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Rust (stable)
+        # dtolnay/rust-toolchain v1 — SHA-pinned
+        uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+        with:
+          toolchain: stable
+
+      - name: Build Rust crates
+        run: cargo build --release
+
+      - name: Set up Bun
+        # oven-sh/setup-bun v2 — SHA-pinned
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: latest
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: bun install
+
+      - name: Build desktop app (Electrobun)
+        working-directory: desktop
+        env:
+          ELECTROBUN_OS: macos
+        run: bunx electrobun build
+
+      - name: Package desktop app
+        working-directory: desktop
+        env:
+          ELECTROBUN_OS: macos
+        run: bunx electrobun package
+
+      - name: Locate and prepare .app bundle
+        run: |
+          APP_PATH=$(find desktop/build -name "*.app" -maxdepth 4 -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::No .app bundle found in desktop/build/"
+            ls -laR desktop/build/ | head -40
+            exit 1
+          fi
+          echo "Found app bundle at: $APP_PATH"
+          cp -R "$APP_PATH" MelosViz.app
+
+      - name: Create DMG
+        run: |
+          hdiutil create \
+            -volname "MelosViz ${{ github.ref_name }}" \
+            -srcfolder MelosViz.app \
+            -ov -format UDZO \
+            "MelosViz-${{ github.ref_name }}-macos.dmg"
+
+      - name: Upload DMG artifact
+        # actions/upload-artifact v4.6.2 — SHA-pinned
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-macOS
+          path: MelosViz-*-macos.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+  linux-cli:
+    name: Linux — CLI tarball (Rust binaries)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Rust (stable)
+        uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+        with:
+          toolchain: stable
+
+      - name: Build Rust crates (release)
+        run: cargo build --release
+
+      - name: Package CLI tools as tarball
+        run: |
+          mkdir -p dist
+          cp target/release/melosviz-render    dist/
+          cp target/release/melosviz-mir       dist/
+          cp LICENSE dist/
+          tar czf "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz" \
+            -C dist .
+          ls -lh "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz"
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-Linux
+          path: MelosViz-*-linux-*.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Create GitHub Release
+    needs: [macos-desktop, linux-cli]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all build artifacts
+        # actions/download-artifact v4.2.1 — SHA-pinned
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
+        with:
+          path: _artifacts
+
+      - name: List downloaded artifacts
+        run: find _artifacts -type f -ls
+
+      - name: Publish release
+        # softprops/action-gh-release v2.2.1 — SHA-pinned
+        uses: softprops/action-gh-release@c95fe60539f7a31b3f6c3a0c2c0515c3ba6d0a7c
+        with:
+          files: |
+            _artifacts/MelosViz-macOS/*
+            _artifacts/MelosViz-Linux/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false

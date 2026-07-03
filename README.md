@@ -101,6 +101,21 @@ output = export_video(spec, output_dir=Path("exports"))
 print(output)
 ```
 
+## Launch the desktop app
+
+The native desktop GUI (Electrobun + wgpu) lets you drop a WAV file, analyze
+it, tune the render plan, and preview the output — all in one window.
+
+```bash
+cd desktop && bunx electrobun dev
+```
+
+Or invoke the wgpu renderer directly from the command line:
+
+```bash
+cargo run --release -p melosviz-render-wgpu -- --help
+```
+
 ## What Ships Today
 
 - `melosviz.analysis.models.RenderSpec` and `ThemePreset`
