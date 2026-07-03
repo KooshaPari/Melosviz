@@ -164,7 +164,7 @@ def _check_inside(path_str: str) -> Path:
         raise HTTPException(status_code=400, detail="path is empty")
     try:
         target = Path(path_str).expanduser().resolve(strict=False)
-    except (OSError, RuntimeError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=f"invalid path: {exc}") from exc
     # Legacy desktop mode: auth off AND no explicit allowed-dir override.
     legacy = (
@@ -198,10 +198,10 @@ async def analyze(req: AnalyzeRequest) -> str:
     Uses the fast Rust MIR analyzer when available; falls back to Python.
     """
     wav = _check_inside(req.wav_path)
-    if not wav.exists():
-        raise HTTPException(status_code=400, detail=f"File not found: {wav}")
 
     try:
+        if not wav.exists():
+            raise HTTPException(status_code=400, detail=f"File not found: {wav}")
         data = _analyze_with_mir_or_python(wav)
     except HTTPException:
         raise
@@ -219,10 +219,10 @@ async def build(req: BuildRequest) -> str:
     from melosviz.compose.assemble import assemble_render_plan
 
     wav = _check_inside(req.wav_path)
-    if not wav.exists():
-        raise HTTPException(status_code=400, detail=f"File not found: {wav}")
 
     try:
+        if not wav.exists():
+            raise HTTPException(status_code=400, detail=f"File not found: {wav}")
         spec_data = _analyze_with_mir_or_python(wav)
         # assemble_render_plan expects a RenderSpec object, not a dict
         # For now, we'll pass the dict directly and let assemble_render_plan handle it
@@ -243,13 +243,14 @@ async def render(req: RenderRequest) -> str:
     from melosviz.compose.assemble import assemble_render_plan
 
     wav = _check_inside(req.wav_path)
-    if not wav.exists():
-        raise HTTPException(status_code=400, detail=f"File not found: {wav}")
-
-    out = _check_inside(req.out_dir)
-    out.mkdir(parents=True, exist_ok=True)
 
     try:
+        if not wav.exists():
+            raise HTTPException(status_code=400, detail=f"File not found: {wav}")
+
+        out = _check_inside(req.out_dir)
+        out.mkdir(parents=True, exist_ok=True)
+
         spec_data = _analyze_with_mir_or_python(wav)
         # Use mock_adapters=False to attempt real adapters; they fail-open to mocks
         # if Blender / TouchDesigner are absent.
@@ -284,16 +285,14 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Loopback guard. Runs *before* uvicorn.bind() so a misconfigured public
-    # bind never even reaches the socket layer.
     ok, reason = security.loopback_check(args.host)
     if not ok:
         print(f"[melosviz bridge] {reason}", file=sys.stderr)
         sys.exit(2)
-    print(f"[melosviz bridge] binding {args.host}:{args.port} ({reason})")
 
+    print(f"[melosviz bridge] binding {args.host}:{args.port} ({reason})")
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     main()

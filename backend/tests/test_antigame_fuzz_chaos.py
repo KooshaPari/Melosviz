@@ -254,6 +254,11 @@ class TestBridgeHttpFuzz:
         assert r.status_code in (400, 422), r.text
 
     def test_health_is_idempotent(self, client) -> None:
+        # Install an unlimited rate limiter so 50 rapid pings don't 429.
+        from melosviz.bridge.security import RateLimiter, _LIVE_LIMITERS
+        from melosviz.bridge import server as bridge_server
+        _LIVE_LIMITERS[id(bridge_server.app)] = RateLimiter(max_requests=0)
+
         # Hit it 50 times — must not leak state.
         for _ in range(50):
             r = client.get("/health")
