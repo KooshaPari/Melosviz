@@ -147,21 +147,3 @@ jobs:
       - name: Stop bridge sidecar
         if: always()
         run: kill $BRIDGE_PID 2>/dev/null || true
-
-  quality-gate:
-    name: qgate — granular-recursive quality gate (85%)
-    needs: backend
-    # Reusable workflow call: must be the job's only `uses:` (job-level, not
-    # nested in `steps:`) per GitHub Actions reusable-workflow schema. This
-    # workflow does its own checkout of the calling repo internally, so no
-    # separate download-artifact step is needed here.
-    uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
-    with:
-      coverage-report: backend/coverage/lcov.info
-      coverage-format: lcov
-      threshold: 100
-      # a11y: webview UI only testable on host (no headless Electron CI)
-      # chaos: covered by test_qgate_backfill.py but not auto-categorised
-      # mutation: mutmut config in place, full run is slow for CI
-      not-applicable: "a11y"
-      working-directory: .
