@@ -17,7 +17,7 @@ permissions:
 jobs:
   trace-gate:
     name: FR Coverage Gate
-    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@main
+    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@721c481fcd54740aa5d50d7ebfe40a9b5102906e # master
   backend:
     name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
     # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
@@ -148,28 +148,27 @@ jobs:
         if: always()
         run: kill $BRIDGE_PID 2>/dev/null || true
 
-  quality-gate:
-    name: qgate — granular-recursive quality gate (85%)
-    needs: backend
-    # Linux only — standard runner, no billing
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download backend coverage (Python 3.12)
-        # download-artifact v4.2.1 — SHA-pinned
-        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e
-        with:
-          name: backend-coverage-py3.12
-          path: backend/coverage
-
-      - name: Run qgate
-        uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
-        with:
-          coverage-report: backend/coverage/lcov.info
-          coverage-format: lcov
-          threshold: 100
-          # a11y: webview UI only testable on host (no headless Electron CI)
-          # chaos: covered by test_qgate_backfill.py but not auto-categorised
-          # mutation: mutmut config in place, full run is slow for CI
-          not-applicable: "a11y"
-          working-directory: .
+  # quality-gate: TEMPORARILY DISABLED.
+  # KooshaPari/phenotype-tooling's reusable workflow
+  # `.github/workflows/reusable/quality-gate.yml@main` makes every calling
+  # workflow file unparseable on GitHub's side ("workflow file may be
+  # broken", zero jobs ever created, referenced_workflows: [] on the run
+  # object) — reproduced in isolation with a minimal caller (bare job,
+  # no `with:` inputs, no sibling jobs) invoking only this one reusable
+  # workflow, so the defect is in phenotype-tooling's workflow itself, not
+  # in how Melosviz calls it. Root-cause needs to be fixed upstream in
+  # phenotype-tooling; re-enable this job once that repo's workflow_call
+  # entrypoint is confirmed valid.
+  # quality-gate:
+  #   name: qgate — granular-recursive quality gate (85%)
+  #   needs: backend
+  #   uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
+  #   with:
+  #     coverage-report: backend/coverage/lcov.info
+  #     coverage-format: lcov
+  #     threshold: 100
+  #     # a11y: webview UI only testable on host (no headless Electron CI)
+  #     # chaos: covered by test_qgate_backfill.py but not auto-categorised
+  #     # mutation: mutmut config in place, full run is slow for CI
+  #     not-applicable: "a11y"
+  #     working-directory: .
