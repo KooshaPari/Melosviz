@@ -28,8 +28,8 @@
 //! `bytemuck::Pod` + `bytemuck::Zeroable` are derived so the struct can be
 //! written directly into a `wgpu::Buffer` with `queue.write_buffer`.
 
-use bytemuck::{Pod, Zeroable};
 use crate::spec::DenseKeyframe;
+use bytemuck::{Pod, Zeroable};
 
 /// Per-frame uniform data uploaded to the GPU before each render pass.
 ///
@@ -85,7 +85,10 @@ impl FrameUniforms {
             palette_r: 0.0,
             palette_g: 0.9,
             palette_b: 1.0,
-            _pad0: 0.0, _pad1: 0.0, _pad2: 0.0, _pad3: 0.0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
+            _pad3: 0.0,
         }
     }
 
@@ -105,7 +108,10 @@ impl FrameUniforms {
             palette_r: 0.0,
             palette_g: 0.9,
             palette_b: 1.0,
-            _pad0: 0.0, _pad1: 0.0, _pad2: 0.0, _pad3: 0.0,
+            _pad0: 0.0,
+            _pad1: 0.0,
+            _pad2: 0.0,
+            _pad3: 0.0,
         }
     }
 
@@ -131,11 +137,16 @@ mod tests {
 
     fn kf(energy: f32, sc: f32, beat: f32, drums: f32, bass: f32) -> DenseKeyframe {
         DenseKeyframe {
-            t: energy,  // reuse energy as time for simplicity
+            t: energy, // reuse energy as time for simplicity
             energy,
             spectral_centroid: sc,
             beat_strength: beat,
-            stems: StemFrame { drums, bass, vocals: 0.0, other: 0.0 },
+            stems: StemFrame {
+                drums,
+                bass,
+                vocals: 0.0,
+                other: 0.0,
+            },
         }
     }
 
@@ -143,7 +154,11 @@ mod tests {
     fn test_frame_uniforms_size_is_multiple_of_16() {
         // wgpu requires uniform buffers to be aligned to 16 bytes.
         let size = std::mem::size_of::<FrameUniforms>();
-        assert_eq!(size % 16, 0, "FrameUniforms must be 16-byte aligned; size={size}");
+        assert_eq!(
+            size % 16,
+            0,
+            "FrameUniforms must be 16-byte aligned; size={size}"
+        );
     }
 
     #[test]
@@ -201,7 +216,10 @@ mod tests {
     #[test]
     fn test_bytemuck_pod_cast() {
         // Verify Pod allows safe byte-slice cast (required for wgpu buffer writes).
-        let u = FrameUniforms { energy: 0.5, ..Default::default() };
+        let u = FrameUniforms {
+            energy: 0.5,
+            ..Default::default()
+        };
         let bytes: &[u8] = bytemuck::bytes_of(&u);
         assert_eq!(bytes.len(), std::mem::size_of::<FrameUniforms>());
     }

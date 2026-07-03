@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use melosviz_render_wgpu::renderer::WgpuRenderer;
 
 fn bench_wgpu_frame_setup(c: &mut Criterion) {

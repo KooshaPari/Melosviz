@@ -80,6 +80,7 @@
 pub mod export;
 pub mod pipeline;
 pub mod renderer;
+pub mod scene;
 pub mod segment_cache;
 pub mod spec;
 pub mod timeline;

@@ -125,7 +125,9 @@ impl RenderSpec {
     /// Return the segment that contains frame `frame_idx`, or `None`.
     pub fn segment_for_frame(&self, frame_idx: u32) -> Option<&SceneSegment> {
         let t = frame_idx as f32 / self.metadata.fps.max(1) as f32;
-        self.scene_segments.iter().find(|s| t >= s.start && t < s.end)
+        self.scene_segments
+            .iter()
+            .find(|s| t >= s.start && t < s.end)
     }
 }
 
@@ -157,7 +159,11 @@ mod tests {
     #[test]
     fn test_render_spec_total_frames_min_one() {
         let spec = RenderSpec {
-            metadata: RenderMetadata { fps: 30, duration: 0.0, ..Default::default() },
+            metadata: RenderMetadata {
+                fps: 30,
+                duration: 0.0,
+                ..Default::default()
+            },
             ..Default::default()
         };
         assert_eq!(spec.total_frames(), 1);
@@ -166,26 +172,56 @@ mod tests {
     #[test]
     fn test_segment_for_frame_found() {
         let spec = RenderSpec {
-            metadata: RenderMetadata { fps: 30, duration: 10.0, ..Default::default() },
+            metadata: RenderMetadata {
+                fps: 30,
+                duration: 10.0,
+                ..Default::default()
+            },
             scene_segments: vec![
-                SceneSegment { id: "s0".into(), label: "intro".into(), start: 0.0, end: 5.0, ..Default::default() },
-                SceneSegment { id: "s1".into(), label: "verse".into(), start: 5.0, end: 10.0, ..Default::default() },
+                SceneSegment {
+                    id: "s0".into(),
+                    label: "intro".into(),
+                    start: 0.0,
+                    end: 5.0,
+                    ..Default::default()
+                },
+                SceneSegment {
+                    id: "s1".into(),
+                    label: "verse".into(),
+                    start: 5.0,
+                    end: 10.0,
+                    ..Default::default()
+                },
             ],
             ..Default::default()
         };
         // Frame 60 = t=2.0 → segment 0 (intro)
-        assert_eq!(spec.segment_for_frame(60).map(|s| s.label.as_str()), Some("intro"));
+        assert_eq!(
+            spec.segment_for_frame(60).map(|s| s.label.as_str()),
+            Some("intro")
+        );
         // Frame 180 = t=6.0 → segment 1 (verse)
-        assert_eq!(spec.segment_for_frame(180).map(|s| s.label.as_str()), Some("verse"));
+        assert_eq!(
+            spec.segment_for_frame(180).map(|s| s.label.as_str()),
+            Some("verse")
+        );
     }
 
     #[test]
     fn test_segment_for_frame_none_beyond_end() {
         let spec = RenderSpec {
-            metadata: RenderMetadata { fps: 30, duration: 3.0, ..Default::default() },
-            scene_segments: vec![
-                SceneSegment { id: "s0".into(), label: "verse".into(), start: 0.0, end: 3.0, ..Default::default() },
-            ],
+            metadata: RenderMetadata {
+                fps: 30,
+                duration: 3.0,
+                ..Default::default()
+            },
+            scene_segments: vec![SceneSegment {
+                id: "s0".into(),
+                label: "verse".into(),
+                start: 0.0,
+                end: 3.0,
+                ..Default::default()
+            }],
             ..Default::default()
         };
         // Frame 90 = t=3.0 → end is exclusive; no segment
@@ -217,7 +253,12 @@ mod tests {
                 energy: 0.8,
                 spectral_centroid: 0.5,
                 beat_strength: 1.0,
-                stems: StemFrame { drums: 0.9, bass: 0.7, vocals: 0.3, other: 0.1 },
+                stems: StemFrame {
+                    drums: 0.9,
+                    bass: 0.7,
+                    vocals: 0.3,
+                    other: 0.1,
+                },
             }],
             ..Default::default()
         };

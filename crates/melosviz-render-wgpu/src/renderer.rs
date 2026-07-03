@@ -80,7 +80,13 @@ impl WgpuRenderer {
 
         let pipelines = PipelineSet::build(&device, HEADLESS_FORMAT)?;
 
-        Ok(Self { device, queue, pipelines, width, height })
+        Ok(Self {
+            device,
+            queue,
+            pipelines,
+            width,
+            height,
+        })
     }
 
     /// Render one frame from `uniforms` into an offscreen texture and
@@ -93,11 +99,13 @@ impl WgpuRenderer {
     /// Returns an error if the GPU read-back buffer cannot be mapped.
     pub async fn render_frame_to_bytes(&self, uniforms: &FrameUniforms) -> Result<Vec<u8>> {
         // Upload uniform data to a GPU buffer.
-        let uniform_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("melosviz_uniforms"),
-            contents: bytemuck::bytes_of(uniforms),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let uniform_buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("melosviz_uniforms"),
+                contents: bytemuck::bytes_of(uniforms),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
 
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("melosviz_bg"),
@@ -111,7 +119,11 @@ impl WgpuRenderer {
         // Create offscreen render target.
         let render_texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("melosviz_render"),
-            size: wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -134,15 +146,18 @@ impl WgpuRenderer {
         });
 
         // Encode render passes — compositor order: bg → hue → beat → particles.
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("melosviz_encoder"),
-        });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("melosviz_encoder"),
+            });
 
         for (i, pipeline) in [
             &self.pipelines.bg_gradient,
             &self.pipelines.spectral_hue,
             &self.pipelines.beat_pulse,
             &self.pipelines.stem_particles,
+            &self.pipelines.conductor,
         ]
         .iter()
         .enumerate()
@@ -157,7 +172,10 @@ impl WgpuRenderer {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &render_view,
                     resolve_target: None,
-                    ops: wgpu::Operations { load, store: wgpu::StoreOp::Store },
+                    ops: wgpu::Operations {
+                        load,
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
@@ -179,7 +197,11 @@ impl WgpuRenderer {
                     rows_per_image: Some(self.height),
                 },
             },
-            wgpu::Extent3d { width: self.width, height: self.height, depth_or_array_layers: 1 },
+            wgpu::Extent3d {
+                width: self.width,
+                height: self.height,
+                depth_or_array_layers: 1,
+            },
         );
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -246,9 +268,18 @@ impl WgpuRenderer {
                 .sample(frame_idx)
                 .with_frame_index(frame_idx)
                 .with_palette_rgb(
-                    spec.palette.first().map(|s| hex_channel(s, 0)).unwrap_or(0.0),
-                    spec.palette.first().map(|s| hex_channel(s, 1)).unwrap_or(0.9),
-                    spec.palette.first().map(|s| hex_channel(s, 2)).unwrap_or(1.0),
+                    spec.palette
+                        .first()
+                        .map(|s| hex_channel(s, 0))
+                        .unwrap_or(0.0),
+                    spec.palette
+                        .first()
+                        .map(|s| hex_channel(s, 1))
+                        .unwrap_or(0.9),
+                    spec.palette
+                        .first()
+                        .map(|s| hex_channel(s, 2))
+                        .unwrap_or(1.0),
                 );
             let frame = self.render_frame_to_bytes(&uniforms).await?;
             frames.push(frame);
@@ -339,7 +370,9 @@ mod tests {
                 assert!(true);
             }
             Err(e) => {
-                assert!(e.to_string().contains("No GPU adapter") || e.to_string().contains("adapter"));
+                assert!(
+                    e.to_string().contains("No GPU adapter") || e.to_string().contains("adapter")
+                );
             }
         }
     }
@@ -437,7 +470,9 @@ mod tests {
     #[ignore = "requires GPU adapter (run on host with Metal/Vulkan)"]
     fn test_renderer_new_succeeds_with_gpu() {
         pollster::block_on(async {
-            let renderer = WgpuRenderer::new(64, 64).await.expect("should create renderer");
+            let renderer = WgpuRenderer::new(64, 64)
+                .await
+                .expect("should create renderer");
             assert_eq!(renderer.width(), 64);
             assert_eq!(renderer.height(), 64);
         });
@@ -463,7 +498,10 @@ mod tests {
             let uniforms = FrameUniforms::default().with_palette_rgb(0.0, 0.96, 1.0);
             let bytes = renderer.render_frame_to_bytes(&uniforms).await.unwrap();
             let nonzero: usize = bytes.iter().filter(|&&b| b > 0).count();
-            assert!(nonzero > 0, "expected non-black output from bg_gradient shader");
+            assert!(
+                nonzero > 0,
+                "expected non-black output from bg_gradient shader"
+            );
         });
     }
 }

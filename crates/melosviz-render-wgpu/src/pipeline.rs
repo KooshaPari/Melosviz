@@ -9,9 +9,11 @@
 //! | `BeatPulse` | `beat_pulse.wgsl` | energy → emitter scale + radial glow |
 //! | `SpectralHue` | `spectral_hue.wgsl` | spectral_centroid → HSV hue rotation |
 //! | `StemParticles` | `stem_particles.wgsl` | drums → particle density, bass → scale |
+//! | `Conductor` | `conductor.wgsl` | conductor figure coordinating instrument sections |
 //!
 //! Pipelines are lazy-built on first use and stored in [`PipelineSet`].
 
+use crate::scene::{ConductorScene, Scene};
 use anyhow::Result;
 
 /// Identifies which visual layer pipeline to use.
@@ -25,6 +27,8 @@ pub enum LayerKind {
     SpectralHue,
     /// Particle system driven by drum/bass stems.
     StemParticles,
+    /// Conductor figure and instrument sections driven by stems and beat.
+    Conductor,
 }
 
 /// WGSL shader source strings embedded at compile time.
@@ -33,6 +37,7 @@ pub mod shaders {
     pub const BEAT_PULSE: &str = include_str!("shaders/beat_pulse.wgsl");
     pub const SPECTRAL_HUE: &str = include_str!("shaders/spectral_hue.wgsl");
     pub const STEM_PARTICLES: &str = include_str!("shaders/stem_particles.wgsl");
+    pub const CONDUCTOR: &str = include_str!("shaders/conductor.wgsl");
 }
 
 /// Container for all compiled render pipelines.
@@ -45,6 +50,7 @@ pub struct PipelineSet {
     pub beat_pulse: wgpu::RenderPipeline,
     pub spectral_hue: wgpu::RenderPipeline,
     pub stem_particles: wgpu::RenderPipeline,
+    pub conductor: wgpu::RenderPipeline,
     pub uniform_bind_group_layout: wgpu::BindGroupLayout,
 }
 
@@ -123,6 +129,7 @@ impl PipelineSet {
             beat_pulse: build_pipeline("beat_pulse", shaders::BEAT_PULSE),
             spectral_hue: build_pipeline("spectral_hue", shaders::SPECTRAL_HUE),
             stem_particles: build_pipeline("stem_particles", shaders::STEM_PARTICLES),
+            conductor: build_pipeline(ConductorScene::NAME, ConductorScene::shader_source()),
             uniform_bind_group_layout,
         })
     }
@@ -135,10 +142,26 @@ mod tests {
     #[test]
     fn test_shader_sources_are_non_empty() {
         // Verify that all WGSL shader files are embedded and non-empty at compile time.
-        assert!(!shaders::BG_GRADIENT.is_empty(), "bg_gradient.wgsl must be non-empty");
-        assert!(!shaders::BEAT_PULSE.is_empty(), "beat_pulse.wgsl must be non-empty");
-        assert!(!shaders::SPECTRAL_HUE.is_empty(), "spectral_hue.wgsl must be non-empty");
-        assert!(!shaders::STEM_PARTICLES.is_empty(), "stem_particles.wgsl must be non-empty");
+        assert!(
+            !shaders::BG_GRADIENT.is_empty(),
+            "bg_gradient.wgsl must be non-empty"
+        );
+        assert!(
+            !shaders::BEAT_PULSE.is_empty(),
+            "beat_pulse.wgsl must be non-empty"
+        );
+        assert!(
+            !shaders::SPECTRAL_HUE.is_empty(),
+            "spectral_hue.wgsl must be non-empty"
+        );
+        assert!(
+            !shaders::STEM_PARTICLES.is_empty(),
+            "stem_particles.wgsl must be non-empty"
+        );
+        assert!(
+            !shaders::CONDUCTOR.is_empty(),
+            "conductor.wgsl must be non-empty"
+        );
     }
 
     #[test]
@@ -149,9 +172,16 @@ mod tests {
             ("beat_pulse", shaders::BEAT_PULSE),
             ("spectral_hue", shaders::SPECTRAL_HUE),
             ("stem_particles", shaders::STEM_PARTICLES),
+            ("conductor", shaders::CONDUCTOR),
         ] {
-            assert!(src.contains("vs_main"), "{name}: missing vs_main entry point");
-            assert!(src.contains("fs_main"), "{name}: missing fs_main entry point");
+            assert!(
+                src.contains("vs_main"),
+                "{name}: missing vs_main entry point"
+            );
+            assert!(
+                src.contains("fs_main"),
+                "{name}: missing fs_main entry point"
+            );
         }
     }
 
@@ -163,6 +193,7 @@ mod tests {
             ("beat_pulse", shaders::BEAT_PULSE),
             ("spectral_hue", shaders::SPECTRAL_HUE),
             ("stem_particles", shaders::STEM_PARTICLES),
+            ("conductor", shaders::CONDUCTOR),
         ] {
             assert!(
                 src.contains("FrameUniforms"),
@@ -174,7 +205,14 @@ mod tests {
     #[test]
     fn test_layer_kind_is_copy() {
         let a = LayerKind::BeatPulse;
-        let _b = a;  // Copy means no move — would fail to compile if not Copy
+        let _b = a; // Copy means no move — would fail to compile if not Copy
         let _c = a;
+    }
+
+    #[test]
+    fn test_conductor_scene_contract() {
+        assert_eq!(ConductorScene::KIND, LayerKind::Conductor);
+        assert_eq!(ConductorScene::DRAW_VERTICES, 3);
+        assert_eq!(ConductorScene::shader_source(), shaders::CONDUCTOR);
     }
 }

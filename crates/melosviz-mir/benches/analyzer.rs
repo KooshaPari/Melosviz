@@ -1,8 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use melosviz_mir::{analyze, wav::load_wav_mono, mir::MirParams};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use hound::WavWriter;
+use melosviz_mir::{analyze, mir::MirParams, wav::load_wav_mono};
 use std::path::Path;
 use tempfile::NamedTempFile;
-use hound::WavWriter;
 
 /// Generate a synthetic 180-second WAV file for benchmarking.
 fn generate_test_wav(duration_sec: f32) -> NamedTempFile {
@@ -41,11 +41,14 @@ fn analyzer_benchmark(c: &mut Criterion) {
         let path = temp.path();
         b.iter(|| {
             let wav = load_wav_mono(black_box(path)).expect("load wav");
-            analyze(&wav, black_box(MirParams {
-                n_dense_fps: 15,
-                n_fft: 2048,
-                hop_length: 512,
-            }))
+            analyze(
+                &wav,
+                black_box(MirParams {
+                    n_dense_fps: 15,
+                    n_fft: 2048,
+                    hop_length: 512,
+                }),
+            )
         });
     });
 
@@ -55,11 +58,14 @@ fn analyzer_benchmark(c: &mut Criterion) {
         let path = temp.path();
         b.iter(|| {
             let wav = load_wav_mono(black_box(path)).expect("load wav");
-            analyze(&wav, black_box(MirParams {
-                n_dense_fps: 15,
-                n_fft: 2048,
-                hop_length: 512,
-            }))
+            analyze(
+                &wav,
+                black_box(MirParams {
+                    n_dense_fps: 15,
+                    n_fft: 2048,
+                    hop_length: 512,
+                }),
+            )
         });
     });
 
