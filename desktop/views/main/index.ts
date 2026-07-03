@@ -358,23 +358,31 @@ async function copyJson(obj: unknown, btnId: string) {
 // ---------------------------------------------------------------------------
 
 async function onPickWav() {
-  const picked = await rpc.request.pickFile({ accept: "wav" });
-  if (!picked) return;
-  wavPath = picked;
-  const name = picked.split("/").pop() ?? picked;
-  showWavLoaded(name);
-  renderSpec = null;
-  renderPlan = null;
-  setStatus("WAV loaded — run Analyze", "ready");
-  syncButtons();
-  clearError();
+  try {
+    const picked = await rpc.request.pickFile({ accept: "wav" });
+    if (!picked) return;
+    wavPath = picked;
+    const name = picked.split("/").pop() ?? picked;
+    showWavLoaded(name);
+    renderSpec = null;
+    renderPlan = null;
+    setStatus("WAV loaded — run Analyze", "ready");
+    syncButtons();
+    clearError();
+  } catch (err) {
+    showError(`pickFile failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 async function onPickOut() {
-  const picked = await rpc.request.pickDirectory({});
-  if (!picked) return;
-  outPath = picked;
-  qs("#out-path").textContent = picked;
+  try {
+    const picked = await rpc.request.pickDirectory({});
+    if (!picked) return;
+    outPath = picked;
+    qs("#out-path").textContent = picked;
+  } catch (err) {
+    showError(`pickDirectory failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 async function onAnalyze() {

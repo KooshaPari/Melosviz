@@ -223,7 +223,10 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                     killed = True
                     report.timeout += 1
                 finally:
-                    shutil.copy(backup, target)
+                    if backup.exists():
+                        shutil.copy(backup, target)
+                    else:
+                        target.write_text(src_text)
 
                 report.total += 1
                 if killed:
@@ -239,8 +242,11 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                 if killed:
                     report.op_breakdown[mutation.op]["killed"] += 1
         finally:
-            shutil.copy(backup, target)
-            backup.unlink(missing_ok=True)
+            if backup.exists():
+                shutil.copy(backup, target)
+                backup.unlink(missing_ok=True)
+            else:
+                target.write_text(src_text)
         report.score = (report.killed / report.total * 100.0) if report.total else 0.0
         # We treat timeout as a kill (mutant induced hang — a *bad* outcome caught)
         if report.killed == 0 and report.timeout > 0:
