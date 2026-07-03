@@ -81,11 +81,13 @@ pub mod export;
 pub mod pipeline;
 pub mod renderer;
 pub mod scene;
+pub mod scene_runner;
 pub mod segment_cache;
 pub mod spec;
 pub mod timeline;
 pub mod uniforms;
 
 pub use renderer::WgpuRenderer;
+pub use scene_runner::conductor_uniforms_for_frame;
 pub use segment_cache::SegmentCache;
 pub use spec::RenderSpec;

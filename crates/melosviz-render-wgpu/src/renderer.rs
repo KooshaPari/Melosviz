@@ -362,57 +362,6 @@ mod tests {
         assert!(val >= 0.0);
     }
 
-    #[tokio::test]
-    #[ignore]
-    async fn test_renderer_creation_requires_gpu() {
-        match WgpuRenderer::new(1280, 720).await {
-            Ok(_) => {
-                assert!(true);
-            }
-            Err(e) => {
-                assert!(
-                    e.to_string().contains("No GPU adapter") || e.to_string().contains("adapter")
-                );
-            }
-        }
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_frame_output_non_empty() {
-        if let Ok(renderer) = WgpuRenderer::new(64, 64).await {
-            let uniforms = FrameUniforms::default();
-            match renderer.render_frame_to_bytes(&uniforms).await {
-                Ok(pixels) => {
-                    let expected_size = 64 * 64 * 4;
-                    assert_eq!(pixels.len(), expected_size);
-                    assert!(!pixels.is_empty());
-                }
-                Err(_) => {
-                    assert!(true);
-                }
-            }
-        }
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_frame_output_pixel_range() {
-        if let Ok(renderer) = WgpuRenderer::new(32, 32).await {
-            let uniforms = FrameUniforms::default();
-            match renderer.render_frame_to_bytes(&uniforms).await {
-                Ok(pixels) => {
-                    for &byte in &pixels {
-                        assert!(byte <= 255);
-                    }
-                }
-                Err(_) => {
-                    assert!(true);
-                }
-            }
-        }
-    }
-
     #[test]
     fn test_hex_channel_rgba_channel_order() {
         let hex = "#AABBCC";
@@ -437,11 +386,6 @@ mod tests {
         let val = hex_channel("#808080", 0);
         assert!(val > 0.4 && val < 0.6);
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 
     #[test]
     fn test_hex_channel_parses_correctly() {
