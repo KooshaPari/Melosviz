@@ -137,7 +137,7 @@ impl WgpuRenderer {
         let bytes_per_pixel: u32 = 4;
         let unpadded_row_bytes = self.width * bytes_per_pixel;
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
-        let padded_row_bytes = (unpadded_row_bytes + align - 1) / align * align;
+        let padded_row_bytes = unpadded_row_bytes.div_ceil(align) * align;
         let readback_buf = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("melosviz_readback"),
             size: (padded_row_bytes * self.height) as u64,
@@ -189,9 +189,9 @@ impl WgpuRenderer {
         // Copy texture → read-back buffer.
         encoder.copy_texture_to_buffer(
             render_texture.as_image_copy(),
-            wgpu::ImageCopyBuffer {
+            wgpu::TexelCopyBufferInfo {
                 buffer: &readback_buf,
-                layout: wgpu::ImageDataLayout {
+                layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_row_bytes),
                     rows_per_image: Some(self.height),
@@ -364,13 +364,15 @@ mod tests {
 
     #[test]
     fn test_hex_channel_rgba_channel_order() {
+        // #AABBCC → R=0xAA=170, G=0xBB=187, B=0xCC=204
+        // In this colour, R < G < B (ascending).
         let hex = "#AABBCC";
         let r = hex_channel(hex, 0);
         let g = hex_channel(hex, 1);
         let b = hex_channel(hex, 2);
 
-        assert!(r > g);
-        assert!(g > b);
+        assert!(r < g, "expected R < G for #AABBCC, got r={r} g={g}");
+        assert!(g < b, "expected G < B for #AABBCC, got g={g} b={b}");
     }
 
     #[test]
