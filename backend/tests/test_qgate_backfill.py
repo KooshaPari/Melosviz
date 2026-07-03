@@ -27,7 +27,7 @@ import time
 import wave
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -510,10 +510,27 @@ class TestOrchestrator:
     def test_orchestrator_skip_assembly(self, tmp_path) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
 
-        orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
-        spec = _minimal_render_spec()
-        result = orch.render(spec, scene_types=["video_export"])
-        # skip_assembly=True means adapters not called — result is empty list or minimal
+        # skip_assembly only skips the final assembly_encode step — the
+        # video_export scene adapter is still invoked, so ffmpeg resolution
+        # must be mocked here just like every other video_export test in
+        # this suite (no real ffmpeg binary is assumed to be on CI's PATH).
+        def _fake_ffmpeg_run(cmd, **kwargs):
+            out_path = Path(cmd[-1])
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_bytes(b"\x00" * 64)
+            return MagicMock(returncode=0, stderr="")
+
+        with (
+            patch(
+                "melosviz.render.video_exporter._resolve_ffmpeg_binary",
+                return_value="/fake/ffmpeg",
+            ),
+            patch("subprocess.run", side_effect=_fake_ffmpeg_run),
+        ):
+            orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
+            spec = _minimal_render_spec()
+            result = orch.render(spec, scene_types=["video_export"])
+        # skip_assembly=True means the final assembly step is not run — result is empty list or minimal
         assert result is not None
 
     def test_orchestrator_unknown_scene_type_raises(self, tmp_path) -> None:

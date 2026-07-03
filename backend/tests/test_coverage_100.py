@@ -762,10 +762,30 @@ class TestExportVideoErrors:
             out = tmp_path / "melosviz-render.mp4"
             out.write_bytes(b"fake")
             mock_pipe.return_value = None
-            # Mock the stat check
+            # Mock the post-export stat check. Use a real os.stat_result (via
+            # os.stat_result construction) rather than a bare MagicMock so
+            # unrelated internal calls that also go through Path.stat/exists
+            # (e.g. output_dir.mkdir(exist_ok=True) -> Path.is_dir() ->
+            # Path.stat()) still get a value with a real, S_ISDIR-compatible
+            # st_mode/st_size instead of blowing up with
+            # "TypeError: an integer is required".
+            import os
+            import stat as stat_module
+
+            real_stat = out.stat()
+            dir_mode = (real_stat.st_mode & ~stat_module.S_IFREG) | stat_module.S_IFDIR
+            stat_fields = [
+                dir_mode if i == stat_module.ST_MODE else real_stat[i]
+                for i in range(10)
+            ]
+            dir_like_stat = os.stat_result(stat_fields)
             with (
                 patch.object(Path, "exists", return_value=True),
-                patch.object(Path, "stat", return_value=MagicMock(st_size=100)),
+                patch.object(
+                    Path,
+                    "stat",
+                    side_effect=lambda *a, **kw: dir_like_stat,
+                ),
             ):
                 export_video(spec, format="mp4", output_dir=tmp_path)
         mock_pipe.assert_called_once()
