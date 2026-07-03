@@ -159,8 +159,11 @@ class TestTryImportHelpers:
             assert _try_import_numpy() is None
 
     def test_try_import_demucs_returns_true_when_installed(self) -> None:
-        # The helper imports ``demucs.pretrained`` which IS available in
-        # the ML-extras install.  Confirm the True branch is reachable.
+        # The helper imports ``demucs.pretrained`` which is only available
+        # with the optional [stems] ML extras (not part of the standard CI
+        # [test,lint,analysis,bridge] install) — skip when absent instead of
+        # asserting a hard dependency that CI doesn't provide.
+        pytest.importorskip("demucs")
         assert _try_import_demucs() is True
 
     def test_try_import_demucs_returns_false_when_missing(self) -> None:
@@ -515,7 +518,12 @@ class TestAnalyzeWavRichE2E:
         path inside ``analyze_wav_rich``.  We mock ``_separate_stems_demucs`` to
         return deterministic zero stems and assert the wiring routes the stems
         through correctly.
+
+        Requires the real ``demucs`` package so ``_try_import_demucs()`` takes
+        the True branch and actually reaches the mocked call — not part of the
+        standard CI [test,lint,analysis,bridge] install, so skip when absent.
         """
+        pytest.importorskip("demucs")
         with mock.patch.object(
             audio, "_separate_stems_demucs", return_value=_zero_stem_channels(10)
         ) as spy:
