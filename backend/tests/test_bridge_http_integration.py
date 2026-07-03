@@ -8,14 +8,14 @@ Tests cover:
 """
 
 import json
-import pytest
-import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from melosviz.bridge import server
-from melosviz.bridge.server import app, AnalyzeRequest, BuildRequest, RenderRequest
+from melosviz.bridge.server import app
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def client():
 def reset_security():
     """Reset security limiter between tests."""
     yield
-    if hasattr(server, 'security_limiter'):
+    if hasattr(server, "security_limiter"):
         server.security_limiter.reset()
 
 
@@ -90,9 +90,13 @@ class TestHealthEndpoint:
 class TestAnalyzeEndpoint:
     """POST /analyze endpoint."""
 
-    def test_analyze_valid_wav_happy_path(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_analyze_valid_wav_happy_path(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Valid WAV file request returns RenderSpec JSON."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python"
+        ) as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -129,7 +133,9 @@ class TestAnalyzeEndpoint:
         bad_wav = tmp_path / "bad.wav"
         bad_wav.write_bytes(b"INVALID")
 
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python"
+        ) as mock_analyze:
             mock_analyze.side_effect = ValueError("invalid WAV header")
 
             response = client.post(
@@ -140,9 +146,13 @@ class TestAnalyzeEndpoint:
             assert response.status_code == 400
             assert "invalid WAV" in response.json()["detail"]
 
-    def test_analyze_mir_fallback_to_python(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_analyze_mir_fallback_to_python(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Analyzer falls back to Python when Rust MIR fails."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python"
+        ) as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -162,10 +172,14 @@ class TestAnalyzeEndpoint:
 class TestBuildEndpoint:
     """POST /build endpoint."""
 
-    def test_build_valid_spec_returns_plan(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_build_valid_spec_returns_plan(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Valid WAV generates render plan JSON."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_plan = {"transitions": [10.0, 20.0], "segments": []}
             mock_assemble.return_value = mock_plan
@@ -189,11 +203,15 @@ class TestBuildEndpoint:
         )
         assert response.status_code == 400
 
-    def test_build_with_optional_out_dir(self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security):
+    def test_build_with_optional_out_dir(
+        self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security
+    ):
         """Build accepts optional out_dir parameter."""
         out_dir = str(tmp_path / "out")
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_assemble.return_value = {"transitions": []}
 
@@ -213,11 +231,15 @@ class TestBuildEndpoint:
 class TestRenderEndpoint:
     """POST /render endpoint."""
 
-    def test_render_valid_spec_creates_plan_file(self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security):
+    def test_render_valid_spec_creates_plan_file(
+        self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security
+    ):
         """Render endpoint writes plan JSON to output directory."""
         out_dir = str(tmp_path / "render_out")
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_plan = {"transitions": [5.0, 15.0], "segments": []}
             mock_assemble.return_value = mock_plan
@@ -244,11 +266,15 @@ class TestRenderEndpoint:
         )
         assert response.status_code == 400
 
-    def test_render_creates_output_directory(self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security):
+    def test_render_creates_output_directory(
+        self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security
+    ):
         """Render creates output directory if missing."""
         out_dir = str(tmp_path / "deep" / "nested" / "dir")
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_assemble.return_value = {"transitions": []}
 
@@ -299,9 +325,13 @@ class TestRequestValidation:
 class TestResponseSchema:
     """Response format validation."""
 
-    def test_analyze_response_is_json_text(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_analyze_response_is_json_text(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Analyze response is plaintext JSON (not application/json)."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python"
+        ) as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -315,10 +345,14 @@ class TestResponseSchema:
             data = json.loads(response.text)
             assert isinstance(data, dict)
 
-    def test_build_response_is_json_text(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_build_response_is_json_text(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Build response is plaintext JSON."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_assemble.return_value = {"transitions": []}
 
@@ -330,11 +364,15 @@ class TestResponseSchema:
             assert response.status_code == 200
             assert "text/plain" in response.headers.get("content-type", "")
 
-    def test_render_response_is_json_text(self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security):
+    def test_render_response_is_json_text(
+        self, client, mock_wav_file, mock_render_spec, tmp_path, reset_security
+    ):
         """Render response is plaintext JSON (output directory path)."""
         out_dir = str(tmp_path / "out")
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_assemble.return_value = {"transitions": []}
 
@@ -379,7 +417,9 @@ class TestErrorRecovery:
 
     def test_analyze_timeout_returns_400(self, client, mock_wav_file, reset_security):
         """Analyzer timeout returns 400 error."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python"
+        ) as mock_analyze:
             mock_analyze.side_effect = TimeoutError("analyzer timeout")
 
             response = client.post(
@@ -388,12 +428,19 @@ class TestErrorRecovery:
             )
 
             assert response.status_code == 400
-            assert "timeout" in response.json()["detail"].lower() or "invalid WAV" in response.json()["detail"]
+            assert (
+                "timeout" in response.json()["detail"].lower()
+                or "invalid WAV" in response.json()["detail"]
+            )
 
-    def test_build_assemble_failure_returns_400(self, client, mock_wav_file, mock_render_spec, reset_security):
+    def test_build_assemble_failure_returns_400(
+        self, client, mock_wav_file, mock_render_spec, reset_security
+    ):
         """Assemble failure returns 400 error."""
-        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze, \
-             patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble:
+        with (
+            patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze,
+            patch("melosviz.compose.assemble.assemble_render_plan") as mock_assemble,
+        ):
             mock_analyze.return_value = mock_render_spec
             mock_assemble.side_effect = RuntimeError("assemble failed")
 

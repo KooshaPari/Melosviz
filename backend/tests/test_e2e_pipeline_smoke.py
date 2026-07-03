@@ -41,6 +41,7 @@ from melosviz.compose.assemble import (
 # Synthetic WAV fixture
 # ---------------------------------------------------------------------------
 
+
 def _write_synthetic_wav(path: Path, duration_sec: float = 4.0) -> None:
     """Write a minimal mono 16-bit 44.1 kHz WAV of pure sine tone.
 
@@ -77,6 +78,7 @@ def synthetic_wav(tmp_path_factory: pytest.TempPathFactory) -> Path:
 # ---------------------------------------------------------------------------
 # RenderSpec fixture with populated scene_segments
 # ---------------------------------------------------------------------------
+
 
 def _make_spec_with_segments(duration_sec: float = 4.0) -> RenderSpec:
     """Build a RenderSpec v2 with enough scene segments to test composer variety."""
@@ -135,6 +137,7 @@ def _make_spec_with_segments(duration_sec: float = 4.0) -> RenderSpec:
 # Core smoke tests
 # ---------------------------------------------------------------------------
 
+
 class TestPipelineSmoke:
     """Full analyze → compose → conductor(mock) → plan chain."""
 
@@ -184,7 +187,7 @@ class TestPipelineSmoke:
                     prev_intensity > FLASH_BOUNDARY_THRESHOLD
                     and cur_intensity > FLASH_BOUNDARY_THRESHOLD
                 ), (
-                    f"Flash-safety violation between seg {i-1}→{i}: "
+                    f"Flash-safety violation between seg {i - 1}→{i}: "
                     f"gap={gap:.3f}s, intensities=({prev_intensity}, {cur_intensity})"
                 )
 
@@ -210,7 +213,9 @@ class TestPipelineSmoke:
         data = spec.model_dump()
         assert "metadata" in data
         # spec_from_wav stores duration under key "duration" (v1 compat)
-        duration = data["metadata"].get("duration_sec") or data["metadata"].get("duration")
+        duration = data["metadata"].get("duration_sec") or data["metadata"].get(
+            "duration"
+        )
         assert duration == pytest.approx(4.0, abs=0.1)
 
     # ------------------------------------------------------------------
@@ -307,7 +312,9 @@ class TestPipelineSmoke:
 class TestCLISmoke:
     """Smoke-test the viz CLI entry-point (no subprocess — direct import)."""
 
-    def test_cli_analyze_exits_0(self, synthetic_wav: Path, capsys: pytest.CaptureFixture) -> None:  # type: ignore[type-arg]
+    def test_cli_analyze_exits_0(
+        self, synthetic_wav: Path, capsys: pytest.CaptureFixture
+    ) -> None:  # type: ignore[type-arg]
         import argparse
 
         from melosviz.cli.main import _cmd_analyze
@@ -317,10 +324,13 @@ class TestCLISmoke:
         assert rc == 0
         captured = capsys.readouterr()
         import json
+
         data = json.loads(captured.out)
         assert "metadata" in data
 
-    def test_cli_analyze_missing_file_exits_1(self, capsys: pytest.CaptureFixture) -> None:  # type: ignore[type-arg]
+    def test_cli_analyze_missing_file_exits_1(
+        self, capsys: pytest.CaptureFixture
+    ) -> None:  # type: ignore[type-arg]
         import argparse
 
         from melosviz.cli.main import _cmd_analyze
@@ -330,7 +340,9 @@ class TestCLISmoke:
         assert rc == 1
 
     def test_cli_build_with_populated_spec(
-        self, tmp_path: Path, capsys: pytest.CaptureFixture  # type: ignore[type-arg]
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture,  # type: ignore[type-arg]
     ) -> None:
         """viz build on a synthetic WAV that has scene_segments returns a plan."""
         # We can't use spec_from_wav here (it produces an empty spec),

@@ -94,7 +94,9 @@ def _cmd_diff(args: argparse.Namespace) -> int:
                 sub = f"{prefix}.{key}" if prefix else key
                 if key not in a:
                     lines.append(f"+ {sub}: {b[key]}")
-                elif key not in b:  # pragma: no cover — RenderSpec.model_dump() always yields symmetric keys
+                elif (
+                    key not in b
+                ):  # pragma: no cover — RenderSpec.model_dump() always yields symmetric keys
                     lines.append(f"- {sub}: {a[key]}")
                 else:
                     lines.extend(_diff(a[key], b[key], prefix=sub))
@@ -124,8 +126,7 @@ def _cmd_apply(args: argparse.Namespace) -> int:
     available = list_presets()
     if preset_name not in available:
         print(
-            f"viz apply: unknown preset {preset_name!r}. "
-            f"Available: {available}",
+            f"viz apply: unknown preset {preset_name!r}. Available: {available}",
             file=sys.stderr,
         )
         return 1

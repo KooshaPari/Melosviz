@@ -73,12 +73,12 @@ class SemanticLabel(str, Enum):
     reads audio-feature conditions and boosts the corresponding channel.
     """
 
-    WALL = "wall"             # architectural surfaces — default hit target
-    PERFORMER = "performer"   # human silhouettes / DJ / crowd foreground
-    REFLECTIVE = "reflective" # chrome / mirror / glass / wet surfaces
-    CROWD = "crowd"           # crowd silhouette mass
-    CEILING = "ceiling"       # overhead surfaces (useful for downward cone)
-    FLOOR = "floor"           # stage floor / dance floor
+    WALL = "wall"  # architectural surfaces — default hit target
+    PERFORMER = "performer"  # human silhouettes / DJ / crowd foreground
+    REFLECTIVE = "reflective"  # chrome / mirror / glass / wet surfaces
+    CROWD = "crowd"  # crowd silhouette mass
+    CEILING = "ceiling"  # overhead surfaces (useful for downward cone)
+    FLOOR = "floor"  # stage floor / dance floor
 
 
 class SemanticTargetRule(BaseModel):
@@ -144,6 +144,7 @@ class SemanticScannerSpec(BaseModel):
     scanner_id: str = "semantic_main"
     target_rules: list[SemanticTargetRule] = Field(default_factory=list)
 
+
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -152,11 +153,11 @@ class SemanticScannerSpec(BaseModel):
 class Domain(str, Enum):
     """Representation domains the scene can switch/blend between."""
 
-    PHOTO = "photo"          # equirect 360 / projected video
-    MESH = "mesh"            # triangle mesh / wireframe / depth shell
-    SPLAT = "splat"          # Gaussian splat / point-cloud proxy
+    PHOTO = "photo"  # equirect 360 / projected video
+    MESH = "mesh"  # triangle mesh / wireframe / depth shell
+    SPLAT = "splat"  # Gaussian splat / point-cloud proxy
     PERFORMER = "performer"  # roto-isolated subject passes
-    FX = "fx"               # particles / edge maps / stylized shader
+    FX = "fx"  # particles / edge maps / stylized shader
 
 
 class ScannerType(str, Enum):
@@ -178,9 +179,9 @@ class FalloffType(str, Enum):
 class OcclusionMode(str, Enum):
     """How the scanner handles scene depth/occlusion."""
 
-    NONE = "none"             # no occlusion — mask ignores depth
+    NONE = "none"  # no occlusion — mask ignores depth
     SCENE_DEPTH = "scene_depth"  # use scene depth map to attenuate behind objects
-    PROXY = "proxy"           # use a simplified proxy mesh
+    PROXY = "proxy"  # use a simplified proxy mesh
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +479,5 @@ class TransitionSpec(BaseModel):
         if not self.conditions:
             return True
         return all(
-            channel_values.get(c.channel, 0.0) > c.threshold
-            for c in self.conditions
+            channel_values.get(c.channel, 0.0) > c.threshold for c in self.conditions
         )

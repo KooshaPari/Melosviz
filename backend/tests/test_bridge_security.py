@@ -30,12 +30,9 @@ Run:
 from __future__ import annotations
 
 import json
-import os
-import time
 from pathlib import Path
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Module-level fixtures
@@ -56,12 +53,14 @@ def bridge_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # Reset the global limiter between tests so cross-test bleed is impossible.
     try:
         from melosviz.bridge import server
+
         server.security_limiter.reset()
     except Exception:
         pass
     yield tmp_path
     try:
         from melosviz.bridge import server
+
         server.security_limiter.reset()
     except Exception:
         pass
@@ -115,12 +114,18 @@ class TestLoopbackAssertion:
         import unittest.mock as mock
 
         called = {}
-        with mock.patch.object(server.uvicorn, "run", **{
-            "side_effect": lambda app, host, port, log_level: called.update(
-                {"host": host, "port": port, "log_level": log_level}
+        with mock.patch.object(
+            server.uvicorn,
+            "run",
+            **{
+                "side_effect": lambda app, host, port, log_level: called.update(
+                    {"host": host, "port": port, "log_level": log_level}
+                )
+            },
+        ) as _run:
+            monkeypatch.setattr(
+                "sys.argv", ["server", "--host", "0.0.0.0", "--port", "9123"]
             )
-        }) as _run:
-            monkeypatch.setattr("sys.argv", ["server", "--host", "0.0.0.0", "--port", "9123"])
             server.main()
 
         assert called["host"] == "0.0.0.0"
@@ -138,7 +143,10 @@ class TestAuth:
         resp = client.post("/analyze", json={"wav_path": "/tmp/x.wav"})
         assert resp.status_code == 401
         body = resp.json()
-        assert "WWW-Authenticate" in resp.headers or "auth" in body.get("detail", "").lower()
+        assert (
+            "WWW-Authenticate" in resp.headers
+            or "auth" in body.get("detail", "").lower()
+        )
 
     def test_analyze_rejects_wrong_token(self, bridge_env):
         client, _ = _client(bridge_env)
@@ -153,7 +161,9 @@ class TestAuth:
         client, _ = _client(bridge_env)
         # Provide a real (empty) wav — write one inline.
         wav = bridge_env / "ok.wav"
-        wav.write_bytes(b"RIFF" + b"\x00" * 64)  # placeholder; spec_from_wav will reject → 400 is fine
+        wav.write_bytes(
+            b"RIFF" + b"\x00" * 64
+        )  # placeholder; spec_from_wav will reject → 400 is fine
         resp = client.post(
             "/analyze",
             json={"wav_path": str(wav)},
@@ -191,7 +201,9 @@ class TestRateLimit:
                 if last.status_code == 429:
                     triggered = True
                     break
-            assert triggered, f"rate limiter did not trigger; last={last.status_code if last else 'None'}"
+            assert triggered, (
+                f"rate limiter did not trigger; last={last.status_code if last else 'None'}"
+            )
             assert "Retry-After" in last.headers
         finally:
             # Restore the original limiter so other tests aren't affected.
@@ -212,7 +224,11 @@ class TestAuditLog:
 
         audit_path = data_dir / "audit" / "bridge.jsonl"
         assert audit_path.exists(), f"audit log missing at {audit_path}"
-        rows = [json.loads(line) for line in audit_path.read_text().splitlines() if line.strip()]
+        rows = [
+            json.loads(line)
+            for line in audit_path.read_text().splitlines()
+            if line.strip()
+        ]
         assert len(rows) >= 2
         # Required fields per row.
         for row in rows:
@@ -257,9 +273,14 @@ class TestPathContainment:
             headers=headers,
         )
         assert resp.status_code == 400
-        assert "outside" in resp.json().get("detail", "").lower() or "path" in resp.json().get("detail", "").lower()
+        assert (
+            "outside" in resp.json().get("detail", "").lower()
+            or "path" in resp.json().get("detail", "").lower()
+        )
 
-    def test_inside_allowed_dir_is_accepted_or_400_not_403(self, bridge_env, tmp_path: Path):
+    def test_inside_allowed_dir_is_accepted_or_400_not_403(
+        self, bridge_env, tmp_path: Path
+    ):
         client, _ = _client(bridge_env)
         headers = {"Authorization": "Bearer test-token-aaa"}
         wav = bridge_env / "song.wav"

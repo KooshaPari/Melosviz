@@ -34,10 +34,15 @@ from typing import Any
 
 try:
     import audioop as _audioop  # stdlib ≤3.12; removed in 3.13+
+
     _HAS_AUDIOOP = True
-except ImportError:  # pragma: no cover — audioop absent only on Python ≥3.13 without backport
+except (
+    ImportError
+):  # pragma: no cover — audioop absent only on Python ≥3.13 without backport
     _audioop = None  # type: ignore[assignment]
     _HAS_AUDIOOP = False
+
+import contextlib
 
 from .models import (
     DenseKeyframe,
@@ -146,7 +151,7 @@ def _goertzel(samples: list[float], sample_rate: int, freq_hz: float) -> float:
         s_prev2 = s_prev1
         s_prev1 = s
     # power = s_prev1² + s_prev2² − coeff · s_prev1 · s_prev2
-    return s_prev1 ** 2 + s_prev2 ** 2 - coeff * s_prev1 * s_prev2
+    return s_prev1**2 + s_prev2**2 - coeff * s_prev1 * s_prev2
 
 
 # Musical note frequencies from C2 (65 Hz) to B4 (988 Hz) — 36 pitches.
@@ -156,16 +161,11 @@ _ANALYSIS_FREQS: list[float] = [
 ]
 
 
-def _harmonic_from_samples(
-    samples: list[float], sample_rate: int
-) -> HarmonicResult:
+def _harmonic_from_samples(samples: list[float], sample_rate: int) -> HarmonicResult:
     """Detect chord and scale from a float PCM sample block."""
     if not samples or sample_rate <= 0:
         return HarmonicResult()
-    powers = [
-        (_goertzel(samples, sample_rate, freq), freq)
-        for freq in _ANALYSIS_FREQS
-    ]
+    powers = [(_goertzel(samples, sample_rate, freq), freq) for freq in _ANALYSIS_FREQS]
     # Pick the top-8 spectral peaks by power.
     powers.sort(key=lambda t: t[0], reverse=True)
     top_freqs = [freq for _, freq in powers[:8]]
@@ -278,7 +278,9 @@ def analyze_wav(path: str | Path, bucket_count: int = 120) -> AudioAnalysis:
             total = 0.0
             n_read = 0
             for off in range(0, len(chunk) - sample_width + 1, sample_width):
-                val = int.from_bytes(chunk[off : off + sample_width], "little", signed=True)
+                val = int.from_bytes(
+                    chunk[off : off + sample_width], "little", signed=True
+                )
                 total += val * val
                 n_read += 1
             envelope_raw.append(math.sqrt(total / max(1, n_read)))
@@ -386,6 +388,7 @@ def _try_import_librosa() -> Any:
     """Return the librosa module or None if not installed."""
     try:
         import librosa  # type: ignore[import-not-found]
+
         return librosa
     except ImportError:
         return None
@@ -394,6 +397,7 @@ def _try_import_librosa() -> Any:
 def _try_import_numpy() -> Any:
     try:
         import numpy as np  # type: ignore[import-not-found]
+
         return np
     except ImportError:
         return None
@@ -404,6 +408,7 @@ def _try_import_demucs() -> bool:
         from demucs.pretrained import (
             get_model,  # type: ignore[import-not-found]  # noqa: F401
         )
+
         return True
     except (ImportError, Exception):
         return False
@@ -423,6 +428,7 @@ def _try_import_demucs() -> bool:
 # the primary path; the numpy fallback is only activated on child crash.
 # ---------------------------------------------------------------------------
 
+
 def _beat_track_worker(y_list: list[float], sr: int, result_path: str) -> None:
     """Worker function executed in a spawned child process.
 
@@ -431,6 +437,7 @@ def _beat_track_worker(y_list: list[float], sr: int, result_path: str) -> None:
     via exitcode and uses the numpy fallback instead.
     """
     import json as _json
+
     import librosa  # type: ignore[import-not-found]
     import numpy as _np
 
@@ -578,10 +585,8 @@ def _safe_beat_track(y: Any, sr: int, librosa: Any) -> tuple[float, list[float]]
     except Exception:
         return _numpy_beat_fallback(y, sr)
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(result_path)
-        except OSError:
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -589,7 +594,9 @@ def _safe_beat_track(y: Any, sr: int, librosa: Any) -> tuple[float, list[float]]
 # ---------------------------------------------------------------------------
 
 
-def _rms_fallback_envelope(mono_bytes: bytes, sample_width: int, n_buckets: int) -> list[float]:
+def _rms_fallback_envelope(
+    mono_bytes: bytes, sample_width: int, n_buckets: int
+) -> list[float]:
     """Produce a normalised RMS envelope without audioop (pure Python)."""
     n = len(mono_bytes) // sample_width
     bucket_size = max(1, n // n_buckets)
@@ -707,7 +714,9 @@ def _separate_stems_demucs(
         model.eval()
         waveform, file_sr = torchaudio.load(str(wav_path))
         if file_sr != model.samplerate:
-            waveform = torchaudio.functional.resample(waveform, file_sr, model.samplerate)
+            waveform = torchaudio.functional.resample(
+                waveform, file_sr, model.samplerate
+            )
         if waveform.shape[0] == 1:
             waveform = waveform.repeat(2, 1)
         waveform = waveform.unsqueeze(0)
@@ -721,7 +730,9 @@ def _separate_stems_demucs(
             envelope: list[float] = []
             for i in range(n_frames):
                 chunk = stem_mono[i * frame_size : (i + 1) * frame_size]
-                envelope.append(float(np.sqrt(np.mean(chunk ** 2))) if len(chunk) > 0 else 0.0)
+                envelope.append(
+                    float(np.sqrt(np.mean(chunk**2))) if len(chunk) > 0 else 0.0
+                )
             peak = max(envelope) or 1.0
             result[stem_name] = [v / peak for v in envelope]
         return result
@@ -759,7 +770,7 @@ def _spectral_stem_fallback(
         def _band_env(mask: Any) -> list[float]:
             band = S.copy()
             band[~mask, :] = 0
-            rms = np.sqrt(np.mean(band ** 2, axis=0))
+            rms = np.sqrt(np.mean(band**2, axis=0))
             resampled = np.interp(
                 np.linspace(0, len(rms) - 1, n_frames),
                 np.arange(len(rms)),
@@ -866,7 +877,9 @@ def _build_scene_segments(
         step = duration_sec / max(1, n_segments)
         segment_boundaries = [(i * step, (i + 1) * step) for i in range(n_segments)]
 
-    def _mean_in_range(arr: list[float], start: float, end: float, total: float) -> float:
+    def _mean_in_range(
+        arr: list[float], start: float, end: float, total: float
+    ) -> float:
         if not arr or total <= 0:  # pragma: no cover — callers always pass valid arrays
             return 0.0
         n = len(arr)
@@ -1044,7 +1057,9 @@ def analyze_wav_rich(
             # Valence / Arousal from MFCCs
             try:
                 mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13, hop_length=hop)
-                valence_raw = np.clip(mfcc[1] / (np.abs(mfcc[1]).max() or 1.0) * 0.5 + 0.5, 0, 1)
+                valence_raw = np.clip(
+                    mfcc[1] / (np.abs(mfcc[1]).max() or 1.0) * 0.5 + 0.5, 0, 1
+                )
                 valence_per_frame = np.interp(
                     np.linspace(0, len(valence_raw) - 1, n_dense_frames),
                     np.arange(len(valence_raw)),
@@ -1080,13 +1095,27 @@ def analyze_wav_rich(
                 chroma_mean = chroma.mean(axis=1)
                 key_idx = int(np.argmax(chroma_mean))
                 note_names = [
-                    "C", "C#", "D", "D#", "E", "F",
-                    "F#", "G", "G#", "A", "A#", "B",
+                    "C",
+                    "C#",
+                    "D",
+                    "D#",
+                    "E",
+                    "F",
+                    "F#",
+                    "G",
+                    "G#",
+                    "A",
+                    "A#",
+                    "B",
                 ]
                 key = note_names[key_idx]
                 major_3rd = int((key_idx + 4) % 12)
                 minor_3rd = int((key_idx + 3) % 12)
-                mode = "major" if chroma_mean[major_3rd] >= chroma_mean[minor_3rd] else "minor"
+                mode = (
+                    "major"
+                    if chroma_mean[major_3rd] >= chroma_mean[minor_3rd]
+                    else "minor"
+                )
             except Exception:
                 pass
 
@@ -1099,7 +1128,9 @@ def analyze_wav_rich(
 
     # --- 3. Stems --------------------------------------------------------
     if use_demucs and _try_import_demucs():
-        stem_channels = _separate_stems_demucs(wav_path, base.duration_sec, n_dense_frames)
+        stem_channels = _separate_stems_demucs(
+            wav_path, base.duration_sec, n_dense_frames
+        )
     elif librosa is not None and np is not None and y is not None:
         stem_channels = _spectral_stem_fallback(librosa, np, y, sr, n_dense_frames)
     else:
@@ -1136,7 +1167,9 @@ def analyze_wav_rich(
 
     # --- 6. Per-second trajectories (ensure populated) -------------------
     if not energy_per_sec:
-        energy_per_sec = _resample_list(base.rms_envelope, max(1, int(base.duration_sec)))
+        energy_per_sec = _resample_list(
+            base.rms_envelope, max(1, int(base.duration_sec))
+        )
     if not brightness_per_sec:
         brightness_per_sec = [0.5] * len(energy_per_sec)
     if not valence_per_sec:

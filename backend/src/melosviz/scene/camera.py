@@ -64,8 +64,8 @@ CAMERA_LANGUAGE_MAP: dict[str, str] = {
 _ARCHETYPE_PARAMS: dict[str, dict[str, Any]] = {
     "slow_reveal": {
         "fov_deg": 75.0,
-        "radius": 9.0,     # distance from origin
-        "height": 2.5,     # camera height
+        "radius": 9.0,  # distance from origin
+        "height": 2.5,  # camera height
         "orbit_speed": 0.05,  # radians per second (very slow)
     },
     "steady_cam": {

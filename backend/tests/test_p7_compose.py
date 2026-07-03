@@ -39,6 +39,7 @@ from melosviz.runtime.touchdesigner.live_scheduler import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_segments(n: int, duration: float = 30.0) -> list[dict]:
     """Return n evenly-spaced SceneSegment dicts."""
     seg_dur = duration / n
@@ -57,7 +58,9 @@ def _make_segments(n: int, duration: float = 30.0) -> list[dict]:
 def _make_mir(n_seconds: int = 30, bpm: float = 128.0) -> dict:
     return {
         "tempo_bpm": bpm,
-        "energy_trajectory": [0.3 + 0.5 * abs(math.sin(t * 0.4)) for t in range(n_seconds)],
+        "energy_trajectory": [
+            0.3 + 0.5 * abs(math.sin(t * 0.4)) for t in range(n_seconds)
+        ],
         "brightness_trajectory": [0.5] * n_seconds,
         "valence_trajectory": [0.6] * n_seconds,
         "arousal_trajectory": [0.7] * n_seconds,
@@ -86,6 +89,7 @@ def _make_render_spec(n_segs: int = 6, duration: float = 30.0):
 # (a) Novelty constraint: no two adjacent segments share (scene_type, material)
 # ---------------------------------------------------------------------------
 
+
 class TestNarrativeComposerNovelty:
     def test_no_adjacent_repeats_default(self):
         """Adjacent assignments must not share the same (scene_type, material)."""
@@ -97,7 +101,7 @@ class TestNarrativeComposerNovelty:
             prev = (plan[i - 1].scene_type, plan[i - 1].material)
             curr = (plan[i].scene_type, plan[i].material)
             assert prev != curr, (
-                f"Adjacent segments {i-1} and {i} share the same "
+                f"Adjacent segments {i - 1} and {i} share the same "
                 f"(scene_type, material) pair: {curr}"
             )
 
@@ -110,7 +114,7 @@ class TestNarrativeComposerNovelty:
         for i in range(1, len(plan)):
             prev = (plan[i - 1].scene_type, plan[i - 1].material)
             curr = (plan[i].scene_type, plan[i].material)
-            assert prev != curr, f"Repeat at positions {i-1},{i}: {curr}"
+            assert prev != curr, f"Repeat at positions {i - 1},{i}: {curr}"
 
     def test_all_outputs_use_valid_scene_types(self):
         segs = _make_segments(8)
@@ -135,6 +139,7 @@ class TestNarrativeComposerNovelty:
 # ---------------------------------------------------------------------------
 # (b) Determinism: same seed → same plan
 # ---------------------------------------------------------------------------
+
 
 class TestNarrativeComposerDeterminism:
     def test_same_seed_same_plan(self):
@@ -168,6 +173,7 @@ class TestNarrativeComposerDeterminism:
 # (c) Intensity arc: tracks energy + stays in [0, 1]
 # ---------------------------------------------------------------------------
 
+
 class TestNarrativeComposerIntensityArc:
     def test_intensities_in_unit_range(self):
         segs = _make_segments(8)
@@ -197,19 +203,41 @@ class TestNarrativeComposerIntensityArc:
     def test_zero_energy_segments_use_mir_trajectory(self):
         """Segments with energy_mean=0 fall back to mir.energy_trajectory."""
         segs = [
-            {"index": 0, "label": "intro", "start": 0.0, "end": 10.0, "energy_mean": 0.0},
-            {"index": 1, "label": "chorus", "start": 10.0, "end": 20.0, "energy_mean": 0.0},
-            {"index": 2, "label": "outro", "start": 20.0, "end": 30.0, "energy_mean": 0.0},
+            {
+                "index": 0,
+                "label": "intro",
+                "start": 0.0,
+                "end": 10.0,
+                "energy_mean": 0.0,
+            },
+            {
+                "index": 1,
+                "label": "chorus",
+                "start": 10.0,
+                "end": 20.0,
+                "energy_mean": 0.0,
+            },
+            {
+                "index": 2,
+                "label": "outro",
+                "start": 20.0,
+                "end": 30.0,
+                "energy_mean": 0.0,
+            },
         ]
         mir = {"energy_trajectory": [0.2] * 10 + [0.8] * 10 + [0.3] * 10}
         plan = NarrativeComposer(seed=0).assign(segs, mir)
         # Chorus should have higher intensity than intro/outro
-        assert plan[1].intensity > plan[0].intensity or plan[1].intensity > plan[2].intensity
+        assert (
+            plan[1].intensity > plan[0].intensity
+            or plan[1].intensity > plan[2].intensity
+        )
 
 
 # ---------------------------------------------------------------------------
 # (d) assemble_render_plan: full-duration, multi-scene plan
 # ---------------------------------------------------------------------------
+
 
 class TestAssembleRenderPlan:
     def test_plan_covers_full_duration(self):
@@ -255,7 +283,9 @@ class TestAssembleRenderPlan:
             curr = plan["segments"][i]
             pair_prev = (prev["scene_type"], prev["material"])
             pair_curr = (curr["scene_type"], curr["material"])
-            assert pair_prev != pair_curr, f"Adjacent repeat at {i-1}→{i}: {pair_curr}"
+            assert pair_prev != pair_curr, (
+                f"Adjacent repeat at {i - 1}→{i}: {pair_curr}"
+            )
 
     def test_raises_on_empty_scene_segments(self):
         from melosviz.analysis.models import RenderSpec
@@ -278,6 +308,7 @@ class TestAssembleRenderPlan:
 # (e) Flash-safety preserved across assembly
 # ---------------------------------------------------------------------------
 
+
 class TestFlashSafetyAcrossAssembly:
     def test_boundary_flash_clamped(self):
         """Adjacent high-intensity segments within the min interval are clamped."""
@@ -285,12 +316,18 @@ class TestFlashSafetyAcrossAssembly:
 
         segments = [
             {
-                "index": 0, "start": 0.0, "end": 0.1,
-                "beat_aligned_start": 0.0, "intensity": 0.95,
+                "index": 0,
+                "start": 0.0,
+                "end": 0.1,
+                "beat_aligned_start": 0.0,
+                "intensity": 0.95,
             },
             {
-                "index": 1, "start": 0.1, "end": 0.2,
-                "beat_aligned_start": 0.1, "intensity": 0.95,
+                "index": 1,
+                "start": 0.1,
+                "end": 0.2,
+                "beat_aligned_start": 0.1,
+                "intensity": 0.95,
             },
         ]
         # Gap = 0.0 (end of seg0 = start of seg1 = 0.1), well under 333ms
@@ -303,12 +340,18 @@ class TestFlashSafetyAcrossAssembly:
 
         segments = [
             {
-                "index": 0, "start": 0.0, "end": 0.5,
-                "beat_aligned_start": 0.0, "intensity": 0.95,
+                "index": 0,
+                "start": 0.0,
+                "end": 0.5,
+                "beat_aligned_start": 0.0,
+                "intensity": 0.95,
             },
             {
-                "index": 1, "start": 1.0, "end": 2.0,
-                "beat_aligned_start": 1.0, "intensity": 0.95,
+                "index": 1,
+                "start": 1.0,
+                "end": 2.0,
+                "beat_aligned_start": 1.0,
+                "intensity": 0.95,
             },
         ]
         result = _enforce_cross_segment_flash_safety(segments)
@@ -327,6 +370,7 @@ class TestFlashSafetyAcrossAssembly:
 # ---------------------------------------------------------------------------
 # (f) LiveScheduler honours arc
 # ---------------------------------------------------------------------------
+
 
 class TestLiveScheduler:
     def _make_plan(self) -> dict:
@@ -407,6 +451,7 @@ class TestLiveScheduler:
 # (g) LiveScheduler.predict_phase
 # ---------------------------------------------------------------------------
 
+
 class TestLiveSchedulerPredictPhase:
     def test_on_beat_is_zero(self):
         s = LiveScheduler(bpm=120.0)
@@ -440,6 +485,7 @@ class TestLiveSchedulerPredictPhase:
 # (h) build_live_scheduler_spec convenience wrapper
 # ---------------------------------------------------------------------------
 
+
 class TestBuildLiveSchedulerSpecWrapper:
     def test_reads_bpm_from_plan_if_not_passed(self):
         spec = _make_render_spec(n_segs=4, duration=20.0)
@@ -464,6 +510,7 @@ class TestBuildLiveSchedulerSpecWrapper:
 # Edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestEdgeCases:
     def test_single_segment_plan(self):
         from melosviz.analysis.models import RenderSpec
@@ -471,7 +518,13 @@ class TestEdgeCases:
         spec = RenderSpec(
             metadata={"duration_sec": 10.0},
             scene_segments=[
-                {"index": 0, "label": "intro", "start": 0.0, "end": 10.0, "energy_mean": 0.5}
+                {
+                    "index": 0,
+                    "label": "intro",
+                    "start": 0.0,
+                    "end": 10.0,
+                    "energy_mean": 0.5,
+                }
             ],
             mir={"tempo_bpm": 120.0, "energy_trajectory": [0.5] * 10},
         )

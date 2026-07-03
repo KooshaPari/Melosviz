@@ -365,7 +365,9 @@ def _extract_envelope(spec: Any) -> list[float]:
         dense = getattr(spec, "dense_keyframes", None)
         if isinstance(dense, list) and dense:
             try:
-                return [max(0.0, min(1.0, float(kf.get("energy", 0.0)))) for kf in dense]
+                return [
+                    max(0.0, min(1.0, float(kf.get("energy", 0.0)))) for kf in dense
+                ]
             except (TypeError, ValueError, AttributeError):
                 pass
     # Fall back to v1 amplitude_envelope in metadata.
@@ -481,7 +483,9 @@ def _export_video_rawvideo_pipe(
         ) from exc
 
     if proc.returncode != 0:
-        stderr_tail = "\n".join((stderr_bytes.decode(errors="replace") or "").splitlines()[-5:])
+        stderr_tail = "\n".join(
+            (stderr_bytes.decode(errors="replace") or "").splitlines()[-5:]
+        )
         raise RenderExportError(
             f"ffmpeg rawvideo export failed (rc={proc.returncode}). "
             f"Tail of stderr:\n{stderr_tail}"
@@ -622,11 +626,19 @@ def export_video(
         else:
             intensity = 0.5 + 0.5 * math.sin((index / max(1, total_frames)) * math.tau)
         base = colors[index % len(colors)]
-        frame_colors.append((
-            max(0, min(255, int(base[0] * (0.4 + 0.6 * intensity) + 40 * intensity))),
-            max(0, min(255, int(base[1] * (0.4 + 0.6 * intensity) + 20 * intensity))),
-            max(0, min(255, int(base[2] * (0.4 + 0.6 * intensity) + 55 * intensity))),
-        ))
+        frame_colors.append(
+            (
+                max(
+                    0, min(255, int(base[0] * (0.4 + 0.6 * intensity) + 40 * intensity))
+                ),
+                max(
+                    0, min(255, int(base[1] * (0.4 + 0.6 * intensity) + 20 * intensity))
+                ),
+                max(
+                    0, min(255, int(base[2] * (0.4 + 0.6 * intensity) + 55 * intensity))
+                ),
+            )
+        )
 
     if use_rawvideo:
         logger.info("export_video: using rawvideo pipe path (frames=%d)", total_frames)
@@ -646,7 +658,9 @@ def export_video(
             frame_dir = Path(tmp)
             frame_dir.mkdir(parents=True, exist_ok=True)
             for index, rgb in enumerate(frame_colors):
-                _save_solid_png(frame_dir / f"frame_{index + 1:05d}.png", width, height, rgb)
+                _save_solid_png(
+                    frame_dir / f"frame_{index + 1:05d}.png", width, height, rgb
+                )
             frame_pattern = frame_dir / "frame_%05d.png"
 
             cmd: list[str] = [

@@ -11,6 +11,7 @@ Bug 3: Flat amplitude_envelope (all 0.5) without librosa — stdlib fallback mus
 from __future__ import annotations
 
 import array
+import contextlib
 import math
 import struct
 import wave
@@ -18,7 +19,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -81,7 +81,9 @@ class TestVizBuildUsesRichSpec:
         rc = _cmd_build(args)  # type: ignore[arg-type]
         assert rc == 0, "_cmd_build should exit 0"
 
-    def test_cmd_build_plan_has_segments(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    def test_cmd_build_plan_has_segments(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture
+    ) -> None:
         """The plan JSON printed by _cmd_build must have segment_count > 0."""
         import json
         import types
@@ -99,7 +101,9 @@ class TestVizBuildUsesRichSpec:
             f"plan={plan}"
         )
 
-    def test_cmd_analyze_produces_v2_fields(self, tmp_path: Path, capsys: pytest.CaptureFixture) -> None:
+    def test_cmd_analyze_produces_v2_fields(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture
+    ) -> None:
         """viz analyze should produce scene_segments in its output (v2 path)."""
         import json
         import types
@@ -130,11 +134,8 @@ class TestAudioopFrameAlignment:
     def test_analyze_wav_with_audioop_does_not_crash(self, tmp_path: Path) -> None:
         """analyze_wav must succeed when audioop is available (no alignment error)."""
         # Import the real audioop-lts if present, else skip (test proves the fix)
-        try:
+        with contextlib.suppress(ImportError):
             import audioop as _ao  # noqa: F401
-            has_audioop = True
-        except ImportError:
-            has_audioop = False
 
         from melosviz.analysis.audio import analyze_wav
 
@@ -211,7 +212,9 @@ class TestDepLightAmplitudeEnvelope:
             "the dep-light path must compute real RMS, not return [0.5]*n"
         )
 
-    def test_segment_energy_varies_across_segments_dep_light(self, tmp_path: Path) -> None:
+    def test_segment_energy_varies_across_segments_dep_light(
+        self, tmp_path: Path
+    ) -> None:
         """test_segment_energy_varies_across_segments must pass WITHOUT librosa."""
         from melosviz.analysis.audio import analyze_wav_rich
 

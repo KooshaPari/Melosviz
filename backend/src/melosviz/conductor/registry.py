@@ -52,29 +52,21 @@ def _lazy(module: str, cls: str) -> Any:
 #: The orchestrator instantiates adapters on demand.
 ADAPTER_REGISTRY: dict[str, Any] = {
     # GOLD tier — generative / composition
-    "generative_asset": _lazy(
-        "melosviz.render.firefly_adapter", "FireflyAdapter"
-    ),
+    "generative_asset": _lazy("melosviz.render.firefly_adapter", "FireflyAdapter"),
     # GOLD tier — AE motion-graphics beat sync
     "motion_graphics_beat_sync": _lazy(
         "melosviz.render.aftereffects_adapter", "AEAdapter"
     ),
     # GOLD tier — final assembly + encode
-    "assembly_encode": _lazy(
-        "melosviz.render.mediaencoder_adapter", "MEAdapter"
-    ),
+    "assembly_encode": _lazy("melosviz.render.mediaencoder_adapter", "MEAdapter"),
     # GOLD tier — headless Blender 3-D animation
     "procedural_3d_animation": _lazy(
         "melosviz.conductor.registry", "_BlenderAdapterShim"
     ),
     # GOLD tier — TouchDesigner live-stage runtime
-    "live_stage": _lazy(
-        "melosviz.runtime.touchdesigner.adapter", "TDAdapter"
-    ),
+    "live_stage": _lazy("melosviz.runtime.touchdesigner.adapter", "TDAdapter"),
     # SILVER tier — always-available FFmpeg video export
-    "video_export": _lazy(
-        "melosviz.conductor.registry", "_VideoExportAdapter"
-    ),
+    "video_export": _lazy("melosviz.conductor.registry", "_VideoExportAdapter"),
 }
 
 

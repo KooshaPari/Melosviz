@@ -37,7 +37,6 @@ import os
 import sys
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Attempt FastAPI import; if absent, print a helpful message and exit so the
 # Bun main process knows to use the CLI fallback instead.
@@ -48,7 +47,9 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import PlainTextResponse
     from pydantic import BaseModel
-except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
+except (
+    ImportError
+):  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
         "Install with:  pip install 'melosviz[bridge]'\n"
@@ -59,9 +60,11 @@ except ImportError:  # pragma: no cover — only reachable without [bridge] extr
 
 # Local security primitives. Imported eagerly because the middleware is
 # registered at app-startup time and the security helpers are stdlib-only.
-from melosviz.bridge import security  # noqa: E402
+import contextlib
 import subprocess
 import tempfile
+
+from melosviz.bridge import security  # noqa: E402
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
 
@@ -105,8 +108,14 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
     """
     # Attempt Rust MIR first — look in standard cargo build output locations
     mir_candidates = [
-        Path(__file__).parent.parent.parent.parent / "target" / "release" / "melosviz-mir",
-        Path(__file__).parent.parent.parent.parent / "target" / "debug" / "melosviz-mir",
+        Path(__file__).parent.parent.parent.parent
+        / "target"
+        / "release"
+        / "melosviz-mir",
+        Path(__file__).parent.parent.parent.parent
+        / "target"
+        / "debug"
+        / "melosviz-mir",
     ]
 
     for mir_binary in mir_candidates:
@@ -117,24 +126,36 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
                 ) as tmp:
                     tmp_spec_path = tmp.name
                 try:
-                    result = subprocess.run(
-                        [str(mir_binary), "--wav", str(wav_path), "--out", tmp_spec_path],
+                    subprocess.run(
+                        [
+                            str(mir_binary),
+                            "--wav",
+                            str(wav_path),
+                            "--out",
+                            tmp_spec_path,
+                        ],
                         check=True,
                         capture_output=True,
                         timeout=120,
                     )
-                    with open(tmp_spec_path, "r") as f:
+                    with open(tmp_spec_path) as f:
                         spec_dict = json.load(f)
                     return spec_dict
                 finally:
-                    try:
+                    with contextlib.suppress(Exception):
                         Path(tmp_spec_path).unlink()
-                    except Exception:
-                        pass
-            except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError, TimeoutError) as e:
+            except (
+                subprocess.CalledProcessError,
+                FileNotFoundError,
+                json.JSONDecodeError,
+                TimeoutError,
+            ) as e:
                 # Log but continue to Python fallback
                 import logging
-                logging.warning(f"[MelosViz] Rust MIR failed: {e}; using Python fallback")
+
+                logging.warning(
+                    f"[MelosViz] Rust MIR failed: {e}; using Python fallback"
+                )
                 continue
 
     # Fallback to Python analyzer
@@ -167,9 +188,8 @@ def _check_inside(path_str: str) -> Path:
     except (OSError, RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=f"invalid path: {exc}") from exc
     # Legacy desktop mode: auth off AND no explicit allowed-dir override.
-    legacy = (
-        not security.auth_required()
-        and not os.environ.get("MELOSVIZ_BRIDGE_ALLOWED_DIR")
+    legacy = not security.auth_required() and not os.environ.get(
+        "MELOSVIZ_BRIDGE_ALLOWED_DIR"
     )
     if legacy:
         return target

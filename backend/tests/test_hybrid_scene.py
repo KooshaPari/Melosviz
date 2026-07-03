@@ -43,8 +43,11 @@ from melosviz.scene.scanner import (
 # (a) BPM-locked orbit: correct pose at beat boundaries
 # ---------------------------------------------------------------------------
 
+
 class TestScannerOrbitBpmLocked:
-    def _spec(self, beats_per_rotation: float = 4.0, phase_offset: float = 0.0) -> ScannerSpec:
+    def _spec(
+        self, beats_per_rotation: float = 4.0, phase_offset: float = 0.0
+    ) -> ScannerSpec:
         return ScannerSpec(
             scanner_id="test",
             type=ScannerType.ROTATING_CONE,
@@ -53,12 +56,16 @@ class TestScannerOrbitBpmLocked:
                 beats_per_rotation=beats_per_rotation,
                 phase_offset=phase_offset,
             ),
-            noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.0),  # noise off for math
+            noise=ScannerNoise(
+                edge_wobble=0.0, beat_pulse_gain=0.0
+            ),  # noise off for math
             write_channels=["reveal_splat"],
         )
 
     def test_at_t0_angle_is_phase_offset_only(self):
-        angle, phase = _compute_orbit_angle(0.0, bpm=120.0, beats_per_rotation=4.0, phase_offset=0.0)
+        angle, phase = _compute_orbit_angle(
+            0.0, bpm=120.0, beats_per_rotation=4.0, phase_offset=0.0
+        )
         assert angle == pytest.approx(0.0)
         assert phase == pytest.approx(0.0)
 
@@ -70,7 +77,9 @@ class TestScannerOrbitBpmLocked:
         period = beats_per_rotation * seconds_per_beat  # 2.0 s
 
         angle_0, phase_0 = _compute_orbit_angle(0.0, bpm, beats_per_rotation, 0.0)
-        angle_period, phase_period = _compute_orbit_angle(period, bpm, beats_per_rotation, 0.0)
+        angle_period, phase_period = _compute_orbit_angle(
+            period, bpm, beats_per_rotation, 0.0
+        )
 
         # After one full period, phase should wrap back to 0
         assert phase_period == pytest.approx(0.0, abs=1e-9)
@@ -88,18 +97,23 @@ class TestScannerOrbitBpmLocked:
         assert angle == pytest.approx(math.pi, abs=1e-9)
 
     def test_phase_offset_shifts_starting_angle(self):
-        angle, phase = _compute_orbit_angle(0.0, bpm=120.0, beats_per_rotation=4.0, phase_offset=0.25)
+        angle, phase = _compute_orbit_angle(
+            0.0, bpm=120.0, beats_per_rotation=4.0, phase_offset=0.25
+        )
         assert phase == pytest.approx(0.25)
         assert angle == pytest.approx(0.25 * 2 * math.pi)
 
     def test_degeneracy_zero_bpm_returns_zero(self):
-        angle, phase = _compute_orbit_angle(10.0, bpm=0.0, beats_per_rotation=4.0, phase_offset=0.0)
+        angle, phase = _compute_orbit_angle(
+            10.0, bpm=0.0, beats_per_rotation=4.0, phase_offset=0.0
+        )
         assert angle == 0.0 and phase == 0.0
 
 
 # ---------------------------------------------------------------------------
 # (b) Write-channel mask values respond to beats
 # ---------------------------------------------------------------------------
+
 
 class TestScannerChannelValues:
     def _beat_list(self, bpm: float, n: int = 8) -> list[float]:
@@ -110,10 +124,17 @@ class TestScannerChannelValues:
         return ScannerSpec(
             scanner_id="test",
             cone_angle_deg=60.0,  # wide cone so cone_raw > 0 at angle 0
-            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=4.0, phase_offset=0.0),
+            rotation=ScannerRotation(
+                bpm_locked=True, beats_per_rotation=4.0, phase_offset=0.0
+            ),
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.5),
             falloff=FalloffType.LINEAR,
-            write_channels=["reveal_splat", "hide_photo", "boost_wireframe", "edge_emission"],
+            write_channels=[
+                "reveal_splat",
+                "hide_photo",
+                "boost_wireframe",
+                "edge_emission",
+            ],
         )
 
     def test_channels_are_in_range(self):
@@ -132,7 +153,10 @@ class TestScannerChannelValues:
         pose_on = evaluate_pose(spec, t=0.0, bpm=bpm, beat_times=beats)
         # t=0.499 is half-beat away (far from next beat)
         pose_off = evaluate_pose(spec, t=0.499, bpm=bpm, beat_times=beats)
-        assert pose_on.active_channels["boost_wireframe"] > pose_off.active_channels["boost_wireframe"]
+        assert (
+            pose_on.active_channels["boost_wireframe"]
+            > pose_off.active_channels["boost_wireframe"]
+        )
 
     def test_beat_proximity_is_one_at_exact_beat(self):
         spec = self._spec_with_all_channels()
@@ -163,7 +187,9 @@ class TestScannerChannelValues:
 
         spec = ScannerSpec(
             cone_angle_deg=5.0,  # very narrow cone
-            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=beats_per_rotation, phase_offset=0.0),
+            rotation=ScannerRotation(
+                bpm_locked=True, beats_per_rotation=beats_per_rotation, phase_offset=0.0
+            ),
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.0),
             falloff=FalloffType.LINEAR,
             write_channels=["reveal_splat"],
@@ -176,6 +202,7 @@ class TestScannerChannelValues:
 # (c) Transition mappings resolve domain opacities given mask values
 # ---------------------------------------------------------------------------
 
+
 class TestTransitionMappings:
     def _make_transition(self) -> TransitionSpec:
         """reveal_splat > 0.5 → photo fades out, splat fades in."""
@@ -183,8 +210,12 @@ class TestTransitionMappings:
             transition_id="splat_reveal",
             conditions=[ChannelCondition(channel="reveal_splat", threshold=0.5)],
             opacity_rules=[
-                DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-                DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
+                DomainOpacityRule(
+                    domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0
+                ),
+                DomainOpacityRule(
+                    domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                ),
             ],
             fx_edge_channel="edge_emission",
             fx_edge_gain=1.4,
@@ -223,6 +254,7 @@ class TestTransitionMappings:
 # (d) Multi-domain scene assembly: per-segment domain switches
 # ---------------------------------------------------------------------------
 
+
 def _make_minimal_render_spec(
     bpm: float = 120.0,
     duration: float = 4.0,
@@ -236,12 +268,26 @@ def _make_minimal_render_spec(
 
     if segments is None:
         segments = [
-            {"index": 0, "label": "intro", "start": 0.0, "end": 2.0,
-             "energy_mean": 0.3, "brightness_mean": 0.4,
-             "mood": {"valence": 0.5, "arousal": 0.4}, "dominant_stem": "other"},
-            {"index": 1, "label": "drop", "start": 2.0, "end": 4.0,
-             "energy_mean": 0.9, "brightness_mean": 0.8,
-             "mood": {"valence": 0.7, "arousal": 0.9}, "dominant_stem": "drums"},
+            {
+                "index": 0,
+                "label": "intro",
+                "start": 0.0,
+                "end": 2.0,
+                "energy_mean": 0.3,
+                "brightness_mean": 0.4,
+                "mood": {"valence": 0.5, "arousal": 0.4},
+                "dominant_stem": "other",
+            },
+            {
+                "index": 1,
+                "label": "drop",
+                "start": 2.0,
+                "end": 4.0,
+                "energy_mean": 0.9,
+                "brightness_mean": 0.8,
+                "mood": {"valence": 0.7, "arousal": 0.9},
+                "dominant_stem": "drums",
+            },
         ]
 
     # Dense keyframes at fps
@@ -279,10 +325,17 @@ class TestMultiDomainAssembly:
     def _make_scanner(self) -> ScannerSpec:
         return ScannerSpec(
             cone_angle_deg=60.0,
-            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=2.0, phase_offset=0.0),
+            rotation=ScannerRotation(
+                bpm_locked=True, beats_per_rotation=2.0, phase_offset=0.0
+            ),
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.2),
             falloff=FalloffType.SMOOTHSTEP,
-            write_channels=["reveal_splat", "hide_photo", "boost_wireframe", "edge_emission"],
+            write_channels=[
+                "reveal_splat",
+                "hide_photo",
+                "boost_wireframe",
+                "edge_emission",
+            ],
         )
 
     def _make_transitions(self) -> list[TransitionSpec]:
@@ -291,9 +344,18 @@ class TestMultiDomainAssembly:
                 transition_id="splat_reveal",
                 conditions=[ChannelCondition(channel="reveal_splat", threshold=0.3)],
                 opacity_rules=[
-                    DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-                    DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
-                    DomainOpacityRule(domain=Domain.FX, channel="edge_emission", base=0.0, scale=1.0),
+                    DomainOpacityRule(
+                        domain=Domain.PHOTO,
+                        channel="reveal_splat",
+                        base=1.0,
+                        scale=-1.0,
+                    ),
+                    DomainOpacityRule(
+                        domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                    ),
+                    DomainOpacityRule(
+                        domain=Domain.FX, channel="edge_emission", base=0.0, scale=1.0
+                    ),
                 ],
                 fx_edge_gain=1.4,
             )
@@ -301,10 +363,22 @@ class TestMultiDomainAssembly:
 
     def _make_materials(self) -> list[MaterialSpec]:
         return [
-            MaterialSpec(domain=Domain.PHOTO, default_look=DomainMaterialLook.RAW, beat_pulse_look=DomainMaterialLook.HIGH_CONTRAST_MONO),
-            MaterialSpec(domain=Domain.MESH, default_look=DomainMaterialLook.WIREFRAME_EMISSIVE),
-            MaterialSpec(domain=Domain.SPLAT, default_look=DomainMaterialLook.MONO_CLOUD, drop_look=DomainMaterialLook.POINT_HALO),
-            MaterialSpec(domain=Domain.PERFORMER, default_look=DomainMaterialLook.PHOTOREAL),
+            MaterialSpec(
+                domain=Domain.PHOTO,
+                default_look=DomainMaterialLook.RAW,
+                beat_pulse_look=DomainMaterialLook.HIGH_CONTRAST_MONO,
+            ),
+            MaterialSpec(
+                domain=Domain.MESH, default_look=DomainMaterialLook.WIREFRAME_EMISSIVE
+            ),
+            MaterialSpec(
+                domain=Domain.SPLAT,
+                default_look=DomainMaterialLook.MONO_CLOUD,
+                drop_look=DomainMaterialLook.POINT_HALO,
+            ),
+            MaterialSpec(
+                domain=Domain.PERFORMER, default_look=DomainMaterialLook.PHOTOREAL
+            ),
             MaterialSpec(domain=Domain.FX, default_look=DomainMaterialLook.EDGE_GLOW),
         ]
 
@@ -334,7 +408,9 @@ class TestMultiDomainAssembly:
         )
         for asm in assemblies:
             for domain, opacity in asm.opacities.items():
-                assert 0.0 <= opacity <= 1.0, f"t={asm.t} domain={domain} opacity={opacity}"
+                assert 0.0 <= opacity <= 1.0, (
+                    f"t={asm.t} domain={domain} opacity={opacity}"
+                )
 
     def test_scanner_angle_advances_over_time(self):
         spec = _make_minimal_render_spec(fps=10, duration=2.0)
@@ -396,6 +472,7 @@ class TestMultiDomainAssembly:
 # (e) Flash-safety still applied
 # ---------------------------------------------------------------------------
 
+
 class TestFlashSafetyInHybridScene:
     """The flash-safety post-pass should clamp large opacity spikes."""
 
@@ -427,7 +504,9 @@ class TestFlashSafetyInHybridScene:
         # Artificially high beat_pulse_gain to stress the safety net
         scanner = ScannerSpec(
             cone_angle_deg=120.0,
-            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=0.5),  # very fast
+            rotation=ScannerRotation(
+                bpm_locked=True, beats_per_rotation=0.5
+            ),  # very fast
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=2.0),
             falloff=FalloffType.LINEAR,
             write_channels=["reveal_splat", "hide_photo", "edge_emission"],
@@ -435,8 +514,15 @@ class TestFlashSafetyInHybridScene:
         transitions = [
             TransitionSpec(
                 opacity_rules=[
-                    DomainOpacityRule(domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0),
-                    DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
+                    DomainOpacityRule(
+                        domain=Domain.PHOTO,
+                        channel="reveal_splat",
+                        base=1.0,
+                        scale=-1.0,
+                    ),
+                    DomainOpacityRule(
+                        domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
+                    ),
                 ],
             )
         ]
@@ -458,7 +544,9 @@ class TestFlashSafetyInHybridScene:
         for domain in (Domain.PHOTO, Domain.SPLAT):
             opacities = [a.opacities[domain] for a in assemblies]
             transitions_count = sum(
-                1 for a, b in zip(opacities, opacities[1:], strict=False) if abs(b - a) > 0.5
+                1
+                for a, b in zip(opacities, opacities[1:], strict=False)
+                if abs(b - a) > 0.5
             )
             max_allowed = FLASH_SAFETY_MAX_HZ * (len(opacities) / fps)
             assert transitions_count <= max_allowed, (
@@ -469,6 +557,7 @@ class TestFlashSafetyInHybridScene:
 # ---------------------------------------------------------------------------
 # Blender bpy script generation
 # ---------------------------------------------------------------------------
+
 
 class TestHybridBpyScript:
     def test_build_script_nonempty_on_assemblies(self):
@@ -502,7 +591,14 @@ class TestHybridBpyScript:
             )
         ]
         script = build_hybrid_bpy_segment(assemblies, fps=30)
-        for name in ("melo_photo", "melo_mesh", "melo_splat", "melo_performer", "melo_fx_edge", "melo_scanner"):
+        for name in (
+            "melo_photo",
+            "melo_mesh",
+            "melo_splat",
+            "melo_performer",
+            "melo_fx_edge",
+            "melo_scanner",
+        ):
             assert name in script, f"Missing domain object {name!r} in generated script"
 
     def test_scanner_angle_encoded_in_frames_literal(self):

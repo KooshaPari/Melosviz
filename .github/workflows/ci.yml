@@ -41,7 +41,10 @@ jobs:
 
       - name: Install package + test/lint/analysis deps
         working-directory: backend
-        run: pip install -e ".[test,lint,analysis]" pytest-cov coverage hypothesis
+        # bridge extras (fastapi/uvicorn) are required at import time by
+        # melosviz.bridge.server, which several test modules import — without
+        # them pytest collection crashes with SystemExit(1) before any test runs.
+        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx
 
       - name: Ruff — lint
         working-directory: backend

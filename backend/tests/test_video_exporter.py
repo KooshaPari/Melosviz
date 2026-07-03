@@ -19,13 +19,14 @@ The mock layer:
 
 from __future__ import annotations
 
+import io
 import logging
+import os
 import subprocess
 from collections.abc import Callable
-import os
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -35,8 +36,10 @@ from melosviz.render.video_exporter import (
     _DEFAULT_VIDEO_COLOR,
     _DEFAULT_VIDEO_DURATION,
     _DEFAULT_VIDEO_SIZE,
+    _RAWVIDEO_FRAME_THRESHOLD,
     FFMpegNotFoundError,
     RenderExportError,
+    _frame_rgb24_bytes,
     export_video,
     is_ffmpeg_available,
 )
@@ -538,15 +541,6 @@ def test_export_video_accepts_populated_renderspec(tmp_path: Path) -> None:
 # Tests — rawvideo pipe path (fast path for large frame counts)
 # ---------------------------------------------------------------------------
 
-import io
-from unittest.mock import MagicMock, patch as _patch
-
-from melosviz.render.video_exporter import (
-    _RAWVIDEO_FRAME_THRESHOLD,
-    _frame_rgb24_bytes,
-    _export_video_rawvideo_pipe,
-)
-
 
 def _make_popen_mock(returncode: int = 0, output_path: Path | None = None) -> MagicMock:
     """Build a ``Popen`` mock that simulates a successful (or failing) ffmpeg run."""
@@ -598,7 +592,9 @@ def test_export_video_large_mp4_uses_rawvideo_pipe(tmp_path: Path) -> None:
     # frame count above threshold so the fast path is chosen
     frame_count = _RAWVIDEO_FRAME_THRESHOLD + 1
     duration = frame_count / 30.0
-    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
+    spec = RenderSpec(
+        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
+    )
     output_path = tmp_path / "melosviz-render.mp4"
 
     mock_proc = _make_popen_mock(returncode=0, output_path=output_path)
@@ -606,7 +602,9 @@ def test_export_video_large_mp4_uses_rawvideo_pipe(tmp_path: Path) -> None:
     with (
         _patch_resolve(),
         patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
-        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
+        patch(
+            "melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc
+        ),
     ):
         result = export_video(spec, format="mp4", output_dir=tmp_path)
 
@@ -621,7 +619,9 @@ def test_export_video_large_mp4_rawvideo_cmd_shape(tmp_path: Path) -> None:
     """The rawvideo pipe ffmpeg command includes the correct demuxer and pixel format flags."""
     frame_count = _RAWVIDEO_FRAME_THRESHOLD + 10
     duration = frame_count / 30.0
-    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
+    spec = RenderSpec(
+        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
+    )
     output_path = tmp_path / "melosviz-render.mp4"
 
     popen_calls: list[list[str]] = []
@@ -632,7 +632,10 @@ def test_export_video_large_mp4_rawvideo_cmd_shape(tmp_path: Path) -> None:
 
     with (
         _patch_resolve(),
-        patch("melosviz.render.video_exporter.subprocess.Popen", side_effect=_capture_popen),
+        patch(
+            "melosviz.render.video_exporter.subprocess.Popen",
+            side_effect=_capture_popen,
+        ),
     ):
         export_video(spec, format="mp4", output_dir=tmp_path)
 
@@ -686,9 +689,9 @@ def test_write_raw_png_rgb_zlib_level_is_fast() -> None:
     level-1 output is still valid zlib) and that the IDAT chunk is present.
     """
     import struct as _struct
+    import tempfile
     import zlib as _zlib
     from pathlib import Path as _Path
-    import tempfile
 
     from melosviz.render.video_exporter import _write_raw_png_rgb
 
@@ -735,8 +738,8 @@ def test_png_frame_gen_time_budget() -> None:
     the host is under heavy load.  It uses a single frame to keep the
     test itself sub-millisecond on fast hardware.
     """
-    import time
     import tempfile
+    import time
 
     from melosviz.render.video_exporter import _write_raw_png_rgb
 

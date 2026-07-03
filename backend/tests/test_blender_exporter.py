@@ -281,6 +281,7 @@ class TestApplyFlashSafety:
     def test_suppressed_values_stay_in_range(self) -> None:
         """All output values must remain in [0, 1]."""
         import random
+
         rng = random.Random(42)
         values = [rng.random() for _ in range(100)]
         result = apply_flash_safety(values, fps=30.0)
@@ -314,10 +315,13 @@ class TestBlenderAbsent:
 
     def test_export_blender_raises_blender_not_found(self, tmp_path: Path) -> None:
         spec = _make_spec()
-        with patch(
-            "melosviz.render.blender_exporter._resolve_blender_binary",
-            side_effect=BlenderNotFoundError("blender not installed"),
-        ), pytest.raises(BlenderNotFoundError, match="blender not installed"):
+        with (
+            patch(
+                "melosviz.render.blender_exporter._resolve_blender_binary",
+                side_effect=BlenderNotFoundError("blender not installed"),
+            ),
+            pytest.raises(BlenderNotFoundError, match="blender not installed"),
+        ):
             export_blender(spec, output_dir=tmp_path)
 
     def test_blender_not_found_is_blender_render_error(self) -> None:
@@ -388,9 +392,7 @@ class TestMultiSegmentOutput:
 # ---------------------------------------------------------------------------
 
 
-def _fake_blender_success(
-    cmd: list[str], **kwargs: Any
-) -> subprocess.CompletedProcess:
+def _fake_blender_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     """Simulate a successful Blender run by writing fake PNG frames."""
     # Locate output prefix from the generated script's OUTPUT_PATH
     # The frame directory is inside the temp dir the adapter created.
@@ -414,9 +416,7 @@ def _fake_blender_success(
     return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
 
-def _fake_ffmpeg_success(
-    cmd: list[str], **kwargs: Any
-) -> subprocess.CompletedProcess:
+def _fake_ffmpeg_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
     """Simulate a successful ffmpeg mux by writing a fake MP4."""
     Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
     Path(cmd[-1]).write_bytes(b"\x00" * 4096)
@@ -545,11 +545,14 @@ class TestExportBlenderOrchestration:
             patch(
                 "melosviz.render.blender_exporter.subprocess.run",
                 side_effect=_fail,
-            ),pytest.raises(BlenderRenderError, match="rc=1")
+            ),
+            pytest.raises(BlenderRenderError, match="rc=1"),
         ):
             export_blender(spec, output_dir=tmp_path)
 
-    def test_no_frames_produced_raises_blender_render_error(self, tmp_path: Path) -> None:
+    def test_no_frames_produced_raises_blender_render_error(
+        self, tmp_path: Path
+    ) -> None:
         """When Blender exits 0 but produces no frames, raise BlenderRenderError."""
         spec = _make_spec()
 
@@ -571,7 +574,8 @@ class TestExportBlenderOrchestration:
             patch(
                 "melosviz.render.blender_exporter.subprocess.run",
                 side_effect=_no_frames,
-            ),pytest.raises(BlenderRenderError, match="no frame files")
+            ),
+            pytest.raises(BlenderRenderError, match="no frame files"),
         ):
             export_blender(spec, output_dir=tmp_path)
 
@@ -624,7 +628,8 @@ class TestExportBlenderOrchestration:
             patch(
                 "melosviz.render.blender_exporter.subprocess.run",
                 side_effect=OSError("permission denied"),
-            ),pytest.raises(BlenderRenderError, match="Failed to start Blender")
+            ),
+            pytest.raises(BlenderRenderError, match="Failed to start Blender"),
         ):
             export_blender(spec, output_dir=tmp_path)
 

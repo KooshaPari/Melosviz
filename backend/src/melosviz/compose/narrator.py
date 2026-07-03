@@ -75,16 +75,17 @@ DEFAULT_MATERIALS: list[str] = [
 
 #: Maps intensity quartile (0–3) → camera-language archetype.
 CAMERA_LANGUAGE_MAP: dict[int, str] = {
-    0: "slow_reveal",      # intro / outro — wide, patient
-    1: "steady_cam",       # verse / bridge — grounded motion
-    2: "handheld_push",    # build / pre-chorus — forward energy
-    3: "cut_frenzy",       # drop / chorus — rapid intercutting
+    0: "slow_reveal",  # intro / outro — wide, patient
+    1: "steady_cam",  # verse / bridge — grounded motion
+    2: "handheld_push",  # build / pre-chorus — forward energy
+    3: "cut_frenzy",  # drop / chorus — rapid intercutting
 }
 
 
 # ---------------------------------------------------------------------------
 # Output model
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SegmentAssignment:
@@ -115,6 +116,7 @@ class SegmentAssignment:
 # ---------------------------------------------------------------------------
 # Composer
 # ---------------------------------------------------------------------------
+
 
 class NarrativeComposer:
     """Deterministic, seed-stable narrative arc composer.

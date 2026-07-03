@@ -279,13 +279,20 @@ def assemble_with_ffmpeg(
         cmd = [
             ffmpeg,
             "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", str(concat_file),
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-r", str(fps),
-            "-c:a", "aac",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-r",
+            str(fps),
+            "-c:a",
+            "aac",
             str(output_path),
         ]
         logger.debug("assemble_with_ffmpeg: cmd=%s", cmd)
@@ -308,7 +315,11 @@ def assemble_with_ffmpeg(
             f"ffmpeg concat reported success but no output at {output_path}."
         )
 
-    logger.info("assemble_with_ffmpeg: assembled %d segments → %s", len(segment_paths), output_path)
+    logger.info(
+        "assemble_with_ffmpeg: assembled %d segments → %s",
+        len(segment_paths),
+        output_path,
+    )
     return output_path
 
 
@@ -361,35 +372,43 @@ def build_ame_job_spec(
     if fps <= 0:
         raise MESpecError(f"build_ame_job_spec: invalid fps={fps!r} in metadata.")
 
-    _output_dir = str(output_dir) if output_dir is not None else "/tmp/melosviz-ame-renders"
+    _output_dir = (
+        str(output_dir) if output_dir is not None else "/tmp/melosviz-ame-renders"
+    )
 
     # ---- Build source clip list aligned with scene segments ----------------
     source_clips: list[dict[str, Any]] = []
     for i, path in enumerate(segment_paths):
         seg: dict[str, Any] = scene_segments[i] if i < len(scene_segments) else {}
-        source_clips.append({
-            "index": i,
-            "label": str(seg.get("label", f"segment_{i}")),
-            "path": str(path),
-            "start": float(seg.get("start", 0.0)),
-            "end": float(seg.get("end", 0.0)),
-            "duration": max(0.0, float(seg.get("end", 0.0)) - float(seg.get("start", 0.0))),
-        })
+        source_clips.append(
+            {
+                "index": i,
+                "label": str(seg.get("label", f"segment_{i}")),
+                "path": str(path),
+                "start": float(seg.get("start", 0.0)),
+                "end": float(seg.get("end", 0.0)),
+                "duration": max(
+                    0.0, float(seg.get("end", 0.0)) - float(seg.get("start", 0.0))
+                ),
+            }
+        )
 
     # ---- Build encode queue ------------------------------------------------
     encode_queue: list[dict[str, Any]] = []
     for preset_def in _ENCODE_PRESETS:
         ext = preset_def["ext"]
         stem = "melosviz-master" if ext == "mov" else "melosviz-delivery"
-        encode_queue.append({
-            "preset": preset_def["preset"],
-            "output_file": f"{_output_dir}/{stem}.{ext}",
-            "format": preset_def["format"],
-            "codec": preset_def["codec"],
-            "color_space": preset_def["color_space"],
-            "audio_codec": preset_def["audio_codec"],
-            "watch_folder": f"{_output_dir}/ame_watch_{preset_def['preset'].lower()}",
-        })
+        encode_queue.append(
+            {
+                "preset": preset_def["preset"],
+                "output_file": f"{_output_dir}/{stem}.{ext}",
+                "format": preset_def["format"],
+                "codec": preset_def["codec"],
+                "color_space": preset_def["color_space"],
+                "audio_codec": preset_def["audio_codec"],
+                "watch_folder": f"{_output_dir}/ame_watch_{preset_def['preset'].lower()}",
+            }
+        )
 
     # ---- Assembly order (ordered segment paths) ----------------------------
     assembly_order = [str(p) for p in segment_paths]
@@ -517,8 +536,13 @@ class MEAdapter:
                 _seg_paths,
                 ffmpeg_out,
                 fps=int(
-                    (render_spec.model_dump() if hasattr(render_spec, "model_dump")
-                     else render_spec).get("metadata", {}).get("fps", 30)  # type: ignore[union-attr]
+                    (
+                        render_spec.model_dump()
+                        if hasattr(render_spec, "model_dump")
+                        else render_spec
+                    )
+                    .get("metadata", {})
+                    .get("fps", 30)  # type: ignore[union-attr]
                 ),
             )
             used_ffmpeg = True

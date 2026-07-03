@@ -18,6 +18,7 @@ from types import ModuleType
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _import(dotted: str) -> ModuleType:
     """Import a dotted module path and return it."""
     return importlib.import_module(dotted)
@@ -35,6 +36,7 @@ def _has_optional_dep(name: str) -> bool:
 # ---------------------------------------------------------------------------
 # Core modules — always importable
 # ---------------------------------------------------------------------------
+
 
 class TestCoreImports:
     """Every module in the core tree must import with zero optional deps."""
@@ -138,6 +140,7 @@ class TestCoreImports:
 # (so the above tests are meaningful, not vacuous)
 # ---------------------------------------------------------------------------
 
+
 class TestOptionalDepsAbsent:
     """Confirm that the test suite is exercising the dep-light code paths."""
 
@@ -178,4 +181,6 @@ class TestOptionalDepsAbsent:
         # was NOT in sys.modules before and our core imports leaked it in,
         # it would be there now.  Either way, the absence of ImportError in
         # TestCoreImports is the definitive guard.
-        assert True, "torch module-level leak would have caused ImportError in TestCoreImports"
+        assert True, (
+            "torch module-level leak would have caused ImportError in TestCoreImports"
+        )

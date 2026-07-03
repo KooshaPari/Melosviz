@@ -142,7 +142,9 @@ def _coerce_scalar(s: str) -> Any:
     except ValueError:
         pass
     # Strip surrounding quotes
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+    if (s.startswith('"') and s.endswith('"')) or (
+        s.startswith("'") and s.endswith("'")
+    ):
         return s[1:-1]
     return s
 
@@ -231,9 +233,7 @@ def apply_overrides(
                 break
 
         if op_dict is None:
-            logger.warning(
-                "Override op %r not found in group %r", op_name, group_name
-            )
+            logger.warning("Override op %r not found in group %r", op_name, group_name)
             continue
 
         # Walk / create nested param path
@@ -246,9 +246,7 @@ def apply_overrides(
         leaf_key = param_path[-1]
         old_val = target.get(leaf_key)
         target[leaf_key] = value
-        logger.debug(
-            "Override %s: %r → %r", key, old_val, value
-        )
+        logger.debug("Override %s: %r → %r", key, old_val, value)
 
     return result
 

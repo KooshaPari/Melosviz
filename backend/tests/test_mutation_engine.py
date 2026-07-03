@@ -26,16 +26,16 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Callable
 
 import pytest
-
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src"
 # `parents[0]` is `tests/`, `parents[1]` is `backend/`.  Resolve source
 # relative to `backend/` because the package source lives at backend/src/.
-SRC = REPO / "src" if (REPO / "src" / "melosviz").exists() else (REPO / "backend" / "src")
+SRC = (
+    REPO / "src" if (REPO / "src" / "melosviz").exists() else (REPO / "backend" / "src")
+)
 MUTATIONS_DIR = REPO / ".mutations"
 TARGETS = [
     SRC / "melosviz" / "analysis" / "models.py",
@@ -47,6 +47,7 @@ TARGET_SCORE = 75.0
 
 
 # ----------------------- AST mutation plan -------------------------------
+
 
 @dataclass
 class Planned:
@@ -69,37 +70,78 @@ def _plan(source_path: Path) -> list[Planned]:
         if isinstance(node, ast.Compare):
             for op in node.ops:
                 if type(op).__name__ in REL:
-                    out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                                       op="ROR", snippet=ast.unparse(node).split("\n")[0][:80]))
+                    out.append(
+                        Planned(
+                            mid=str(uuid.uuid4()),
+                            line=node.lineno,
+                            op="ROR",
+                            snippet=ast.unparse(node).split("\n")[0][:80],
+                        )
+                    )
                     break  # one ROR per Compare
         elif isinstance(node, ast.BinOp):
             if type(node.op).__name__ in ARITH:
-                out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                                   op="AOR", snippet=ast.unparse(node).split("\n")[0][:80]))
+                out.append(
+                    Planned(
+                        mid=str(uuid.uuid4()),
+                        line=node.lineno,
+                        op="AOR",
+                        snippet=ast.unparse(node).split("\n")[0][:80],
+                    )
+                )
         elif isinstance(node, ast.BoolOp):
-            out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                               op="LCR", snippet=ast.unparse(node).split("\n")[0][:80]))
+            out.append(
+                Planned(
+                    mid=str(uuid.uuid4()),
+                    line=node.lineno,
+                    op="LCR",
+                    snippet=ast.unparse(node).split("\n")[0][:80],
+                )
+            )
         elif isinstance(node, ast.Constant):
             if isinstance(node.value, bool):
-                out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                                   op="BOOL", snippet=repr(node.value)))
+                out.append(
+                    Planned(
+                        mid=str(uuid.uuid4()),
+                        line=node.lineno,
+                        op="BOOL",
+                        snippet=repr(node.value),
+                    )
+                )
             elif isinstance(node.value, int) and node.value in (0, 1):
-                out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                                   op="NUM", snippet=repr(node.value)))
+                out.append(
+                    Planned(
+                        mid=str(uuid.uuid4()),
+                        line=node.lineno,
+                        op="NUM",
+                        snippet=repr(node.value),
+                    )
+                )
         elif isinstance(node, ast.If):
-            out.append(Planned(mid=str(uuid.uuid4()), line=node.lineno,
-                               op="BRANCH", snippet=ast.unparse(node.test).split("\n")[0][:80]))
+            out.append(
+                Planned(
+                    mid=str(uuid.uuid4()),
+                    line=node.lineno,
+                    op="BRANCH",
+                    snippet=ast.unparse(node.test).split("\n")[0][:80],
+                )
+            )
     return out
 
 
 # ----------------------- AST mutation application -------------------------
 
 SWAPPED = {
-    "Eq": "NotEq", "NotEq": "Eq",
-    "Lt": "LtE", "LtE": "Lt",
-    "Gt": "GtE", "GtE": "Gt",
-    "Add": "Sub", "Sub": "Add",
-    "Mult": "Div", "Div": "Mult",
+    "Eq": "NotEq",
+    "NotEq": "Eq",
+    "Lt": "LtE",
+    "LtE": "Lt",
+    "Gt": "GtE",
+    "GtE": "Gt",
+    "Add": "Sub",
+    "Sub": "Add",
+    "Mult": "Div",
+    "Div": "Mult",
 }
 OPPOSITE_BOOL = {"Eq": "NotEq", "And": "Or"}
 
@@ -132,8 +174,16 @@ def _apply_one(source_text: str, target: Planned, target_index: int) -> str:
                 (isinstance(node, ast.Compare) and target.op == "ROR")
                 or (isinstance(node, ast.BinOp) and target.op == "AOR")
                 or (isinstance(node, ast.BoolOp) and target.op == "LCR")
-                or (isinstance(node, ast.Constant) and isinstance(node.value, bool) and target.op == "BOOL")
-                or (isinstance(node, ast.Constant) and isinstance(node.value, int) and target.op == "NUM")
+                or (
+                    isinstance(node, ast.Constant)
+                    and isinstance(node.value, bool)
+                    and target.op == "BOOL"
+                )
+                or (
+                    isinstance(node, ast.Constant)
+                    and isinstance(node.value, int)
+                    and target.op == "NUM"
+                )
                 or (isinstance(node, ast.If) and target.op == "BRANCH")
             )
 
@@ -163,6 +213,7 @@ def _apply_one(source_text: str, target: Planned, target_index: int) -> str:
 
 # ----------------------- Driver ------------------------------------------
 
+
 @dataclass
 class MutationReport:
     target: str
@@ -189,8 +240,14 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
     its own AST plan + applied mutations; per-file reports are written
     to `.mutations/<file>.json`.
     """
-    overall = {"total": 0, "killed": 0, "survived": 0, "timeout": 0,
-               "score": 0.0, "per_file": {}}
+    overall = {
+        "total": 0,
+        "killed": 0,
+        "survived": 0,
+        "timeout": 0,
+        "score": 0.0,
+        "per_file": {},
+    }
     MAX_PER_FILE = 60  # cap to keep CI runtime bounded
     for target in TARGETS:
         if not target.exists():
@@ -208,15 +265,23 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                 target.write_text(mutated)
                 try:
                     rc = subprocess.run(
-                        [sys.executable, "-m", "pytest",
-                         "tests/test_render_spec_v2.py",
-                         "tests/test_mutation_kill_score.py",
-                         "tests/test_coverage_100.py",
-                         "tests/test_coverage_gaps.py",
-                         "--no-cov", "-q", "-x"],
+                        [
+                            sys.executable,
+                            "-m",
+                            "pytest",
+                            "tests/test_render_spec_v2.py",
+                            "tests/test_mutation_kill_score.py",
+                            "tests/test_coverage_100.py",
+                            "tests/test_coverage_gaps.py",
+                            "--no-cov",
+                            "-q",
+                            "-x",
+                        ],
                         cwd=target.parents[2],
-                        capture_output=True, text=True,
-                        timeout=TIMEOUT_S, check=False,
+                        capture_output=True,
+                        text=True,
+                        timeout=TIMEOUT_S,
+                        check=False,
                     )
                     killed = rc.returncode != 0
                 except subprocess.TimeoutExpired:
@@ -233,10 +298,14 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                     report.killed += 1
                 else:
                     report.survived += 1
-                    report.survivors.append({
-                        "mid": mutation.mid, "op": mutation.op,
-                        "line": mutation.line, "snippet": mutation.snippet,
-                    })
+                    report.survivors.append(
+                        {
+                            "mid": mutation.mid,
+                            "op": mutation.op,
+                            "line": mutation.line,
+                            "snippet": mutation.snippet,
+                        }
+                    )
                 report.op_breakdown.setdefault(mutation.op, {"total": 0, "killed": 0})
                 report.op_breakdown[mutation.op]["total"] += 1
                 if killed:
@@ -253,7 +322,8 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
             report.score = (report.timeout / report.total) * 100.0
         MUTATIONS_DIR.mkdir(exist_ok=True)
         (MUTATIONS_DIR / f"{target.parent.name}_{target.stem}.json").write_text(
-            json.dumps(asdict(report), indent=2))
+            json.dumps(asdict(report), indent=2)
+        )
         overall["total"] += report.total
         overall["killed"] += report.killed
         overall["survived"] += report.survived
@@ -279,13 +349,23 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
             target.write_text(mutated)
             try:
                 rc = subprocess.run(
-                    [sys.executable, "-m", "pytest", "tests/test_render_spec_v2.py",
-                     "tests/test_mutation_kill_score.py",
-                     "tests/test_coverage_100.py", "tests/test_coverage_gaps.py",
-                     "--no-cov", "-q", "-x"],
+                    [
+                        sys.executable,
+                        "-m",
+                        "pytest",
+                        "tests/test_render_spec_v2.py",
+                        "tests/test_mutation_kill_score.py",
+                        "tests/test_coverage_100.py",
+                        "tests/test_coverage_gaps.py",
+                        "--no-cov",
+                        "-q",
+                        "-x",
+                    ],
                     cwd=target.parents[2],
-                    capture_output=True, text=True,
-                    timeout=TIMEOUT_S, check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=TIMEOUT_S,
+                    check=False,
                 )
                 killed = rc.returncode != 0
             except subprocess.TimeoutExpired:
@@ -299,8 +379,14 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                 report.killed += 1
             else:
                 report.survived += 1
-                report.survivors.append({"mid": mutation.mid, "op": mutation.op,
-                                         "line": mutation.line, "snippet": mutation.snippet})
+                report.survivors.append(
+                    {
+                        "mid": mutation.mid,
+                        "op": mutation.op,
+                        "line": mutation.line,
+                        "snippet": mutation.snippet,
+                    }
+                )
             report.op_breakdown.setdefault(mutation.op, {"total": 0, "killed": 0})
             report.op_breakdown[mutation.op]["total"] += 1
             if killed:

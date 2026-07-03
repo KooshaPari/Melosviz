@@ -388,7 +388,7 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
    * What this still proves: the /build endpoint is reachable and the bridge
    * correctly surfaces Python exceptions as 500 (not crashing silently).
    */
-  test("Bridge /build is reachable (500 on empty-segment fixture is expected)", async () => {
+  test("Bridge /build is reachable (400 on empty-segment fixture is expected)", async () => {
     if (!bridgeReady) {
       console.warn("[e2e] Bridge not ready — skipping /build reachability check");
       return;
@@ -402,11 +402,14 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
     });
 
     // The test_tone.wav fixture produces 0 scene_segments, so assemble_render_plan
-    // raises AssemblyError → bridge returns 500 "Internal Server Error".
-    // That is the correct behaviour; we assert the endpoint IS reachable (not 404/502)
-    // and that it returns either 200 (richer WAV) or 500 (expected for flat fixture).
-    expect([200, 500]).toContain(r.status);
-    if (r.status === 500) {
+    // raises AssemblyError, which the /build route handler maps to a 400
+    // "invalid WAV: ..." response (see melosviz.bridge.server.build's
+    // `except Exception` -> HTTPException(status_code=400, ...)).
+    // That is the correct behaviour; we assert the endpoint IS reachable
+    // (not 404/502) and that it returns either 200 (richer WAV) or 400
+    // (expected application-level rejection for the flat fixture).
+    expect([200, 400]).toContain(r.status);
+    if (r.status === 400) {
       // Confirm it's an application-level error, not a crash/timeout
       const body = await r.text();
       expect(body.length).toBeGreaterThan(0);

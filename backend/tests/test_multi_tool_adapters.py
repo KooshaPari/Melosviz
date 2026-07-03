@@ -47,25 +47,37 @@ def _minimal_spec(
     if with_beats:
         dense_kfs = [
             {
-                "t": 0.0, "energy": 0.7, "brightness": 0.6,
-                "valence": 0.5, "arousal": 0.8,
-                "beat_strength": 0.9, "onset_strength": 0.4,
+                "t": 0.0,
+                "energy": 0.7,
+                "brightness": 0.6,
+                "valence": 0.5,
+                "arousal": 0.8,
+                "beat_strength": 0.9,
+                "onset_strength": 0.4,
                 "spectral_centroid": 3200.0,
                 "stems": {"drums": 0.8, "bass": 0.5, "vocals": 0.2, "other": 0.3},
                 "easing": "ease_in_out",
             },
             {
-                "t": 0.47, "energy": 0.5, "brightness": 0.4,
-                "valence": 0.4, "arousal": 0.6,
-                "beat_strength": 0.0, "onset_strength": 0.6,
+                "t": 0.47,
+                "energy": 0.5,
+                "brightness": 0.4,
+                "valence": 0.4,
+                "arousal": 0.6,
+                "beat_strength": 0.0,
+                "onset_strength": 0.6,
                 "spectral_centroid": 2400.0,
                 "stems": {"drums": 0.3, "bass": 0.6, "vocals": 0.5, "other": 0.2},
                 "easing": "linear",
             },
             {
-                "t": 0.94, "energy": 0.9, "brightness": 0.8,
-                "valence": 0.7, "arousal": 0.9,
-                "beat_strength": 1.0, "onset_strength": 0.7,
+                "t": 0.94,
+                "energy": 0.9,
+                "brightness": 0.8,
+                "valence": 0.7,
+                "arousal": 0.9,
+                "beat_strength": 1.0,
+                "onset_strength": 0.7,
                 "spectral_centroid": 4000.0,
                 "stems": {"drums": 0.9, "bass": 0.4, "vocals": 0.3, "other": 0.1},
                 "easing": "ease_in",
@@ -76,14 +88,22 @@ def _minimal_spec(
     if with_segments:
         segs = [
             {
-                "index": 0, "label": "intro", "start": 0.0, "end": 30.0,
-                "energy_mean": 0.3, "brightness_mean": 0.4,
+                "index": 0,
+                "label": "intro",
+                "start": 0.0,
+                "end": 30.0,
+                "energy_mean": 0.3,
+                "brightness_mean": 0.4,
                 "mood": {"valence": 0.5, "arousal": 0.4},
                 "dominant_stem": "bass",
             },
             {
-                "index": 1, "label": "drop", "start": 30.0, "end": 60.0,
-                "energy_mean": 0.9, "brightness_mean": 0.8,
+                "index": 1,
+                "label": "drop",
+                "start": 30.0,
+                "end": 60.0,
+                "energy_mean": 0.9,
+                "brightness_mean": 0.8,
                 "mood": {"valence": 0.8, "arousal": 0.95},
                 "dominant_stem": "drums",
             },
@@ -119,7 +139,14 @@ class TestAEAdapterJobSpec:
         from melosviz.render.aftereffects_adapter import build_ae_job_spec
 
         job = build_ae_job_spec(_minimal_spec())
-        for key in ("schema", "template", "assets", "actions", "mogrt_params", "melosviz_meta"):
+        for key in (
+            "schema",
+            "template",
+            "assets",
+            "actions",
+            "mogrt_params",
+            "melosviz_meta",
+        ):
             assert key in job, f"Missing key: {key!r}"
 
     def test_template_block_has_frame_range(self) -> None:
@@ -166,7 +193,10 @@ class TestAEAdapterJobSpec:
         spec2 = RenderSpec.model_validate(d)
 
         job = build_ae_job_spec(spec2)
-        roto = next((a for a in job["assets"] if a.get("layerName") == "rotobrush3_source"), None)
+        roto = next(
+            (a for a in job["assets"] if a.get("layerName") == "rotobrush3_source"),
+            None,
+        )
         assert roto is not None
         assert roto["src"] == "/footage/performer.mp4"
         assert roto["rotobrush3"]["enabled"] is True
@@ -210,9 +240,15 @@ class TestAEParamMapping:
         from melosviz.render.aftereffects_adapter import build_segment_csv
 
         segs = [
-            {"index": 0, "label": "chorus", "start": 0.0, "end": 30.0,
-             "energy_mean": 0.8, "dominant_stem": "vocals",
-             "mood": {"valence": 0.8, "arousal": 0.9}},
+            {
+                "index": 0,
+                "label": "chorus",
+                "start": 0.0,
+                "end": 30.0,
+                "energy_mean": 0.8,
+                "dominant_stem": "vocals",
+                "mood": {"valence": 0.8, "arousal": 0.9},
+            },
         ]
         csv_content = build_segment_csv(segs)
         assert "ChorusBurst" in csv_content
@@ -221,10 +257,17 @@ class TestAEParamMapping:
         from melosviz.render.aftereffects_adapter import build_mogrt_param_map
 
         segs = [
-            {"index": 0, "label": "drop", "dominant_stem": "drums",
-             "energy_mean": 0.9, "mood": {"valence": 0.8, "arousal": 0.95}},
+            {
+                "index": 0,
+                "label": "drop",
+                "dominant_stem": "drums",
+                "energy_mean": 0.9,
+                "mood": {"valence": 0.8, "arousal": 0.95},
+            },
         ]
-        result = build_mogrt_param_map(segs, ["#00f5ff"], {"tempo_bpm": 128.0, "key": "C", "mode": "major"})
+        result = build_mogrt_param_map(
+            segs, ["#00f5ff"], {"tempo_bpm": 128.0, "key": "C", "mode": "major"}
+        )
         assert "drop" in result
         drop_params = result["drop"]
         assert drop_params["mogrt_template"] == "DropImpact"
@@ -258,7 +301,9 @@ class TestRegistryMotionGraphics:
         adapter = adapter_cls()
         assert adapter is not None
 
-    def test_motion_graphics_adapter_render_does_not_raise(self, tmp_path: Path) -> None:
+    def test_motion_graphics_adapter_render_does_not_raise(
+        self, tmp_path: Path
+    ) -> None:
         from melosviz.conductor.registry import ADAPTER_REGISTRY
 
         adapter = ADAPTER_REGISTRY["motion_graphics_beat_sync"]()
@@ -269,8 +314,14 @@ class TestRegistryMotionGraphics:
     def test_all_gold_scene_types_in_registry(self) -> None:
         from melosviz.conductor.registry import ADAPTER_REGISTRY
 
-        for st in ("generative_asset", "motion_graphics_beat_sync", "assembly_encode",
-                   "procedural_3d_animation", "live_stage", "video_export"):
+        for st in (
+            "generative_asset",
+            "motion_graphics_beat_sync",
+            "assembly_encode",
+            "procedural_3d_animation",
+            "live_stage",
+            "video_export",
+        ):
             assert st in ADAPTER_REGISTRY, f"Missing scene type: {st!r}"
 
 
@@ -292,8 +343,14 @@ class TestMEAdapter:
 
         seg_paths = [tmp_path / "seg0.mp4"]
         job = build_ame_job_spec(_minimal_spec(), seg_paths)
-        for key in ("ame_batch_version", "melosviz_meta", "source_clips", "encode_queue",
-                    "assembly_order", "transition"):
+        for key in (
+            "ame_batch_version",
+            "melosviz_meta",
+            "source_clips",
+            "encode_queue",
+            "assembly_order",
+            "transition",
+        ):
             assert key in job, f"Missing key: {key!r}"
 
     def test_encode_queue_has_prores_and_h264(self, tmp_path: Path) -> None:
@@ -348,8 +405,12 @@ class TestMEAdapter:
         # We only need to verify the WARNING is emitted, not that ffmpeg succeeds.
         import contextlib
 
-        with caplog.at_level(logging.WARNING, logger="melosviz.render.mediaencoder_adapter"), \
-                contextlib.suppress(Exception):
+        with (
+            caplog.at_level(
+                logging.WARNING, logger="melosviz.render.mediaencoder_adapter"
+            ),
+            contextlib.suppress(Exception),
+        ):
             assemble_with_ffmpeg([tmp_path / "fake.mp4"], tmp_path / "out.mp4")
             # ffmpeg will fail on empty file — that's expected
 
@@ -426,31 +487,48 @@ class TestFireflyAdapter:
 
         specs = build_firefly_job_specs(_minimal_spec())
         for spec in specs:
-            for k in ("firefly_schema", "prompt", "negative_prompt", "n", "size",
-                      "styles", "seed", "content_class", "melosviz_meta"):
+            for k in (
+                "firefly_schema",
+                "prompt",
+                "negative_prompt",
+                "n",
+                "size",
+                "styles",
+                "seed",
+                "content_class",
+                "melosviz_meta",
+            ):
                 assert k in spec, f"Missing key {k!r} in Firefly spec"
 
     def test_prompt_contains_segment_label(self) -> None:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        intro_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "intro")
+        intro_spec = next(
+            s for s in specs if s["melosviz_meta"]["segment_label"] == "intro"
+        )
         assert "intro" in intro_spec["prompt"].lower()
 
     def test_prompt_contains_mood_descriptor(self) -> None:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        drop_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "drop")
+        drop_spec = next(
+            s for s in specs if s["melosviz_meta"]["segment_label"] == "drop"
+        )
         # drop has arousal=0.95 → should include energetic/vibrant descriptor
-        assert any(word in drop_spec["prompt"].lower()
-                   for word in ("energetic", "vibrant", "intense"))
+        assert any(
+            word in drop_spec["prompt"].lower()
+            for word in ("energetic", "vibrant", "intense")
+        )
 
     def test_styles_match_segment_label(self) -> None:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        drop_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "drop")
+        drop_spec = next(
+            s for s in specs if s["melosviz_meta"]["segment_label"] == "drop"
+        )
         assert "synthwave" in drop_spec["styles"]
 
     def test_each_spec_has_unique_seed(self) -> None:
@@ -503,7 +581,9 @@ class TestFireflyAdapter:
             return_value=stub_out,
         ):
             adapter = FireflyAdapter()
-            with caplog.at_level(logging.WARNING, logger="melosviz.render.firefly_adapter"):
+            with caplog.at_level(
+                logging.WARNING, logger="melosviz.render.firefly_adapter"
+            ):
                 result = adapter.render(
                     _minimal_spec(), output_path=tmp_path, force_video_export=True
                 )
@@ -536,7 +616,9 @@ class TestOrchestrator:
         orch = Orchestrator(output_dir=tmp_path)
         assert orch is not None
 
-    def test_orchestrator_render_with_explicit_scene_types(self, tmp_path: Path) -> None:
+    def test_orchestrator_render_with_explicit_scene_types(
+        self, tmp_path: Path
+    ) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
@@ -546,7 +628,9 @@ class TestOrchestrator:
         )
         assert "motion_graphics_beat_sync" in result.per_scene_results
 
-    def test_orchestrator_assembly_result_present_when_not_skipped(self, tmp_path: Path) -> None:
+    def test_orchestrator_assembly_result_present_when_not_skipped(
+        self, tmp_path: Path
+    ) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
@@ -601,7 +685,11 @@ class TestRegistryCoverage:
         from melosviz.conductor.registry import ADAPTER_REGISTRY
 
         # Only check the adapters we've written (not shims that need runtime deps)
-        for scene_type in ("motion_graphics_beat_sync", "assembly_encode", "generative_asset"):
+        for scene_type in (
+            "motion_graphics_beat_sync",
+            "assembly_encode",
+            "generative_asset",
+        ):
             adapter_cls = ADAPTER_REGISTRY[scene_type]
             inst = adapter_cls()
             assert hasattr(inst, "scene_type"), (

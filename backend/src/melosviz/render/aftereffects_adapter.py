@@ -187,11 +187,13 @@ def build_beats_csv(dense_keyframes: list[dict[str, Any]]) -> str:
     for kf in dense_keyframes:
         bs = float(kf.get("beat_strength", 0.0))
         if bs > 0.0:
-            writer.writerow([
-                round(float(kf.get("t", 0.0)), 4),
-                round(bs, 4),
-                round(float(kf.get("energy", 0.0)), 4),
-            ])
+            writer.writerow(
+                [
+                    round(float(kf.get("t", 0.0)), 4),
+                    round(bs, 4),
+                    round(float(kf.get("energy", 0.0)), 4),
+                ]
+            )
     return buf.getvalue()
 
 
@@ -213,11 +215,13 @@ def build_onsets_csv(dense_keyframes: list[dict[str, Any]]) -> str:
     for kf in dense_keyframes:
         os_ = float(kf.get("onset_strength", 0.0))
         if os_ > 0.0:
-            writer.writerow([
-                round(float(kf.get("t", 0.0)), 4),
-                round(os_, 4),
-                round(float(kf.get("brightness", 0.0)), 4),
-            ])
+            writer.writerow(
+                [
+                    round(float(kf.get("t", 0.0)), 4),
+                    round(os_, 4),
+                    round(float(kf.get("brightness", 0.0)), 4),
+                ]
+            )
     return buf.getvalue()
 
 
@@ -235,10 +239,19 @@ def build_segment_csv(scene_segments: list[dict[str, Any]]) -> str:
     """
     buf = io.StringIO()
     writer = csv.writer(buf, lineterminator="\n")
-    writer.writerow([
-        "index", "label", "start", "end",
-        "energy_mean", "dominant_stem", "valence", "arousal", "mogrt_template",
-    ])
+    writer.writerow(
+        [
+            "index",
+            "label",
+            "start",
+            "end",
+            "energy_mean",
+            "dominant_stem",
+            "valence",
+            "arousal",
+            "mogrt_template",
+        ]
+    )
     for seg in scene_segments:
         label = str(seg.get("label", "unknown"))
         mood = seg.get("mood", {})
@@ -248,17 +261,19 @@ def build_segment_csv(scene_segments: list[dict[str, Any]]) -> str:
         else:
             valence = 0.5
             arousal = 0.5
-        writer.writerow([
-            int(seg.get("index", 0)),
-            label,
-            round(float(seg.get("start", 0.0)), 4),
-            round(float(seg.get("end", 0.0)), 4),
-            round(float(seg.get("energy_mean", 0.0)), 4),
-            str(seg.get("dominant_stem", "other")),
-            round(valence, 4),
-            round(arousal, 4),
-            _SEGMENT_TEMPLATE_MAP.get(label, "DefaultBeatSync"),
-        ])
+        writer.writerow(
+            [
+                int(seg.get("index", 0)),
+                label,
+                round(float(seg.get("start", 0.0)), 4),
+                round(float(seg.get("end", 0.0)), 4),
+                round(float(seg.get("energy_mean", 0.0)), 4),
+                str(seg.get("dominant_stem", "other")),
+                round(valence, 4),
+                round(arousal, 4),
+                _SEGMENT_TEMPLATE_MAP.get(label, "DefaultBeatSync"),
+            ]
+        )
     return buf.getvalue()
 
 
@@ -392,9 +407,7 @@ def build_ae_job_spec(
 
     fps = int(metadata.get("fps", 30))
     if fps <= 0:
-        raise AESpecError(
-            f"build_ae_job_spec: invalid fps={fps!r} in metadata."
-        )
+        raise AESpecError(f"build_ae_job_spec: invalid fps={fps!r} in metadata.")
 
     total_frames = max(1, int(round(duration * fps)))
     source_video: str | None = metadata.get("source_video")
@@ -449,19 +462,21 @@ def build_ae_job_spec(
     # Roto Brush 3 performer-isolation hook: emitted when source_video is set.
     has_rotobrush3 = bool(source_video)
     if has_rotobrush3:
-        assets.append({
-            "type": "footage",
-            "layerName": "rotobrush3_source",
-            "src": source_video,
-            "composition": _composition,
-            "layerIndex": 1,
-            "rotobrush3": {
-                "enabled": True,
-                "refine_edge": True,
-                "propagation": "multi_frame",
-                "output_layer": "rotobrush3_matte",
-            },
-        })
+        assets.append(
+            {
+                "type": "footage",
+                "layerName": "rotobrush3_source",
+                "src": source_video,
+                "composition": _composition,
+                "layerIndex": 1,
+                "rotobrush3": {
+                    "enabled": True,
+                    "refine_edge": True,
+                    "propagation": "multi_frame",
+                    "output_layer": "rotobrush3_matte",
+                },
+            }
+        )
         logger.info(
             "build_ae_job_spec: Roto Brush 3 hook enabled for source_video=%s",
             source_video,
@@ -587,15 +602,27 @@ class AEAdapter:
 
         # Extract CSV data from embedded assets
         beats_csv = next(
-            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "beat_data"),
+            (
+                a["data"]
+                for a in job_spec["assets"]
+                if a.get("layerName") == "beat_data"
+            ),
             "",
         )
         onsets_csv = next(
-            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "onset_data"),
+            (
+                a["data"]
+                for a in job_spec["assets"]
+                if a.get("layerName") == "onset_data"
+            ),
             "",
         )
         segment_csv = next(
-            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "segment_data"),
+            (
+                a["data"]
+                for a in job_spec["assets"]
+                if a.get("layerName") == "segment_data"
+            ),
             "",
         )
 
@@ -604,9 +631,7 @@ class AEAdapter:
             out_dir = pathlib.Path(output_path)
             out_dir.mkdir(parents=True, exist_ok=True)
             job_spec_path = out_dir / "nexrender_job.json"
-            job_spec_path.write_text(
-                json.dumps(job_spec, indent=2), encoding="utf-8"
-            )
+            job_spec_path.write_text(json.dumps(job_spec, indent=2), encoding="utf-8")
             (out_dir / "beats.csv").write_text(beats_csv, encoding="utf-8")
             (out_dir / "onsets.csv").write_text(onsets_csv, encoding="utf-8")
             (out_dir / "segments.csv").write_text(segment_csv, encoding="utf-8")

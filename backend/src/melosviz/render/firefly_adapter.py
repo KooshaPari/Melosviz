@@ -95,6 +95,7 @@ _STEM_TEXTURE_HINT: dict[str, str] = {
     "other": "ambient haze, soft gradients, textured layers",
 }
 
+
 #: Map valence range → mood descriptor.
 def _valence_descriptor(valence: float) -> str:
     if valence >= 0.7:
@@ -391,7 +392,9 @@ class FireflyAdapter:
 
             vp: pathlib.Path | None = None
             if output_path is not None:
-                vp = export_video(render_spec, output_dir=pathlib.Path(str(output_path)))
+                vp = export_video(
+                    render_spec, output_dir=pathlib.Path(str(output_path))
+                )
             else:
                 vp = export_video(render_spec)
             return FireflyJobResult(
