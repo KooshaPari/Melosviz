@@ -19,6 +19,14 @@ const rpc = Electroview.defineRPC<
   { bun: BunRequests; webview: WebviewRequests }
 >(
   {
+    // Electrobun's createRPC defaults maxRequestTime to 1000ms (see
+    // electrobun/dist/api/shared/rpc.ts DEFAULT_MAX_REQUEST_TIME). Every
+    // rpc.request.* that outlives 1s then rejects with "RPC request timed
+    // out" — which fires for pickFile/pickDirectory (native NSOpenPanel the
+    // user paces) and any long analyze/render round-trip. These are all
+    // user- or compute-bound, not network-bound, so there is no meaningful
+    // client-side deadline: disable it (Infinity skips the timer, rpc.ts:270).
+    maxRequestTime: Infinity,
     handlers: {
       requests: {},
     },

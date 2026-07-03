@@ -213,6 +213,96 @@ class TestPipelineSmoke:
         duration = data["metadata"].get("duration_sec") or data["metadata"].get("duration")
         assert duration == pytest.approx(4.0, abs=0.1)
 
+    # ------------------------------------------------------------------
+    # Operator WAV fixture (k.wav) — real-world audio pipeline tests
+    # ------------------------------------------------------------------
+
+    def _k_wav_path(self) -> Path:
+        return Path(__file__).resolve().parent.joinpath("fixtures", "k.wav")
+
+    @pytest.mark.skipif(
+        not Path(__file__).resolve().parent.joinpath("fixtures", "k.wav").exists(),
+        reason="k.wav fixture not present (download from operator)",
+    )
+    def test_spec_from_wav_real_wav_produces_spec(self) -> None:
+        """spec_from_wav (stdlib-only) on the operator's real 25 s k.wav.
+
+        The stdlib path does NOT populate scene_segments — only the
+        rich path does.  What it DOES populate: metadata, timeline
+        (onset events), BPM estimate, onset_times.
+        """
+        from melosviz.analysis.audio import spec_from_wav
+
+        spec = spec_from_wav(self._k_wav_path())
+        data = spec.model_dump()
+
+        assert "metadata" in data
+        meta = data["metadata"]
+        duration = meta.get("duration_sec") or meta.get("duration")
+        assert isinstance(duration, (int, float))
+        assert duration == pytest.approx(25.26, abs=2.0)
+
+        assert "estimated_bpm" in meta
+        assert isinstance(meta["estimated_bpm"], (int, float))
+        assert meta["estimated_bpm"] > 0
+
+        # The naive stdlib onset detector may legitimately find zero onsets
+        # on quiet/steady material (the rich librosa path is what reliably
+        # detects structure — see test_analyze_wav_rich_produces_scene_segments).
+        # Only assert the field shape here, not a nonzero count.
+        onset_times = meta.get("onset_times", [])
+        assert isinstance(onset_times, list)
+
+        # v1-style timeline (populated by stdlib path)
+        assert "timeline" in data
+        assert isinstance(data["timeline"], list)
+
+    @pytest.mark.skipif(
+        not Path(__file__).resolve().parent.joinpath("fixtures", "k.wav").exists(),
+        reason="k.wav fixture not present",
+    )
+    def test_analyze_wav_rich_produces_scene_segments(self) -> None:
+        """analyze_wav_rich (librosa) on k.wav returns scene_segments."""
+        from melosviz.analysis.audio import analyze_wav_rich
+
+        spec = analyze_wav_rich(self._k_wav_path())
+        data = spec.model_dump()
+
+        assert "scene_segments" in data
+        assert isinstance(data["scene_segments"], list)
+        assert len(data["scene_segments"]) > 0, (
+            "k.wav is dynamic audio — expected at least one scene segment"
+        )
+
+        # Validate first segment — SceneSegment uses `label` not `scene_type`
+        seg = data["scene_segments"][0]
+        for key in ("index", "label", "start", "end", "energy_mean"):
+            assert key in seg, f"Missing key '{key}' in first scene segment"
+
+        # Rich path populates dense_keyframes + timeline_events
+        assert len(data.get("dense_keyframes", [])) > 0
+        assert len(data.get("timeline_events", [])) > 0
+
+        assert data["metadata"].get("estimated_bpm", 0) > 0
+
+    @pytest.mark.skipif(
+        not Path(__file__).resolve().parent.joinpath("fixtures", "k.wav").exists(),
+        reason="k.wav fixture not present",
+    )
+    def test_assemble_render_plan_from_real_wav(self) -> None:
+        """Full pipeline: analyze_wav_rich(k.wav) → assemble_render_plan."""
+        from melosviz.analysis.audio import analyze_wav_rich
+
+        spec = analyze_wav_rich(self._k_wav_path())
+        plan = assemble_render_plan(spec, mock_adapters=True, composer_seed=42)
+
+        assert plan["version"] == "2.0"
+        assert plan["flash_safe"] is True
+        assert plan["segment_count"] >= 1
+        assert isinstance(plan["segments"], list)
+        assert len(plan["segments"]) >= 1
+        assert plan["segments"][0].get("adapter_result", {}).get("mock") is True
+
 
 class TestCLISmoke:
     """Smoke-test the viz CLI entry-point (no subprocess — direct import)."""
