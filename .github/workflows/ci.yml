@@ -17,7 +17,7 @@ permissions:
 jobs:
   trace-gate:
     name: FR Coverage Gate
-    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@main
+    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@721c481fcd54740aa5d50d7ebfe40a9b5102906e # master
   backend:
     name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
     # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
