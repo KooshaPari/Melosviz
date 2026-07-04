@@ -38,6 +38,9 @@ BUILTIN_PRESETS: list[str] = [
     "ambient",
     "cinematic",
     "world",
+    "lofi",
+    "synthwave",
+    "minimal",
 ]
 
 
