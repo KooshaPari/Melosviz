@@ -1,0 +1,9 @@
+{
+  "buildCommand": "bun run build",
+  "outputDirectory": "dist",
+  "framework": null,
+  "installCommand": "bun install",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "http://localhost:5000/api/$1" }
+  ]
+}
