@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
 import type { RenderSpec } from './renderSpec'
@@ -8,6 +8,8 @@ import { SplashScreen } from './components/SplashScreen'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { WaveformDisplay } from './components/WaveformDisplay'
 import { PresetEditor } from './components/PresetEditor'
+import { KeyboardHelp } from './components/KeyboardHelp'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -55,6 +57,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [audioPath, setAudioPath] = useState('')
   const [showSplash, setShowSplash] = useState(true)
+  const [showHelp, setShowHelp] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
   // Active spec: use analysed spec if available, else placeholder
@@ -138,6 +142,21 @@ export default function App() {
     setIsPlaying(false)
   }
 
+  // ---- Keyboard shortcut actions -------------------------------------------
+  const shortcutActions = useMemo(() => ({
+    togglePlay: () => setAutoPlay((v) => !v),
+    seekBackward: () => setPlaybackT((t) => Math.max(0, t - 5 / (activeSpec.durationSecs || 240))),
+    seekForward: () => setPlaybackT((t) => Math.min(1, t + 5 / (activeSpec.durationSecs || 240))),
+    toggleHelp: () => setShowHelp((v) => !v),
+    closeModal: () => setShowHelp(false),
+    openPresetEditor: () => { /* preset editor triggered externally */ },
+    toggleFullscreen: () => setFullscreen((v) => !v),
+    restartPlayback: () => { setAutoPlay(false); setPlaybackT(0) },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [activeSpec.durationSecs])
+
+  useKeyboardShortcuts(shortcutActions)
+
   // Scene jump: map button index → keyframe t
   const handleSceneJump = useCallback(
     (index: number) => {
@@ -161,17 +180,28 @@ export default function App() {
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <LoadingOverlay visible={analyzing} />
+      <KeyboardHelp open={showHelp} onOpenChange={setShowHelp} />
 
       {/* ---- R3F Canvas -------------------------------------------------- */}
       <SceneView
         spec={activeSpec}
         playbackT={playbackT}
-        className="absolute inset-0 w-full h-full"
+        className={`absolute inset-0 w-full h-full${fullscreen ? ' z-40' : ''}`}
       />
 
       {/* ---- Left panel -------------------------------------------------- */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
-        <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
+          <button
+            onClick={() => setShowHelp(true)}
+            title="Keyboard shortcuts (?)"
+            className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+            aria-label="Show keyboard shortcuts"
+          >
+            ?
+          </button>
+        </div>
 
         {/* File picker + Analyze */}
         <div className="flex flex-col gap-2 rounded-lg bg-black/40 border border-white/10 p-3">
