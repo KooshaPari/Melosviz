@@ -6,6 +6,7 @@ import { SpecViewer } from './components/SpecViewer'
 import { useAnalysis } from './hooks/useAnalysis'
 import { SplashScreen } from './components/SplashScreen'
 import { LoadingOverlay } from './components/LoadingOverlay'
+import { WaveformDisplay } from './components/WaveformDisplay'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -228,6 +229,13 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* ---- Waveform display (visible when an audio path is set) ---------- */}
+      {audioPath && (
+        <div className="absolute bottom-36 left-4 right-4 z-10">
+          <WaveformDisplay audioSrc={audioPath} playbackT={playbackT} />
+        </div>
+      )}
 
       {/* ---- Bottom bar: playback controls -------------------------------- */}
       <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
