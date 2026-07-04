@@ -23,6 +23,7 @@ import * as THREE from 'three'
 import type { RenderSpec } from './renderSpec'
 import { lerpKeyframe } from './utils/interpolate'
 import type { InterpolatedFrame } from './utils/interpolate'
+import { BeatPulse } from './components/BeatPulse'
 
 // ---- Internal: per-frame state ref -----------------------------------------
 
@@ -31,6 +32,12 @@ interface FrameState {
   bpm: number
   /** Elapsed wall-clock seconds — used for bpm pulse independent of playbackT. */
   elapsedSecs: number
+  /** Beat onset times (seconds) from RenderSpec. */
+  beatTimes: number[]
+  /** Normalised playhead position [0, 1]. */
+  playbackT: number
+  /** Track duration in seconds. */
+  durationSecs: number
 }
 
 // ---- Internal: camera controller -------------------------------------------
@@ -149,11 +156,19 @@ function CoreMesh({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
 // ---- Internal: full scene wiring -------------------------------------------
 
 function MelosScene({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
+  const s = stateRef.current
   return (
     <>
       <SceneBackground stateRef={stateRef} />
       <SceneCamera stateRef={stateRef} />
       <SceneLights stateRef={stateRef} />
+      {s.beatTimes.length > 0 && (
+        <BeatPulse
+          beatTimes={s.beatTimes}
+          playbackT={s.playbackT}
+          durationSecs={s.durationSecs}
+        />
+      )}
       <CoreMesh stateRef={stateRef} />
     </>
   )
@@ -192,6 +207,9 @@ export function SceneView({ spec, playbackT, className }: SceneViewProps) {
     frame: lerpKeyframe(spec.keyframes, playbackT),
     bpm: spec.bpm ?? 120,
     elapsedSecs: 0,
+    beatTimes: spec.beatTimes ?? [],
+    playbackT,
+    durationSecs: spec.durationSecs,
   })
 
   // Keep ref current every render (no useEffect needed — synchronous update)
@@ -199,6 +217,9 @@ export function SceneView({ spec, playbackT, className }: SceneViewProps) {
     frame: lerpKeyframe(spec.keyframes, playbackT),
     bpm: spec.bpm ?? 120,
     elapsedSecs: performance.now() / 1000,
+    beatTimes: spec.beatTimes ?? [],
+    playbackT,
+    durationSecs: spec.durationSecs,
   }
 
   return (
