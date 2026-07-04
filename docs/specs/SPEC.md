@@ -256,6 +256,38 @@
 
 ---
 
+### FR-50: Self-Diagnose Script (`make diagnose`)
+
+**Description:** A single-command self-diagnose utility, exposed as `make diagnose`, that reports PASS/FAIL on environment prerequisites required to develop and run MelosViz. The script must be implemented as a standalone Python module so it can be invoked both from a Make target and directly from a Python test harness.
+
+**Goal:** A single command that reports PASS/FAIL on environment prerequisites, suitable for first-run setup validation, CI pre-flight, and operator onboarding.
+
+**Acceptance criterion:**
+
+1. **Required checks (FAIL exits non-zero):**
+   - **python**: interpreter version `>= 3.10`, sourced from `sys.version_info`. PASS detail reports the exact version (e.g. `3.12.12`).
+   - **ffmpeg**: a working `ffmpeg` binary resolvable either from `$PATH` via `shutil.which("ffmpeg")` or from the `MELOSVIZ_FFMPEG_BIN` environment variable. PASS detail reports the resolved binary path; FAIL detail reports both lookup sources so the operator can fix the issue.
+
+2. **Optional checks (WARN — never fail the script):**
+   - **blender**: Python module `bpy` importable (BlenderAdapter). Absent → WARN.
+   - **demucs**: Python module `demucs` importable (StemSeparator). Absent → WARN.
+   - **librosa**: Python module `librosa` importable (MIR). Absent → WARN.
+   - **gpu-wgpu**: a `wgpu` adapter is enumerable (GPU detection). Absent or no adapter → WARN.
+
+3. **Output:** an ASCII table with exactly three columns `[CHECK] [STATUS] [DETAIL]`. Statuses are one of `PASS`, `WARN`, `FAIL`. The script writes the table to stdout; missing-binary or import-traceback text goes to stderr.
+
+4. **Exit code:** `0` if and only if every REQUIRED check PASSED. Any REQUIRED check FAIL causes exit code `1`. WARN-only runs always exit `0`.
+
+5. **Programmatic surface:** the script exposes `run_diagnose() -> DiagnoseReport` so the BDD/pytest harness can introspect results without re-parsing stdout. `DiagnoseReport` carries `checks: list[CheckResult]`, `required_passed: bool`, and `exit_code: int`.
+
+**Traceability:**
+- Code: `scripts/diagnose.py` (to be added) — `run_diagnose()` + `main()` entry-point
+- Make target: `Makefile::diagnose` (to be added) — runs `python scripts/diagnose.py`
+- BDD spec: `docs/specs/acceptance/diagnose.feature`
+- Test: `backend/tests/test_diagnose_bdd.py` (pytest-bdd)
+
+---
+
 ## Non-Functional Requirements
 
 ### NFR-1: No External Python Dependencies for Presets Package

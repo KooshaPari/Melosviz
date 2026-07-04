@@ -1,12 +1,12 @@
 # MelosViz Traceability Matrix
 
-**Date:** 2026-06-30  
-**Revision:** 2 (traceability-100 — all chain links closed)  
-**Audit Scope:** MelosViz P0–P8 roadmap; vision → spec → plan → code → test  
-**Codebase Baseline:** origin/main c91a508 (post-P8, qgate wired)  
-**Vision Source:** `~/Downloads/ChatGPT-Programmable Music Visualizers.md`  
-**Architecture ADR:** `docs/adr/0003-spec-first-conductor.md`  
-**Traceability Score:** **100% documented** (all 7 chain links closed or explicitly explained for all 49 requirements)  
+**Date:** 2026-07-03
+**Revision:** 3 (intent-artifact addition — MV-FR-52)
+**Audit Scope:** MelosViz P0–P8 roadmap; vision → spec → plan → code → test
+**Codebase Baseline:** origin/main c91a508 (post-P8, qgate wired)
+**Vision Source:** `~/Downloads/ChatGPT-Programmable Music Visualizers.md`
+**Architecture ADR:** `docs/adr/0003-spec-first-conductor.md`
+**Traceability Score:** **100% documented** (all 7 chain links closed or explicitly explained for all 50 requirements; MV-FR-52 added in Rev 3)
 **Lint script:** `backend/scripts/check/check_traceability.py`
 
 ---
@@ -23,6 +23,7 @@ All stable requirement IDs follow the pattern `MV-<TYPE>-<CODE>`:
 | `MV-FR-C` | Functional — Composition & Narrative (P7) | MV-FR-C01 … MV-FR-C05 |
 | `MV-FR-R` | Functional — Rendering Adapters (P3, P5, P6) | MV-FR-R01 … MV-FR-R06 |
 | `MV-FR-L` | Functional — CLI & Conductor (P2) | MV-FR-L01 … MV-FR-L06 |
+| `MV-FR-D` | Functional — Documentation / Intent Artifacts (MV-FR-52+) | MV-FR-D01 … |
 | `MV-NFR` | Non-Functional (safety, performance, reproducibility) | MV-NFR-001 … MV-NFR-004 |
 
 The same IDs appear in:
@@ -126,7 +127,15 @@ The same IDs appear in:
 
 ---
 
-### 1.7 Non-Functional Requirements
+### 1.7 Documentation & Intent Artifacts (Rev 3)
+
+| ID | Requirement | Intent Source | Spec Doc | Code | Test | PR/Deploy |
+|---|---|---|---|---|---|---|
+| **MV-FR-52** | Stakeholder-facing intent document (`docs/intent/MelosViz.md`) covering project intent, stakeholders, non-goals, failure modes, and success metrics (≥ 50 LOC; CI-enforced shape) | Operator vision § "Compose visuals like music"; ADR 0003 Principles 1 + 2 + 9 | `docs/specs/intent_doc_spec.md` | `docs/intent/MelosViz.md` | `backend/tests/test_intent_doc_spec.py` (14 tests, all MV-FR-52 contract clauses) | ✅ Rev 3 — origin/main (2026-07-03) |
+
+---
+
+### 1.8 Non-Functional Requirements
 
 | ID | Requirement | Intent Source | Spec | Code | Test | Deploy |
 |---|---|---|---|---|---|---|
@@ -166,6 +175,9 @@ Each source file mapped back to the requirement(s) it satisfies:
 | `backend/src/melosviz/cli/main.py` | MV-FR-L01–L06 | § "CLI interface" | P2 |
 | `backend/src/melosviz/presets/cinematic.py` | FR-1–FR-5 (SPEC.md preset FRs) | § "Material preset families" | — |
 | `backend/src/melosviz/presets/registry.py` | FR-1–FR-5 (SPEC.md preset FRs) | § "Scene library / presets" | — |
+| `docs/intent/MelosViz.md` | MV-FR-52 | Stakeholder-facing intent distillation (project intent, stakeholders, non-goals, failure modes, KPIs) | MV-FR-52 contract |
+| `docs/specs/intent_doc_spec.md` | MV-FR-52 | Spec defining the 5 mandatory sections + LOC threshold + stakeholder/non-goal/failure/KPI minima | MV-FR-52 contract |
+| `backend/tests/test_intent_doc_spec.py` | MV-FR-52 | Pytest contract enforcing intent-doc shape (existence, LOC, headings, stakeholder/non-goal/failure/KPI counts, MV-FR-52 self-reference) | MV-FR-52 contract |
 
 ---
 
@@ -184,6 +196,7 @@ Each source file mapped back to the requirement(s) it satisfies:
 | `backend/tests/test_e2e_pipeline_smoke.py` | E2E smoke | MV-FR-L01, MV-FR-A01, MV-FR-A02 |
 | `backend/tests/test_optional_dep_imports.py` | dep fallback | MV-FR-P08, MV-NFR-003 |
 | `backend/tests/test_local_run_bugs.py` | integration | MV-NFR-003, MV-NFR-004 |
+| `backend/tests/test_intent_doc_spec.py` | 14 | MV-FR-52 (all 7 contract clauses) |
 | `docs/specs/acceptance/presets.feature` | BDD | FR-1–FR-5 (SPEC.md preset FRs) |
 | `docs/specs/acceptance/video_exporter.feature` | BDD | FR-6 (SPEC.md) → MV-FR-R02 |
 

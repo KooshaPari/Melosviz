@@ -15,10 +15,16 @@ import type { BunRequests, WebviewRequests } from "../../src/rpc";
 
 // defineElectrobunRPC is not re-exported from electrobun/view in 1.18.1;
 // use the equivalent Electroview.defineRPC static helper instead.
+//
+// maxRequestTime: file dialogs (pickFile / pickDirectory) can take 30+ s
+// while the user browses the native OS dialog.  The electrobun default is
+// 1000 ms (DEFAULT_MAX_REQUEST_TIME in shared/rpc.ts) which is too short
+// for any interactive dialog.  We raise it to 60 s here.
 const rpc = Electroview.defineRPC<
   { bun: BunRequests; webview: WebviewRequests }
 >(
   {
+<<<<<<< Updated upstream
     // Electrobun's createRPC defaults maxRequestTime to 1000ms (see
     // electrobun/dist/api/shared/rpc.ts DEFAULT_MAX_REQUEST_TIME). Every
     // rpc.request.* that outlives 1s then rejects with "RPC request timed
@@ -27,6 +33,9 @@ const rpc = Electroview.defineRPC<
     // user- or compute-bound, not network-bound, so there is no meaningful
     // client-side deadline: disable it (Infinity skips the timer, rpc.ts:270).
     maxRequestTime: Infinity,
+=======
+    maxRequestTime: Infinity, // client-side Promise.race (120 s) handles timeouts
+>>>>>>> Stashed changes
     handlers: {
       requests: {},
     },
@@ -38,7 +47,11 @@ const rpc = Electroview.defineRPC<
 // transport (bunSocket.send) is attached inside new Electroview({ rpc })
 // via rpc.setTransport(this.createTransport()).  Without this instance,
 // every rpc.request.* throws "transport did not provide 'send'".
+//
+// This runs at module-eval time, before the DOMContentLoaded handler
+// below, so the transport is always attached before any click handler fires.
 new Electroview({ rpc });
+console.log("[MelosViz UI] Electroview transport attached at module load");
 
 // ---------------------------------------------------------------------------
 // State
@@ -359,7 +372,18 @@ async function copyJson(obj: unknown, btnId: string) {
 
 async function onPickWav() {
   try {
+<<<<<<< Updated upstream
     const picked = await rpc.request.pickFile({ accept: "wav" });
+=======
+    // Race the RPC request against a client-side timeout so we never hang
+    // forever even if the transport drops mid-dialog.
+    const picked = await Promise.race([
+      rpc.request.pickFile({ accept: "wav" }),
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error("pickFile timed out after 120 s")), 120_000)
+      ),
+    ]);
+>>>>>>> Stashed changes
     if (!picked) return;
     wavPath = picked;
     const name = picked.split("/").pop() ?? picked;
@@ -370,7 +394,11 @@ async function onPickWav() {
     syncButtons();
     clearError();
   } catch (err) {
+<<<<<<< Updated upstream
     showError(`pickFile failed: ${err instanceof Error ? err.message : String(err)}`);
+=======
+    showError(err);
+>>>>>>> Stashed changes
   }
 }
 
@@ -381,7 +409,11 @@ async function onPickOut() {
     outPath = picked;
     qs("#out-path").textContent = picked;
   } catch (err) {
+<<<<<<< Updated upstream
     showError(`pickDirectory failed: ${err instanceof Error ? err.message : String(err)}`);
+=======
+    showError(err);
+>>>>>>> Stashed changes
   }
 }
 
