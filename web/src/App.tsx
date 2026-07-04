@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
-import { specToSceneParams } from './renderSpec'
-import type { RenderSpec, SceneParams } from './renderSpec'
+import type { RenderSpec } from './renderSpec'
 import { SpecViewer } from './components/SpecViewer'
 import { useAnalysis } from './hooks/useAnalysis'
 
@@ -46,29 +45,69 @@ const PLACEHOLDER_SPEC: RenderSpec = {
   ],
 }
 
-const DEFAULT_PARAMS: SceneParams = specToSceneParams(PLACEHOLDER_SPEC, 0)
-
 export default function App() {
   const adapterRef = useRef<AudioAdapter | null>(null)
-  const startTimeRef = useRef<number>(performance.now())
   const [isPlaying, setIsPlaying] = useState(false)
-  const [scene, setScene] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [params, setParams] = useState<SceneParams>(DEFAULT_PARAMS)
   const [audioPath, setAudioPath] = useState('')
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
-  // Advance the render spec playhead every animation frame
+  // Active spec: use analysed spec if available, else placeholder
+  const activeSpec: RenderSpec = renderSpec ?? PLACEHOLDER_SPEC
+
+  // ---- Playback state ------------------------------------------------------
+  const [playbackT, setPlaybackT] = useState(0)
+  const [autoPlay, setAutoPlay] = useState(false)
+
+  // Auto-play: advance playbackT at bpm-derived rate.
+  // Each beat = 1 / totalBeats progress; totalBeats = bpm * durationSecs / 60.
+  const rafRef = useRef<number | null>(null)
+  const lastTickRef = useRef<number>(performance.now())
+  const playbackTRef = useRef(0)
+  playbackTRef.current = playbackT
+
   useEffect(() => {
-    let raf: number
-    const tick = () => {
-      const elapsed = (performance.now() - startTimeRef.current) / 1000
-      setParams(specToSceneParams(PLACEHOLDER_SPEC, elapsed))
-      raf = requestAnimationFrame(tick)
+    if (!autoPlay) {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+      return
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+
+    const bpm = activeSpec.bpm ?? 120
+    const totalBeats = (bpm * activeSpec.durationSecs) / 60
+    // Progress per millisecond = 1 / (durationSecs * 1000)
+    const progressPerMs = 1 / (activeSpec.durationSecs * 1000)
+
+    lastTickRef.current = performance.now()
+
+    const tick = (now: number) => {
+      const dt = now - lastTickRef.current
+      lastTickRef.current = now
+      // Clamp totalBeats usage to avoid drift; advance by elapsed fraction
+      void totalBeats // referenced for future beat-lock accuracy
+      setPlaybackT((prev) => {
+        const next = prev + dt * progressPerMs
+        if (next >= 1) {
+          setAutoPlay(false)
+          return 1
+        }
+        return next
+      })
+      rafRef.current = requestAnimationFrame(tick)
+    }
+
+    rafRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoPlay, activeSpec.bpm, activeSpec.durationSecs])
+
+  // Reset playbackT to 0 when a new spec arrives
+  useEffect(() => {
+    setPlaybackT(0)
+    setAutoPlay(false)
+  }, [renderSpec])
 
   // Dispose audio on unmount
   useEffect(() => {
@@ -94,34 +133,38 @@ export default function App() {
     setIsPlaying(false)
   }
 
-  // Scene override: jump the playhead to the matching keyframe's t position
-  const handleSceneChange = useCallback((s: number) => {
-    setScene(s)
-    // Index 0 = "Placeholder" (t=0), indices 1–5 map to keyframes 0–4
-    const kfIndex = Math.max(0, s - 1)
-    const kf = PLACEHOLDER_SPEC.keyframes[kfIndex]
-    if (kf) {
-      startTimeRef.current =
-        performance.now() - kf.t * PLACEHOLDER_SPEC.durationSecs * 1000
-    }
-  }, [])
+  // Scene jump: map button index → keyframe t
+  const handleSceneJump = useCallback(
+    (index: number) => {
+      const kf = activeSpec.keyframes[index]
+      if (kf) setPlaybackT(kf.t)
+    },
+    [activeSpec.keyframes],
+  )
 
-  const scenes = [
-    'Placeholder',
-    'Establishing',
-    'Performance',
-    'Anthem',
-    'Interlude',
-    'Outro',
-  ]
+  const currentSceneLabel =
+    (() => {
+      const sorted = [...activeSpec.keyframes].sort((a, b) => a.t - b.t)
+      let label = sorted[0]?.scene ?? 'Start'
+      for (const kf of sorted) {
+        if (playbackT >= kf.t) label = kf.scene ?? label
+      }
+      return label
+    })()
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
-      <SceneView params={params} className="absolute inset-0 w-full h-full" />
+      {/* ---- R3F Canvas -------------------------------------------------- */}
+      <SceneView
+        spec={activeSpec}
+        playbackT={playbackT}
+        className="absolute inset-0 w-full h-full"
+      />
+
+      {/* ---- Left panel -------------------------------------------------- */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
-        <h1 className="text-xl font-bold tracking-tight text-white/90">
-          Melosviz
-        </h1>
+        <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
+
         {/* File picker + Analyze */}
         <div className="flex flex-col gap-2 rounded-lg bg-black/40 border border-white/10 p-3">
           <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
@@ -141,11 +184,11 @@ export default function App() {
           >
             {analyzing ? 'Analyzing…' : 'Analyze'}
           </button>
-          {analysisError && (
-            <p className="text-xs text-red-400">{analysisError}</p>
-          )}
+          {analysisError && <p className="text-xs text-red-400">{analysisError}</p>}
           {renderSpec && <SpecViewer spec={renderSpec} />}
         </div>
+
+        {/* Audio playback */}
         <div className="flex items-center gap-2">
           <button
             onClick={isPlaying ? handleStop : handleStart}
@@ -154,39 +197,90 @@ export default function App() {
             {isPlaying ? 'Stop Audio' : 'Start Audio'}
           </button>
         </div>
-        {error && (
-          <p className="text-sm text-red-400 max-w-xs">{error}</p>
-        )}
+
+        {error && <p className="text-sm text-red-400 max-w-xs">{error}</p>}
       </div>
+
+      {/* ---- Right panel: scene jumps ------------------------------------- */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
           Scene
         </label>
         <div className="flex flex-col gap-1">
-          {scenes.map((name, i) => (
+          {activeSpec.keyframes.map((kf, i) => (
             <button
-              key={name}
-              onClick={() => handleSceneChange(i)}
+              key={kf.scene ?? i}
+              onClick={() => handleSceneJump(i)}
               className={`px-3 py-1.5 rounded-md text-xs text-left transition-colors ${
-                scene === i
+                currentSceneLabel === kf.scene
                   ? 'bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/40'
                   : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
               }`}
             >
-              {name}
+              {kf.scene ?? `Beat ${i + 1}`}
             </button>
           ))}
         </div>
       </div>
-      <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-xs text-white/40">
-            {isPlaying ? 'Listening' : 'Idle'}
-          </span>
+
+      {/* ---- Bottom bar: playback controls -------------------------------- */}
+      <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
+        {/* Slider + auto-play */}
+        <div className="flex items-center gap-3 rounded-lg bg-black/40 border border-white/10 px-4 py-3">
+          {/* Auto-play toggle */}
+          <button
+            onClick={() => setAutoPlay((v) => !v)}
+            title={autoPlay ? 'Pause auto-play' : 'Start auto-play'}
+            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border transition-colors text-sm ${
+              autoPlay
+                ? 'bg-fuchsia-500/30 border-fuchsia-500/50 text-fuchsia-200'
+                : 'bg-white/5 border-white/20 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            {autoPlay ? '⏸' : '▶'}
+          </button>
+
+          {/* Playback position slider (0–100%) */}
+          <div className="flex-1 flex flex-col gap-1">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={0.1}
+              value={Math.round(playbackT * 1000) / 10}
+              onChange={(e) => {
+                setAutoPlay(false)
+                setPlaybackT(Number(e.target.value) / 100)
+              }}
+              className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-fuchsia-500 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-white/30">
+              <span>{currentSceneLabel}</span>
+              <span>{Math.round(playbackT * 100)}%</span>
+            </div>
+          </div>
+
+          {/* Reset button */}
+          <button
+            onClick={() => { setAutoPlay(false); setPlaybackT(0) }}
+            title="Reset to start"
+            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border border-white/20 bg-white/5 hover:bg-white/10 text-white/60 text-xs transition-colors"
+          >
+            ↺
+          </button>
         </div>
-        <div className="text-xs text-white/30">
-          Three.js / R3F
+
+        {/* Status row */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${autoPlay ? 'bg-fuchsia-400 animate-pulse' : isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-white/20'}`} />
+            <span className="text-xs text-white/40">
+              {autoPlay ? 'Playing' : isPlaying ? 'Listening' : 'Idle'}
+            </span>
+          </div>
+          <div className="text-xs text-white/30">
+            {activeSpec.bpm ?? 120} BPM · Three.js / R3F
+          </div>
         </div>
       </div>
     </div>

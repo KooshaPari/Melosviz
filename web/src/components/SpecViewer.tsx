@@ -1,16 +1,14 @@
-import type { AnalysisRenderSpec } from '../hooks/useAnalysis'
+import type { RenderSpec } from '../renderSpec'
 
 interface SpecViewerProps {
-  spec: AnalysisRenderSpec
+  spec: RenderSpec
 }
 
 export function SpecViewer({ spec }: SpecViewerProps) {
   const summary = {
-    title: spec.title ?? '—',
     bpm: spec.bpm ?? '—',
-    key: spec.key ?? '—',
-    duration_sec: spec.duration_sec ?? '—',
-    color_palette: spec.color_palette?.join(', ') ?? '—',
+    durationSecs: spec.durationSecs,
+    keyframes: spec.keyframes.length,
   }
 
   return (
