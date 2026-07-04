@@ -4,6 +4,8 @@ import { AudioAdapter } from './audioAdapter'
 import type { RenderSpec } from './renderSpec'
 import { SpecViewer } from './components/SpecViewer'
 import { useAnalysis } from './hooks/useAnalysis'
+import { SplashScreen } from './components/SplashScreen'
+import { LoadingOverlay } from './components/LoadingOverlay'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -50,6 +52,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [audioPath, setAudioPath] = useState('')
+  const [showSplash, setShowSplash] = useState(true)
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
   // Active spec: use analysed spec if available, else placeholder
@@ -154,6 +157,9 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
+      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+      <LoadingOverlay visible={analyzing} />
+
       {/* ---- R3F Canvas -------------------------------------------------- */}
       <SceneView
         spec={activeSpec}
