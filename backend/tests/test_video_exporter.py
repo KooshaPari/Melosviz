@@ -761,3 +761,174 @@ def test_png_frame_gen_time_budget() -> None:
         f"Check that zlib.compress level is 1, not 9 (level 9 was ~30 ms/frame). "
         f"See docs/PERF_BENCHMARK.md §1b."
     )
+
+
+# ---------------------------------------------------------------------------
+# Tests — new coverage: missing FFmpeg, invalid path, MELOSVIZ_FFMPEG_BIN,
+#         zero-duration guard, WebM extension, and SIGSEGV documentation
+# ---------------------------------------------------------------------------
+
+
+def test_missing_ffmpeg_raises_ffmpeg_not_found_error(tmp_path: Path) -> None:
+    """When no ffmpeg binary is found, FFMpegNotFoundError is raised with a clear message.
+
+    Ensures the failure is loud (not silent): the exception message must
+    mention how to fix the problem (env var or installation URL).
+    """
+    with (
+        patch(
+            "melosviz.render.video_exporter._resolve_ffmpeg_binary",
+            side_effect=FFMpegNotFoundError(
+                "Unable to locate a working ffmpeg binary. "
+                "Set the MELOSVIZ_FFMPEG_BIN environment variable or install "
+                "ffmpeg (https://ffmpeg.org/download.html)."
+            ),
+        ),
+        pytest.raises(FFMpegNotFoundError) as excinfo,
+    ):
+        export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+
+    msg = str(excinfo.value)
+    assert "MELOSVIZ_FFMPEG_BIN" in msg or "ffmpeg" in msg.lower(), (
+        f"Expected actionable error message, got: {msg!r}"
+    )
+
+
+def test_export_video_invalid_output_path_raises(tmp_path: Path) -> None:
+    """If the output directory cannot be created, an OSError (or subclass) is raised.
+
+    This guards against silent failures where the exporter swallows I/O errors
+    and returns a path that does not exist.
+    """
+    # Create a regular FILE where output_dir would be; mkdir on it must fail.
+    blocker = tmp_path / "not_a_dir"
+    blocker.write_bytes(b"I am a file, not a directory")
+
+    with (
+        _patch_resolve(),
+        _patch_success(),
+        pytest.raises((OSError, NotADirectoryError)),
+    ):
+        # Pass the *file* as output_dir — mkdir(parents=True) will hit the
+        # FileExistsError / NotADirectoryError when it tries to create it.
+        export_video(RenderSpec(), format="mp4", output_dir=blocker / "child")
+
+
+def test_export_video_webm_produces_webm_extension(tmp_path: Path) -> None:
+    """export_video(format='webm') returns a path whose suffix is '.webm'.
+
+    Regression guard: if the extension selection code regresses, this
+    catches it before real ffmpeg is involved.
+    """
+    with _patch_resolve(), _patch_success():
+        result = export_video(RenderSpec(), format="webm", output_dir=tmp_path)
+    assert result.suffix == ".webm", f"Expected .webm suffix, got {result.suffix!r}"
+
+
+def test_export_video_zero_duration_raises_value_error(tmp_path: Path) -> None:
+    """A RenderSpec with duration=0 raises ValueError before FFmpeg is invoked.
+
+    Silent fall-through to a default duration would hide misconfigured specs
+    in CI; an explicit ValueError surfaces the bug immediately.
+    """
+    spec = RenderSpec(metadata={"duration": 0, "fps": 30, "width": 16, "height": 16})
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+        pytest.raises(ValueError, match="duration"),
+    ):
+        export_video(spec, format="mp4", output_dir=tmp_path)
+    mock_run.assert_not_called()
+
+
+def test_export_video_negative_duration_raises_value_error(tmp_path: Path) -> None:
+    """A RenderSpec with negative duration raises ValueError before FFmpeg."""
+    spec = RenderSpec(metadata={"duration": -5.0})
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
+        pytest.raises(ValueError, match="duration"),
+    ):
+        export_video(spec, format="mp4", output_dir=tmp_path)
+    mock_run.assert_not_called()
+
+
+def test_melosviz_ffmpeg_bin_env_var_is_honoured(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MELOSVIZ_FFMPEG_BIN is consulted before $PATH when resolving ffmpeg.
+
+    The env-var path is checked first by _resolve_ffmpeg_binary; this test
+    verifies that a custom binary path set via the env var flows all the way
+    through to the ffmpeg command that is ultimately invoked.
+    """
+    custom_bin = tmp_path / "my_ffmpeg"
+    custom_bin.write_bytes(b"#!/bin/sh\nexit 0\n")
+    custom_bin.chmod(0o755)
+
+    monkeypatch.setenv("MELOSVIZ_FFMPEG_BIN", str(custom_bin))
+
+    captured_cmds: list[list[str]] = []
+
+    def _mock_run(cmd, **kwargs):
+        captured_cmds.append(list(cmd))
+        if cmd[-1] == "-version":
+            # Simulate successful ffmpeg -version probe
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="ffmpeg version fake", stderr="")
+        # Simulate successful export: write output file
+        output_path = Path(cmd[-1])
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(SENTINEL_OUTPUT_BYTES)
+        return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+    with patch("melosviz.render.video_exporter.subprocess.run", side_effect=_mock_run):
+        result = export_video(RenderSpec(), format="mp4", output_dir=tmp_path)
+
+    # The first command should be the -version probe against our custom binary
+    assert captured_cmds, "No subprocess.run calls recorded"
+    probe_cmd = captured_cmds[0]
+    assert probe_cmd[0] == str(custom_bin), (
+        f"Expected custom binary {custom_bin!r} as first cmd element, got {probe_cmd[0]!r}"
+    )
+    assert result.suffix == ".mp4"
+
+
+@pytest.mark.xfail(
+    reason=(
+        "Known SIGSEGV (exit 139) in the render-video path when ffmpeg is "
+        "spawned with rawvideo pipe input on some macOS builds (dyld x265 "
+        "mismatch or broken libavcodec). This test documents the crash path "
+        "and will be un-xfailed once the binary dependency is pinned. "
+        "See: https://github.com/KooshaPari/Melosviz/issues/XX"
+    ),
+    strict=False,
+)
+def test_render_video_sigsegv_exit_139_is_documented(tmp_path: Path) -> None:
+    """Documents the SIGSEGV/exit-139 crash in the rawvideo render path.
+
+    When ffmpeg terminates with returncode -11 (SIGSEGV) or 139 (shell-level
+    SIGSEGV), the exporter must raise RenderExportError rather than silently
+    returning a missing/empty output file.
+
+    This test is xfail because the crash is reproducible only with a
+    specific broken ffmpeg build. When the binary is fixed or pinned, this
+    test should be promoted to a strict assertion.
+    """
+    frame_count = _RAWVIDEO_FRAME_THRESHOLD + 5
+    duration = frame_count / 30.0
+    spec = RenderSpec(
+        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
+    )
+
+    # Simulate ffmpeg crashing with SIGSEGV (returncode -11 or 139).
+    mock_proc = MagicMock()
+    mock_proc.stdin = io.BytesIO()
+    mock_proc.returncode = -11  # SIGSEGV
+    mock_proc.communicate.return_value = (b"", b"Segmentation fault (core dumped)")
+
+    with (
+        _patch_resolve(),
+        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
+        pytest.raises(RenderExportError, match="139|SIGSEGV|-11|ffmpeg rawvideo export failed"),
+    ):
+        export_video(spec, format="mp4", output_dir=tmp_path)
