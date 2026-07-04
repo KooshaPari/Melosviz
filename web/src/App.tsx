@@ -3,6 +3,8 @@ import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
 import { specToSceneParams } from './renderSpec'
 import type { RenderSpec, SceneParams } from './renderSpec'
+import { SpecViewer } from './components/SpecViewer'
+import { useAnalysis } from './hooks/useAnalysis'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -53,6 +55,8 @@ export default function App() {
   const [scene, setScene] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [params, setParams] = useState<SceneParams>(DEFAULT_PARAMS)
+  const [audioPath, setAudioPath] = useState('')
+  const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
   // Advance the render spec playhead every animation frame
   useEffect(() => {
@@ -114,10 +118,34 @@ export default function App() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
       <SceneView params={params} className="absolute inset-0 w-full h-full" />
-      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3">
+      <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
         <h1 className="text-xl font-bold tracking-tight text-white/90">
           Melosviz
         </h1>
+        {/* File picker + Analyze */}
+        <div className="flex flex-col gap-2 rounded-lg bg-black/40 border border-white/10 p-3">
+          <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
+            Audio File Path
+          </label>
+          <input
+            type="text"
+            value={audioPath}
+            onChange={(e) => setAudioPath(e.target.value)}
+            placeholder="/path/to/track.mp3"
+            className="px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
+          />
+          <button
+            onClick={() => { if (audioPath) void analyze(audioPath) }}
+            disabled={!audioPath || analyzing}
+            className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {analyzing ? 'Analyzing…' : 'Analyze'}
+          </button>
+          {analysisError && (
+            <p className="text-xs text-red-400">{analysisError}</p>
+          )}
+          {renderSpec && <SpecViewer spec={renderSpec} />}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={isPlaying ? handleStop : handleStart}
