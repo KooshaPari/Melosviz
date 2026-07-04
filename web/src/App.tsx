@@ -7,6 +7,7 @@ import { useAnalysis } from './hooks/useAnalysis'
 import { SplashScreen } from './components/SplashScreen'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { WaveformDisplay } from './components/WaveformDisplay'
+import { PresetEditor } from './components/PresetEditor'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -195,7 +196,7 @@ export default function App() {
           {renderSpec && <SpecViewer spec={renderSpec} />}
         </div>
 
-        {/* Audio playback */}
+        {/* Audio playback + preset editor */}
         <div className="flex items-center gap-2">
           <button
             onClick={isPlaying ? handleStop : handleStart}
@@ -203,6 +204,10 @@ export default function App() {
           >
             {isPlaying ? 'Stop Audio' : 'Start Audio'}
           </button>
+          <PresetEditor
+            spec={activeSpec}
+            onPreviewChange={(t) => { setAutoPlay(false); setPlaybackT(t) }}
+          />
         </div>
 
         {error && <p className="text-sm text-red-400 max-w-xs">{error}</p>}
