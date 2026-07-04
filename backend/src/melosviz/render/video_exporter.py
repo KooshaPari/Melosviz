@@ -581,7 +581,10 @@ def export_video(
     except (TypeError, ValueError):
         duration_sec = _DEFAULT_DURATION_SEC
     if duration_sec <= 0.0:
-        duration_sec = _DEFAULT_DURATION_SEC
+        raise ValueError(
+            f"export_video: duration must be > 0, got {duration_sec!r}. "
+            "Set spec.metadata['duration'] to a positive number of seconds."
+        )
     total_frames = max(1, int(round(duration_sec * fps)))
     palette = _extract_palette(spec)
     envelope = _extract_envelope(spec)
