@@ -1,0 +1,9 @@
+/* MelosViz brand design tokens */
+:root {
+  --mv-primary: #7c3aed;
+  --mv-secondary: #06b6d4;
+  --mv-bg: #0f0f1a;
+  --mv-surface: #1a1a2e;
+  --mv-primary-glow: rgba(124, 58, 237, 0.4);
+  --mv-secondary-glow: rgba(6, 182, 212, 0.4);
+}
