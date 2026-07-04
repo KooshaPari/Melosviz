@@ -219,22 +219,33 @@ const rpc = defineElectrobunRPC<
       },
 
       async pickFile({ accept }) {
-        const paths = await openFileDialog({
-          allowedFileTypes: accept === "wav" ? "wav" : "*",
-          canChooseFiles: true,
-          canChooseDirectory: false,
-          allowsMultipleSelection: false,
-        });
-        return paths[0] ?? null;
+        try {
+          const paths = await openFileDialog({
+            allowedFileTypes: accept === "wav" ? "wav" : "*",
+            canChooseFiles: true,
+            canChooseDirectory: false,
+            allowsMultipleSelection: false,
+          });
+          return paths[0] ?? null;
+        } catch (err) {
+          console.error("[MelosViz] pickFile dialog error:", err);
+          // Always settle — return null so the webview never hangs
+          return null;
+        }
       },
 
       async pickDirectory() {
-        const paths = await openFileDialog({
-          canChooseFiles: false,
-          canChooseDirectory: true,
-          allowsMultipleSelection: false,
-        });
-        return paths[0] ?? null;
+        try {
+          const paths = await openFileDialog({
+            canChooseFiles: false,
+            canChooseDirectory: true,
+            allowsMultipleSelection: false,
+          });
+          return paths[0] ?? null;
+        } catch (err) {
+          console.error("[MelosViz] pickDirectory dialog error:", err);
+          return null;
+        }
       },
 
       async revealInFinder({ filePath }) {
