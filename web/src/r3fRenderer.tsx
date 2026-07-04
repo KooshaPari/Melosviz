@@ -1,8 +1,10 @@
 // Three.js / React Three Fiber scene-graph renderer for melosviz.
 //
-// Replaces the vanilla WebGL2 rotating-quad renderer with a proper
-// scene-graph that accepts SceneParams from the data-binding seam
-// (renderSpec.ts) and drives camera/color/geometry per-frame.
+// Accepts a RenderSpec + normalised playbackT [0-1] and drives:
+//   - Camera position  (spherical → Cartesian from keyframe.camera)
+//   - Background color (tinted from keyframe.color.primary)
+//   - Mesh emissive    (keyframe.color.primary)
+//   - Mesh scale pulse (bpm-rate sine from keyframe.color.brightness)
 //
 // Architecture:
 //   SceneView (public, exported)   — R3F <Canvas> mount + resize observer
@@ -13,56 +15,58 @@
 // Workstream plug-in points (future):
 //   A — pass spectral FFT → SpectralMesh inside MelosScene
 //   B — pass beatEnergy → ParticleSystem inside MelosScene
-//   D — replace linear lerp in renderSpec with spline easing
+//   D — replace lerpKeyframe linear lerp with spline easing
 
 import { useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import type { SceneParams } from './renderSpec'
+import type { RenderSpec } from './renderSpec'
+import { lerpKeyframe } from './utils/interpolate'
+import type { InterpolatedFrame } from './utils/interpolate'
 
-// ---- Internal: camera controller ----------------------------------------
+// ---- Internal: per-frame state ref -----------------------------------------
 
-interface SceneCameraProps {
-  paramsRef: React.RefObject<SceneParams>
+interface FrameState {
+  frame: InterpolatedFrame
+  bpm: number
+  /** Elapsed wall-clock seconds — used for bpm pulse independent of playbackT. */
+  elapsedSecs: number
 }
 
-function SceneCamera({ paramsRef }: SceneCameraProps) {
+// ---- Internal: camera controller -------------------------------------------
+
+function SceneCamera({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   const { camera } = useThree()
 
   useFrame(() => {
-    const p = paramsRef.current
-    if (!p) return
-    const { distance, azimuth, elevation } = p.camera
+    const s = stateRef.current
+    if (!s) return
+    const { distance, azimuth, elevation } = s.frame.camera
 
     // Spherical → Cartesian (Three.js Y-up)
-    const x = distance * Math.cos(elevation) * Math.sin(azimuth)
-    const y = distance * Math.sin(elevation)
-    const z = distance * Math.cos(elevation) * Math.cos(azimuth)
-
-    camera.position.set(x, y, z)
+    camera.position.set(
+      distance * Math.cos(elevation) * Math.sin(azimuth),
+      distance * Math.sin(elevation),
+      distance * Math.cos(elevation) * Math.cos(azimuth),
+    )
     camera.lookAt(0, 0, 0)
   })
 
   return null
 }
 
-// ---- Internal: background color -----------------------------------------
+// ---- Internal: background color --------------------------------------------
 
-interface SceneBackgroundProps {
-  paramsRef: React.RefObject<SceneParams>
-}
-
-function SceneBackground({ paramsRef }: SceneBackgroundProps) {
+function SceneBackground({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   const { scene } = useThree()
   const colorRef = useRef(new THREE.Color())
 
   useFrame(() => {
-    const p = paramsRef.current
-    if (!p) return
-    const { brightness } = p.color
-    // Festival-screen friendly: dark background tinted with the primary palette
-    colorRef.current.set(p.color.primary)
-    // Scale brightness down so the bg reads as dark (0.05–0.15 range)
+    const s = stateRef.current
+    if (!s) return
+    const { brightness } = s.frame.color
+    // Dark festival background tinted by primary palette
+    colorRef.current.set(s.frame.color.primary)
     colorRef.current.multiplyScalar(Math.min(0.2, brightness * 0.15))
     scene.background = colorRef.current.clone()
   })
@@ -70,26 +74,24 @@ function SceneBackground({ paramsRef }: SceneBackgroundProps) {
   return null
 }
 
-// ---- Internal: ambient + accent lighting --------------------------------
+// ---- Internal: ambient + accent lighting -----------------------------------
 
-interface SceneLightsProps {
-  paramsRef: React.RefObject<SceneParams>
-}
-
-function SceneLights({ paramsRef }: SceneLightsProps) {
+function SceneLights({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   const ambientRef = useRef<THREE.AmbientLight>(null)
   const pointRef = useRef<THREE.PointLight>(null)
 
   useFrame(() => {
-    const p = paramsRef.current
-    if (!p) return
+    const s = stateRef.current
+    if (!s) return
 
     if (ambientRef.current) {
-      ambientRef.current.intensity = 0.3 + p.color.brightness * 0.4
+      ambientRef.current.intensity = 0.3 + s.frame.color.brightness * 0.4
     }
     if (pointRef.current) {
-      pointRef.current.color.set(p.color.secondary)
-      pointRef.current.intensity = 1.5 + p.beatEnergy * 3
+      pointRef.current.color.set(s.frame.color.secondary)
+      // Subtle beat-locked accent brightness via bpm sine
+      const beatPhase = (s.elapsedSecs * s.bpm) / 60
+      pointRef.current.intensity = 1.5 + 0.8 * Math.abs(Math.sin(Math.PI * beatPhase))
     }
   })
 
@@ -101,83 +103,103 @@ function SceneLights({ paramsRef }: SceneLightsProps) {
   )
 }
 
-// ---- Internal: primary geometry driven by params -------------------------
+// ---- Internal: primary geometry driven by frame state ----------------------
 
-interface CoreMeshProps {
-  paramsRef: React.RefObject<SceneParams>
-}
-
-function CoreMesh({ paramsRef }: CoreMeshProps) {
+function CoreMesh({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const matRef = useRef<THREE.MeshStandardMaterial>(null)
 
   useFrame((_state, delta) => {
-    const p = paramsRef.current
+    const s = stateRef.current
     const mesh = meshRef.current
     const mat = matRef.current
-    if (!p || !mesh || !mat) return
+    if (!s || !mesh || !mat) return
 
-    // Slow base rotation; beat energy adds a brief kick
+    // Slow base rotation
     mesh.rotation.x += delta * 0.3
-    mesh.rotation.y += delta * (0.5 + p.beatEnergy * 2)
+    mesh.rotation.y += delta * 0.5
 
-    mat.color.set(p.color.primary)
-    mat.emissive.set(p.color.secondary)
-    mat.emissiveIntensity = 0.1 + p.color.brightness * 0.3 + p.beatEnergy * 0.5
+    // BPM-rate scale pulse: subtle ±10% pulse per beat
+    const beatPhase = (s.elapsedSecs * s.bpm) / 60
+    const pulse = 0.9 + 0.1 * Math.abs(Math.sin(Math.PI * beatPhase))
+    const base = 0.8 + s.frame.color.brightness * 0.4
+    mesh.scale.setScalar(base * pulse)
+
+    // Color morphs from keyframe interpolation
+    mat.color.set(s.frame.color.primary)
+    mat.emissive.set(s.frame.color.primary)
+    mat.emissiveIntensity = 0.15 + s.frame.color.brightness * 0.4
   })
 
   return (
     <mesh ref={meshRef}>
-      <icosahedronGeometry args={[1.2, 1]} />
+      <torusKnotGeometry args={[1, 0.35, 128, 16]} />
       <meshStandardMaterial
         ref={matRef}
         color="#7c3aed"
-        emissive="#06b6d4"
+        emissive="#7c3aed"
         emissiveIntensity={0.2}
-        roughness={0.4}
-        metalness={0.6}
+        roughness={0.3}
+        metalness={0.7}
       />
     </mesh>
   )
 }
 
-// ---- Internal: full scene wiring ----------------------------------------
+// ---- Internal: full scene wiring -------------------------------------------
 
-interface MelosSceneProps {
-  paramsRef: React.RefObject<SceneParams>
-}
-
-function MelosScene({ paramsRef }: MelosSceneProps) {
+function MelosScene({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   return (
     <>
-      <SceneBackground paramsRef={paramsRef} />
-      <SceneCamera paramsRef={paramsRef} />
-      <SceneLights paramsRef={paramsRef} />
-      <CoreMesh paramsRef={paramsRef} />
+      <SceneBackground stateRef={stateRef} />
+      <SceneCamera stateRef={stateRef} />
+      <SceneLights stateRef={stateRef} />
+      <CoreMesh stateRef={stateRef} />
     </>
   )
 }
 
-// ---- Public: SceneView --------------------------------------------------
+// ---- Public: SceneView -----------------------------------------------------
 
 export interface SceneViewProps {
-  /** Live per-frame scene parameters from the data-binding seam. */
-  params: SceneParams
+  /**
+   * The full RenderSpec produced by spec_builder.py (or the placeholder).
+   * Keyframe interpolation happens inside SceneView so consumers only need
+   * to track a single normalised position.
+   */
+  spec: RenderSpec
+  /**
+   * Normalised playhead position in [0, 1].
+   * 0 = start of track, 1 = end of track.
+   */
+  playbackT: number
+  /** Optional beat energy [0, 1] — defaults to 0 until workstream B lands. */
+  beatEnergy?: number
   className?: string
 }
 
 /**
- * SceneView mounts the R3F Canvas and wires SceneParams into the scene graph.
+ * SceneView mounts the R3F Canvas and drives the scene from `spec` keyframes
+ * interpolated at `playbackT`.
  *
  * Usage:
- *   const params = specToSceneParams(spec, audioTimeSecs)
- *   <SceneView params={params} className="absolute inset-0 w-full h-full" />
+ *   <SceneView spec={renderSpec} playbackT={0.42} className="absolute inset-0" />
  */
-export function SceneView({ params, className }: SceneViewProps) {
-  // Use a ref so useFrame callbacks read the latest params without triggering
-  // React re-renders on every animation frame — critical for 60fps.
-  const paramsRef = useRef<SceneParams>(params)
-  paramsRef.current = params
+export function SceneView({ spec, playbackT, className }: SceneViewProps) {
+  // Store derived per-frame state in a ref so useFrame callbacks never trigger
+  // React re-renders — critical for 60fps.
+  const stateRef = useRef<FrameState>({
+    frame: lerpKeyframe(spec.keyframes, playbackT),
+    bpm: spec.bpm ?? 120,
+    elapsedSecs: 0,
+  })
+
+  // Keep ref current every render (no useEffect needed — synchronous update)
+  stateRef.current = {
+    frame: lerpKeyframe(spec.keyframes, playbackT),
+    bpm: spec.bpm ?? 120,
+    elapsedSecs: performance.now() / 1000,
+  }
 
   return (
     <Canvas
@@ -185,15 +207,13 @@ export function SceneView({ params, className }: SceneViewProps) {
       gl={{
         antialias: true,
         powerPreference: 'high-performance',
-        // Festival screens are often HDR-capable; linear encoding is correct
-        // for physically-based materials.
         outputColorSpace: THREE.LinearSRGBColorSpace,
       }}
       dpr={[1, window.devicePixelRatio ?? 2]}
-      camera={{ fov: 45, near: 0.1, far: 500, position: [0, 0, 5] }}
+      camera={{ fov: 45, near: 0.1, far: 500, position: [0, 0, 8] }}
       style={{ background: '#080808' }}
     >
-      <MelosScene paramsRef={paramsRef} />
+      <MelosScene stateRef={stateRef} />
     </Canvas>
   )
 }
