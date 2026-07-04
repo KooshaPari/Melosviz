@@ -4,6 +4,9 @@ import { AudioAdapter } from './audioAdapter'
 import type { RenderSpec } from './renderSpec'
 import { SpecViewer } from './components/SpecViewer'
 import { useAnalysis } from './hooks/useAnalysis'
+import { usePlaylist } from './hooks/usePlaylist'
+import type { PlaylistItem } from './hooks/usePlaylist'
+import { PlaylistPanel } from './components/PlaylistPanel'
 import { SplashScreen } from './components/SplashScreen'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { WaveformDisplay } from './components/WaveformDisplay'
@@ -57,8 +60,34 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
-  // Active spec: use analysed spec if available, else placeholder
-  const activeSpec: RenderSpec = renderSpec ?? PLACEHOLDER_SPEC
+  // Playlist: wraps useAnalysis.analyze for file-based inputs
+  const analyzeFile = useCallback(async (objectUrl: string): Promise<RenderSpec> => {
+    await analyze(objectUrl)
+    // analyze() updates state; we need a direct fetch here for the playlist
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio_path: objectUrl }),
+    })
+    if (!res.ok) throw new Error(`Server error: ${res.status}`)
+    const raw = (await res.json()) as Record<string, unknown>
+    return {
+      durationSecs: (raw.durationSecs as number) ?? (raw.duration_sec as number) ?? 240,
+      keyframes: (raw.keyframes as RenderSpec['keyframes']) ?? [],
+      bpm: raw.bpm as number | undefined,
+    }
+  }, [analyze])
+
+  const playlist = usePlaylist(analyzeFile)
+  // Track which playlist item the user is actively viewing
+  const [playlistViewSpec, setPlaylistViewSpec] = useState<RenderSpec | null>(null)
+
+  const handleSelectPlaylistItem = useCallback((item: PlaylistItem) => {
+    if (item.spec) setPlaylistViewSpec(item.spec)
+  }, [])
+
+  // Active spec priority: playlist-selected > analyzed > placeholder
+  const activeSpec: RenderSpec = playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
 
   // ---- Playback state ------------------------------------------------------
   const [playbackT, setPlaybackT] = useState(0)
@@ -168,6 +197,14 @@ export default function App() {
         playbackT={playbackT}
         className="absolute inset-0 w-full h-full"
       />
+
+      {/* ---- Playlist sidebar (right of left panel) --------------------- */}
+      <div className="absolute top-4 left-72 z-10 flex flex-col gap-3">
+        <PlaylistPanel
+          playlist={playlist}
+          onSelectItem={handleSelectPlaylistItem}
+        />
+      </div>
 
       {/* ---- Left panel -------------------------------------------------- */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
