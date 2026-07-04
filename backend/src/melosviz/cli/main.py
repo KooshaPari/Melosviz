@@ -1,12 +1,15 @@
-"""``viz`` command-line entry-point.
+"""``melosviz`` / ``viz`` command-line entry-point.
 
 Sub-commands
 ------------
-``viz analyze <wav>``          Analyze a WAV file and print the RenderSpec JSON.
-``viz build <wav> [--out DIR]``  Run the full conductor pipeline (mock adapters).
-``viz render <wav> [--out DIR]`` Run the full conductor pipeline with real adapters.
-``viz diff <spec_a> <spec_b>``   Print field-level diff between two RenderSpec JSON files.
-``viz apply <spec> <preset>``    Apply a named preset to a RenderSpec JSON and print result.
+``melosviz analyze <wav>``          Analyze a WAV file and print the RenderSpec JSON.
+``melosviz build <wav> [--out DIR]``  Run the full conductor pipeline (mock adapters).
+``melosviz render <wav> [--out DIR]`` Run the full conductor pipeline with real adapters.
+``melosviz diff <spec_a> <spec_b>``   Print field-level diff between two RenderSpec JSON files.
+``melosviz apply <spec> <preset>``    Apply a named preset to a RenderSpec JSON and print result.
+``melosviz serve [--host H] [--port P]``  Start the FastAPI bridge server (uvicorn).
+``melosviz presets``                  List available presets.
+``melosviz version``                  Print the package version.
 
 All sub-commands write to stdout unless ``--out`` is given; errors go to stderr
 and exit with a non-zero code.
@@ -112,6 +115,47 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    """Start the FastAPI bridge server via uvicorn."""
+    try:
+        import uvicorn  # type: ignore[import-untyped]
+    except ImportError:
+        print(
+            "viz serve: uvicorn is not installed. "
+            'Install it with: pip install "melosviz[bridge]"',
+            file=sys.stderr,
+        )
+        return 1
+
+    uvicorn.run(
+        "melosviz.bridge.server:app",
+        host=args.host,
+        port=args.port,
+        reload=False,
+    )
+    return 0
+
+
+def _cmd_presets(_args: argparse.Namespace) -> int:
+    """List all available presets."""
+    from melosviz.presets import list_presets
+
+    for name in list_presets():
+        print(name)
+    return 0
+
+
+def _cmd_version(_args: argparse.Namespace) -> int:
+    """Print the package version."""
+    try:
+        from importlib.metadata import version
+
+        print(version("melosviz"))
+    except Exception:  # pragma: no cover
+        print("0.1.0")
+    return 0
+
+
 def _cmd_apply(args: argparse.Namespace) -> int:
     """Apply a named preset to a RenderSpec JSON and print the result."""
     from melosviz.analysis.models import RenderSpec
@@ -181,6 +225,21 @@ def main() -> None:
     p_apply.add_argument("spec", help="RenderSpec JSON file")
     p_apply.add_argument("preset", help="Preset name (e.g. cinematic)")
 
+    # melosviz serve
+    p_serve = sub.add_parser("serve", help="Start the FastAPI bridge server")
+    p_serve.add_argument(
+        "--host", default="127.0.0.1", metavar="HOST", help="Bind host (default: 127.0.0.1)"
+    )
+    p_serve.add_argument(
+        "--port", type=int, default=8000, metavar="PORT", help="Bind port (default: 8000)"
+    )
+
+    # melosviz presets
+    sub.add_parser("presets", help="List available presets")
+
+    # melosviz version
+    sub.add_parser("version", help="Print the package version")
+
     args = parser.parse_args()
     dispatch = {
         "analyze": _cmd_analyze,
@@ -188,6 +247,9 @@ def main() -> None:
         "render": _cmd_render,
         "diff": _cmd_diff,
         "apply": _cmd_apply,
+        "serve": _cmd_serve,
+        "presets": _cmd_presets,
+        "version": _cmd_version,
     }
     sys.exit(dispatch[args.command](args))
 
