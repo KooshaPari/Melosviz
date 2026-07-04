@@ -42,8 +42,12 @@ export interface RenderSpec {
   /** Track duration in seconds (used to map absolute time → t). */
   durationSecs: number
   keyframes: Keyframe[]
-  /** Optional BPM for beat-locked downstream workstreams. */
+  /** BPM detected by librosa beat tracker (or stdlib heuristic fallback). */
   bpm?: number
+  /** Musical key and scale, e.g. "C major" or "A minor". */
+  key?: string
+  /** Beat onset times in seconds, sorted ascending. */
+  beatTimes?: number[]
 }
 
 // ---- Runtime types consumed by the R3F scene-graph ----------------------

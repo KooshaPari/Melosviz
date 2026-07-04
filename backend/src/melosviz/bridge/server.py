@@ -158,11 +158,37 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
                 )
                 continue
 
-    # Fallback to Python analyzer
-    from melosviz.analysis.audio import spec_from_wav
+    # Fallback to Python analyzer (rich MIR path when librosa available)
+    from melosviz.analysis.audio import spec_from_wav_rich
 
-    spec = spec_from_wav(wav_path)
+    spec = spec_from_wav_rich(wav_path)
     data = spec.model_dump() if hasattr(spec, "model_dump") else dict(spec)  # type: ignore[arg-type]
+
+    # --- Inject convenience top-level fields ---
+    # bpm: from mir.tempo_bpm (librosa-backed) or metadata.estimated_bpm (stdlib)
+    mir: dict = data.get("mir") or {}
+    data["bpm"] = mir.get("tempo_bpm") or data.get("metadata", {}).get("estimated_bpm")
+
+    # key: combine mir.key + mir.mode into "C major" / "A minor" style string
+    _key = mir.get("key")
+    _mode = mir.get("mode")
+    if _key and _mode:
+        data["key"] = f"{_key} {_mode}"
+    elif _key:
+        data["key"] = _key
+    else:
+        _legacy_scale = data.get("metadata", {}).get("scale")
+        data["key"] = _legacy_scale  # may be None
+
+    # beat_times: extract from timeline_events where type == "beat"
+    data["beat_times"] = sorted(
+        [
+            float(ev["t"])
+            for ev in data.get("timeline_events", [])
+            if ev.get("type") == "beat"
+        ]
+    )
+
     return data
 
 
