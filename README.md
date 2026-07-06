@@ -1,5 +1,12 @@
 # MelosViz
 
+<p align="center">
+  <a href="assets/brand/icon.svg"><img src="assets/brand/icon.svg" alt="MelosViz" width="160" height="160"></a>
+</p>
+<p align="center"><em>Music visualization studio — analyze audio, render 3D scenes, perform live with your tracks.</em></p>
+
+---
+
 > Music visualization studio — analyze audio, render 3D scenes, perform live with your tracks.
 
 ## Features
