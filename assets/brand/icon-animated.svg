@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MelosViz brand icon — Animated motion variant (vision-pillar L101).
+  Companion to the static icon.svg.
+  Animation: warm-spectrum color shift on the dominant waveform (pink →
+  amber → teal → pink, 5s loop). Static scene/scanner composition kept.
+  Loop: 5s seamless.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Melosviz (animated)">
+  <title>Melosviz — animated</title>
+  <desc>Melody visualization with warm-spectrum shifting waveform gradient.</desc>
+
+  <defs>
+    <linearGradient id="mv-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0e1116"/>
+      <stop offset="1" stop-color="#090a0c"/>
+    </linearGradient>
+    <!-- Animated spectrum: pink → amber → teal → pink -->
+    <linearGradient id="mv-wave-spectrum" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ec4899">
+        <animate attributeName="stop-color" values="#ec4899;#f59e0b;#7ebab5;#ec4899" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="0.5" stop-color="#f472b6">
+        <animate attributeName="stop-color" values="#f472b6;#fbbf24;#5a9aa6;#f472b6" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="1" stop-color="#7ebab5">
+        <animate attributeName="stop-color" values="#7ebab5;#fb923c;#3a8d87;#7ebab5" dur="5s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+    <radialGradient id="mv-glow" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#ec4899" stop-opacity="0.3">
+        <animate attributeName="stop-color" values="#ec4899;#f59e0b;#7ebab5;#ec4899" dur="5s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="1" stop-color="#ec4899" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#mv-bg)"/>
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#mv-glow)"/>
+
+  <!-- Soft waveform (animated spectrum) -->
+  <path d="M 56 256 Q 96 200 136 256 T 216 256 T 296 256 T 376 256 T 456 256"
+        fill="none" stroke="url(#mv-wave-spectrum)" stroke-width="14" stroke-linecap="round" opacity="0.85">
+    <animate attributeName="opacity" values="0.7;1;0.7" dur="5s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Secondary waveform (offset, color-shifted) -->
+  <path d="M 56 320 Q 96 360 136 320 T 216 320 T 296 320 T 376 320 T 456 320"
+        fill="none" stroke="url(#mv-wave-spectrum)" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Tertiary waveform (high) -->
+  <path d="M 56 192 Q 96 152 136 192 T 216 192 T 296 192 T 376 192 T 456 192"
+        fill="none" stroke="url(#mv-wave-spectrum)" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- Vertical reference line (static) -->
+  <line x1="256" y1="120" x2="256" y2="392" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
+
+  <!-- Playhead dot (animated spectrum) -->
+  <circle cx="256" cy="256" r="10" fill="url(#mv-wave-spectrum)">
+    <animate attributeName="r" values="8;14;8" dur="5s" repeatCount="indefinite"/>
+  </circle>
+</svg>
