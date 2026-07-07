@@ -4,6 +4,7 @@
   <a href="assets/brand/icon.svg"><img src="assets/brand/icon.svg" alt="MelosViz" width="160" height="160"></a>
 </p>
 <p align="center"><em>Music visualization studio — analyze audio, render 3D scenes, perform live with your tracks.</em></p>
+<p align="center"><sub>MelosViz (warm spectrum) palette · <a href="docs/assets/identity/">visual identity demo</a></sub></p>
 
 ---
 
