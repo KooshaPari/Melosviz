@@ -1,0 +1,45 @@
+[target.aarch64-apple-darwin]
+# macOS ARM (Apple Silicon) — native on M-series, cross on intel CI.
+image = "ghcr.io/cross-rs/aarch64-apple-darwin:edge"
+
+[target.x86_64-apple-darwin]
+# macOS Intel — for CI runners without native ARM.
+image = "ghcr.io/cross-rs/x86_64-apple-darwin:edge"
+
+[target.aarch64-unknown-linux-gnu]
+# Linux ARM64 (AWS Graviton, Raspberry Pi 5, cheap CI).
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge"
+
+[target.x86_64-unknown-linux-gnu]
+# Linux AMD64 — primary CI target.
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:edge"
+
+[target.aarch64-linux-android]
+# Android ARM64 — for the Capacitor mobile wrapper.
+image = "ghcr.io/cross-rs/aarch64-linux-android:edge"
+
+[target.armv7-linux-androideabi]
+# Android 32-bit ARM — still ~15% of Android devices.
+image = "ghcr.io/cross-rs/armv7-linux-androideabi:edge"
+
+[target.x86_64-linux-android]
+# Android x86_64 — emulator CI.
+image = "ghcr.io/cross-rs/x86_64-linux-android:edge"
+
+[target.aarch64-apple-ios]
+# iOS device (arm64) — for the Capacitor iOS shell.
+image = "ghcr.io/cross-rs/aarch64-apple-ios:edge"
+
+[target.x86_64-apple-ios]
+# iOS simulator (x86_64) — for local CI on Intel Macs.
+image = "ghcr.io/cross-rs/x86_64-apple-ios:edge"
+
+[target.x86_64-unknown-freebsd]
+# FreeBSD AMD64 — for BSD/illumos port.
+image = "ghcr.io/cross-rs/x86_64-unknown-freebsd:edge"
+
+# ── Build-time environment ──
+[build]
+# Enable zig-cc for fast cross-compilation without QEMU emulation.
+# See https://github.com/cross-rs/cross#zig-cc
+zig-cc = true

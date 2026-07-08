@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>ai.melosviz.bridge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/melosviz</string>
+        <string>bridge</string>
+        <string>--port</string>
+        <string>8177</string>
+        <string>--data-dir</string>
+        <string>/Users/melosviz/Library/Application Support/ai.melosviz</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/melosviz/Library/Application Support/ai.melosviz</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExitOnly</key>
+        <false/>
+        <key>ThrottleInterval</key>
+        <integer>5</integer>
+    </dict>
+
+    <key>WatchPaths</key>
+    <array>
+        <string>/Users/melosviz/Library/Application Support/ai.melosviz/queue</string>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/melosviz/Library/Logs/ai.melosviz/bridge.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/melosviz/Library/Logs/ai.melosviz/bridge.stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MELOSVIZ_DATA_DIR</key>
+        <string>/Users/melosviz/Library/Application Support/ai.melosviz</string>
+        <key>MELOSVIZ_LOG_JSON</key>
+        <string>1</string>
+        <key>MELOSVIZ_BRIDGE_HOST</key>
+        <string>127.0.0.1</string>
+        <key>MELOSVIZ_BRIDGE_PORT</key>
+        <string>8177</string>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>SoftResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>8192</integer>
+    </dict>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <key>NumberOfFiles</key>
+        <integer>16384</integer>
+    </dict>
+</dict>
+</plist>
