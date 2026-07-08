@@ -839,6 +839,7 @@ try:
     HAS_HYPOTHESIS = True
 except ImportError:  # pragma: no cover
     HAS_HYPOTHESIS = False
+
     # Stubs so @given/@settings class bodies do not NameError at import time
     # when hypothesis is absent (decorators still evaluate at class definition).
     def given(*_a, **_k):  # type: ignore[misc]
