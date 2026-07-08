@@ -64,7 +64,11 @@ import contextlib
 import subprocess
 import tempfile
 
+from melosviz import observability as obs  # noqa: E402
 from melosviz.bridge import security  # noqa: E402
+
+obs.configure_logging()
+_log = __import__("logging").getLogger("melosviz.bridge")
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
 
@@ -72,8 +76,30 @@ app = FastAPI(title="MelosViz bridge", version="0.1.0")
 # need to reset state between cases can call ``server.security_limiter.reset()``.
 security_limiter = security.install_middleware(
     app,
-    protected_paths=("/analyze", "/build", "/render", "/health"),
+    protected_paths=("/analyze", "/build", "/render", "/health", "/ready", "/metrics"),
 )
+
+
+@app.middleware("http")
+async def _obs_middleware(request, call_next):  # type: ignore[no-untyped-def]
+    """Record RED metrics + structured request logs for every HTTP call."""
+    import time as _time
+
+    t0 = _time.monotonic()
+    response = await call_next(request)
+    dur_ms = (_time.monotonic() - t0) * 1000.0
+    path = request.url.path
+    obs.record_request(path, response.status_code, dur_ms)
+    _log.info(
+        "request",
+        extra={
+            "path": path,
+            "method": request.method,
+            "status": response.status_code,
+            "dur_ms": round(dur_ms, 2),
+        },
+    )
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +263,20 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/ready")
+async def ready() -> dict[str, object]:
+    """Readiness probe — green once the bridge process is serving."""
+    if not obs.is_ready():
+        raise HTTPException(status_code=503, detail="not ready")
+    return {"status": "ready", "uptime_s": obs.metrics_snapshot()["uptime_s"]}
+
+
+@app.get("/metrics", response_class=PlainTextResponse)
+async def metrics() -> str:
+    """Prometheus-text metrics for request counts, errors, and latency."""
+    return obs.metrics_prometheus()
+
+
 @app.post("/analyze", response_class=PlainTextResponse)
 async def analyze(req: AnalyzeRequest) -> str:
     """Analyze a WAV file and return the RenderSpec as JSON text.
@@ -248,7 +288,8 @@ async def analyze(req: AnalyzeRequest) -> str:
     try:
         if not wav.exists():
             raise HTTPException(status_code=400, detail=f"File not found: {wav}")
-        data = _analyze_with_mir_or_python(wav)
+        with obs.span("analyze", wav=str(wav)):
+            data = _analyze_with_mir_or_python(wav)
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001 — surface as 400 (incl. stdlib `wave.Error`)

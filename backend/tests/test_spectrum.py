@@ -35,15 +35,19 @@ json_scalars = st.one_of(
 
 json_values = st.recursive(
     json_scalars,
-    lambda children: st.lists(children, max_size=8)
-    | st.dictionaries(st.text(min_size=1, max_size=24), children, max_size=8),
+    lambda children: (
+        st.lists(children, max_size=8)
+        | st.dictionaries(st.text(min_size=1, max_size=24), children, max_size=8)
+    ),
     max_leaves=24,
 )
 
 
 @settings(max_examples=80, deadline=None)
 @given(
-    metadata=st.dictionaries(st.text(min_size=1, max_size=24), json_values, max_size=10),
+    metadata=st.dictionaries(
+        st.text(min_size=1, max_size=24), json_values, max_size=10
+    ),
     palette=st.lists(st.text(max_size=16), max_size=8),
     dense_keyframes=st.lists(
         st.dictionaries(st.text(min_size=1, max_size=16), json_values, max_size=8),
@@ -111,7 +115,9 @@ def test_wav_analysis_handles_small_valid_wavs_fuzz(
 
 @settings(max_examples=50, deadline=None)
 @given(payload=st.binary(max_size=512))
-def test_wav_analysis_rejects_malformed_bytes_fuzz(tmp_path: Path, payload: bytes) -> None:
+def test_wav_analysis_rejects_malformed_bytes_fuzz(
+    tmp_path: Path, payload: bytes
+) -> None:
     from melosviz.analysis.audio import analyze_wav
 
     wav = tmp_path / "malformed.wav"
@@ -151,7 +157,9 @@ class TestBridgeSpectrum:
 
         assert response.status_code in {400, 422}
 
-    def test_bridge_dependency_failure_mid_request_returns_500(self, client, tmp_path: Path) -> None:
+    def test_bridge_dependency_failure_mid_request_returns_500(
+        self, client, tmp_path: Path
+    ) -> None:
         wav = _write_wav(tmp_path / "input.wav", [0, 1000, -1000, 0])
 
         with patch(
@@ -164,28 +172,42 @@ class TestBridgeSpectrum:
 
 
 class TestChaosSpectrum:
-    def test_ffmpeg_missing_raises_actionable_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from melosviz.render.video_exporter import FFMpegNotFoundError, _resolve_ffmpeg_binary
+    def test_ffmpeg_missing_raises_actionable_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            _resolve_ffmpeg_binary,
+        )
 
         monkeypatch.delenv("MELOSVIZ_FFMPEG_BIN", raising=False)
-        monkeypatch.setattr("melosviz.render.video_exporter.shutil.which", lambda _name: None)
+        monkeypatch.setattr(
+            "melosviz.render.video_exporter.shutil.which", lambda _name: None
+        )
 
         with pytest.raises(FFMpegNotFoundError, match="ffmpeg"):
             _resolve_ffmpeg_binary()
 
-    def test_blender_missing_raises_actionable_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        from melosviz.render.blender_exporter import BlenderNotFoundError, _resolve_blender_binary
+    def test_blender_missing_raises_actionable_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from melosviz.render.blender_exporter import (
+            BlenderNotFoundError,
+            _resolve_blender_binary,
+        )
 
         monkeypatch.delenv("MELOSVIZ_BLENDER_BIN", raising=False)
-        monkeypatch.setattr("melosviz.render.blender_exporter.shutil.which", lambda _name: None)
+        monkeypatch.setattr(
+            "melosviz.render.blender_exporter.shutil.which", lambda _name: None
+        )
         monkeypatch.setattr(Path, "exists", lambda _self: False)
 
         with pytest.raises(BlenderNotFoundError, match="Blender"):
             _resolve_blender_binary()
 
     def test_malformed_spec_rejected_before_render(self) -> None:
-        from melosviz.compose.assemble import AssemblyError, assemble_render_plan
         from melosviz.analysis.models import RenderSpec
+        from melosviz.compose.assemble import AssemblyError, assemble_render_plan
 
         with pytest.raises(AssemblyError, match="scene_segments is empty"):
             assemble_render_plan(RenderSpec(metadata={"duration": 1.0}))
@@ -195,13 +217,18 @@ class TestChaosSpectrum:
         monkeypatch: pytest.MonkeyPatch,
         tmp_path: Path,
     ) -> None:
-        from melosviz.render.video_exporter import FFMpegNotFoundError, _resolve_ffmpeg_binary
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            _resolve_ffmpeg_binary,
+        )
 
         fake = tmp_path / "ffmpeg"
         fake.write_text("#!/bin/sh\nexit 1\n")
         fake.chmod(0o755)
         monkeypatch.setenv("MELOSVIZ_FFMPEG_BIN", str(fake))
-        monkeypatch.setattr("melosviz.render.video_exporter.shutil.which", lambda _name: None)
+        monkeypatch.setattr(
+            "melosviz.render.video_exporter.shutil.which", lambda _name: None
+        )
         monkeypatch.setattr(
             "melosviz.render.video_exporter.subprocess.run",
             side_effect=subprocess.SubprocessError("boom"),
@@ -209,4 +236,3 @@ class TestChaosSpectrum:
 
         with pytest.raises(FFMpegNotFoundError):
             _resolve_ffmpeg_binary()
-

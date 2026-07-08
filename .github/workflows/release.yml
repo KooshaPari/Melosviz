@@ -113,12 +113,40 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  sbom:
+    name: Release SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+        with:
+          toolchain: stable
+      - name: Generate SBOMs
+        run: |
+          pip install cyclonedx-bom
+          (cd backend && pip install -e . && cyclonedx-py environment -o ../sbom-python.cdx.json)
+          cargo install cargo-cyclonedx --locked
+          cargo cyclonedx -f json --all --output-file sbom-cargo.cdx.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-SBOM
+          path: |
+            sbom-python.cdx.json
+            sbom-cargo.cdx.json
+          if-no-files-found: error
+          retention-days: 30
+
   release:
     name: Create GitHub Release
-    needs: [macos-desktop, linux-cli]
+    needs: [macos-desktop, linux-cli, sbom]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
 
     steps:
       - name: Download all build artifacts
@@ -130,6 +158,15 @@ jobs:
       - name: List downloaded artifacts
         run: find _artifacts -type f -ls
 
+      - name: Attest release artifacts
+        # actions/attest-build-provenance v2.4.0 — SHA-pinned
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-path: |
+            _artifacts/MelosViz-macOS/*
+            _artifacts/MelosViz-Linux/*
+            _artifacts/MelosViz-SBOM/*
+
       - name: Publish release
         # softprops/action-gh-release v2.2.1 — SHA-pinned
         uses: softprops/action-gh-release@c95fe60539f7a31b3f6c3a0c2c0515c3ba6d0a7c
@@ -137,5 +174,6 @@ jobs:
           files: |
             _artifacts/MelosViz-macOS/*
             _artifacts/MelosViz-Linux/*
+            _artifacts/MelosViz-SBOM/*
           generate_release_notes: true
           fail_on_unmatched_files: false

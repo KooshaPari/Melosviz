@@ -29,6 +29,7 @@ Or via the project root::
 
     python -m pytest backend/tests/test_top_level_spec_md_spec.py -v
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -164,7 +165,9 @@ def test_spec_for_mv_fr_54_exists() -> None:
 def test_top_level_spec_md_has_minimum_length() -> None:
     """MV-FR-54 § 4 mandates ≥ 300 LOC."""
     if not TOP_LEVEL_SPEC.is_file():
-        pytest.skip("Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root.")
+        pytest.skip(
+            "Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root."
+        )
     line_count = sum(1 for _ in TOP_LEVEL_SPEC.read_text(encoding="utf-8").splitlines())
     assert line_count >= MIN_LINES, (
         f"Top-level SPEC.md has {line_count} lines; minimum is {MIN_LINES}. "
@@ -181,7 +184,9 @@ def test_top_level_spec_md_has_minimum_length() -> None:
 def test_top_level_spec_md_has_required_heading(heading: str) -> None:
     """Each of the 10 mandated sections must appear as a heading in the top-level SPEC.md."""
     if not TOP_LEVEL_SPEC.is_file():
-        pytest.skip("Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root.")
+        pytest.skip(
+            "Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root."
+        )
     text = TOP_LEVEL_SPEC.read_text(encoding="utf-8")
     assert heading in text, (
         f"Required heading {heading!r} not found in {TOP_LEVEL_SPEC}. "
@@ -201,7 +206,9 @@ def test_failure_modes_section_has_at_least_eight_items() -> None:
     ``## 6. Failure Modes`` section. We count those headings.
     """
     if not TOP_LEVEL_SPEC.is_file():
-        pytest.skip("Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root.")
+        pytest.skip(
+            "Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root."
+        )
     text = TOP_LEVEL_SPEC.read_text(encoding="utf-8")
     lines = text.splitlines()
 
@@ -211,7 +218,11 @@ def test_failure_modes_section_has_at_least_eight_items() -> None:
     for idx, line in enumerate(lines):
         if line.strip() == "## 6. Failure Modes":
             start = idx + 1
-        elif start is not None and line.startswith("## ") and line.strip() != "## 6. Failure Modes":
+        elif (
+            start is not None
+            and line.startswith("## ")
+            and line.strip() != "## 6. Failure Modes"
+        ):
             end = idx
             break
     if start is None:
@@ -247,7 +258,9 @@ def test_distribution_section_does_not_claim_unshipped_channels_as_shipped() -> 
     channel (without an explicit non-shipped caveat), this test fails.
     """
     if not TOP_LEVEL_SPEC.is_file():
-        pytest.skip("Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root.")
+        pytest.skip(
+            "Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root."
+        )
     text = TOP_LEVEL_SPEC.read_text(encoding="utf-8")
     lines = text.splitlines()
 
@@ -257,7 +270,11 @@ def test_distribution_section_does_not_claim_unshipped_channels_as_shipped() -> 
     for idx, line in enumerate(lines):
         if line.strip() == "## 9. Distribution":
             start = idx + 1
-        elif start is not None and line.startswith("## ") and line.strip() != "## 9. Distribution":
+        elif (
+            start is not None
+            and line.startswith("## ")
+            and line.strip() != "## 9. Distribution"
+        ):
             end = idx
             break
     if start is None:
@@ -299,7 +316,9 @@ def test_diagnostic_report_loc_and_sections() -> None:
     the spec without manually re-reading it.
     """
     if not TOP_LEVEL_SPEC.is_file():
-        pytest.skip("Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root.")
+        pytest.skip(
+            "Top-level SPEC.md missing; see test_top_level_spec_md_exists_at_repo_root."
+        )
     text = TOP_LEVEL_SPEC.read_text(encoding="utf-8")
     lines = text.splitlines()
     headings = [ln.strip() for ln in lines if ln.startswith("## ")]

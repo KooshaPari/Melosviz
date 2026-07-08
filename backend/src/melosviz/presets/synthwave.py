@@ -91,7 +91,15 @@ def apply(spec: RenderSpec) -> RenderSpec:
             "type": "section",
             "data": {"name": "drive", "mood": "charged"},
         },
-        {"time": 8.0, "type": "section", "data": {"name": "chorus", "mood": "euphoric"}},
-        {"time": 20.0, "type": "section", "data": {"name": "breakdown", "mood": "electric"}},
+        {
+            "time": 8.0,
+            "type": "section",
+            "data": {"name": "chorus", "mood": "euphoric"},
+        },
+        {
+            "time": 20.0,
+            "type": "section",
+            "data": {"name": "breakdown", "mood": "electric"},
+        },
     ]
     return spec

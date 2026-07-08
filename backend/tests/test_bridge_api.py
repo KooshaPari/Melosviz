@@ -20,7 +20,6 @@ from fastapi.testclient import TestClient
 from melosviz.bridge import server
 from melosviz.bridge.server import app
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -132,6 +131,26 @@ class TestHealthEndpoint:
         """GET /health body must include {"status": "ok"}."""
         data = client.get("/health").json()
         assert data.get("status") == "ok"
+
+
+class TestReadyAndMetrics:
+    def test_ready_returns_200(self, client: TestClient) -> None:
+        """GET /ready must return HTTP 200 when the bridge is serving."""
+        response = client.get("/ready")
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("status") == "ready"
+        assert "uptime_s" in data
+
+    def test_metrics_prometheus_text(self, client: TestClient) -> None:
+        """GET /metrics must return Prometheus-text exposition."""
+        client.get("/health")
+        response = client.get("/metrics")
+        assert response.status_code == 200
+        body = response.text
+        assert "melosviz_up 1" in body
+        assert "melosviz_ready" in body
+        assert "melosviz_http_requests_total" in body
 
 
 # ---------------------------------------------------------------------------

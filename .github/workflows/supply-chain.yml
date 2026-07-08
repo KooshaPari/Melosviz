@@ -1,0 +1,78 @@
+name: Supply-chain — audit + SBOM
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "17 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  python-audit:
+    name: pip-audit (backend)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package + pip-audit
+        working-directory: backend
+        run: |
+          pip install -e ".[bridge,analysis]"
+          pip install pip-audit
+      - name: Run pip-audit
+        working-directory: backend
+        # Fail on known vulnerable deps in the installed environment.
+        run: python -m pip_audit --progress-spinner off
+
+  rust-audit:
+    name: cargo-audit
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+        with:
+          toolchain: stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Run cargo audit
+        # Wired into CI; continue-on-error so transitive RUSTSEC noise does not
+        # block product PRs. pip-audit remains hard-fail for Python.
+        run: cargo audit
+        continue-on-error: true
+
+  sbom:
+    name: CycloneDX SBOM (python + cargo)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+        with:
+          toolchain: stable
+      - name: Generate Python CycloneDX SBOM
+        working-directory: backend
+        run: |
+          pip install cyclonedx-bom
+          pip install -e .
+          cyclonedx-py environment -o ../sbom-python.cdx.json
+      - name: Generate Cargo CycloneDX SBOM
+        run: |
+          cargo install cargo-cyclonedx --locked
+          cargo cyclonedx -f json --all --output-file sbom-cargo.cdx.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: melosviz-sbom
+          path: |
+            sbom-python.cdx.json
+            sbom-cargo.cdx.json
+          if-no-files-found: error
+          retention-days: 30
