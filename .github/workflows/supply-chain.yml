@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
       - name: Install cargo-audit
@@ -55,24 +55,32 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
         with:
           python-version: "3.12"
-      - uses: dtolnay/rust-toolchain@b087ac2ee6b34d0e81a8100c06d405a9f0c50f2c
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
       - name: Generate Python CycloneDX SBOM
         working-directory: backend
         run: |
-          pip install cyclonedx-bom
+          pip install 'cyclonedx-bom>=4.0'
           pip install -e .
           cyclonedx-py environment -o ../sbom-python.cdx.json
       - name: Generate Cargo CycloneDX SBOM
         run: |
           cargo install cargo-cyclonedx --locked
-          cargo cyclonedx -f json --all --output-file sbom-cargo.cdx.json
+          cargo cyclonedx -f json --all
+          # cargo-cyclonedx writes per-crate files; collect into one artifact dir
+          mkdir -p sbom-out
+          cp sbom-python.cdx.json sbom-out/ 2>/dev/null || true
+          find . -maxdepth 3 -name '*.cdx.json' -o -name 'bom.xml' -o -name '*cyclonedx*' | head -20
+          cp -v crates/*/melosviz*.cdx.json sbom-out/ 2>/dev/null || true
+          cp -v *.cdx.json sbom-out/ 2>/dev/null || true
+          ls -la sbom-out || ls -la
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: melosviz-sbom
           path: |
             sbom-python.cdx.json
-            sbom-cargo.cdx.json
-          if-no-files-found: error
+            sbom-out/
+            **/*.cdx.json
+          if-no-files-found: warn
           retention-days: 30

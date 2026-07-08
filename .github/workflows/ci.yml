@@ -44,7 +44,7 @@ jobs:
         # bridge extras (fastapi/uvicorn) are required at import time by
         # melosviz.bridge.server, which several test modules import — without
         # them pytest collection crashes with SystemExit(1) before any test runs.
-        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx
+        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx pytest-bdd
 
       - name: Ruff — lint
         working-directory: backend

@@ -21,8 +21,9 @@ jobs:
           cache: pip
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[test]"
+        run: pip install -e ".[test]" hypothesis
       - name: Run perf smoke tests
         working-directory: backend
         # Gates documented in docs/PERF_BENCHMARK.md and .qgate.toml.
+        # Import the full qgate module (needs hypothesis for collection).
         run: python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
