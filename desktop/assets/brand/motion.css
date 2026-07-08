@@ -1,0 +1,107 @@
+/**
+ * MelosViz Motion Tokens & Utility Classes
+ * Neon-on-dark festival visualizer motion language.
+ * Import after tokens.css; all custom props inherit from :root.
+ *
+ * Usage:
+ *   <div class="mv-motion-fade">…</div>
+ *   <div class="mv-motion-slide-up mv-motion-delay-2">…</div>
+ */
+
+:root {
+  /* ── Easing curves ────────────────────────────────────────────────── */
+  /* Decelerate (ease-out)   — for entrances: cards, modals, toasts */
+  --ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+  /* Accelerate (ease-in)    — for exits: dismissals, removals */
+  --ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  /* Symmetrical             — for transitions that reverse cleanly */
+  --ease-in-out:  cubic-bezier(0.65, 0, 0.35, 1);
+  /* Spring-like overshoot   — for celebratory reveals, badge pops */
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Duration overrides (inherit tokens.css defaults) ─────────────── */
+  --mv-dur-fast:  120ms;
+  --mv-dur-base:  200ms;
+  --mv-dur-slow:  350ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Semantic Motion Utilities
+   Apply one class per element; compose with --mv-dur-* when needed.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Fade in / out ──────────────────────────────────────────────────── */
+.mv-motion-fade {
+  transition:
+    opacity var(--mv-dur-base, 200ms) var(--ease-out, ease),
+    visibility var(--mv-dur-base, 200ms) var(--ease-out, ease);
+}
+.mv-motion-fade\:enter  { opacity: 0; }
+.mv-motion-fade\:active { opacity: 1; }
+.mv-motion-fade\:exit   { opacity: 1; }
+.mv-motion-fade\:hidden { opacity: 0; }
+
+/* ── Slide up + fade ────────────────────────────────────────────────── */
+.mv-motion-slide-up {
+  transition:
+    opacity  var(--mv-dur-base, 200ms) var(--ease-out, ease),
+    transform var(--mv-dur-base, 200ms) var(--ease-out, ease);
+}
+.mv-motion-slide-up\:enter  { opacity: 0; transform: translateY(16px); }
+.mv-motion-slide-up\:active { opacity: 1; transform: translateY(0); }
+.mv-motion-slide-up\:exit   { opacity: 1; transform: translateY(0); }
+.mv-motion-slide-up\:hidden { opacity: 0; transform: translateY(12px); }
+
+/* ── Scale pop + fade ───────────────────────────────────────────────── */
+.mv-motion-scale {
+  transition:
+    opacity  var(--mv-dur-fast, 120ms) var(--ease-spring, ease),
+    transform var(--mv-dur-fast, 120ms) var(--ease-spring, ease);
+}
+.mv-motion-scale\:enter  { opacity: 0; transform: scale(0.92); }
+.mv-motion-scale\:active { opacity: 1; transform: scale(1); }
+.mv-motion-scale\:exit   { opacity: 1; transform: scale(1); }
+.mv-motion-scale\:hidden { opacity: 0; transform: scale(0.95); }
+
+/* ── Glow pulse (neon accent) ───────────────────────────────────────── */
+.mv-motion-glow {
+  transition:
+    box-shadow var(--mv-dur-slow, 350ms) var(--ease-in-out, ease),
+    opacity    var(--mv-dur-slow, 350ms) var(--ease-in-out, ease);
+}
+.mv-motion-glow\:enter  { opacity: 0; box-shadow: 0 0 0 transparent; }
+.mv-motion-glow\:active { opacity: 1; box-shadow: 0 0 24px var(--mv-accent-glow, rgba(124,106,247,0.28)); }
+.mv-motion-glow\:exit   { opacity: 1; box-shadow: 0 0 24px var(--mv-accent-glow, rgba(124,106,247,0.28)); }
+.mv-motion-glow\:hidden { opacity: 0; box-shadow: 0 0 0 transparent; }
+
+/* ── Slide right + fade ─────────────────────────────────────────────── */
+.mv-motion-slide-right {
+  transition:
+    opacity  var(--mv-dur-base, 200ms) var(--ease-out, ease),
+    transform var(--mv-dur-base, 200ms) var(--ease-out, ease);
+}
+.mv-motion-slide-right\:enter  { opacity: 0; transform: translateX(-16px); }
+.mv-motion-slide-right\:active { opacity: 1; transform: translateX(0); }
+.mv-motion-slide-right\:exit   { opacity: 1; transform: translateX(0); }
+.mv-motion-slide-right\:hidden { opacity: 0; transform: translateX(-12px); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Reduced Motion — respect OS preference
+   Collapse all motion to 0.01s so elements still reach :active/:hidden
+   states (they just snap). 0s can break some framework observers;
+   0.01s is functionally instant but avoids those edge cases.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* stylelint-disable-next-line declaration-no-important */
+    animation-duration:        0.01ms !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    animation-iteration-count: 1 !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    transition-duration:       0.01s !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    scroll-behavior:           auto !important;
+  }
+}
