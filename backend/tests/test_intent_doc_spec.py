@@ -35,7 +35,11 @@ REQUIRED_SECTIONS: list[tuple[int, str, re.Pattern[str]]] = [
     (2, "Stakeholders", re.compile(r"^##\s*2\.\s*Stakeholders\s*$", re.MULTILINE)),
     (3, "Non-Goals", re.compile(r"^##\s*3\.\s*Non-Goals\s*$", re.MULTILINE)),
     (4, "Failure Modes", re.compile(r"^##\s*4\.\s*Failure Modes\s*$", re.MULTILINE)),
-    (5, "Success Metrics", re.compile(r"^##\s*5\.\s*Success Metrics\s*$", re.MULTILINE)),
+    (
+        5,
+        "Success Metrics",
+        re.compile(r"^##\s*5\.\s*Success Metrics\s*$", re.MULTILINE),
+    ),
 ]
 
 REQUIRED_STAKEHOLDERS = [
@@ -110,7 +114,10 @@ def test_intent_doc_min_loc(non_empty_lines: list[str]) -> None:
 @pytest.mark.parametrize(
     "section_num,section_name,_pattern",
     REQUIRED_SECTIONS,
-    ids=[f"section-{n}-{name.lower().replace(' ', '-')}" for n, name, _ in REQUIRED_SECTIONS],
+    ids=[
+        f"section-{n}-{name.lower().replace(' ', '-')}"
+        for n, name, _ in REQUIRED_SECTIONS
+    ],
 )
 def test_intent_doc_has_section(
     intent_text: str, section_num: int, section_name: str, _pattern: re.Pattern[str]

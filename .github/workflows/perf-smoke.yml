@@ -1,0 +1,29 @@
+name: Eval — perf smoke gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  perf-smoke:
+    name: Perf smoke (init <15s, preset <100ms)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[test]" hypothesis
+      - name: Run perf smoke tests
+        working-directory: backend
+        # Gates documented in docs/PERF_BENCHMARK.md and .qgate.toml.
+        # Import the full qgate module (needs hypothesis for collection).
+        run: python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short

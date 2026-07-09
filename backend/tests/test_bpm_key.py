@@ -59,9 +59,7 @@ def _click_track(bpm: float, duration_sec: float, sr: int = 22050) -> list[int]:
 
 def _sine_track(freq_hz: float, duration_sec: float, sr: int = 22050) -> list[int]:
     n = int(duration_sec * sr)
-    return [
-        int(32767 * math.sin(2.0 * math.pi * freq_hz * i / sr)) for i in range(n)
-    ]
+    return [int(32767 * math.sin(2.0 * math.pi * freq_hz * i / sr)) for i in range(n)]
 
 
 def _silence_track(duration_sec: float, sr: int = 22050) -> list[int]:

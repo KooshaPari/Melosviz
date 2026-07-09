@@ -837,8 +837,33 @@ try:
     from hypothesis import strategies as st
 
     HAS_HYPOTHESIS = True
-except ImportError:
+except ImportError:  # pragma: no cover
     HAS_HYPOTHESIS = False
+
+    # Stubs so @given/@settings class bodies do not NameError at import time
+    # when hypothesis is absent (decorators still evaluate at class definition).
+    def given(*_a, **_k):  # type: ignore[misc]
+        def _wrap(fn):
+            return fn
+
+        return _wrap
+
+    def settings(*_a, **_k):  # type: ignore[misc]
+        def _wrap(fn):
+            return fn
+
+        return _wrap
+
+    class _St:  # minimal stand-in for hypothesis.strategies
+        @staticmethod
+        def floats(**_k):
+            return None
+
+        @staticmethod
+        def integers(**_k):
+            return None
+
+    st = _St()  # type: ignore[assignment]
 
 
 @pytest.mark.skipif(not HAS_HYPOTHESIS, reason="hypothesis not installed")

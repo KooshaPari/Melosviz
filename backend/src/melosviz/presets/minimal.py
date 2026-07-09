@@ -88,7 +88,15 @@ def apply(spec: RenderSpec) -> RenderSpec:
             "type": "section",
             "data": {"name": "silence", "mood": "sparse"},
         },
-        {"time": 15.0, "type": "section", "data": {"name": "emergence", "mood": "deliberate"}},
-        {"time": 38.0, "type": "section", "data": {"name": "resolution", "mood": "still"}},
+        {
+            "time": 15.0,
+            "type": "section",
+            "data": {"name": "emergence", "mood": "deliberate"},
+        },
+        {
+            "time": 38.0,
+            "type": "section",
+            "data": {"name": "resolution", "mood": "still"},
+        },
     ]
     return spec

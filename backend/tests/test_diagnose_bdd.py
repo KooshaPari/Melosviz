@@ -21,15 +21,13 @@ with the contract documented in ``docs/specs/SPEC.md`` § FR-50.
 
 from __future__ import annotations
 
-import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
-
 
 # ---------------------------------------------------------------------------
 # Locate the repo root + the two files the test needs.
@@ -40,9 +38,7 @@ _THIS_FILE = Path(__file__).resolve()
 _REPO_ROOT = _THIS_FILE.parent.parent.parent
 _SCRIPTS_DIR = _REPO_ROOT / "scripts"
 _DIAGNOSE_PY = _SCRIPTS_DIR / "diagnose.py"
-_FEATURE_PATH = (
-    _REPO_ROOT / "docs" / "specs" / "acceptance" / "diagnose.feature"
-)
+_FEATURE_PATH = _REPO_ROOT / "docs" / "specs" / "acceptance" / "diagnose.feature"
 
 # Make ``scripts.diagnose`` importable as a package module. This adds the
 # repo root to ``sys.path`` (it isn't normally there in a backend pytest
@@ -71,12 +67,12 @@ class Context:
     """Per-scenario bag of state passed between steps."""
 
     def __init__(self) -> None:
-        self.report: Optional[Any] = None
+        self.report: Any | None = None
         self.rendered_table: str = ""
         # Optional per-scenario overrides for the diagnose module's
         # internal resolvers. Each entry maps a resolver name to a value
         # the diagnose module will consume instead of doing a real check.
-        self.overrides: Dict[str, Any] = {}
+        self.overrides: dict[str, Any] = {}
 
 
 @pytest.fixture
@@ -143,6 +139,9 @@ def python_version_ok() -> None:
 @given("the optional `bpy` module is not importable")
 def bpy_absent(ctx: Context) -> None:
     ctx.overrides["bpy"] = False
+    # Required checks must still pass so exit_code stays 0 (FR-50 #2).
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("the optional modules `bpy`, `demucs`, `librosa` are not importable")
@@ -151,11 +150,15 @@ def optional_audio_modules_absent(ctx: Context) -> None:
     ctx.overrides["demucs"] = False
     ctx.overrides["librosa"] = False
     ctx.overrides["wgpu"] = False  # also kill the GPU probe
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("no `wgpu` adapter is enumerable")
 def wgpu_absent(ctx: Context) -> None:
     ctx.overrides["wgpu"] = False
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("a diagnose run where all required checks pass")
@@ -280,16 +283,13 @@ def blender_check_warns(ctx: Context) -> None:
     )
 
 
-@then(
-    "the blender, demucs, librosa, and gpu-wgpu checks all have status WARN"
-)
+@then("the blender, demucs, librosa, and gpu-wgpu checks all have status WARN")
 def all_optional_warn(ctx: Context) -> None:
     assert ctx.report is not None
     for name in ("blender", "demucs", "librosa", "gpu-wgpu"):
         c = _find_check(ctx.report.checks, name)
         assert c.status == "WARN", (
-            f"optional check {name!r} should WARN, got {c.status}: "
-            f"{c.detail}"
+            f"optional check {name!r} should WARN, got {c.status}: {c.detail}"
         )
 
 
@@ -302,9 +302,7 @@ def header_row_has_columns(ctx: Context, a: str, b: str, c: str) -> None:
     assert lines, "diagnose output is empty"
     header = lines[0]
     for col in (a, b, c):
-        assert col in header, (
-            f"expected column {col!r} in header row, got: {header!r}"
-        )
+        assert col in header, f"expected column {col!r} in header row, got: {header!r}"
 
 
 @then("every body row has exactly three columns aligned with the header")
@@ -313,6 +311,7 @@ def body_rows_have_three_columns(ctx: Context) -> None:
     assert len(lines) >= 2, (
         f"expected at least header + 1 body row, got {len(lines)} lines"
     )
+
     # Column count = number of separators in a single row of the table.
     # We use a simple heuristic: split on 2+ spaces and assert the row has
     # the same column count as the header.
@@ -325,12 +324,10 @@ def body_rows_have_three_columns(ctx: Context) -> None:
     )
     for row in lines[1:]:
         cols = _col_count(row)
-        assert cols == 3, (
-            f"body row should have 3 columns, got {cols}: {row!r}"
-        )
+        assert cols == 3, f"body row should have 3 columns, got {cols}: {row!r}"
 
 
-@then("the status column is one of \"PASS\", \"WARN\", or \"FAIL\"")
+@then('the status column is one of "PASS", "WARN", or "FAIL"')
 def status_column_valid(ctx: Context) -> None:
     lines = ctx.rendered_table.splitlines()
     assert len(lines) >= 2, "diagnose table has no body rows"
@@ -338,8 +335,7 @@ def status_column_valid(ctx: Context) -> None:
         cols = [seg.strip() for seg in re.split(r"\s{2,}", row.strip()) if seg]
         assert len(cols) == 3
         assert cols[1] in ("PASS", "WARN", "FAIL"), (
-            f"status column must be PASS/WARN/FAIL, got {cols[1]!r} in row: "
-            f"{row!r}"
+            f"status column must be PASS/WARN/FAIL, got {cols[1]!r} in row: {row!r}"
         )
 
 
@@ -377,12 +373,10 @@ def report_has_exit_code_int(ctx: Context) -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _find_check(checks: List[Any], name: str) -> Any:
+def _find_check(checks: list[Any], name: str) -> Any:
     """Return the check with ``name`` or fail fast with a readable message."""
     for c in checks:
         if c.name == name:
             return c
     available = [c.name for c in checks]
-    raise AssertionError(
-        f"no check named {name!r} in report (have: {available})"
-    )
+    raise AssertionError(f"no check named {name!r} in report (have: {available})")

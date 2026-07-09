@@ -7,10 +7,10 @@ import pytest
 from melosviz.analysis.models import RenderSpec
 from melosviz.presets import list_presets, load_preset
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _fresh_spec() -> RenderSpec:
     """Return a bare RenderSpec suitable for preset application."""
@@ -26,6 +26,7 @@ def _fresh_spec() -> RenderSpec:
 # ---------------------------------------------------------------------------
 # Lo-fi preset
 # ---------------------------------------------------------------------------
+
 
 class TestLofiPreset:
     def test_apply_sets_preset_metadata(self) -> None:
@@ -53,6 +54,7 @@ class TestLofiPreset:
 # Synthwave preset
 # ---------------------------------------------------------------------------
 
+
 class TestSynthwavePreset:
     def test_apply_sets_preset_metadata(self) -> None:
         spec = _fresh_spec()
@@ -79,6 +81,7 @@ class TestSynthwavePreset:
 # Minimal preset
 # ---------------------------------------------------------------------------
 
+
 class TestMinimalPreset:
     def test_apply_sets_preset_metadata(self) -> None:
         spec = _fresh_spec()
@@ -104,6 +107,7 @@ class TestMinimalPreset:
 # ---------------------------------------------------------------------------
 # Registry tests
 # ---------------------------------------------------------------------------
+
 
 class TestPresetsRegistry:
     def test_list_presets_includes_lofi(self) -> None:

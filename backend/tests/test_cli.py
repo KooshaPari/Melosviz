@@ -47,7 +47,9 @@ class TestAnalyzeCommand:
 
     def test_analyze_nonexistent_file_prints_error(self) -> None:
         result = _run("analyze", "/nonexistent/path/to/audio.wav")
-        assert "not found" in result.stderr.lower() or "no such" in result.stderr.lower()
+        assert (
+            "not found" in result.stderr.lower() or "no such" in result.stderr.lower()
+        )
 
 
 class TestServeHelp:

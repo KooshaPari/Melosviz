@@ -1,10 +1,9 @@
 """Tests for melosviz.conductor — registry and orchestrator."""
+
 from __future__ import annotations
 
-import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
 
 # ---------------------------------------------------------------------------
 # Registry tests
@@ -36,7 +35,6 @@ def test_adapter_registry_contains_expected_scene_types():
 def test_adapter_registry_instances_have_render_method():
     """Each registered adapter must expose a 'render' callable."""
     from melosviz.conductor.registry import (
-        ADAPTER_REGISTRY,
         _BlenderAdapterShim,
         _VideoExportAdapter,
     )
@@ -120,24 +118,31 @@ def test_render_empty_spec_falls_back_to_video_export(tmp_path):
     orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
     spec = _make_mock_spec([])
 
-    with patch("melosviz.conductor.orchestrator.ADAPTER_REGISTRY", patched_registry, create=True):
-        # The import inside render() pulls from the module; patch that.
-        with patch.dict("sys.modules", {}):
-            import melosviz.conductor.registry as reg_mod
-            original = reg_mod.ADAPTER_REGISTRY
-            reg_mod.ADAPTER_REGISTRY = patched_registry
-            try:
-                result = orch.render(spec)
-            finally:
-                reg_mod.ADAPTER_REGISTRY = original
+    # The import inside render() pulls from the module; patch that.
+    with (
+        patch(
+            "melosviz.conductor.orchestrator.ADAPTER_REGISTRY",
+            patched_registry,
+            create=True,
+        ),
+        patch.dict("sys.modules", {}),
+    ):
+        import melosviz.conductor.registry as reg_mod
+
+        original = reg_mod.ADAPTER_REGISTRY
+        reg_mod.ADAPTER_REGISTRY = patched_registry
+        try:
+            result = orch.render(spec)
+        finally:
+            reg_mod.ADAPTER_REGISTRY = original
 
     assert "video_export" in result.per_scene_results
 
 
 def test_render_unknown_scene_type_raises_conductor_error(tmp_path):
     """An unregistered scene_type must raise ConductorError loudly."""
-    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
     from melosviz.conductor import registry as reg_mod
+    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
     orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
     spec = _make_mock_spec(["nonexistent_scene_xyz"])
@@ -156,8 +161,8 @@ def test_render_unknown_scene_type_raises_conductor_error(tmp_path):
 
 def test_render_with_known_scene_type_dispatches_adapter(tmp_path):
     """render() must call adapter_cls() then adapter.render() for matched scene type."""
-    from melosviz.conductor.orchestrator import Orchestrator
     from melosviz.conductor import registry as reg_mod
+    from melosviz.conductor.orchestrator import Orchestrator
 
     mock_result = {"frames": 100}
     mock_adapter_instance = MagicMock()
@@ -181,8 +186,8 @@ def test_render_with_known_scene_type_dispatches_adapter(tmp_path):
 
 def test_render_skip_assembly_omits_assembly_step(tmp_path):
     """skip_assembly=True must skip calling the assembly_encode adapter."""
-    from melosviz.conductor.orchestrator import Orchestrator
     from melosviz.conductor import registry as reg_mod
+    from melosviz.conductor.orchestrator import Orchestrator
 
     mock_video_instance = MagicMock()
     mock_video_instance.render.return_value = {}
@@ -206,8 +211,8 @@ def test_render_skip_assembly_omits_assembly_step(tmp_path):
 
 def test_render_adapter_exception_wrapped_as_conductor_error(tmp_path):
     """Adapter exception must be wrapped in ConductorError with scene context."""
-    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
     from melosviz.conductor import registry as reg_mod
+    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
     boom_instance = MagicMock()
     boom_instance.render.side_effect = RuntimeError("adapter exploded")
@@ -231,8 +236,8 @@ def test_render_adapter_exception_wrapped_as_conductor_error(tmp_path):
 
 def test_render_assembly_encode_scene_type_skipped_in_dispatch(tmp_path):
     """assembly_encode as a scene_type in scene_segments must NOT be dispatched inline."""
-    from melosviz.conductor.orchestrator import Orchestrator
     from melosviz.conductor import registry as reg_mod
+    from melosviz.conductor.orchestrator import Orchestrator
 
     assembly_instance = MagicMock()
     assembly_instance.render.return_value = None

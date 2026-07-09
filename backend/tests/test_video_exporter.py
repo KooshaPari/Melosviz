@@ -874,7 +874,9 @@ def test_melosviz_ffmpeg_bin_env_var_is_honoured(
         captured_cmds.append(list(cmd))
         if cmd[-1] == "-version":
             # Simulate successful ffmpeg -version probe
-            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="ffmpeg version fake", stderr="")
+            return subprocess.CompletedProcess(
+                args=cmd, returncode=0, stdout="ffmpeg version fake", stderr=""
+            )
         # Simulate successful export: write output file
         output_path = Path(cmd[-1])
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -928,7 +930,11 @@ def test_render_video_sigsegv_exit_139_is_documented(tmp_path: Path) -> None:
 
     with (
         _patch_resolve(),
-        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
-        pytest.raises(RenderExportError, match="139|SIGSEGV|-11|ffmpeg rawvideo export failed"),
+        patch(
+            "melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc
+        ),
+        pytest.raises(
+            RenderExportError, match="139|SIGSEGV|-11|ffmpeg rawvideo export failed"
+        ),
     ):
         export_video(spec, format="mp4", output_dir=tmp_path)

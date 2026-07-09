@@ -228,10 +228,17 @@ def main() -> None:
     # melosviz serve
     p_serve = sub.add_parser("serve", help="Start the FastAPI bridge server")
     p_serve.add_argument(
-        "--host", default="127.0.0.1", metavar="HOST", help="Bind host (default: 127.0.0.1)"
+        "--host",
+        default="127.0.0.1",
+        metavar="HOST",
+        help="Bind host (default: 127.0.0.1)",
     )
     p_serve.add_argument(
-        "--port", type=int, default=8000, metavar="PORT", help="Bind port (default: 8000)"
+        "--port",
+        type=int,
+        default=8000,
+        metavar="PORT",
+        help="Bind port (default: 8000)",
     )
 
     # melosviz presets

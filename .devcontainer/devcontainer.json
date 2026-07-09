@@ -1,0 +1,24 @@
+{
+  "name": "MelosViz",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    },
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest"
+    }
+  },
+  "postCreateCommand": "pip install -e 'backend.[test,lint,bridge,analysis]' && (command -v bun >/dev/null || npm i -g bun) && cd web && bun install && cd ../desktop && bun install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "rust-lang.rust-analyzer",
+        "oven.bun-vscode"
+      ]
+    }
+  },
+  "forwardPorts": [5000, 5173, 8765]
+}
