@@ -354,7 +354,7 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wav_path: FIXTURE_WAV }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(45_000),
     });
 
     expect(r.ok).toBe(true);
@@ -373,7 +373,7 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
     // scene_segments is always present (may be empty for short/flat fixtures)
     expect(spec).toHaveProperty("scene_segments");
     expect(Array.isArray(spec.scene_segments)).toBe(true);
-  }, 25_000);
+  }, 50_000);
 
   /**
    * Bridge /build — analyze → assemble render plan.

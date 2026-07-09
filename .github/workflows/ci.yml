@@ -107,7 +107,10 @@ jobs:
 
       - name: Install backend + bridge deps
         working-directory: backend
-        run: pip install -e ".[bridge,analysis]"
+        # Bridge-only (no librosa/analysis): desktop e2e only needs RenderSpec
+        # shape over HTTP. The rich MIR path can exceed the 20s /analyze timeout
+        # on CI runners when [analysis] extras are installed.
+        run: pip install -e ".[bridge]"
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
