@@ -211,7 +211,17 @@ def run_diagnose(overrides: Optional[Dict[str, Any]] = None) -> DiagnoseReport:
 
     # ffmpeg (required)
     if "ffmpeg" in ov:
-        checks.append(_check_ffmpeg(ov["ffmpeg"]))
+        if ov["ffmpeg"] is None:
+            checks.append(
+                CheckResult(
+                    name="ffmpeg",
+                    status="FAIL",
+                    detail="override: missing",
+                    required=True,
+                )
+            )
+        else:
+            checks.append(_check_ffmpeg(ov["ffmpeg"]))
     else:
         checks.append(_check_ffmpeg(None))
 

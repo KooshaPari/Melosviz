@@ -139,6 +139,9 @@ def python_version_ok() -> None:
 @given("the optional `bpy` module is not importable")
 def bpy_absent(ctx: Context) -> None:
     ctx.overrides["bpy"] = False
+    # Required checks must still pass so exit_code stays 0 (FR-50 #2).
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("the optional modules `bpy`, `demucs`, `librosa` are not importable")
@@ -147,11 +150,15 @@ def optional_audio_modules_absent(ctx: Context) -> None:
     ctx.overrides["demucs"] = False
     ctx.overrides["librosa"] = False
     ctx.overrides["wgpu"] = False  # also kill the GPU probe
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("no `wgpu` adapter is enumerable")
 def wgpu_absent(ctx: Context) -> None:
     ctx.overrides["wgpu"] = False
+    ctx.overrides.setdefault("ffmpeg", "/fake/ffmpeg")
+    ctx.overrides.setdefault("python", True)
 
 
 @given("a diagnose run where all required checks pass")

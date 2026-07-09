@@ -282,7 +282,14 @@ def test_distribution_section_does_not_claim_unshipped_channels_as_shipped() -> 
     if end is None:
         end = len(lines)
 
-    section_text = "\n".join(lines[start:end]).lower()
+    # Only the "shipped today" subsection (9.1) may not name unshipped channels.
+    # Explicit non-shipment / aspirational subsections (9.3+) may list them.
+    shipped_end = end
+    for idx in range(start, end):
+        if lines[idx].strip().startswith("### 9.3"):
+            shipped_end = idx
+            break
+    section_text = "\n".join(lines[start:shipped_end]).lower()
     forbidden_terms = (
         "msi installer",
         "appimage",
