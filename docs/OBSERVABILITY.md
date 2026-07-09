@@ -13,18 +13,27 @@ Bridge telemetry for operators and agents.
 ## Structured logs
 
 Set `MELOSVIZ_LOG_JSON=1` (default). Each request emits a JSON line with
-`path`, `method`, `status`, `dur_ms`.
+`path`, `method`, `status`, `dur_ms`, and optional `trace_id`.
 
-## OpenTelemetry
+## OpenTelemetry + OTLP
 
 ```bash
 pip install 'melosviz[otel]'
 export MELOSVIZ_OTEL=1
-# Configure OTEL_EXPORTER_OTLP_ENDPOINT as usual for the SDK
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
+export OTEL_SERVICE_NAME=melosviz-bridge
 python -m melosviz.bridge.server --port 8765
 ```
 
-Spans are best-effort: if the SDK is missing, the bridge still serves.
+If `OTEL_EXPORTER_OTLP_ENDPOINT` is set, OTel auto-enables even without
+`MELOSVIZ_OTEL=1`. Spans are best-effort: if the SDK is missing, the bridge
+still serves.
+
+### Trace propagation
+
+The bridge reads inbound W3C `traceparent` headers and continues the trace
+for `http.request` / `analyze` spans. Desktop/web clients should forward
+`traceparent` when calling `/analyze`, `/build`, or `/render`.
 
 ## Prometheus scrape snippet
 
@@ -35,6 +44,12 @@ scrape_configs:
       - targets: ["127.0.0.1:8765"]
     metrics_path: /metrics
 ```
+
+## Grafana
+
+Import [`docs/observability/grafana-bridge.json`](observability/grafana-bridge.json)
+into Grafana (Prometheus datasource). Panels: up, ready, uptime, request rate,
+error rate, avg latency.
 
 ## Alert ideas (operator-owned)
 

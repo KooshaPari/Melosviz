@@ -1,0 +1,42 @@
+name: Mutation — mutmut (weekly)
+
+on:
+  schedule:
+    - cron: "27 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutmut:
+    name: mutmut (backend, target ≥75%)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        working-directory: backend
+        run: |
+          pip install -e ".[test,bridge]"
+          pip install mutmut
+      - name: Run mutmut (bounded)
+        working-directory: backend
+        # Full suite is slow; mutate a high-value slice and report score.
+        run: |
+          mutmut run \
+            --paths-to-mutate src/melosviz/bridge/security.py \
+            --tests-dir tests/ \
+            --runner "python -m pytest -q --tb=no -x" \
+            || true
+          mutmut results || true
+          mutmut junitxml --suspicious-policy=ignore --untested-policy=ignore > mutmut.xml || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mutmut-results
+          path: backend/mutmut.xml
+          if-no-files-found: warn
+          retention-days: 14

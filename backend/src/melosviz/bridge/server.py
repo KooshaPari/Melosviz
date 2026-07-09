@@ -68,6 +68,7 @@ from melosviz import observability as obs  # noqa: E402
 from melosviz.bridge import security  # noqa: E402
 
 obs.configure_logging()
+obs.configure_otel()
 _log = __import__("logging").getLogger("melosviz.bridge")
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
@@ -86,9 +87,11 @@ async def _obs_middleware(request, call_next):  # type: ignore[no-untyped-def]
     import time as _time
 
     t0 = _time.monotonic()
-    response = await call_next(request)
-    dur_ms = (_time.monotonic() - t0) * 1000.0
+    tp = obs.extract_traceparent(request.headers)
     path = request.url.path
+    with obs.span("http.request", traceparent=tp, path=path, method=request.method):
+        response = await call_next(request)
+    dur_ms = (_time.monotonic() - t0) * 1000.0
     obs.record_request(path, response.status_code, dur_ms)
     _log.info(
         "request",
@@ -97,6 +100,7 @@ async def _obs_middleware(request, call_next):  # type: ignore[no-untyped-def]
             "method": request.method,
             "status": response.status_code,
             "dur_ms": round(dur_ms, 2),
+            "trace_id": (tp.split("-")[1] if tp and "-" in tp else None),
         },
     )
     return response
@@ -288,7 +292,8 @@ async def analyze(req: AnalyzeRequest) -> str:
     try:
         if not wav.exists():
             raise HTTPException(status_code=400, detail=f"File not found: {wav}")
-        with obs.span("analyze", wav=str(wav)):
+        tp = None  # request-scoped traceparent already applied by middleware
+        with obs.span("analyze", traceparent=tp, wav=str(wav)):
             data = _analyze_with_mir_or_python(wav)
     except HTTPException:
         raise

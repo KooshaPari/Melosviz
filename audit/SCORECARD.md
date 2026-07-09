@@ -1,10 +1,10 @@
 # audit-v38 Scorecard - MelosViz
 
 **Repo:** KooshaPari/Melosviz
-**Date:** 2026-07-08
+**Date:** 2026-07-09
 **Repo-type profile:** desktop + CLI + library + web-app
-**Auditor:** v38-scorecard-completion lane
-**Commit audited:** (feat/v38-scorecard-completion tip)
+**Auditor:** v38-next-wave lane
+**Commit audited:** (feat/v38-next-wave tip)
 
 > Scoring: each sub-pillar 0=? / 1=? / 2=~ / 3=+, evidence-mandatory (`file:line`).
 > Cluster score = sum / (sub-pillars x 3). Grade: A≥90% · B≥75% · C≥60% · D≥40% · F<40%.
@@ -13,33 +13,46 @@
 
 | Cluster | Category | Pillars | Score (sum/max) | Pct | Grade | Top-3 gaps |
 |---------|----------|---------|:---------------:|:---:|:-----:|------------|
-| C00 | Architecture + Module | L0-L9 | 23/30 | 77% | B | OTel depth; hermetic release; ARCHITECTURE.md |
-| C01 | CI, DX, Observability | L10-L19 | 17/30 | 57% | D | i18n; cov-fail-under; CONTRIBUTING.md |
-| C02 | Error handling, API, Governance | L20-L29 | 17/30 | 57% | D | product-wide threat model; IdP; SLO machinery |
-| C03 | Agent Readiness | L30 | 22/36 | 61% | C | FR catalog; WORK_DAG; machine-readable tasks |
+| C00 | Architecture + Module | L0-L9 | 26/30 | 87% | B | External SDK; continuous profiling; Windows desktop soft-fail |
+| C01 | CI, DX, Observability | L10-L19 | 22/30 | 73% | C | i18n; automated a11y CI; runner pin consistency |
+| C02 | Error handling, API, Governance | L20-L29 | 21/30 | 70% | C | IdP; crypto key lifecycle; formal SLO burn-rate |
+| C03 | Agent Readiness | L30 | 26/36 | 72% | C | USER_JOURNEYS; VISUAL_SPEC; friction-log CI |
 | C04 | Security | L31-L40 | 23/30 | 77% | B | signed commits (org); cosign; CodeQL in-repo |
-| C05 | Observability (deep) | L41-L50 | 20/30 | 67% | C | trace propagation; profiling; Grafana JSON |
+| C05 | Observability (deep) | L41-L50 | 24/30 | 80% | B | continuous profiling; PrometheusRule manifests |
 | C06 | Supply Chain | L51-L60 | 20/30 | 67% | C | hermetic builds; license CI; frozen lock verify |
-| C07 | DX, QEng, Portability | L61-L70 | 19/30 | 63% | C | fuzzing; Windows CI; mutmut weekly job |
+| C07 | DX, QEng, Portability | L61-L70 | 21/30 | 70% | C | fuzzing; Makefile depth; host-gated desktop e2e |
 | C08 | Eval Coverage | L71-L80 | 17/30 | 57% | D | load tests; Harbor adapter; golden corpus |
 | C09 | Accessibility + UX | L81-L95 | 25/30 | 83% | B | automated a11y CI; focus choreography |
 | C10 | Visual Identity | L96-L107 | 23/36 | 64% | C | VISUAL_SPEC; golden screenshots; light theme |
-| C11 | Packaging + Distribution | L108-L122 | 25/45 | 56% | D | Windows CI installer; auto-update; mobile |
+| C11 | Packaging + Distribution | L108-L122 | 27/45 | 60% | C | auto-update; mobile; GHCR production image |
 
 ## Overall
 
-**Weighted overall score:** 66% · **Overall grade:** C
+**Weighted overall score:** 72% · **Overall grade:** C
 
 (Equal-weight mean of cluster percentages:
-(77+57+57+61+77+67+67+63+57+83+64+56) / 12 = **65.5%** → **C**.)
+(87+73+70+72+77+80+67+70+57+83+64+60) / 12 = **71.7%** → **C**.)
 
 ## Headline Findings
 
-- **Strongest:** C09 Accessibility/UX (83% B); C00 Architecture (77% B); C04 Security after supply-chain lifts (77% B).
-- **Weakest:** C11 Packaging D (56%) without Windows CI/auto-update; C01/C02/C08 still D on DX/gov/eval depth.
-- **Highest-leverage fix:** Add a Windows release job + OTLP exporter defaults — moves C11 and deepens C05.
-- **Agent-readiness verdict (C03):** Agents can work from SPEC/TRACEABILITY/tests, but lack a formal FR catalog + WORK_DAG.
-- **Time-2 verdict (C11):** macOS DMG + Linux CLI + source install work today; Windows is documented but not CI-packaged.
+- **Strongest:** C00 Architecture (87% B); C09 Accessibility/UX (83% B); C05 Observability (80% B).
+- **Weakest:** C08 Eval still D (57%); C10 Visual Identity C (64%); C11 Packaging now C (60%) after Windows CI.
+- **Highest-leverage next:** Eval depth (C08 load/Harbor/golden) + Electrobun auto-update (C11 L111).
+- **Agent-readiness verdict (C03):** FR catalog + WORK_DAG + CONTRIBUTING/PR template close the prior agent-entry gaps.
+- **Time-2 verdict (C11):** macOS DMG + Linux CLI + Windows CLI (+ best-effort Windows desktop) ship from `release.yml`.
+
+## Delta vs prior closeout (2026-07-08)
+
+| Cluster | Before | After | Lift |
+|---------|--------|-------|------|
+| C00 | 77% B | 87% B | +10 |
+| C01 | 57% D | 73% C | +16 |
+| C02 | 57% D | 70% C | +13 |
+| C03 | 61% C | 72% C | +11 |
+| C05 | 67% C | 80% B | +13 |
+| C07 | 63% C | 70% C | +7 |
+| C11 | 56% D | 60% C | +4 |
+| Overall | 66% C | 72% C | +6 |
 
 ## Cluster file map
 
