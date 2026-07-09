@@ -113,6 +113,103 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  windows-cli:
+    name: Windows — CLI zip (Rust binaries)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Rust (stable)
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Build Rust crates (release)
+        run: cargo build --release
+
+      - name: Package CLI tools as zip
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item target\release\melosviz-render.exe dist\
+          Copy-Item target\release\melosviz-mir.exe dist\
+          Copy-Item LICENSE dist\
+          Compress-Archive -Path dist\* -DestinationPath "MelosViz-${{ github.ref_name }}-windows-x86_64.zip"
+          Get-Item "MelosViz-${{ github.ref_name }}-windows-x86_64.zip" | Format-List Name,Length
+
+      - name: Upload Windows CLI artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-Windows-CLI
+          path: MelosViz-*-windows-*.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  windows-desktop:
+    name: Windows — desktop app (Electrobun)
+    runs-on: windows-latest
+    # Electrobun Windows packaging can be flaky on fresh runners; keep
+    # continue-on-error so a CLI-only Windows release still ships.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Rust (stable)
+        uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Build Rust crates
+        run: cargo build --release
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+        with:
+          bun-version: latest
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: bun install
+
+      - name: Build desktop app (Electrobun)
+        working-directory: desktop
+        env:
+          ELECTROBUN_OS: windows
+        run: bunx electrobun build
+
+      - name: Package desktop app
+        working-directory: desktop
+        env:
+          ELECTROBUN_OS: windows
+        run: bunx electrobun package
+
+      - name: Collect Windows desktop artifact
+        shell: pwsh
+        run: |
+          $candidates = @(
+            Get-ChildItem -Path desktop\build -Recurse -Include *.exe,*.msi,*.zip -ErrorAction SilentlyContinue
+          )
+          if (-not $candidates -or $candidates.Count -eq 0) {
+            Write-Host "::warning::No Windows desktop package found under desktop/build"
+            Get-ChildItem -Path desktop\build -Recurse -ErrorAction SilentlyContinue | Select-Object -First 40 FullName
+            exit 0
+          }
+          New-Item -ItemType Directory -Force -Path win-desktop-out | Out-Null
+          $candidates | ForEach-Object { Copy-Item $_.FullName win-desktop-out\ }
+          Get-ChildItem win-desktop-out | Format-Table Name,Length
+
+      - name: Upload Windows desktop artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-Windows-Desktop
+          path: win-desktop-out/*
+          if-no-files-found: warn
+          retention-days: 7
+
   sbom:
     name: Release SBOM (CycloneDX)
     runs-on: ubuntu-latest
@@ -141,7 +238,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [macos-desktop, linux-cli, sbom]
+    needs: [macos-desktop, linux-cli, windows-cli, windows-desktop, sbom]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -165,6 +262,8 @@ jobs:
           subject-path: |
             _artifacts/MelosViz-macOS/*
             _artifacts/MelosViz-Linux/*
+            _artifacts/MelosViz-Windows-CLI/*
+            _artifacts/MelosViz-Windows-Desktop/*
             _artifacts/MelosViz-SBOM/*
 
       - name: Publish release
@@ -174,6 +273,8 @@ jobs:
           files: |
             _artifacts/MelosViz-macOS/*
             _artifacts/MelosViz-Linux/*
+            _artifacts/MelosViz-Windows-CLI/*
+            _artifacts/MelosViz-Windows-Desktop/*
             _artifacts/MelosViz-SBOM/*
           generate_release_notes: true
           fail_on_unmatched_files: false

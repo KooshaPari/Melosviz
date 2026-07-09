@@ -655,12 +655,13 @@ channels are listed at the end with explicit non-shipment language.
 
 | Channel | Artifact | Build job | Trigger |
 |---|---|---|---|
-| **macOS desktop DMG** | `MelosViz-<tag>-macos.dmg` | `release.yml::macos-desktop` (`release.yml:14-80`) | Push of `v*` tag |
-| **Linux CLI tarball** | `MelosViz-<tag>-linux-x86_64.tar.gz` containing `melosviz-render` and `melosviz-mir` binaries + `LICENSE` | `release.yml::linux-cli` (`release.yml:82-114`) | Push of `v*` tag |
+| **macOS desktop DMG** | `MelosViz-<tag>-macos.dmg` | `release.yml::macos-desktop` | Push of `v*` tag |
+| **Linux CLI tarball** | `MelosViz-<tag>-linux-x86_64.tar.gz` containing `melosviz-render` and `melosviz-mir` binaries + `LICENSE` | `release.yml::linux-cli` | Push of `v*` tag |
+| **Windows CLI zip** | `MelosViz-<tag>-windows-x86_64.zip` containing `melosviz-render.exe` and `melosviz-mir.exe` + `LICENSE` | `release.yml::windows-cli` | Push of `v*` tag |
+| **Windows desktop** (best-effort) | Electrobun package under `win-desktop-out/` | `release.yml::windows-desktop` (`continue-on-error`) | Push of `v*` tag |
 
-Both artifacts are uploaded as GitHub Actions artifacts (7-day retention)
-and collated into a single GitHub Release by the `release` job
-(`release.yml:116-141`).
+Artifacts are uploaded as GitHub Actions artifacts and collated into a single
+GitHub Release by the `release` job (with CycloneDX SBOM + attestations).
 
 ### 9.2 Per-channel build steps
 
@@ -682,6 +683,19 @@ and collated into a single GitHub Release by the `release` job
 3. Copy `LICENSE` into `dist/`
 4. `tar czf` the directory tree
 
+#### 9.2.3 Windows CLI zip
+
+1. `cargo build --release` on `windows-latest`
+2. Copy `melosviz-render.exe` and `melosviz-mir.exe` into `dist/`
+3. Copy `LICENSE` into `dist/`
+4. `Compress-Archive` → `MelosViz-<tag>-windows-x86_64.zip`
+
+#### 9.2.4 Windows desktop (best-effort)
+
+1. `cargo build --release` + Electrobun `build`/`package` with `ELECTROBUN_OS=windows`
+2. Collect `.exe`/`.msi`/`.zip` under `desktop/build/` into `win-desktop-out/`
+3. Job uses `continue-on-error: true` so a CLI-only Windows release still ships
+
 ### 9.3 Channels NOT shipped (explicit non-shipment)
 
 The following distribution channels are **not currently built** by
@@ -696,13 +710,16 @@ repo:
 - **npm** — the `web/` and `desktop/` packages are `private: true`
   (`desktop/package.json:5`, `web/package.json:4`) and have no publish
   step.
-- **MSI / AppImage / deb / rpm** — no Linux installer builds exist. The
+- **AppImage / deb / rpm** — no Linux installer builds exist. The
   Linux artifact is a plain tarball.
-- **winget / scoop** — no Windows package manager manifests exist.
+- **winget / scoop** — no Windows package manager manifests exist
+  (Windows CLI zip + best-effort desktop package do ship via GitHub Releases).
 - **brew / Homebrew formula** — no Homebrew tap is configured.
 - **OCI image** — no `docker push` or container publish step exists. A
   `Dockerfile` is present at the repo root, but CI does not build or push
   it.
+- **Electrobun auto-update** — release artifacts are attested, but in-app
+  auto-update is not wired (see `docs/WORK_DAG.md` W-201).
 
 These channels are candidates for **future work**; see § 9.5 for the
 tracking rubric.

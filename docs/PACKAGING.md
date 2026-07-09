@@ -1,20 +1,28 @@
 # Packaging & distribution channels
 
-MelosViz ships three install surfaces today. This document is the Time-2
-packaging map for audit-v38 cluster C11.
+MelosViz ships install surfaces via `.github/workflows/release.yml` on `v*` tags.
+This document is the Time-2 packaging map for audit-v38 cluster C11.
 
-## Shipped today
+## Shipped today (CI)
 
-| Channel | Artifact | How |
+| Channel | Artifact | Job |
 |---------|----------|-----|
-| macOS desktop | DMG via Electrobun | `.github/workflows/release.yml` `macos-desktop` on `v*` tags |
-| Linux CLI | `melosviz-mir` + `melosviz-render` tarball | `release.yml` `linux-cli` |
-| From source | `pip install -e backend/` + `cargo run` | README quick start |
+| macOS desktop | DMG via Electrobun | `macos-desktop` |
+| Linux CLI | `melosviz-mir` + `melosviz-render` tarball | `linux-cli` |
+| Windows CLI | `melosviz-mir.exe` + `melosviz-render.exe` zip | `windows-cli` |
+| Windows desktop | Electrobun package (best-effort) | `windows-desktop` (`continue-on-error`) |
+| SBOM | CycloneDX Python + Cargo | `sbom` |
+| Provenance | GitHub attestations | `release` |
 
-## Windows (documented channel)
+## From source
 
-Windows desktop packaging is not yet automated in CI (no Windows runner in
-the release matrix). Operators can build locally:
+```bash
+pip install -e backend/
+cargo run --release -p melosviz-mir -- --help
+cd web && bun install && bun run dev
+```
+
+## Windows local (if CI desktop job is skipped)
 
 ```powershell
 cd desktop
@@ -24,20 +32,14 @@ bunx electrobun build
 bunx electrobun package
 ```
 
-CLI binaries on Windows:
-
-```powershell
-cargo build --release
-# target\release\melosviz-mir.exe
-# target\release\melosviz-render.exe
-```
-
 ## Auto-update
 
-Release artifacts land on GitHub Releases. Electrobun auto-update is not
-wired yet — track as a follow-up once a signed Windows/macOS channel exists.
+Release artifacts land on GitHub Releases with SLSA-style attestations.
+Electrobun auto-update is **not** wired yet (WORK_DAG W-201).
 
-## Mutation testing (nightly / local)
+## Mutation testing (weekly CI + local)
+
+Weekly workflow: `.github/workflows/mutmut.yml`.
 
 ```bash
 cd backend
@@ -46,5 +48,7 @@ mutmut run --paths-to-mutate src/melosviz/ --tests-dir tests/
 # Target: >=75% mutation score per .qgate.toml
 ```
 
-Mutation is intentionally out of PR CI (slow). Run locally or on a weekly
-cron before cutting a release.
+## Container (dev)
+
+Use [`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json).
+A production GHCR image is backlog (WORK_DAG / C11 L118).

@@ -61,10 +61,12 @@ bridge = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.29",
 ]
-# Optional OpenTelemetry API (spans are no-op unless MELOSVIZ_OTEL=1).
+# Optional OpenTelemetry (spans + OTLP HTTP exporter).
+# Enable with MELOSVIZ_OTEL=1 and/or OTEL_EXPORTER_OTLP_ENDPOINT.
 otel = [
     "opentelemetry-api>=1.25",
     "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp-proto-http>=1.25",
 ]
 
 [tool.setuptools.packages.find]
