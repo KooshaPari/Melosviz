@@ -8,7 +8,12 @@
  *     — the UI renders immediately; backend connects in the background
  */
 
-import { BrowserWindow, defineElectrobunRPC, Utils } from "electrobun/bun";
+import {
+  BrowserWindow,
+  Updater,
+  defineElectrobunRPC,
+  Utils,
+} from "electrobun/bun";
 const { openFileDialog, showItemInFolder } = Utils;
 import * as path from "path";
 import * as fs from "fs";
@@ -349,6 +354,39 @@ async function startBackendBridge(): Promise<void> {
 // Fire and forget — window is already visible while this runs
 startBackendBridge().catch((err) => {
   console.error("[MelosViz] Backend bridge startup error:", err);
+});
+
+// ---------------------------------------------------------------------------
+// Auto-update — best-effort check after UI is up (stable/canary channels only)
+// ---------------------------------------------------------------------------
+
+async function checkForAppUpdate(): Promise<void> {
+  try {
+    const info = await Updater.checkForUpdate();
+    if (info?.updateAvailable) {
+      console.log(
+        `[MelosViz] update available: version=${info.version} hash=${info.hash}`
+      );
+      // Download in background; Electrobun applies on next restart when ready.
+      try {
+        await Updater.downloadUpdate();
+        console.log("[MelosViz] update downloaded; will apply on restart");
+      } catch (dlErr) {
+        console.warn("[MelosViz] update download skipped:", dlErr);
+      }
+    } else {
+      console.log(
+        `[MelosViz] updater: no update (channel check ok; ready=${Boolean(info?.updateReady)})`
+      );
+    }
+  } catch (err) {
+    // Dev channel and missing manifests are expected locally.
+    console.warn("[MelosViz] updater check skipped:", err);
+  }
+}
+
+checkForAppUpdate().catch((err) => {
+  console.warn("[MelosViz] updater startup error:", err);
 });
 
 process.on("exit", () => bridgeProc?.kill());

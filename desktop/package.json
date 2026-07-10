@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "bunx electrobun dev",
     "build": "bunx electrobun build",
+    "build:stable": "bunx electrobun build --env=stable",
     "package": "bunx electrobun package",
+    "package:stable": "bunx electrobun package --env=stable",
     "test:e2e": "bun test tests/e2e_desktop.test.ts --timeout 60000"
   },
   "dependencies": {

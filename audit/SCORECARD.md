@@ -1,10 +1,10 @@
 # audit-v38 Scorecard - MelosViz
 
 **Repo:** KooshaPari/Melosviz
-**Date:** 2026-07-09
+**Date:** 2026-07-10
 **Repo-type profile:** desktop + CLI + library + web-app
-**Auditor:** v38-next-wave lane
-**Commit audited:** (feat/v38-next-wave tip)
+**Auditor:** v38-eval-autoupdate lane
+**Commit audited:** (feat/v38-eval-autoupdate tip)
 
 > Scoring: each sub-pillar 0=? / 1=? / 2=~ / 3=+, evidence-mandatory (`file:line`).
 > Cluster score = sum / (sub-pillars x 3). Grade: A≥90% · B≥75% · C≥60% · D≥40% · F<40%.
@@ -13,46 +13,45 @@
 
 | Cluster | Category | Pillars | Score (sum/max) | Pct | Grade | Top-3 gaps |
 |---------|----------|---------|:---------------:|:---:|:-----:|------------|
-| C00 | Architecture + Module | L0-L9 | 26/30 | 87% | B | External SDK; continuous profiling; Windows desktop soft-fail |
+| C00 | Architecture + Module | L0-L9 | 26/30 | 87% | B | External SDK; continuous profiler endpoint; Windows desktop soft-fail |
 | C01 | CI, DX, Observability | L10-L19 | 22/30 | 73% | C | i18n; automated a11y CI; runner pin consistency |
-| C02 | Error handling, API, Governance | L20-L29 | 21/30 | 70% | C | IdP; crypto key lifecycle; formal SLO burn-rate |
-| C03 | Agent Readiness | L30 | 26/36 | 72% | C | USER_JOURNEYS; VISUAL_SPEC; friction-log CI |
+| C02 | Error handling, API, Governance | L20-L29 | 22/30 | 73% | C | IdP; crypto key lifecycle; PrometheusRule manifests |
+| C03 | Agent Readiness | L30 | 26/36 | 72% | C | USER_JOURNEYS; screenshot goldens; friction-log CI |
 | C04 | Security | L31-L40 | 23/30 | 77% | B | signed commits (org); cosign; CodeQL in-repo |
-| C05 | Observability (deep) | L41-L50 | 24/30 | 80% | B | continuous profiling; PrometheusRule manifests |
+| C05 | Observability (deep) | L41-L50 | 25/30 | 83% | B | always-on profiler; PrometheusRule manifests |
 | C06 | Supply Chain | L51-L60 | 20/30 | 67% | C | hermetic builds; license CI; frozen lock verify |
-| C07 | DX, QEng, Portability | L61-L70 | 21/30 | 70% | C | fuzzing; Makefile depth; host-gated desktop e2e |
-| C08 | Eval Coverage | L71-L80 | 17/30 | 57% | D | load tests; Harbor adapter; golden corpus |
+| C07 | DX, QEng, Portability | L61-L70 | 22/30 | 73% | C | cargo-fuzz/atheris; Makefile depth; host-gated desktop e2e |
+| C08 | Eval Coverage | L71-L80 | 26/30 | 87% | B | live Harbor runner; Rust/Python parity; real-track corpus |
 | C09 | Accessibility + UX | L81-L95 | 25/30 | 83% | B | automated a11y CI; focus choreography |
-| C10 | Visual Identity | L96-L107 | 23/36 | 64% | C | VISUAL_SPEC; golden screenshots; light theme |
-| C11 | Packaging + Distribution | L108-L122 | 27/45 | 60% | C | auto-update; mobile; GHCR production image |
+| C10 | Visual Identity | L96-L107 | 24/36 | 67% | C | Playwright screenshots; light theme; PROVENANCE table |
+| C11 | Packaging + Distribution | L108-L122 | 29/45 | 64% | C | mobile; GHCR; Authenticode/notarization |
 
 ## Overall
 
-**Weighted overall score:** 72% · **Overall grade:** C
+**Weighted overall score:** 76% · **Overall grade:** B
 
 (Equal-weight mean of cluster percentages:
-(87+73+70+72+77+80+67+70+57+83+64+60) / 12 = **71.7%** → **C**.)
+(87+73+73+72+77+83+67+73+87+83+67+64) / 12 = **75.5%** → **B**.)
 
 ## Headline Findings
 
-- **Strongest:** C00 Architecture (87% B); C09 Accessibility/UX (83% B); C05 Observability (80% B).
-- **Weakest:** C08 Eval still D (57%); C10 Visual Identity C (64%); C11 Packaging now C (60%) after Windows CI.
-- **Highest-leverage next:** Eval depth (C08 load/Harbor/golden) + Electrobun auto-update (C11 L111).
-- **Agent-readiness verdict (C03):** FR catalog + WORK_DAG + CONTRIBUTING/PR template close the prior agent-entry gaps.
-- **Time-2 verdict (C11):** macOS DMG + Linux CLI + Windows CLI (+ best-effort Windows desktop) ship from `release.yml`.
+- **Strongest:** C00 Architecture (87% B); C08 Eval (87% B); C05/C09 (83% B).
+- **Weakest:** C11 Packaging C (64%); C06 Supply Chain C (67%); C10 Visual C (67%).
+- **Highest-leverage next:** axe/pa11y CI (C09) + CodeQL/cargo-deny (C04/C06) + GHCR image (C11 L118).
+- **Agent-readiness verdict (C03):** FR catalog + WORK_DAG + Harbor adapter emit path for agent evals.
+- **Time-2 verdict (C11):** Windows/macOS/Linux release channels + Electrobun stable-channel auto-update wired.
 
-## Delta vs prior closeout (2026-07-08)
+## Delta vs prior wave (2026-07-09 ~72% C)
 
 | Cluster | Before | After | Lift |
 |---------|--------|-------|------|
-| C00 | 77% B | 87% B | +10 |
-| C01 | 57% D | 73% C | +16 |
-| C02 | 57% D | 70% C | +13 |
-| C03 | 61% C | 72% C | +11 |
-| C05 | 67% C | 80% B | +13 |
-| C07 | 63% C | 70% C | +7 |
-| C11 | 56% D | 60% C | +4 |
-| Overall | 66% C | 72% C | +6 |
+| C02 | 70% C | 73% C | +3 |
+| C05 | 80% B | 83% B | +3 |
+| C07 | 70% C | 73% C | +3 |
+| C08 | 57% D | 87% B | +30 |
+| C10 | 64% C | 67% C | +3 |
+| C11 | 60% C | 64% C | +4 |
+| Overall | 72% C | 76% B | +4 |
 
 ## Cluster file map
 

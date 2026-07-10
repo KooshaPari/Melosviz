@@ -35,7 +35,18 @@ bunx electrobun package
 ## Auto-update
 
 Release artifacts land on GitHub Releases with SLSA-style attestations.
-Electrobun auto-update is **not** wired yet (WORK_DAG W-201).
+Electrobun auto-update is wired via `release.baseUrl` in
+`desktop/electrobun.config.ts` pointing at:
+
+`https://github.com/KooshaPari/Melosviz/releases/latest/download`
+
+Stable-channel builds (`bunx electrobun build --env=stable`) embed the
+updater channel; the desktop main process calls `Updater.checkForUpdate()`
+on startup and best-effort `downloadUpdate()`. Update manifests
+(`stable-<os>-<arch>-update.json` + tarballs) are uploaded from
+`desktop/artifacts/` by `release.yml`.
+
+Dev-channel (`electrobun dev`) skips update checks by design.
 
 ## Mutation testing (weekly CI + local)
 

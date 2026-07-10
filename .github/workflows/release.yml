@@ -39,17 +39,18 @@ jobs:
         working-directory: desktop
         run: bun install
 
-      - name: Build desktop app (Electrobun)
+      - name: Build desktop app (Electrobun, stable channel)
         working-directory: desktop
         env:
           ELECTROBUN_OS: macos
-        run: bunx electrobun build
+        # --env=stable enables Updater (dev channel skips checks)
+        run: bunx electrobun build --env=stable
 
       - name: Package desktop app
         working-directory: desktop
         env:
           ELECTROBUN_OS: macos
-        run: bunx electrobun package
+        run: bunx electrobun package --env=stable
 
       - name: Locate and prepare .app bundle
         run: |
@@ -77,6 +78,14 @@ jobs:
           name: MelosViz-macOS
           path: MelosViz-*-macos.dmg
           if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Electrobun update manifests (macOS)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-macOS-Updates
+          path: desktop/artifacts/*
+          if-no-files-found: warn
           retention-days: 7
 
   linux-cli:
@@ -175,17 +184,17 @@ jobs:
         working-directory: desktop
         run: bun install
 
-      - name: Build desktop app (Electrobun)
+      - name: Build desktop app (Electrobun, stable channel)
         working-directory: desktop
         env:
           ELECTROBUN_OS: windows
-        run: bunx electrobun build
+        run: bunx electrobun build --env=stable
 
       - name: Package desktop app
         working-directory: desktop
         env:
           ELECTROBUN_OS: windows
-        run: bunx electrobun package
+        run: bunx electrobun package --env=stable
 
       - name: Collect Windows desktop artifact
         shell: pwsh
@@ -207,6 +216,14 @@ jobs:
         with:
           name: MelosViz-Windows-Desktop
           path: win-desktop-out/*
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload Electrobun update manifests (Windows)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: MelosViz-Windows-Updates
+          path: desktop/artifacts/*
           if-no-files-found: warn
           retention-days: 7
 
@@ -261,9 +278,11 @@ jobs:
         with:
           subject-path: |
             _artifacts/MelosViz-macOS/*
+            _artifacts/MelosViz-macOS-Updates/*
             _artifacts/MelosViz-Linux/*
             _artifacts/MelosViz-Windows-CLI/*
             _artifacts/MelosViz-Windows-Desktop/*
+            _artifacts/MelosViz-Windows-Updates/*
             _artifacts/MelosViz-SBOM/*
 
       - name: Publish release
@@ -272,9 +291,11 @@ jobs:
         with:
           files: |
             _artifacts/MelosViz-macOS/*
+            _artifacts/MelosViz-macOS-Updates/*
             _artifacts/MelosViz-Linux/*
             _artifacts/MelosViz-Windows-CLI/*
             _artifacts/MelosViz-Windows-Desktop/*
+            _artifacts/MelosViz-Windows-Updates/*
             _artifacts/MelosViz-SBOM/*
           generate_release_notes: true
           fail_on_unmatched_files: false

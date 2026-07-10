@@ -1,0 +1,38 @@
+name: Load smoke — bridge concurrency
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  load-smoke:
+    name: Bridge load smoke (concurrent /health + /analyze)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        working-directory: backend
+        run: pip install -e ".[test,bridge]"
+      - name: Load + golden + fuzz
+        working-directory: backend
+        run: |
+          python -m pytest \
+            tests/test_load_bridge.py \
+            tests/test_golden_corpus.py \
+            tests/test_fuzz_renderspec.py \
+            -q --tb=short
+      - name: Emit Harbor tasks (smoke)
+        run: python eval/harbor/adapter.py --out eval/harbor/out
