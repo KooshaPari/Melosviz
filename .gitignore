@@ -41,3 +41,8 @@ htmlcov/
 # Antigame mutation-engine reports — generated each run, do not commit.
 .mutations/
 backend/coverage/
+
+# Eval generated trees / tones
+eval/harbor/out/
+eval/golden/wav/
+

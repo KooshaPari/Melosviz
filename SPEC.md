@@ -718,8 +718,10 @@ repo:
 - **OCI image** — no `docker push` or container publish step exists. A
   `Dockerfile` is present at the repo root, but CI does not build or push
   it.
-- **Electrobun auto-update** — release artifacts are attested, but in-app
-  auto-update is not wired (see `docs/WORK_DAG.md` W-201).
+- **Electrobun auto-update** — wired via `release.baseUrl` + stable-channel
+  builds; manifests upload from `desktop/artifacts/` (see `docs/PACKAGING.md`).
+  Canary/prerelease auto-update on GitHub Releases remains limited by
+  `/releases/latest` semantics.
 
 These channels are candidates for **future work**; see § 9.5 for the
 tracking rubric.

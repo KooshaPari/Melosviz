@@ -46,6 +46,14 @@ const config: ElectrobunConfig = {
     // relying on whatever python3 happens to be on the user's PATH.
     postBuild: "scripts/postBuild.ts",
   },
+
+  // Electrobun delta updater — GitHub Releases flat prefix scheme
+  // (stable-<os>-<arch>-update.json). Build with `--env=stable` so channel
+  // is not "dev" (Updater skips checks on the dev channel).
+  release: {
+    baseUrl:
+      "https://github.com/KooshaPari/Melosviz/releases/latest/download",
+  },
 };
 
 export default config;

@@ -51,6 +51,22 @@ Import [`docs/observability/grafana-bridge.json`](observability/grafana-bridge.j
 into Grafana (Prometheus datasource). Panels: up, ready, uptime, request rate,
 error rate, avg latency.
 
+## Continuous profiling (optional)
+
+Bridge CPU/memory profiling is operator-opt-in (no always-on profiler in
+the default install):
+
+```bash
+# py-spy (attach to bridge PID)
+pip install py-spy
+py-spy top --pid <bridge-pid>
+
+# stdlib cProfile for a single analyze
+python -m cProfile -o analyze.prof -m melosviz.cli.main analyze track.wav
+```
+
+Documented for C05 L45; a dedicated `/debug/pprof` endpoint is backlog.
+
 ## Alert ideas (operator-owned)
 
 | Alert | Expr (sketch) | Severity |
