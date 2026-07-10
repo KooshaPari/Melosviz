@@ -1,0 +1,52 @@
+# MelosViz bridge — PrometheusRule sketches (C05 L48)
+# Apply in a cluster that scrapes the bridge /metrics endpoint.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: melosviz-bridge
+  labels:
+    app: melosviz
+    release: prometheus
+spec:
+  groups:
+    - name: melosviz-bridge
+      rules:
+        - alert: MelosVizBridgeDown
+          expr: melosviz_up == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: MelosViz bridge process is down
+            description: melosviz_up has been 0 for 2 minutes.
+
+        - alert: MelosVizBridgeNotReady
+          expr: melosviz_ready == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: MelosViz bridge readiness probe failing
+            description: melosviz_ready is 0 for 5 minutes.
+
+        - alert: MelosVizHighErrorRate
+          expr: |
+            sum(rate(melosviz_http_errors_total[5m]))
+              /
+            clamp_min(sum(rate(melosviz_http_requests_total[5m])), 1e-9)
+              > 0.1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: MelosViz bridge HTTP error rate > 10%
+            description: Error ratio over 5m exceeds 0.1 for 10 minutes.
+
+        - alert: MelosVizAnalyzeLatencyHigh
+          expr: melosviz_http_latency_ms_avg{path="/analyze"} > 15000
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: MelosViz /analyze average latency > 15s
+            description: Aligns with PERF_BENCHMARK / SLO init budget.

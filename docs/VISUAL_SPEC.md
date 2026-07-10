@@ -32,13 +32,16 @@ Demo media: `docs/assets/identity/` (`demo.svg`, `demo.mp4`).
 | Desktop shell | `desktop/views/main/` | Electrobun WKWebView |
 | Web R3F | `web/src/` | Vite + React Three Fiber |
 | Empty states | `desktop/assets/brand/gfx/` | SVG placeholders |
-
-## Golden / regression
-
-- Shape goldens: `eval/golden/` (RenderSpec JSON, not pixels)
-- Screenshot goldens: backlog (WORK_DAG W-205) — prefer Playwright against
-  `web/` once a11y CI lands
+| A11y fixture | `web/a11y/fixture.html` | axe + Playwright goldens |
 
 ## Theme
 
-Dark studio default. Light theme tokens are backlog (W-206).
+Dark studio default (`:root` tokens). Light theme: set
+`data-theme="light"` on `<html>` / `<body>` — see
+`[data-theme="light"]` overrides in `tokens.css`.
+
+## Golden / regression
+
+- Shape goldens: `eval/golden/` (RenderSpec JSON)
+- Screenshot: CI uploads `eval/golden/screenshots/a11y-fixture.png` via `.github/workflows/a11y.yml`
+- PROVENANCE: identity demo + tokens.css + VISUAL_SPEC (this file)

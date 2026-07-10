@@ -69,9 +69,12 @@ Documented for C05 L45; a dedicated `/debug/pprof` endpoint is backlog.
 
 ## Alert ideas (operator-owned)
 
+Committed PrometheusRule sketches:
+[`deploy/prometheus/melosviz-bridge-rules.yaml`](../deploy/prometheus/melosviz-bridge-rules.yaml).
+
 | Alert | Expr (sketch) | Severity |
 |-------|---------------|----------|
-| Bridge down | `up{job="melosviz-bridge"} == 0` | critical |
+| Bridge down | `melosviz_up == 0` | critical |
 | High error rate | `rate(melosviz_http_errors_total[5m]) > 0.1` | warning |
 | Analyze latency | `melosviz_http_latency_ms_avg{path="/analyze"} > 15000` | warning |
 

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MelosViz — a11y fixture</title>
+    <style>
+      :root {
+        --mv-bg: #0d0d10;
+        --mv-text: #f0f0f8;
+        --mv-accent: #7c6af7;
+        --mv-mid: #9090b0;
+      }
+      [data-theme="light"] {
+        --mv-bg: #f6f8fa;
+        --mv-text: #1a0e1f;
+        --mv-accent: #5b4cdb;
+        --mv-mid: #4b5563;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: var(--mv-bg);
+        color: var(--mv-text);
+      }
+      header,
+      main,
+      footer {
+        padding: 1rem 1.5rem;
+      }
+      h1 {
+        color: var(--mv-accent);
+      }
+      .hint {
+        color: var(--mv-mid);
+      }
+      button {
+        background: var(--mv-accent);
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid #22d3ee;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main" style="position: absolute; left: -999px"
+      >Skip to content</a
+    >
+    <header>
+      <h1>MelosViz</h1>
+      <p class="hint">Accessibility fixture for axe / Playwright goldens.</p>
+      <nav aria-label="Primary">
+        <a href="#main">Analyze</a>
+        <a href="#help">Help</a>
+      </nav>
+    </header>
+    <main id="main">
+      <h2>Drop a WAV</h2>
+      <p>Choose an audio file to analyze into a RenderSpec.</p>
+      <label for="wav">WAV file</label>
+      <input id="wav" type="file" accept=".wav,audio/wav" />
+      <p>
+        <button type="button" id="analyze">Analyze</button>
+      </p>
+      <div role="status" aria-live="polite" id="status">Idle</div>
+    </main>
+    <footer id="help">
+      <p>Keyboard: Tab to move, Enter to activate Analyze.</p>
+    </footer>
+    <script>
+      document.getElementById("analyze").addEventListener("click", () => {
+        document.getElementById("status").textContent = "Ready (fixture)";
+      });
+    </script>
+  </body>
+</html>

@@ -87,3 +87,32 @@
   --mv-dur-base:  200ms;
   --mv-dur-slow:  350ms;
 }
+
+/* Light theme — opt-in via data-theme="light" on <html> or <body> */
+[data-theme="light"] {
+  --mv-bg-base:        #f6f8fa;
+  --mv-bg-surface:     #ffffff;
+  --mv-bg-panel:       #eef1f6;
+  --mv-bg-elevated:    #ffffff;
+  --mv-bg-hover:       #e8ecf4;
+  --mv-bg-active:      #dde3ef;
+
+  --mv-border:         #d0d7e2;
+  --mv-border-subtle:  #e5e9f0;
+  --mv-border-focus:   #5b4cdb;
+
+  --mv-accent-lo:      #312e81;
+  --mv-accent-dim:     #4c40b0;
+  --mv-accent:         #5b4cdb;
+  --mv-accent-hi:      #7c6af7;
+  --mv-accent-glow:    rgba(91, 76, 219, 0.18);
+
+  --mv-text-hi:        #1a0e1f;
+  --mv-text-mid:       #4b5563;
+  --mv-text-lo:        #9aa3b2;
+  --mv-text-accent:    #5b4cdb;
+
+  --mv-grad-radial:    radial-gradient(ellipse at center, #efe9ff 0%, #f6f8fa 70%);
+  --mv-shadow-sm:      0 1px 3px rgba(26, 14, 31, 0.08);
+  --mv-shadow-md:      0 4px 12px rgba(26, 14, 31, 0.12);
+}
