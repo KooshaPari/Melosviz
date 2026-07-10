@@ -5,17 +5,22 @@ from __future__ import annotations
 import json
 
 import pytest
-
-hypothesis = pytest.importorskip("hypothesis")
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from melosviz.analysis.models import RenderSpec
 
+pytest.importorskip("hypothesis")
+
 
 @given(
-    duration=st.floats(min_value=0.1, max_value=600, allow_nan=False, allow_infinity=False),
+    duration=st.floats(
+        min_value=0.1, max_value=600, allow_nan=False, allow_infinity=False
+    ),
     fps=st.integers(min_value=1, max_value=120),
-    bpm=st.floats(min_value=40.0, max_value=240.0, allow_nan=False, allow_infinity=False),
+    bpm=st.floats(
+        min_value=40.0, max_value=240.0, allow_nan=False, allow_infinity=False
+    ),
     palette=st.lists(
         st.from_regex(r"#[0-9a-fA-F]{6}", fullmatch=True),
         min_size=0,

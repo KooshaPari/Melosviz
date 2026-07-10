@@ -29,7 +29,9 @@ CASES: tuple[tuple[str, float, int], ...] = (
 )
 
 
-def _write_tone(path: Path, duration_s: float, freq_hz: int, sample_rate: int = 44100) -> Path:
+def _write_tone(
+    path: Path, duration_s: float, freq_hz: int, sample_rate: int = 44100
+) -> Path:
     n = int(duration_s * sample_rate)
     if freq_hz <= 0:
         samples = [0] * n
@@ -105,7 +107,9 @@ def _dump(spec: Any) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("name,duration,freq", CASES)
-def test_golden_renderspec(name: str, duration: float, freq: int, tmp_path: Path) -> None:
+def test_golden_renderspec(
+    name: str, duration: float, freq: int, tmp_path: Path
+) -> None:
     from melosviz.analysis.audio import spec_from_wav
 
     wav = _write_tone(WAV_DIR / f"{name}.wav", duration, freq)
@@ -118,7 +122,9 @@ def test_golden_renderspec(name: str, duration: float, freq: int, tmp_path: Path
     expected_path = EXPECTED_DIR / f"{name}.json"
     if os.environ.get("UPDATE_GOLDEN") in ("1", "true", "True"):
         EXPECTED_DIR.mkdir(parents=True, exist_ok=True)
-        expected_path.write_text(json.dumps(got, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        expected_path.write_text(
+            json.dumps(got, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
         pytest.skip(f"updated golden {expected_path.relative_to(REPO_ROOT)}")
 
     assert expected_path.is_file(), (
