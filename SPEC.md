@@ -647,11 +647,11 @@ as of the repo scan on 2026-07-03.
 
 ## 9. Distribution
 
-This section enumerates **only the channels that
-`.github/workflows/release.yml` actually builds and publishes**. Aspirational
-channels are listed at the end with explicit non-shipment language.
+This section enumerates **distribution channels that CI actually builds**.
+Tag releases are driven by `.github/workflows/release.yml`; the bridge
+container image is driven by `.github/workflows/ghcr-bridge.yml`.
 
-### 9.1 Channels shipped today (verified against `release.yml`)
+### 9.1 Channels shipped today
 
 | Channel | Artifact | Build job | Trigger |
 |---|---|---|---|
@@ -659,9 +659,10 @@ channels are listed at the end with explicit non-shipment language.
 | **Linux CLI tarball** | `MelosViz-<tag>-linux-x86_64.tar.gz` containing `melosviz-render` and `melosviz-mir` binaries + `LICENSE` | `release.yml::linux-cli` | Push of `v*` tag |
 | **Windows CLI zip** | `MelosViz-<tag>-windows-x86_64.zip` containing `melosviz-render.exe` and `melosviz-mir.exe` + `LICENSE` | `release.yml::windows-cli` | Push of `v*` tag |
 | **Windows desktop** (best-effort) | Electrobun package under `win-desktop-out/` | `release.yml::windows-desktop` (`continue-on-error`) | Push of `v*` tag |
+| **GHCR bridge image** | `ghcr.io/<owner>/melosviz-bridge` | `ghcr-bridge.yml` | Push to `main` / `v*` (build-only on PRs) |
 
-Artifacts are uploaded as GitHub Actions artifacts and collated into a single
-GitHub Release by the `release` job (with CycloneDX SBOM + attestations).
+Release artifacts are uploaded as GitHub Actions artifacts and collated into a
+single GitHub Release by the `release` job (with CycloneDX SBOM + attestations).
 
 ### 9.2 Per-channel build steps
 
@@ -715,9 +716,6 @@ repo:
 - **winget / scoop** — no Windows package manager manifests exist
   (Windows CLI zip + best-effort desktop package do ship via GitHub Releases).
 - **brew / Homebrew formula** — no Homebrew tap is configured.
-- **OCI image** — no `docker push` or container publish step exists. A
-  `Dockerfile` is present at the repo root, but CI does not build or push
-  it.
 - **Electrobun auto-update** — wired via `release.baseUrl` + stable-channel
   builds; manifests upload from `desktop/artifacts/` (see `docs/PACKAGING.md`).
   Canary/prerelease auto-update on GitHub Releases remains limited by
@@ -742,7 +740,8 @@ tracking rubric.
 | PyPI publish | Low | Requires `twine` setup + maintainer PyPI token |
 | crates.io publish | Low | Requires maintainer crates.io token |
 | Homebrew tap | Medium | Requires a tap repo and formula review |
-| OCI image | Medium | Requires `docker buildx` + GHCR token |
+| OCI / GHCR bridge image | Done | `.github/workflows/ghcr-bridge.yml` + root `Dockerfile` |
+| Homebrew tap | Medium | Requires a tap repo and formula review |
 | Linux installers (deb/rpm/AppImage) | High | Requires per-distro packaging logic |
 
 These are tracked in `docs/COMPLETENESS.md` (Docker present but not

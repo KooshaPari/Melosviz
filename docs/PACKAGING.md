@@ -59,7 +59,14 @@ mutmut run --paths-to-mutate src/melosviz/ --tests-dir tests/
 # Target: >=75% mutation score per .qgate.toml
 ```
 
-## Container (dev)
+## Container (GHCR)
 
-Use [`.devcontainer/devcontainer.json`](../.devcontainer/devcontainer.json).
-A production GHCR image is backlog (WORK_DAG / C11 L118).
+Production-oriented bridge image:
+
+```bash
+docker build -t ghcr.io/kooshapari/melosviz-bridge:local -f Dockerfile .
+docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:local
+```
+
+CI workflow `.github/workflows/ghcr-bridge.yml` builds on PRs and pushes to
+GHCR on `main` / `v*` tags (`ghcr.io/<owner>/melosviz-bridge`).

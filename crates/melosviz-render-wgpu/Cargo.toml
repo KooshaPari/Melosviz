@@ -2,6 +2,7 @@
 name = "melosviz-render-wgpu"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 description = "Realtime preview renderer for MelosViz — wgpu/Metal backend, RenderSpec v2 input"
 rust-version = "1.80"
 

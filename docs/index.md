@@ -16,6 +16,9 @@ and acceptance material for MelosViz.
 - [`functional_requirements.md`](functional_requirements.md) - FR catalog
 - [`WORK_DAG.md`](WORK_DAG.md) - claimable task DAG
 - [`EVAL.md`](EVAL.md) - eval / golden / Harbor / load index
+- [`USER_JOURNEYS.md`](USER_JOURNEYS.md) - outside-in journey / friction map
+- [`ENV.md`](ENV.md) - 12-factor env catalog
+- [`UNINSTALL.md`](UNINSTALL.md) - uninstall / cleanup matrix
 - [`SLO.md`](SLO.md) - bridge SLO / error-budget sketches
 
 ## Functional Specifications
