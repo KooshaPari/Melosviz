@@ -1,0 +1,67 @@
+name: Eval — parity + Harbor runner
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-harbor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-python-parity:
+    name: Rust ↔ Python RenderSpec parity
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build melosviz-mir
+        run: cargo build --release -p melosviz-mir
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[test]"
+      - name: Parity tests
+        working-directory: backend
+        env:
+          MELOSVIZ_MIR_BIN: ${{ github.workspace }}/target/release/melosviz-mir
+        run: python -m pytest tests/test_rust_python_parity.py -q --tb=short
+
+  harbor-runner:
+    name: Harbor emit + verify (live runner smoke)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[test,bridge]"
+      - name: Emit Harbor task trees
+        run: python eval/harbor/adapter.py --out eval/harbor/out
+      - name: Run Harbor verifiers
+        working-directory: backend
+        run: |
+          python -m pytest \
+            ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
+            ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
+            -q --tb=short
+      - name: Upload Harbor out
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harbor-out
+          path: eval/harbor/out/
+          if-no-files-found: error
+          retention-days: 7

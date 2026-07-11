@@ -272,6 +272,20 @@ jobs:
       - name: List downloaded artifacts
         run: find _artifacts -type f -ls
 
+      - name: Generate SHA256SUMS
+        run: |
+          set -euo pipefail
+          : > SHA256SUMS
+          while IFS= read -r -d '' f; do
+            # Relative path keeps the manifest portable across download layouts.
+            rel="${f#_artifacts/}"
+            (cd _artifacts && sha256sum "$rel") >> SHA256SUMS
+          done < <(find _artifacts -type f -print0 | sort -z)
+          mkdir -p _artifacts/MelosViz-Checksums
+          cp SHA256SUMS _artifacts/MelosViz-Checksums/SHA256SUMS
+          wc -l SHA256SUMS
+          head -20 SHA256SUMS
+
       - name: Attest release artifacts
         # actions/attest-build-provenance v2.4.0 — SHA-pinned
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
@@ -284,6 +298,7 @@ jobs:
             _artifacts/MelosViz-Windows-Desktop/*
             _artifacts/MelosViz-Windows-Updates/*
             _artifacts/MelosViz-SBOM/*
+            _artifacts/MelosViz-Checksums/*
 
       - name: Publish release
         # softprops/action-gh-release v2.2.1 — SHA-pinned
@@ -297,5 +312,6 @@ jobs:
             _artifacts/MelosViz-Windows-Desktop/*
             _artifacts/MelosViz-Windows-Updates/*
             _artifacts/MelosViz-SBOM/*
+            _artifacts/MelosViz-Checksums/*
           generate_release_notes: true
           fail_on_unmatched_files: false

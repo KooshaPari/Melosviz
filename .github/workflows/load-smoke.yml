@@ -36,3 +36,10 @@ jobs:
             -q --tb=short
       - name: Emit Harbor tasks (smoke)
         run: python eval/harbor/adapter.py --out eval/harbor/out
+      - name: Run Harbor verifiers (inline)
+        working-directory: backend
+        run: |
+          python -m pytest \
+            ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
+            ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
+            -q --tb=short
