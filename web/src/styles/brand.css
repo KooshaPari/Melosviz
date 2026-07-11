@@ -6,6 +6,11 @@
   --mv-surface: #13131a;
   --mv-primary-glow: rgba(124, 106, 247, 0.28);
   --mv-secondary-glow: rgba(34, 211, 238, 0.15);
+  --mv-text-display: 28px;
+  --mv-text-heading: 18px;
+  --mv-text-body: 14px;
+  --mv-text-caption: 12px;
+  --mv-measure: 65ch;
 }
 
 /* Mobile responsive breakpoints */

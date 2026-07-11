@@ -11,7 +11,8 @@ and acceptance material for MelosViz.
 - [`visual/IDENTITY.md`](visual/IDENTITY.md) · [`visual/PROVENANCE.md`](visual/PROVENANCE.md)
 - [`PACKAGING.md`](PACKAGING.md) · [`AIRGAP.md`](AIRGAP.md) · [`DISTRIBUTION_POLICY.md`](DISTRIBUTION_POLICY.md)
 - [`a11y/FOCUS.md`](a11y/FOCUS.md) · [`a11y/CONTRAST.md`](a11y/CONTRAST.md)
-- [`SUPPLY_CHAIN.md`](SUPPLY_CHAIN.md) - lockfiles + dependency-confusion policy
+- [`I18N.md`](I18N.md) · [`PRIVACY.md`](PRIVACY.md) · [`KEY_ROTATION.md`](KEY_ROTATION.md)
+- [`GOVERNANCE.md`](GOVERNANCE.md) · [`SIGNING.md`](SIGNING.md) · [`sdk/README.md`](sdk/README.md)
 
 ## Traceability
 

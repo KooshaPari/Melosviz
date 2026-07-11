@@ -64,14 +64,18 @@ import contextlib
 import subprocess
 import tempfile
 
+from fastapi import HTTPException as _HTTPException  # noqa: E402
+
 from melosviz import observability as obs  # noqa: E402
 from melosviz.bridge import security  # noqa: E402
+from melosviz.bridge.errors import http_exception_problem  # noqa: E402
 
 obs.configure_logging()
 obs.configure_otel()
 _log = __import__("logging").getLogger("melosviz.bridge")
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
+app.add_exception_handler(_HTTPException, http_exception_problem)
 
 # Install the security middleware once at module import time. Tests that
 # need to reset state between cases can call ``server.security_limiter.reset()``.

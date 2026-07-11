@@ -1,3 +1,5 @@
+import { t } from '../i18n'
+
 interface LoadingOverlayProps {
   visible: boolean
 }
@@ -31,7 +33,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
             className="mv-freq-bar w-1.5 rounded-sm"
             style={{
               height: '100%',
-              background: `linear-gradient(to top, #7c6af7, #22d3ee)`,
+              background: `linear-gradient(to top, var(--mv-primary), var(--mv-secondary))`,
               // @ts-expect-error CSS custom property
               '--dur': `${0.4 + i * 0.07}s`,
               animationDelay: `${i * 0.06}s`,
@@ -41,7 +43,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
       </div>
 
       <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.6)' }}>
-        Analyzing audio…
+        {t('status.analyzing')}
       </p>
     </div>
   )

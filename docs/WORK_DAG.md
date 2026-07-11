@@ -4,42 +4,35 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green on main] --> B[Air-gap bundle]
-  A --> C[DCO gate]
-  A --> D[Focus + contrast]
-  A --> E[Palette align]
-  B --> F[Re-score C11]
-  C --> G[Re-score C04]
-  D --> H[Re-score C09]
-  E --> I[Re-score C10]
-  F --> J[SCORECARD + audits mirror]
-  G --> J
-  H --> J
-  I --> J
+  A[CI green] --> B[i18n scaffold]
+  A --> C[problem+json]
+  A --> D[privacy/key rotation]
+  A --> E[runner pins]
+  B --> F[Re-score C01]
+  C --> F
+  D --> G[Re-score C02]
+  E --> F
+  F --> H[SCORECARD + audits]
+  G --> H
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-225 | Air-gap bundle script + AIRGAP.md | C11 L121 | M | THIS PR |
-| W-242 | DISTRIBUTION_POLICY.md | C11 L122 | S | THIS PR |
-| W-243 | DCO + dco.yml | C04 L34 | S | THIS PR |
-| W-244 | Focus/contrast docs + desktop skip-link | C09 | M | THIS PR |
-| W-245 | Web/desktop palette align #7c6af7 | C10 L105 | S | THIS PR |
-| W-246 | rust-toolchain.toml | C03 L30.5 | S | THIS PR |
-| W-247 | Re-score + SCORECARD | audit | S | THIS PR |
+| W-248 | i18n en/es catalogs + docs/I18N.md | C01 L16 | M | THIS PR |
+| W-249 | problem+json bridge errors | C01 L14 | S | THIS PR |
+| W-250 | ubuntu-22.04 runner pin consistency | C01 L10 | S | THIS PR |
+| W-251 | PRIVACY + KEY_ROTATION + GOVERNANCE | C02 | M | THIS PR |
+| W-252 | Type scale tokens + ErrorBoundary | C10 | S | THIS PR |
+| W-253 | SDK stubs + CLAUDE.md + SIGNING.md | C00/C04 | S | THIS PR |
+| W-254 | Re-score + SCORECARD | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
-| W-101…W-110 | Windows/OTLP/DX | #127 |
-| W-201…W-217 | Eval + auto-update | #128 |
-| W-204…W-222 | a11y/CodeQL/GHCR/deny | #129 |
-| W-226…W-230 | Parity + Harbor + SHA256SUMS | #130 |
-| W-233…W-237 | Screenshot baselines + supply-chain | #131 |
-| W-231…W-241 | Corpus + cosign + cargo-fuzz | #132 |
+| W-101…W-132 waves | prior closeouts | #127–#133 |
 
 ## Backlog (hard / org)
 

@@ -14,6 +14,9 @@
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | — | observability | OTLP HTTP endpoint (auto-enables OTel) |
 | `OTEL_SERVICE_NAME` | melosviz-bridge | observability | Resource service.name |
 | `MELOSVIZ_PROFILE` | unset/0 | bridge | Enable `GET /debug/profile` cProfile sample |
+| `MELOSVIZ_LOCALE` | `en` | web | UI locale (`en` / `es`) — see `docs/I18N.md` |
 | `MELOSVIZ_BACKEND_PORT` | — | desktop | Sidecar port hint |
+
+Token rotation: `docs/KEY_ROTATION.md`. Privacy: `docs/PRIVACY.md`.
 
 See `docs/security/BRIDGE_THREAT_MODEL.md` and `docs/OBSERVABILITY.md`.

@@ -191,8 +191,12 @@ class TestAnalyzeValidation:
         missing = str(tmp_path / "ghost.wav")
         response = client.post("/analyze", json={"wav_path": missing})
         assert response.status_code == 400
-        detail = response.json().get("detail", "")
+        assert "problem+json" in response.headers.get("content-type", "")
+        body = response.json()
+        detail = str(body.get("detail", ""))
         assert "not found" in detail.lower() or "File not found" in detail
+        assert body.get("status") == 400
+        assert body.get("title")
 
 
 # ---------------------------------------------------------------------------

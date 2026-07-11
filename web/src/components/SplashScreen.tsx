@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { t } from '../i18n'
 
 interface SplashScreenProps {
   onDone: () => void
@@ -76,9 +77,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         ))}
       </div>
 
-      <h1 className="mv-title text-5xl font-black tracking-tight mb-2">MelosViz</h1>
+      <h1 className="mv-title text-5xl font-black tracking-tight mb-2">{t("app.name")}</h1>
       <p className="text-sm font-medium tracking-[0.3em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
-        Music · Vision · Render
+        {t("app.tagline")}
       </p>
     </div>
   )

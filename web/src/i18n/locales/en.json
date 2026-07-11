@@ -1,0 +1,13 @@
+{
+  "app.name": "MelosViz",
+  "app.tagline": "Music · Vision · Render",
+  "action.analyze": "Analyze",
+  "action.build": "Build Plan",
+  "action.render": "Render Video",
+  "empty.drop_wav": "Drop a WAV",
+  "empty.hint": "Choose an audio file to analyze into a RenderSpec.",
+  "status.ready": "Ready",
+  "status.analyzing": "Analyzing audio…",
+  "error.generic": "Something went wrong.",
+  "error.retry": "Retry"
+}
