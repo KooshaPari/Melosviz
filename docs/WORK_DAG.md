@@ -4,35 +4,36 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[i18n scaffold]
-  A --> C[problem+json]
-  A --> D[privacy/key rotation]
-  A --> E[runner pins]
-  B --> F[Re-score C01]
-  C --> F
-  D --> G[Re-score C02]
-  E --> F
-  F --> H[SCORECARD + audits]
-  G --> H
+  A[CI green] --> B[OpenAPI export]
+  A --> C[Journey friction CI]
+  A --> D[ThemeProvider]
+  A --> E[Splash + screenshot]
+  B --> F[Re-score C00]
+  C --> G[Re-score C03]
+  D --> H[Re-score C10]
+  E --> H
+  F --> I[SCORECARD + audits]
+  G --> I
+  H --> I
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-248 | i18n en/es catalogs + docs/I18N.md | C01 L16 | M | THIS PR |
-| W-249 | problem+json bridge errors | C01 L14 | S | THIS PR |
-| W-250 | ubuntu-22.04 runner pin consistency | C01 L10 | S | THIS PR |
-| W-251 | PRIVACY + KEY_ROTATION + GOVERNANCE | C02 | M | THIS PR |
-| W-252 | Type scale tokens + ErrorBoundary | C10 | S | THIS PR |
-| W-253 | SDK stubs + CLAUDE.md + SIGNING.md | C00/C04 | S | THIS PR |
-| W-254 | Re-score + SCORECARD | audit | S | THIS PR |
+| W-255 | OpenAPI export + drift CI | C00 L2 | M | THIS PR |
+| W-256 | Journey friction gate CI | C03 L30.12 | M | THIS PR |
+| W-257 | PARALLEL_AGENTS.md concurrency policy | C03 L30.9 | S | THIS PR |
+| W-258 | ThemeProvider + light theme | C10 L104 | M | THIS PR |
+| W-259 | Wire splash.html + desktop screenshot baseline | C10 L103/L107 | M | THIS PR |
+| W-260 | Skeleton loading blocks | C10 L99 | S | THIS PR |
+| W-261 | Re-score + SCORECARD | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
-| W-101…W-132 waves | prior closeouts | #127–#133 |
+| W-101…W-254 | prior closeouts | #127–#134 |
 
 ## Backlog (hard / org)
 

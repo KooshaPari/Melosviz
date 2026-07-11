@@ -3,9 +3,9 @@
 | File | Source | Gate |
 |------|--------|------|
 | `a11y-fixture.baseline.png` | Ubuntu Chromium 1280×720 of `web/a11y/fixture.html` | `.github/workflows/a11y.yml` pixelmatch ≤0.2% |
+| `desktop-splash.baseline.png` | Ubuntu Chromium 1280×720 of `desktop/views/main/splash.html` | same workflow |
 
-Fresh captures land as `a11y-fixture.png` (gitignored / CI-only). Diffs as
-`a11y-fixture.diff.png`.
+Fresh captures land as `*.png` (gitignored / CI-only). Diffs as `*.diff.png`.
 
 Update baseline after intentional fixture changes:
 

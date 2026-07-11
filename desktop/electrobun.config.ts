@@ -32,6 +32,7 @@ const config: ElectrobunConfig = {
       // copy the HTML shell.  Without this entry, views://main/index.html resolves
       // to a missing file and the webview 404s (blank window).
       "views/main/index.html": "views/main/index.html",
+      "views/main/splash.html": "views/main/splash.html",
     },
     // App icon: all macOS sizes (16–1024) generated via rsvg-convert + iconutil
     // from assets/brand/logo.svg; electrobun runs iconutil to produce AppIcon.icns.

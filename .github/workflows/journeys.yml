@@ -1,0 +1,28 @@
+name: Journeys — friction gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: journeys-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  friction:
+    name: USER_JOURNEYS friction gate
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check journey map + linked surfaces
+        run: python scripts/check_journeys.py
+      - name: Diagnose script smoke
+        run: python -c "import ast; ast.parse(open('scripts/diagnose.py', encoding='utf-8').read()); print('diagnose.py OK')"

@@ -1,4 +1,5 @@
 import { t } from '../i18n'
+import { SkeletonBlock } from './Skeleton'
 
 interface LoadingOverlayProps {
   visible: boolean
@@ -9,7 +10,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex flex-col items-center justify-center"
+      className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6"
       style={{ background: 'rgba(15,15,26,0.85)', backdropFilter: 'blur(4px)' }}
     >
       <style>{`
@@ -26,7 +27,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
         }
       `}</style>
 
-      <div className="flex items-end gap-1 h-10 mb-4">
+      <div className="flex items-end gap-1 h-10 mb-2">
         {[0.5, 0.8, 1.0, 0.7, 0.9, 0.6, 1.0, 0.8, 0.5].map((_, i) => (
           <div
             key={i}
@@ -45,6 +46,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
       <p className="text-sm font-medium tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.6)' }}>
         {t('status.analyzing')}
       </p>
+      <SkeletonBlock />
     </div>
   )
 }
