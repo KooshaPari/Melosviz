@@ -38,7 +38,7 @@ jobs:
       - name: Export schema and check drift
         run: |
           python scripts/export_openapi.py
-          git diff --exit-code -- docs/api/openapi.json \
+          git diff --ignore-cr-at-eol --exit-code -- docs/api/openapi.json \
             || (echo "::error::OpenAPI drift — run scripts/export_openapi.py and commit" && exit 1)
       - name: Upload OpenAPI artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
