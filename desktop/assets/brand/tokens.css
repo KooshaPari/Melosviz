@@ -57,6 +57,13 @@
   --mv-font-mono:      "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", ui-monospace, monospace;
   --mv-font-display:   -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
 
+  /* Type scale (display / heading / body / caption) */
+  --mv-text-display: 28px;
+  --mv-text-heading: 18px;
+  --mv-text-body:    14px;
+  --mv-text-caption: 12px;
+  --mv-measure:      65ch;
+
   /* ── Spacing ─────────────────────────────────────────────────────── */
   --mv-space-1:  4px;
   --mv-space-2:  8px;

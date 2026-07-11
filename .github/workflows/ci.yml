@@ -92,7 +92,7 @@ jobs:
     # and docs/QGATE_BASELINE.md "manual/host-only checks").
     # Linux CI covers: bridge /health, /analyze (RenderSpec shape), /build (render plan).
     #
-    # Billing note: standard ubuntu-latest runner — no macOS billing triggered.
+    # Billing note: standard ubuntu-22.04 runner — no macOS billing triggered.
     runs-on: ubuntu-22.04
     needs: backend
 

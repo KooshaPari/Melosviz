@@ -90,7 +90,7 @@ jobs:
 
   linux-cli:
     name: Linux — CLI tarball (Rust binaries)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -229,7 +229,7 @@ jobs:
 
   sbom:
     name: Release SBOM (CycloneDX)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
@@ -256,7 +256,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [macos-desktop, linux-cli, windows-cli, windows-desktop, sbom]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
       id-token: write
