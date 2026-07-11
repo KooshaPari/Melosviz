@@ -32,6 +32,9 @@ bunx electrobun build
 bunx electrobun package
 ```
 
+Provenance: GitHub attestations + CycloneDX SBOM + `SHA256SUMS` on each
+GitHub Release (`release.yml` checksums step).
+
 ## Auto-update
 
 Release artifacts land on GitHub Releases with SLSA-style attestations.

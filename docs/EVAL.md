@@ -9,7 +9,8 @@ Index of evaluation, benchmark, load, and golden-corpus tooling (audit-v38 C08).
 | PERF numbers | `docs/PERF_BENCHMARK.md` | Documented baselines |
 | Golden RenderSpec corpus | `eval/golden/` + `backend/tests/test_golden_corpus.py` | Pytest |
 | Bridge load smoke | `backend/tests/test_load_bridge.py` + `.github/workflows/load-smoke.yml` | Concurrent /health |
-| Harbor / portage adapter | `eval/harbor/` | Emit task trees for agent eval |
+| Harbor / portage adapter | `eval/harbor/` | Emit + verify in `parity-harbor.yml` / `load-smoke.yml` |
+| Rust↔Python parity | `backend/tests/test_rust_python_parity.py` | `parity-harbor.yml` builds MIR + pytest |
 | Mutation testing | `.github/workflows/mutmut.yml` | Weekly |
 | Coverage | `ci.yml` `--cov-fail-under=85` | PR fail |
 | Flaky quarantine | pytest marker `flaky` (see below) | Skip in default CI |
@@ -28,7 +29,17 @@ UPDATE_GOLDEN=1 python -m pytest tests/test_golden_corpus.py -q
 
 ```bash
 python eval/harbor/adapter.py --out eval/harbor/out
-# Emits portage/Harbor task trees (task.toml + instruction.md + tests/)
+# Live runner smoke (CI):
+cd backend && pytest ../eval/harbor/out/melosviz-analyze-sine/tests/ \
+  ../eval/harbor/out/melosviz-bridge-health/tests/ -q
+```
+
+## Rust ↔ Python parity
+
+```bash
+cargo build --release -p melosviz-mir
+export MELOSVIZ_MIR_BIN=$PWD/target/release/melosviz-mir
+cd backend && pytest tests/test_rust_python_parity.py -q
 ```
 
 ## Load smoke

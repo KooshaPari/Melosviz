@@ -28,6 +28,7 @@ class HarborTask:
     language: str
     instruction: str
     verify_snippet: str
+    test_filename: str = "test_verify.py"
 
 
 TASKS: tuple[HarborTask, ...] = (
@@ -36,6 +37,7 @@ TASKS: tuple[HarborTask, ...] = (
         category="analysis",
         difficulty="easy",
         language="python",
+        test_filename="test_analyze_sine.py",
         instruction=textwrap.dedent(
             """\
             # Analyze a synthetic WAV into RenderSpec
@@ -88,6 +90,7 @@ TASKS: tuple[HarborTask, ...] = (
         category="bridge",
         difficulty="easy",
         language="python",
+        test_filename="test_bridge_health.py",
         instruction=textwrap.dedent(
             """\
             # Bridge health probe
@@ -119,6 +122,7 @@ TASKS: tuple[HarborTask, ...] = (
         category="eval",
         difficulty="medium",
         language="python",
+        test_filename="test_golden_normalize.py",
         instruction=textwrap.dedent(
             """\
             # Golden corpus check
@@ -136,9 +140,10 @@ TASKS: tuple[HarborTask, ...] = (
             import sys
             from pathlib import Path
 
+            import pytest
+
+
             def test_golden_suite_passes() -> None:
-                root = Path(__file__).resolve().parents[4]  # repo root from emitted tree
-                # Fallback: walk up looking for backend/tests
                 cand = Path.cwd()
                 for p in [cand, *cand.parents]:
                     t = p / "backend" / "tests" / "test_golden_corpus.py"
@@ -189,7 +194,7 @@ def _emit_task(task: HarborTask, out_root: Path) -> Path:
         ),
         encoding="utf-8",
     )
-    (dest / "tests" / "test_verify.py").write_text(
+    (dest / "tests" / task.test_filename).write_text(
         task.verify_snippet, encoding="utf-8"
     )
     return dest
