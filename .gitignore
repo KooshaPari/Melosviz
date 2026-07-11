@@ -47,9 +47,15 @@ eval/harbor/out/
 eval/golden/wav/
 eval/golden/screenshots/a11y-fixture.png
 eval/golden/screenshots/a11y-fixture.diff.png
+scripts/visual-gate/node_modules/
+
+# cargo-fuzz working trees
+fuzz/target/
+fuzz/corpus/
+fuzz/artifacts/
+fuzz/coverage/
 
 
 target/
 eval/harbor/out/
-scripts/visual-gate/node_modules/
 

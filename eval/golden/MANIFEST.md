@@ -1,12 +1,17 @@
 # Golden RenderSpec corpus
 
-Synthetic WAVs (deterministic tones) and expected normalized RenderSpec JSON.
+Synthetic WAVs (deterministic tones + multi-genre character synthetics) and
+expected normalized RenderSpec JSON. Copyright-free stand-ins for real-track
+diversity (kick pulse / chord stack / noise burst).
 
-| Case | WAV | Expected |
-|------|-----|----------|
-| `sine_440hz_1s` | `wav/sine_440hz_1s.wav` | `expected/sine_440hz_1s.json` |
-| `sine_220hz_2s` | `wav/sine_220hz_2s.wav` | `expected/sine_220hz_2s.json` |
-| `silence_1s` | `wav/silence_1s.wav` | `expected/silence_1s.json` |
+| Case | Character | Expected |
+|------|-----------|----------|
+| `sine_440hz_1s` | pure tone A4 | `expected/sine_440hz_1s.json` |
+| `sine_220hz_2s` | pure tone A3 | `expected/sine_220hz_2s.json` |
+| `silence_1s` | silence | `expected/silence_1s.json` |
+| `kick_pattern_2s` | electronic / EDM-like pulses | `expected/kick_pattern_2s.json` |
+| `chord_cmaj_1s` | harmonic / pop triad | `expected/chord_cmaj_1s.json` |
+| `noise_burst_1s` | ambient / texture noise | `expected/noise_burst_1s.json` |
 
 Regenerate:
 

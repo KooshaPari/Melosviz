@@ -35,6 +35,23 @@ fn analyzer_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("mir_analyzer");
     group.sample_size(10);
 
+    // CI smoke — keep tiny so criterion-smoke.yml stays under a few minutes.
+    group.bench_function(BenchmarkId::from_parameter("1s"), |b| {
+        let temp = generate_test_wav(1.0);
+        let path = temp.path();
+        b.iter(|| {
+            let wav = load_wav_mono(black_box(path)).expect("load wav");
+            analyze(
+                &wav,
+                black_box(MirParams {
+                    n_dense_fps: 15,
+                    n_fft: 2048,
+                    hop_length: 512,
+                }),
+            )
+        });
+    });
+
     // 180-second baseline (common case)
     group.bench_function(BenchmarkId::from_parameter("180s"), |b| {
         let temp = generate_test_wav(180.0);

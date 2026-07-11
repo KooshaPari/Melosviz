@@ -281,6 +281,40 @@ async def metrics() -> str:
     return obs.metrics_prometheus()
 
 
+@app.get("/debug/profile")
+async def debug_profile() -> dict[str, object]:
+    """Opt-in CPU profile sample (enable with ``MELOSVIZ_PROFILE=1``).
+
+    Returns a short ``cProfile`` dump for a trivial workload so operators can
+    confirm the profiler path without attaching an external agent. Disabled
+    (404) unless explicitly enabled — keeps the default attack surface small.
+    """
+    if os.environ.get("MELOSVIZ_PROFILE", "").strip() not in ("1", "true", "True"):
+        raise HTTPException(status_code=404, detail="profiler disabled")
+    import cProfile
+    import io
+    import pstats
+
+    def _work() -> int:
+        total = 0
+        for i in range(50_000):
+            total += i * i
+        return total
+
+    pr = cProfile.Profile()
+    pr.enable()
+    result = _work()
+    pr.disable()
+    buf = io.StringIO()
+    stats = pstats.Stats(pr, stream=buf).sort_stats("cumulative")
+    stats.print_stats(20)
+    return {
+        "status": "ok",
+        "result": result,
+        "profile": buf.getvalue(),
+    }
+
+
 @app.post("/analyze", response_class=PlainTextResponse)
 async def analyze(req: AnalyzeRequest) -> str:
     """Analyze a WAV file and return the RenderSpec as JSON text.

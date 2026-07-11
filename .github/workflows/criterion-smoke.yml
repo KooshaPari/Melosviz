@@ -1,0 +1,32 @@
+name: Criterion bench smoke
+
+on:
+  schedule:
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "crates/melosviz-mir/benches/**"
+      - "crates/melosviz-mir/src/**"
+      - ".github/workflows/criterion-smoke.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: criterion-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mir-1s:
+    name: melosviz-mir analyzer 1s smoke
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+      - name: Criterion quick (1s filter)
+        run: |
+          cargo bench -p melosviz-mir --bench analyzer -- \
+            1s --warm-up-time 1 --measurement-time 2 --sample-size 10

@@ -32,8 +32,8 @@ bunx electrobun build
 bunx electrobun package
 ```
 
-Provenance: GitHub attestations + CycloneDX SBOM + `SHA256SUMS` on each
-GitHub Release (`release.yml` checksums step).
+Provenance: GitHub attestations + CycloneDX SBOM + `SHA256SUMS` + cosign
+keyless `SHA256SUMS.cosign.bundle` on each release (`release.yml`).
 
 ## Auto-update
 

@@ -13,6 +13,7 @@
 | `MELOSVIZ_OTEL` | auto | observability | Force OTel on/off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | — | observability | OTLP HTTP endpoint (auto-enables OTel) |
 | `OTEL_SERVICE_NAME` | melosviz-bridge | observability | Resource service.name |
+| `MELOSVIZ_PROFILE` | unset/0 | bridge | Enable `GET /debug/profile` cProfile sample |
 | `MELOSVIZ_BACKEND_PORT` | — | desktop | Sidecar port hint |
 
 See `docs/security/BRIDGE_THREAT_MODEL.md` and `docs/OBSERVABILITY.md`.

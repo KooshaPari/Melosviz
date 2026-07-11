@@ -57,6 +57,10 @@ Bridge CPU/memory profiling is operator-opt-in (no always-on profiler in
 the default install):
 
 ```bash
+# Opt-in HTTP sample (cProfile dump; 404 unless enabled)
+export MELOSVIZ_PROFILE=1
+curl -s localhost:8765/debug/profile
+
 # py-spy (attach to bridge PID)
 pip install py-spy
 py-spy top --pid <bridge-pid>
@@ -65,7 +69,8 @@ py-spy top --pid <bridge-pid>
 python -m cProfile -o analyze.prof -m melosviz.cli.main analyze track.wav
 ```
 
-Documented for C05 L45; a dedicated `/debug/pprof` endpoint is backlog.
+Documented for C05 L45; `GET /debug/profile` is the in-process sample path
+(`MELOSVIZ_PROFILE=1`). Always-on continuous agents remain optional.
 
 ## Alert ideas (operator-owned)
 

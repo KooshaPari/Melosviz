@@ -32,6 +32,11 @@ CycloneDX SBOMs for Python and Cargo are generated in CI
 (`sbom-python.cdx.json`, `sbom-cargo.cdx.json`) and uploaded as artifacts.
 Release tags also attach SBOM artifacts when the release workflow runs.
 
+## Release signatures
+
+`release.yml` attaches GitHub attestations and a cosign keyless
+`SHA256SUMS.cosign.bundle` beside `SHA256SUMS` under `MelosViz-Checksums`.
+
 ## CodeQL / SonarCloud
 
 Static analysis may run via org SonarCloud and/or CodeQL. SonarCloud
