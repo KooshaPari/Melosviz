@@ -139,7 +139,7 @@ describe('specToSceneParams', () => {
         {
           t: 0,
           camera: { distance: 7, azimuth: 0.5, elevation: 0.1 },
-          color: { primary: '#7c3aed', secondary: '#06b6d4', brightness: 0.8 },
+          color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.8 },
         },
       ],
     }

@@ -11,8 +11,10 @@ This document is the Time-2 packaging map for audit-v38 cluster C11.
 | Linux CLI | `melosviz-mir` + `melosviz-render` tarball | `linux-cli` |
 | Windows CLI | `melosviz-mir.exe` + `melosviz-render.exe` zip | `windows-cli` |
 | Windows desktop | Electrobun package (best-effort) | `windows-desktop` (`continue-on-error`) |
+| GHCR bridge | `ghcr.io/kooshapari/melosviz-bridge` | `ghcr-bridge.yml` |
+| Air-gap tarball | `scripts/airgap_bundle.sh` → `dist/airgap/*.tar.gz` | local / operator |
 | SBOM | CycloneDX Python + Cargo | `sbom` |
-| Provenance | GitHub attestations | `release` |
+| Provenance | GitHub attestations + cosign | `release` |
 
 ## From source
 

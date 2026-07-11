@@ -96,9 +96,9 @@ function LabeledSlider({ label, value, min, max, step, onChange }: LabeledSlider
         aria-label={label}
       >
         <Slider.Track className="bg-white/10 relative grow rounded-full h-1.5">
-          <Slider.Range className="absolute bg-[var(--mv-primary,#7c3aed)] rounded-full h-full" />
+          <Slider.Range className="absolute bg-[var(--mv-primary,#7c6af7)] rounded-full h-full" />
         </Slider.Track>
-        <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow focus:outline-none focus:ring-2 focus:ring-[var(--mv-primary,#7c3aed)] focus:ring-offset-1 focus:ring-offset-[var(--mv-bg,#080808)] cursor-pointer" />
+        <Slider.Thumb className="block w-4 h-4 bg-white rounded-full shadow focus:outline-none focus:ring-2 focus:ring-[var(--mv-primary,#7c6af7)] focus:ring-offset-1 focus:ring-offset-[var(--mv-bg,#080808)] cursor-pointer" />
       </Slider.Root>
     </div>
   )

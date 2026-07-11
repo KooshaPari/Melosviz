@@ -9,6 +9,8 @@ and acceptance material for MelosViz.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) - surface / role map
 - [`VISUAL_SPEC.md`](VISUAL_SPEC.md) - brand / motion / theme contract
 - [`visual/IDENTITY.md`](visual/IDENTITY.md) · [`visual/PROVENANCE.md`](visual/PROVENANCE.md)
+- [`PACKAGING.md`](PACKAGING.md) · [`AIRGAP.md`](AIRGAP.md) · [`DISTRIBUTION_POLICY.md`](DISTRIBUTION_POLICY.md)
+- [`a11y/FOCUS.md`](a11y/FOCUS.md) · [`a11y/CONTRAST.md`](a11y/CONTRAST.md)
 - [`SUPPLY_CHAIN.md`](SUPPLY_CHAIN.md) - lockfiles + dependency-confusion policy
 
 ## Traceability
