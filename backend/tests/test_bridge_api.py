@@ -152,6 +152,26 @@ class TestReadyAndMetrics:
         assert "melosviz_ready" in body
         assert "melosviz_http_requests_total" in body
 
+    def test_debug_profile_disabled_by_default(self, client: TestClient) -> None:
+        import os
+
+        os.environ.pop("MELOSVIZ_PROFILE", None)
+        assert client.get("/debug/profile").status_code == 404
+
+    def test_debug_profile_enabled(self, client: TestClient) -> None:
+        import os
+
+        os.environ["MELOSVIZ_PROFILE"] = "1"
+        try:
+            response = client.get("/debug/profile")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "ok"
+            assert "profile" in data
+            assert "function calls" in data["profile"]
+        finally:
+            os.environ.pop("MELOSVIZ_PROFILE", None)
+
 
 # ---------------------------------------------------------------------------
 # POST /analyze — validation errors

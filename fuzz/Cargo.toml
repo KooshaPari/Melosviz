@@ -1,0 +1,28 @@
+[package]
+name = "melosviz-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+melosviz-mir = { path = "../crates/melosviz-mir" }
+serde_json = "1"
+tempfile = "3"
+
+[[bin]]
+name = "renderspec_json"
+path = "fuzz_targets/renderspec_json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "wav_header"
+path = "fuzz_targets/wav_header.rs"
+test = false
+doc = false
+bench = false

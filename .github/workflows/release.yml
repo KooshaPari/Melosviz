@@ -286,6 +286,27 @@ jobs:
           wc -l SHA256SUMS
           head -20 SHA256SUMS
 
+      - name: Install cosign
+        # sigstore/cosign-installer v3.8.2 — SHA-pinned
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb
+        with:
+          cosign-release: v2.4.3
+
+      - name: Cosign sign-blob SHA256SUMS (keyless OIDC)
+        env:
+          COSIGN_YES: "true"
+        run: |
+          set -euo pipefail
+          cosign sign-blob \
+            --bundle _artifacts/MelosViz-Checksums/SHA256SUMS.cosign.bundle \
+            SHA256SUMS
+          cosign verify-blob \
+            --bundle _artifacts/MelosViz-Checksums/SHA256SUMS.cosign.bundle \
+            --certificate-identity-regexp 'https://github.com/KooshaPari/Melosviz/.*' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            SHA256SUMS
+          ls -la _artifacts/MelosViz-Checksums/
+
       - name: Attest release artifacts
         # actions/attest-build-provenance v2.4.0 — SHA-pinned
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be

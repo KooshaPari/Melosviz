@@ -7,7 +7,9 @@ Index of evaluation, benchmark, load, and golden-corpus tooling (audit-v38 C08).
 | Perf smoke (init / preset) | `.github/workflows/perf-smoke.yml` | PR fail if budgets exceeded |
 | Criterion benches | `crates/*/benches/` | Local / optional CI |
 | PERF numbers | `docs/PERF_BENCHMARK.md` | Documented baselines |
-| Golden RenderSpec corpus | `eval/golden/` + `backend/tests/test_golden_corpus.py` | Pytest |
+| Golden RenderSpec corpus | `eval/golden/` + `backend/tests/test_golden_corpus.py` | Pytest (6 multi-genre cases) |
+| Criterion MIR smoke | `.github/workflows/criterion-smoke.yml` | Weekly / path-filtered PR |
+| cargo-fuzz | `fuzz/` + `.github/workflows/cargo-fuzz.yml` | Nightly 60s/target |
 | Bridge load smoke | `backend/tests/test_load_bridge.py` + `.github/workflows/load-smoke.yml` | Concurrent /health |
 | Harbor / portage adapter | `eval/harbor/` | Emit + verify in `parity-harbor.yml` / `load-smoke.yml` |
 | Rust↔Python parity | `backend/tests/test_rust_python_parity.py` | `parity-harbor.yml` builds MIR + pytest |
