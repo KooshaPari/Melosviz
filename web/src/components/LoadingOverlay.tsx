@@ -19,6 +19,9 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
           transform-origin: bottom;
           animation: mv-freq var(--dur, 0.6s) ease-in-out infinite;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .mv-freq-bar { animation: none !important; }
+        }
       `}</style>
 
       <div className="flex items-end gap-1 h-10 mb-4">

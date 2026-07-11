@@ -47,11 +47,23 @@ jobs:
             http://127.0.0.1:8760/fixture.html \
             eval/golden/screenshots/a11y-fixture.png
           ls -la eval/golden/screenshots/a11y-fixture.png
-      - name: Upload screenshot artifact
+      - name: Pixel-diff vs committed baseline
+        run: |
+          test -f eval/golden/screenshots/a11y-fixture.baseline.png
+          npm ci --prefix scripts/visual-gate
+          node scripts/visual-gate/compare.mjs \
+            eval/golden/screenshots/a11y-fixture.baseline.png \
+            eval/golden/screenshots/a11y-fixture.png \
+            eval/golden/screenshots/a11y-fixture.diff.png \
+            0.002
+      - name: Upload screenshot artifacts
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: a11y-fixture-screenshot
-          path: eval/golden/screenshots/a11y-fixture.png
+          path: |
+            eval/golden/screenshots/a11y-fixture.png
+            eval/golden/screenshots/a11y-fixture.diff.png
           if-no-files-found: error
           retention-days: 14
       - name: Stop server

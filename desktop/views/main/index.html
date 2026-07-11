@@ -888,6 +888,17 @@
       to   { height: 36px; opacity: 1;   }
     }
 
+    @media (prefers-reduced-motion: reduce) {
+      #status-dot.busy,
+      .progress-fill::after,
+      .render-bar {
+        animation: none !important;
+      }
+      * {
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     .render-card-title {
       font-family: var(--mv-font-display);
       font-size: 15px;
