@@ -48,6 +48,8 @@ dist/airgap/
 eval/golden/wav/
 eval/golden/screenshots/a11y-fixture.png
 eval/golden/screenshots/a11y-fixture.diff.png
+eval/golden/screenshots/desktop-splash.png
+eval/golden/screenshots/desktop-splash.diff.png
 scripts/visual-gate/node_modules/
 
 # cargo-fuzz working trees

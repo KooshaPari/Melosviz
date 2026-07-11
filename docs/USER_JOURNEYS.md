@@ -43,3 +43,9 @@ Agent-facing friction map for the primary studio loops. Pair with
 | J3 | Canvas/WebGL SR support thin | W-204 axe fixture covers chrome only |
 | J4 | No mobile native | C11 L117 |
 | J1 | Real multi-genre corpus optional | C08 L71 |
+
+## CI friction gate
+
+`.github/workflows/journeys.yml` runs `scripts/check_journeys.py` on every PR
+to ensure this map stays linked to diagnose / Harbor / a11y / EVAL / Prometheus
+surfaces.

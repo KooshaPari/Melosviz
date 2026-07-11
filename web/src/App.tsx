@@ -13,6 +13,7 @@ import { WaveformDisplay } from './components/WaveformDisplay'
 import { PresetEditor } from './components/PresetEditor'
 import { KeyboardHelp } from './components/KeyboardHelp'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useTheme } from './theme/ThemeProvider'
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -62,6 +63,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true)
   const [showHelp, setShowHelp] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const { theme, toggle: toggleTheme } = useTheme()
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
   // Playlist: wraps useAnalysis.analyze for file-based inputs
@@ -230,14 +232,24 @@ export default function App() {
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
-          <button
-            onClick={() => setShowHelp(true)}
-            title="Keyboard shortcuts (?)"
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
-            aria-label="Show keyboard shortcuts"
-          >
-            ?
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleTheme}
+              title="Toggle light/dark theme"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-[10px] text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            >
+              {theme === "dark" ? "Aa" : "A"}
+            </button>
+            <button
+              onClick={() => setShowHelp(true)}
+              title="Keyboard shortcuts (?)"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+              aria-label="Show keyboard shortcuts"
+            >
+              ?
+            </button>
+          </div>
         </div>
 
         {/* File picker + Analyze */}

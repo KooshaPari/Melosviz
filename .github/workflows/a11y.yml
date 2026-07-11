@@ -24,12 +24,18 @@ jobs:
           node-version: "22"
       - name: Install Playwright Chromium
         run: npx --yes playwright@1.52.0 install --with-deps chromium
-      - name: Serve fixture
+      - name: Serve fixtures
         run: |
           python3 -m http.server 8760 --directory web/a11y &
           echo $! > /tmp/http.pid
+          python3 -m http.server 8761 --directory desktop/views/main &
+          echo $! > /tmp/http2.pid
           for i in $(seq 1 20); do
             curl -sf http://127.0.0.1:8760/fixture.html >/dev/null && break
+            sleep 0.5
+          done
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8761/splash.html >/dev/null && break
             sleep 0.5
           done
       - name: axe-core CLI
@@ -46,15 +52,26 @@ jobs:
             --viewport-size=1280,720 \
             http://127.0.0.1:8760/fixture.html \
             eval/golden/screenshots/a11y-fixture.png
-          ls -la eval/golden/screenshots/a11y-fixture.png
-      - name: Pixel-diff vs committed baseline
+          npx --yes playwright@1.52.0 screenshot \
+            --browser chromium \
+            --viewport-size=1280,720 \
+            http://127.0.0.1:8761/splash.html \
+            eval/golden/screenshots/desktop-splash.png
+          ls -la eval/golden/screenshots/
+      - name: Pixel-diff vs committed baselines
         run: |
           test -f eval/golden/screenshots/a11y-fixture.baseline.png
+          test -f eval/golden/screenshots/desktop-splash.baseline.png
           npm ci --prefix scripts/visual-gate
           node scripts/visual-gate/compare.mjs \
             eval/golden/screenshots/a11y-fixture.baseline.png \
             eval/golden/screenshots/a11y-fixture.png \
             eval/golden/screenshots/a11y-fixture.diff.png \
+            0.002
+          node scripts/visual-gate/compare.mjs \
+            eval/golden/screenshots/desktop-splash.baseline.png \
+            eval/golden/screenshots/desktop-splash.png \
+            eval/golden/screenshots/desktop-splash.diff.png \
             0.002
       - name: Upload screenshot artifacts
         if: always()
@@ -64,8 +81,12 @@ jobs:
           path: |
             eval/golden/screenshots/a11y-fixture.png
             eval/golden/screenshots/a11y-fixture.diff.png
+            eval/golden/screenshots/desktop-splash.png
+            eval/golden/screenshots/desktop-splash.diff.png
           if-no-files-found: error
           retention-days: 14
       - name: Stop server
         if: always()
-        run: kill $(cat /tmp/http.pid) || true
+        run: |
+          kill $(cat /tmp/http.pid) || true
+          kill $(cat /tmp/http2.pid) || true

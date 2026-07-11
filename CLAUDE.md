@@ -45,6 +45,7 @@ Or use `.devcontainer/devcontainer.json` / `scripts/diagnose.py`.
 - Do not bypass ruff/pytest/cargo-deny gates.
 - Prefer tokens (`--mv-*`) over hardcoded hex; see `docs/VISUAL_SPEC.md`.
 - Errors from the bridge use `application/problem+json` (RFC 7807-ish).
+- Parallel agents: `docs/PARALLEL_AGENTS.md` (worktree / mutating-lane rules).
 
 ## Agent pointers
 

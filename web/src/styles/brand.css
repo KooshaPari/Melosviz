@@ -13,6 +13,15 @@
   --mv-measure: 65ch;
 }
 
+[data-theme="light"] {
+  --mv-primary: #5b4cdb;
+  --mv-secondary: #0891b2;
+  --mv-bg: #f6f8fa;
+  --mv-surface: #ffffff;
+  --mv-primary-glow: rgba(91, 76, 219, 0.18);
+  --mv-secondary-glow: rgba(8, 145, 178, 0.12);
+}
+
 /* Mobile responsive breakpoints */
 @media (max-width: 768px) {
   .mv-layout { flex-direction: column !important; }
