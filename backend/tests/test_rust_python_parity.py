@@ -22,7 +22,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _make_wav(path: Path, duration_s: float = 1.0, freq: float = 440.0, sr: int = 44100) -> Path:
+def _make_wav(
+    path: Path, duration_s: float = 1.0, freq: float = 440.0, sr: int = 44100
+) -> Path:
     n = int(duration_s * sr)
     samples = [int(32767 * math.sin(2 * math.pi * freq * i / sr)) for i in range(n)]
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,7 +84,9 @@ REQUIRED_META = {"sample_rate", "channels", "duration", "fps"}
 def mir_bin() -> Path:
     bin_path = _find_mir_bin()
     if bin_path is None:
-        pytest.skip("melosviz-mir binary not found; build with cargo build -p melosviz-mir")
+        pytest.skip(
+            "melosviz-mir binary not found; build with cargo build -p melosviz-mir"
+        )
     return bin_path
 
 
@@ -98,16 +102,27 @@ def test_rust_python_metadata_parity(mir_bin: Path, tmp_path: Path) -> None:
     assert REQUIRED_META.issubset(set(rust["metadata"].keys()))
     assert REQUIRED_META.issubset(set(py_dump["metadata"].keys()))
 
-    assert int(rust["metadata"]["sample_rate"]) == int(py_dump["metadata"]["sample_rate"]) == 44100
+    assert (
+        int(rust["metadata"]["sample_rate"])
+        == int(py_dump["metadata"]["sample_rate"])
+        == 44100
+    )
     assert int(rust["metadata"]["channels"]) == 1
     assert int(py_dump["metadata"]["channels"]) == 1
     assert abs(float(rust["metadata"]["duration"]) - 1.0) < 0.05
     assert abs(float(py_dump["metadata"]["duration"]) - 1.0) < 0.05
     # Both surfaces agree on duration within 50 ms.
-    assert abs(float(rust["metadata"]["duration"]) - float(py_dump["metadata"]["duration"])) < 0.05
+    assert (
+        abs(
+            float(rust["metadata"]["duration"]) - float(py_dump["metadata"]["duration"])
+        )
+        < 0.05
+    )
 
 
-def test_rust_spec_validates_as_python_renderspec(mir_bin: Path, tmp_path: Path) -> None:
+def test_rust_spec_validates_as_python_renderspec(
+    mir_bin: Path, tmp_path: Path
+) -> None:
     from melosviz.analysis.models import RenderSpec
 
     wav = _make_wav(tmp_path / "parity_220.wav", duration_s=2.0, freq=220.0)
