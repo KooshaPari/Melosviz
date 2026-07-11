@@ -1,0 +1,38 @@
+name: DCO
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco:
+    name: Developer Certificate of Origin
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Check Signed-off-by on PR commits
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          while IFS= read -r commit; do
+            body="$(git log -1 --format=%B "$commit")"
+            if ! grep -qiE '^Signed-off-by: .+ <.+@.+>$' <<<"$body"; then
+              echo "::error::missing Signed-off-by on $commit"
+              git log -1 --oneline "$commit"
+              missing=1
+            fi
+          done < <(git rev-list --no-merges "${BASE}..${HEAD}")
+          if [[ "$missing" -ne 0 ]]; then
+            echo "Add DCO trailers with: git commit --amend -s   (or rebase -x 'git commit --amend --no-edit -s')"
+            exit 1
+          fi
+          echo "All commits carry Signed-off-by"

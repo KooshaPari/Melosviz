@@ -8,7 +8,7 @@ const MOCK_SPEC: RenderSpec = {
   durationSecs: 180,
   bpm: 128,
   keyframes: [
-    { t: 0, scene: 'Intro', camera: { distance: 8, azimuth: 0, elevation: 0 }, color: { primary: '#7c3aed', secondary: '#06b6d4', brightness: 0.7 } },
+    { t: 0, scene: 'Intro', camera: { distance: 8, azimuth: 0, elevation: 0 }, color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.7 } },
     { t: 1, scene: 'Outro', camera: { distance: 10, azimuth: 0, elevation: 0 }, color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 } },
   ],
 }

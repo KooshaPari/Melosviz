@@ -44,6 +44,7 @@ backend/coverage/
 
 # Eval generated trees / tones
 eval/harbor/out/
+dist/airgap/
 eval/golden/wav/
 eval/golden/screenshots/a11y-fixture.png
 eval/golden/screenshots/a11y-fixture.diff.png

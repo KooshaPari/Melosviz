@@ -38,11 +38,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         .mv-title {
           background: linear-gradient(
             90deg,
-            #7c3aed 0%,
-            #06b6d4 30%,
+            #7c6af7 0%,
+            #22d3ee 30%,
             #a78bfa 50%,
-            #06b6d4 70%,
-            #7c3aed 100%
+            #22d3ee 70%,
+            #7c6af7 100%
           );
           background-size: 200% auto;
           -webkit-background-clip: text;

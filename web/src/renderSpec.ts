@@ -21,7 +21,7 @@ export interface KeyframeCamera {
 }
 
 export interface KeyframeColor {
-  /** Hex string, e.g. "#7c3aed". */
+  /** Hex string, e.g. "#7c6af7". */
   primary: string
   /** Hex string for secondary accent. */
   secondary: string
@@ -155,7 +155,7 @@ export function specToSceneParams(
       beatEnergy,
       spectral,
       camera: { distance: 5, azimuth: 0, elevation: 0 },
-      color: { primary: '#7c3aed', secondary: '#06b6d4', brightness: 0.8 },
+      color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.8 },
     }
   }
 

@@ -31,7 +31,7 @@ export function LoadingOverlay({ visible }: LoadingOverlayProps) {
             className="mv-freq-bar w-1.5 rounded-sm"
             style={{
               height: '100%',
-              background: `linear-gradient(to top, #7c3aed, #06b6d4)`,
+              background: `linear-gradient(to top, #7c6af7, #22d3ee)`,
               // @ts-expect-error CSS custom property
               '--dur': `${0.4 + i * 0.07}s`,
               animationDelay: `${i * 0.06}s`,

@@ -143,8 +143,8 @@ function CoreMesh({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
       <torusKnotGeometry args={[1, 0.35, 128, 16]} />
       <meshStandardMaterial
         ref={matRef}
-        color="#7c3aed"
-        emissive="#7c3aed"
+        color="#7c6af7"
+        emissive="#7c6af7"
         emissiveIntensity={0.2}
         roughness={0.3}
         metalness={0.7}

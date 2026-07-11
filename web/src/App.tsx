@@ -25,7 +25,7 @@ const PLACEHOLDER_SPEC: RenderSpec = {
       t: 0,
       scene: 'Establishing',
       camera: { distance: 8, azimuth: 0, elevation: 0.15 },
-      color: { primary: '#7c3aed', secondary: '#06b6d4', brightness: 0.7 },
+      color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.7 },
     },
     {
       t: 0.18,

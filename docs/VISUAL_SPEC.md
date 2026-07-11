@@ -8,14 +8,18 @@ Canonical visual language for desktop + web surfaces. Tokens live in
 - Primary mark: `desktop/assets/brand/logo.svg` / `assets/brand/icon.svg`
 - App iconset: `desktop/assets/icons/MelosViz.iconset`
 
-## Palette (warm spectrum)
+## Palette (warm spectrum + shell)
+
+Shell chrome uses violet-neon tokens (`--mv-accent` / `--mv-primary` =
+`#7c6af7`). Web `brand.css` matches desktop — no `#7c3aed` drift.
 
 | Role | Token / hex |
 |------|-------------|
-| Canvas deep | `#1a0e1f` → `#2d1b3a` |
-| Spectrum | `#ef4444` → `#f59e0b` → `#facc15` → `#22d3ee` → `#a371f7` |
-| Conductor highlight | `#facc15` |
-| Label / off-white | `#f6f8fa` |
+| Canvas deep | `#0d0d10` → `#2d1b3a` |
+| Accent | `#7c6af7` |
+| Focus / secondary | `#22d3ee` |
+| Spectrum (marketing SVGs) | `#ef4444` → `#f59e0b` → `#facc15` → `#22d3ee` → `#a371f7` |
+| Label / off-white | `#f0f0f8` / `#f6f8fa` |
 
 ## Motion
 

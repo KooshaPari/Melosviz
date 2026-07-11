@@ -86,8 +86,8 @@ export function BeatPulse({ beatTimes, playbackT, durationSecs }: BeatPulseProps
       <torusGeometry args={[2.2, 0.08, 16, 64]} />
       <meshStandardMaterial
         ref={matRef}
-        color="#06b6d4"
-        emissive="#06b6d4"
+        color="#22d3ee"
+        emissive="#22d3ee"
         emissiveIntensity={1.2}
         transparent
         opacity={0.35}

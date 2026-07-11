@@ -923,9 +923,38 @@
     .hidden { display: none !important; }
     .section-sep { height: 1px; background: var(--mv-border-subtle); margin: 2px 0; }
     .file-path { font-family: var(--mv-font-mono); font-size: 11px; color: var(--mv-text-mid); word-break: break-all; }
+
+    /* Focus choreography (docs/a11y/FOCUS.md) */
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 10000;
+      padding: 8px 14px;
+      background: var(--mv-accent);
+      color: #fff;
+      font-weight: 600;
+      border-radius: var(--r-sm);
+    }
+    .skip-link:focus {
+      left: 12px;
+      top: 8px;
+      outline: 3px solid var(--mv-neon-cyan);
+      outline-offset: 2px;
+    }
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 3px solid var(--mv-neon-cyan);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 <div id="root" data-color-mode="dark" data-scaling="110%">
 
   <!-- Title bar -->
@@ -952,7 +981,7 @@
   </div>
 
   <!-- Main area -->
-  <div id="main">
+  <div id="main" role="main" tabindex="-1">
 
     <!-- Sidebar -->
     <aside id="sidebar">
@@ -1271,7 +1300,7 @@
   </div><!-- /#main -->
 
   <!-- Status bar -->
-  <div id="statusbar">
+  <div id="statusbar" role="status" aria-live="polite">
     <div id="status-dot"></div>
     <span id="status-text">Ready</span>
     <div id="statusbar-right">
