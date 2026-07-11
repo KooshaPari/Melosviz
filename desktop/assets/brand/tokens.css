@@ -116,3 +116,13 @@
   --mv-shadow-sm:      0 1px 3px rgba(26, 14, 31, 0.08);
   --mv-shadow-md:      0 4px 12px rgba(26, 14, 31, 0.12);
 }
+
+/* Collapse motion tokens when the user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-theme="light"] {
+    --mv-dur-fast: 0ms;
+    --mv-dur-base: 0ms;
+    --mv-dur-slow: 0ms;
+  }
+}

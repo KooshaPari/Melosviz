@@ -54,6 +54,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           animation: mv-wave var(--delay, 0.4s) ease-in-out infinite;
           transform-origin: bottom;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .mv-title, .mv-bar { animation: none !important; }
+        }
       `}</style>
 
       {/* Waveform SVG */}

@@ -8,6 +8,8 @@ and acceptance material for MelosViz.
 - [`adr/0003-spec-first-conductor.md`](adr/0003-spec-first-conductor.md) - ADR 0003: Spec-First Conductor over Pro Toolchain (10 principles; MV-FR-A01–A10)
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) - surface / role map
 - [`VISUAL_SPEC.md`](VISUAL_SPEC.md) - brand / motion / theme contract
+- [`visual/IDENTITY.md`](visual/IDENTITY.md) · [`visual/PROVENANCE.md`](visual/PROVENANCE.md)
+- [`SUPPLY_CHAIN.md`](SUPPLY_CHAIN.md) - lockfiles + dependency-confusion policy
 
 ## Traceability
 

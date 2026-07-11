@@ -43,5 +43,6 @@ Dark studio default (`:root` tokens). Light theme: set
 ## Golden / regression
 
 - Shape goldens: `eval/golden/` (RenderSpec JSON)
-- Screenshot: CI uploads `eval/golden/screenshots/a11y-fixture.png` via `.github/workflows/a11y.yml`
-- PROVENANCE: identity demo + tokens.css + VISUAL_SPEC (this file)
+- Screenshot baseline: `eval/golden/screenshots/a11y-fixture.baseline.png`
+- Gate: `.github/workflows/a11y.yml` pixelmatch via `scripts/visual-gate/compare.mjs` (≤0.2%)
+- Identity: `docs/visual/IDENTITY.md` · Provenance: `docs/visual/PROVENANCE.md`

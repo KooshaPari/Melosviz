@@ -45,8 +45,11 @@ backend/coverage/
 # Eval generated trees / tones
 eval/harbor/out/
 eval/golden/wav/
+eval/golden/screenshots/a11y-fixture.png
+eval/golden/screenshots/a11y-fixture.diff.png
 
 
 target/
 eval/harbor/out/
+scripts/visual-gate/node_modules/
 

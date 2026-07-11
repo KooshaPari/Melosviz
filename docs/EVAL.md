@@ -13,6 +13,7 @@ Index of evaluation, benchmark, load, and golden-corpus tooling (audit-v38 C08).
 | Rust↔Python parity | `backend/tests/test_rust_python_parity.py` | `parity-harbor.yml` builds MIR + pytest |
 | Mutation testing | `.github/workflows/mutmut.yml` | Weekly |
 | Coverage | `ci.yml` `--cov-fail-under=85` | PR fail |
+| A11y + screenshot baseline | `.github/workflows/a11y.yml` + `eval/golden/screenshots/` | axe + pixelmatch ≤0.2% |
 | Flaky quarantine | pytest marker `flaky` (see below) | Skip in default CI |
 
 ## Golden corpus
