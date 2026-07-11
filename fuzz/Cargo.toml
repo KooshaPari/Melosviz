@@ -7,6 +7,9 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
+# Standalone fuzz workspace (do not inherit root Cargo.toml members).
+[workspace]
+
 [dependencies]
 libfuzzer-sys = "0.4"
 melosviz-mir = { path = "../crates/melosviz-mir" }
