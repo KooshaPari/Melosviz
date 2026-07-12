@@ -87,7 +87,8 @@ def _load_yaml_subset(text: str) -> object:
         if current is None:
             raise ValueError(f"L{lineno}: mapping field without list item")
 
-        if indent == 4 and line.startswith("- ") and in_evidence:
+        # Nested list under `evidence:` is typically indent 6 (2 spaces past the key).
+        if indent >= 4 and line.startswith("- ") and in_evidence:
             evidence = current.setdefault("evidence", [])
             if not isinstance(evidence, list):
                 raise ValueError(f"L{lineno}: evidence is not a list")
@@ -100,6 +101,10 @@ def _load_yaml_subset(text: str) -> object:
             if key == "evidence":
                 current["evidence"] = []
                 in_evidence = True
+                # Inline form: evidence: [a, b] — rare; treat empty as list start.
+                if val.strip():
+                    in_evidence = False
+                    current["evidence"] = [_scalar(val)]
             else:
                 in_evidence = False
                 current[key] = _scalar(val)
