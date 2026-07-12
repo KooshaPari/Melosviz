@@ -1,7 +1,7 @@
 # MelosViz — top-level Makefile
 # Companion self-check surface for MV-FR-50.
 
-.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture
+.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys
 
 diagnose:
 	python3 scripts/diagnose.py
@@ -20,3 +20,16 @@ harbor:
 
 a11y-fixture:
 	@echo "Open web/a11y/fixture.html via: python3 -m http.server 8760 --directory web/a11y"
+
+wbs:
+	python3 scripts/check_wbs.py
+
+gap-matrix:
+	python3 scripts/check_gap_matrix.py
+
+journeys:
+	python3 scripts/check_journeys.py
+
+trace: wbs gap-matrix journeys
+	python3 backend/scripts/check/check_traceability.py
+

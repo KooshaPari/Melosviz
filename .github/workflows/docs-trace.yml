@@ -1,0 +1,47 @@
+name: Docs — machine-trace gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-trace-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trace:
+    name: WBS / GAP / journeys / TRACEABILITY
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check WBS Status enum
+        run: python scripts/check_wbs.py
+      - name: Check GAP matrix Status enum
+        run: python scripts/check_gap_matrix.py
+      - name: Check FR status YAML + evidence paths
+        run: python scripts/check_fr_status.py
+      - name: Check journey map + linked surfaces
+        run: python scripts/check_journeys.py
+      - name: Check TRACEABILITY matrix
+        run: python backend/scripts/check/check_traceability.py
+      - name: Verify docs/index.md links WBS + GAP matrix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path("docs/index.md").read_text(encoding="utf-8")
+          missing = []
+          for needle in ("WBS_PHASED.md", "GAP_AUDIT_QA_MATRIX.md"):
+              if needle not in text:
+                  missing.append(needle)
+          if missing:
+              raise SystemExit(f"FAIL: docs/index.md missing links: {missing}")
+          print("PASS: docs/index.md links WBS_PHASED.md + GAP_AUDIT_QA_MATRIX.md")
+          PY

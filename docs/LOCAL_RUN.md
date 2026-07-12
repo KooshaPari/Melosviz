@@ -2,6 +2,33 @@
 
 Validated: 2026-06-30 on macOS Darwin 27 (Apple Silicon), Python 3.13.13.
 
+## Hermetic local verify (start here)
+
+One-command environment check + a fast pytest subset (no network required once
+deps are installed from lockfiles):
+
+```bash
+make diagnose
+cd backend && python -m pytest tests/test_golden_corpus.py -q
+# equivalents: make golden   |   make test-backend  (full suite)
+```
+
+| Surface | Command | Notes |
+|---------|---------|-------|
+| Env self-check | `make diagnose` / `python scripts/diagnose.py` | MV-FR-50; stdlib-only |
+| Golden subset | `make golden` | Offline once `backend` extras installed |
+| Docs gates | `make trace` | WBS / GAP / journeys / TRACEABILITY |
+
+**Offline / air-gap:** do not invent alternate indexes. Follow `docs/AIRGAP.md`
+(bundle script, wheelhouse, `cargo vendor`, frozen locks). Policy:
+`docs/SUPPLY_CHAIN.md`.
+
+**Work claiming:** pick an open ID in `docs/WORK_DAG.md`, claim it on the
+PR/issue (`claim W-2xx`), use branch `feat/w2xx-<slug>`, and reference the FR.
+See the Claim protocol section in that file.
+
+---
+
 ## Completion Stages
 
 | Stage | Description | Result | Notes |

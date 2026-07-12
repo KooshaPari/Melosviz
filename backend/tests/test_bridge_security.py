@@ -55,6 +55,8 @@ def bridge_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         from melosviz.bridge import server
 
         server.security_limiter.reset()
+        server.render_quota.reset()
+        server.mir_breaker.reset()
     except Exception:
         pass
     yield tmp_path
@@ -62,6 +64,8 @@ def bridge_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         from melosviz.bridge import server
 
         server.security_limiter.reset()
+        server.render_quota.reset()
+        server.mir_breaker.reset()
     except Exception:
         pass
 
@@ -307,3 +311,169 @@ class TestBodySizeCap:
         huge = {"wav_path": "/" + ("A" * (2 * 1024 * 1024))}  # 2 MiB > 1 MiB cap
         resp = client.post("/analyze", json=huge, headers=headers)
         assert resp.status_code == 413
+
+
+# ---------------------------------------------------------------------------
+# 7. Audit JSONL retention prune
+# ---------------------------------------------------------------------------
+
+
+class TestAuditRetention:
+    def test_prune_keeps_newest_80pct_when_over_line_limit(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from melosviz.bridge import security
+
+        monkeypatch.setenv("MELOSVIZ_DATA_DIR", str(tmp_path))
+        monkeypatch.setenv("MELOSVIZ_AUDIT_MAX_LINES", "10")
+        monkeypatch.setenv("MELOSVIZ_AUDIT_MAX_BYTES", "0")  # disable byte check
+
+        for i in range(12):
+            security.append_audit({"n": i, "path": "/health", "status": 200})
+
+        path = security.audit_path()
+        lines = [
+            ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()
+        ]
+        # After crossing 10 lines, prune keeps ~80% of the then-current set.
+        assert len(lines) <= 10
+        assert len(lines) >= 8
+        last = json.loads(lines[-1])
+        assert last["n"] == 11
+
+    def test_prune_never_raises_on_corrupt_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from melosviz.bridge import security
+
+        monkeypatch.setenv("MELOSVIZ_DATA_DIR", str(tmp_path))
+        # Point audit at a directory so open("a") fails — must not raise.
+        bad = tmp_path / "audit"
+        bad.mkdir(parents=True)
+        monkeypatch.setattr(security, "audit_path", lambda: bad)
+        security.append_audit({"ok": True})  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# 8. Render quota
+# ---------------------------------------------------------------------------
+
+
+class TestRenderQuota:
+    def test_acquire_rejects_when_saturated(self):
+        from melosviz.bridge.security import RenderQuota
+
+        q = RenderQuota(max_concurrent=2, max_rss_mb=0)
+        assert q.try_acquire() is True
+        assert q.try_acquire() is True
+        assert q.try_acquire() is False
+        assert q.inflight == 2
+        q.release()
+        assert q.try_acquire() is True
+        q.reset()
+        assert q.inflight == 0
+
+    def test_slot_context_raises_quota_exceeded(self):
+        from melosviz.bridge.security import QuotaExceeded, RenderQuota
+
+        q = RenderQuota(max_concurrent=1, max_rss_mb=0)
+        assert q.try_acquire() is True
+        with pytest.raises(QuotaExceeded), q.slot():
+            pass
+        q.release()
+        with q.slot():
+            assert q.inflight == 1
+        assert q.inflight == 0
+
+    def test_analyze_returns_503_when_quota_saturated(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        from melosviz.bridge import security, server
+
+        client, data_dir = _client(bridge_env)
+        headers = {"Authorization": "Bearer test-token-aaa"}
+        wav = data_dir / "song.wav"
+        wav.write_bytes(b"RIFF" + b"\x00" * 64)
+
+        # Saturate the shared quota without going through HTTP.
+        server.render_quota.reset()
+        # Replace with a tight quota and hold both slots.
+        tight = security.RenderQuota(max_concurrent=1, max_rss_mb=0)
+        assert tight.try_acquire() is True
+        monkeypatch.setattr(server, "render_quota", tight)
+
+        resp = client.post(
+            "/analyze",
+            json={"wav_path": str(wav)},
+            headers=headers,
+        )
+        assert resp.status_code == 503
+        body = resp.json()
+        assert body.get("status") == 503 or "quota" in str(body).lower()
+        assert (
+            resp.headers.get("content-type", "").startswith("application/problem+json")
+            or "quota" in str(body).lower()
+        )
+
+
+# ---------------------------------------------------------------------------
+# 9. Circuit breaker
+# ---------------------------------------------------------------------------
+
+
+class TestCircuitBreaker:
+    def test_trips_after_threshold_then_fail_fast(self):
+        from melosviz.bridge.security import CircuitBreaker
+
+        b = CircuitBreaker(failure_threshold=3, reset_seconds=60)
+        assert b.state == "closed"
+        assert b.allow() is True
+        b.record_failure()
+        b.record_failure()
+        assert b.state == "closed"
+        b.record_failure()
+        assert b.state == "open"
+        assert b.allow() is False
+
+    def test_half_open_recovery_on_success(self):
+        from melosviz.bridge.security import CircuitBreaker
+
+        now = {"t": 100.0}
+
+        def clock() -> float:
+            return now["t"]
+
+        b = CircuitBreaker(failure_threshold=2, reset_seconds=10, clock=clock)
+        b.record_failure()
+        b.record_failure()
+        assert b.state == "open"
+        now["t"] = 105.0
+        assert b.allow() is False
+        # After reset window → half_open; one probe allowed.
+        now["t"] = 111.0
+        assert b.allow() is True
+        assert b.state == "half_open"
+        # Second concurrent probe blocked while first is in flight.
+        assert b.allow() is False
+        b.record_success()
+        assert b.state == "closed"
+        assert b.allow() is True
+
+    def test_half_open_failure_reopens(self):
+        from melosviz.bridge.security import CircuitBreaker
+
+        now = {"t": 0.0}
+
+        def clock() -> float:
+            return now["t"]
+
+        b = CircuitBreaker(failure_threshold=2, reset_seconds=5, clock=clock)
+        b.record_failure()
+        b.record_failure()
+        now["t"] = 6.0
+        assert b.allow() is True  # half_open probe
+        now["t"] = 6.5
+        b.record_failure()
+        assert b.state == "open"
+        now["t"] = 7.0
+        assert b.allow() is False

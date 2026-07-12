@@ -57,6 +57,17 @@ jobs:
           command: check licenses bans sources
           arguments: --all-features
 
+  reserved-names:
+    name: Reserved-name / dep-confusion
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+      - name: Check reserved names + private registries
+        run: python scripts/check_reserved_names.py
+
   lock-verify:
     name: Frozen lock verify (uv + cargo)
     runs-on: ubuntu-22.04

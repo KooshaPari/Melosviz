@@ -20,6 +20,8 @@ and acceptance material for MelosViz.
 - [`COMPLETENESS.md`](COMPLETENESS.md) - Feature completeness audit (Rev 2; 88% shipped; traceability 100%)
 - [`functional_requirements.md`](functional_requirements.md) - FR catalog
 - [`WORK_DAG.md`](WORK_DAG.md) - claimable task DAG
+- [`WBS_PHASED.md`](WBS_PHASED.md) - phased project/org WBS toward audit-v38 A+/92%+
+- [`GAP_AUDIT_QA_MATRIX.md`](GAP_AUDIT_QA_MATRIX.md) - remaining C00–C11 gaps + QA methods
 - [`EVAL.md`](EVAL.md) - eval / golden / Harbor / load index
 - [`USER_JOURNEYS.md`](USER_JOURNEYS.md) - outside-in journey / friction map
 - [`ENV.md`](ENV.md) - 12-factor env catalog

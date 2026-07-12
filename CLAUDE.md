@@ -3,6 +3,20 @@
 Spec-first music→visual toolkit: Python bridge/conductor + Electrobun desktop +
 R3F web + Rust MIR/wgpu.
 
+## One-command local verify
+
+```bash
+make diagnose          # MV-FR-50 env self-check (stdlib-only)
+cd backend && python -m pytest tests/test_golden_corpus.py -q   # fast subset
+# or: make golden
+```
+
+Full backend: `make test-backend` / `cd backend && pytest -q`.
+Offline / air-gap installs: see `docs/AIRGAP.md` (lockfile + wheelhouse / cargo vendor).
+
+Before starting work: claim a `docs/WORK_DAG.md` task (`claim W-2xx`, branch
+`feat/w2xx-<slug>`, link FR IDs in the PR). Do not overlap another agent's claim.
+
 ## Build & test
 
 ```bash
@@ -34,7 +48,7 @@ Or use `.devcontainer/devcontainer.json` / `scripts/diagnose.py`.
 | `desktop/` | Electrobun shell |
 | `web/` | Vite + R3F UI |
 | `eval/` | Golden corpus, Harbor adapter, screenshots |
-| `docs/` | Architecture, EVAL, AIRGAP, a11y, WORK_DAG |
+| `docs/` | Architecture, EVAL, AIRGAP, LOCAL_RUN, a11y, WORK_DAG |
 | `audit/` | audit-v38 scorecard lanes |
 | `fuzz/` | cargo-fuzz + atheris |
 
@@ -46,10 +60,13 @@ Or use `.devcontainer/devcontainer.json` / `scripts/diagnose.py`.
 - Prefer tokens (`--mv-*`) over hardcoded hex; see `docs/VISUAL_SPEC.md`.
 - Errors from the bridge use `application/problem+json` (RFC 7807-ish).
 - Parallel agents: `docs/PARALLEL_AGENTS.md` (worktree / mutating-lane rules).
+- Supply chain: `docs/SUPPLY_CHAIN.md` + `scripts/check_reserved_names.py`.
 
 ## Agent pointers
 
 - Product: `SPEC.md`
+- Local run: `docs/LOCAL_RUN.md`
+- Air-gap: `docs/AIRGAP.md`
 - Scorecard: `audit/SCORECARD.md`
 - Contributor: `CONTRIBUTING.md`
 - Global Phenotype: `~/.claude/CLAUDE.md`

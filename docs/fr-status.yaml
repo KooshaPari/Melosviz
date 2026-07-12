@@ -1,0 +1,218 @@
+# Machine source-of-truth for high-signal MelosViz FR / NFR status.
+# Validated by scripts/check_fr_status.py (docs-trace CI).
+# status enum: done | partial | planned
+last_updated: "2026-07-12"
+
+requirements:
+  # Architecture samples
+  - id: MV-FR-A01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/analysis/models.py
+      - backend/tests/test_render_spec_v2.py
+      - docs/adr/0003-spec-first-conductor.md
+  - id: MV-FR-A02
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/conductor/orchestrator.py
+      - backend/src/melosviz/conductor/registry.py
+      - backend/tests/test_multi_tool_adapters.py
+  - id: MV-FR-A06
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/render/blender_exporter.py
+      - backend/tests/test_blender_exporter.py
+  - id: MV-FR-A07
+    status: partial
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/render/aftereffects_adapter.py
+      - backend/tests/test_multi_tool_adapters.py
+  - id: MV-FR-A08
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/runtime/touchdesigner/adapter.py
+      - backend/tests/test_touchdesigner_runtime.py
+
+  # Pipeline samples
+  - id: MV-FR-P01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/analysis/audio.py
+      - backend/tests/test_render_spec_v2.py
+  - id: MV-FR-P02
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/analysis/audio.py
+      - backend/tests/test_render_spec_v2.py
+  - id: MV-FR-P08
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/analysis/audio.py
+      - backend/tests/test_optional_dep_imports.py
+
+  # Render / CLI samples
+  - id: MV-FR-R01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/render/blender_exporter.py
+      - backend/tests/test_blender_exporter.py
+  - id: MV-FR-R02
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/render/video_exporter.py
+      - backend/tests/test_video_exporter.py
+  - id: MV-FR-R06
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/runtime/touchdesigner/adapter.py
+      - backend/tests/test_touchdesigner_runtime.py
+  - id: MV-FR-L01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/cli/main.py
+      - backend/tests/test_e2e_pipeline_smoke.py
+  - id: MV-FR-L02
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/conductor/orchestrator.py
+      - backend/tests/test_multi_tool_adapters.py
+  - id: MV-FR-L06
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/compose/assemble.py
+      - backend/tests/test_p7_compose.py
+
+  # Scene / compose samples
+  - id: MV-FR-S01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/scene/models.py
+      - backend/tests/test_hybrid_scene.py
+  - id: MV-FR-S10
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/scene/scanner.py
+      - backend/tests/test_hybrid_scene.py
+  - id: MV-FR-C01
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/compose/narrator.py
+      - backend/tests/test_p7_compose.py
+  - id: MV-FR-C03
+    status: done
+    pillar: C00
+    evidence:
+      - backend/src/melosviz/compose/assemble.py
+      - backend/tests/test_p7_compose.py
+
+  # Intent + NFRs
+  - id: MV-FR-52
+    status: done
+    pillar: C03
+    evidence:
+      - docs/intent/MelosViz.md
+      - docs/specs/intent_doc_spec.md
+      - backend/tests/test_intent_doc_spec.py
+  - id: MV-NFR-001
+    status: done
+    pillar: C02
+    evidence:
+      - backend/src/melosviz/render/blender_exporter.py
+      - backend/tests/test_blender_exporter.py
+  - id: MV-NFR-002
+    status: partial
+    pillar: C06
+    evidence:
+      - backend/src/melosviz/compose/narrator.py
+      - backend/tests/test_p7_compose.py
+      - docs/AIRGAP.md
+  - id: MV-NFR-003
+    status: done
+    pillar: C02
+    evidence:
+      - backend/src/melosviz/conductor/orchestrator.py
+      - backend/tests/test_optional_dep_imports.py
+  - id: MV-NFR-004
+    status: done
+    pillar: C01
+    evidence:
+      - docs/QGATE_BASELINE.md
+      - .github/workflows/ci.yml
+
+  # Bridge security (p1-trace-c02-c06 wave)
+  - id: MV-NFR-005
+    status: done
+    pillar: C02
+    evidence:
+      - backend/src/melosviz/bridge/security.py
+      - backend/tests/test_bridge_security.py
+      - docs/PRIVACY.md
+  - id: MV-NFR-006
+    status: done
+    pillar: C02
+    evidence:
+      - backend/src/melosviz/bridge/security.py
+      - backend/tests/test_bridge_security.py
+  - id: MV-NFR-007
+    status: done
+    pillar: C05
+    evidence:
+      - backend/src/melosviz/bridge/security.py
+      - backend/tests/test_bridge_security.py
+      - docs/PRIVACY.md
+
+  # Machine-trace / supply-chain gates (this wave)
+  - id: MV-FR-TRACE-01
+    status: done
+    pillar: C03
+    evidence:
+      - docs/fr-status.yaml
+      - scripts/check_fr_status.py
+      - scripts/check_wbs.py
+      - scripts/check_gap_matrix.py
+      - .github/workflows/docs-trace.yml
+  - id: MV-NFR-SUPPLY-01
+    status: done
+    pillar: C06
+    evidence:
+      - scripts/check_reserved_names.py
+      - docs/SUPPLY_CHAIN.md
+      - .github/workflows/supply-chain.yml
+  - id: MV-NFR-CI-PERM-01
+    status: done
+    pillar: C04
+    evidence:
+      - .github/workflows/ci.yml
+      - .github/workflows/supply-chain.yml
+      - .github/workflows/release.yml
+      - .github/workflows/docs-trace.yml
+  - id: MV-NFR-HERMETIC-01
+    status: partial
+    pillar: C07
+    evidence:
+      - docs/LOCAL_RUN.md
+      - docs/AIRGAP.md
+      - CLAUDE.md
+  - id: MV-NFR-REPRO-01
+    status: planned
+    pillar: C06
+    evidence:
+      - docs/SUPPLY_CHAIN.md
+      - audit/.lane-c06/C06.md

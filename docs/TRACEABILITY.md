@@ -23,7 +23,7 @@ All stable requirement IDs follow the pattern `MV-<TYPE>-<CODE>`:
 | `MV-FR-C` | Functional — Composition & Narrative (P7) | MV-FR-C01 … MV-FR-C05 |
 | `MV-FR-R` | Functional — Rendering Adapters (P3, P5, P6) | MV-FR-R01 … MV-FR-R06 |
 | `MV-FR-L` | Functional — CLI & Conductor (P2) | MV-FR-L01 … MV-FR-L06 |
-| `MV-FR-D` | Functional — Documentation / Intent Artifacts (MV-FR-52+) | MV-FR-D01 … |
+| `MV-FR-D` | Functional — Documentation / Intent Artifacts (MV-FR-52+) | MV-FR-52 (D-family) |
 | `MV-NFR` | Non-Functional (safety, performance, reproducibility) | MV-NFR-001 … MV-NFR-004 |
 
 The same IDs appear in:

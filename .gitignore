@@ -24,6 +24,9 @@ env/
 *.p12
 *.pfx
 
+# Local AgilePlus SQLite (ops; do not commit)
+agileplus.db
+
 # Editor / OS
 .DS_Store
 Thumbs.db
