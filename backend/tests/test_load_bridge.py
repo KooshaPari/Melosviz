@@ -37,14 +37,22 @@ def _make_wav(path: Path, duration_s: float = 0.25) -> Path:
 def client() -> TestClient:
     lim = server.security_limiter
     lim.reset()
-    # Raise ceiling for load smoke; restore after.
+    # Raise ceilings for load smoke; restore after.
     prev = lim._max
     lim._max = 10_000
+    quota = server.render_quota
+    prev_quota = quota._max
+    quota._max = 10_000
+    breaker = server.mir_breaker
+    breaker.reset()
     try:
         yield TestClient(app)
     finally:
         lim._max = prev
         lim.reset()
+        quota._max = prev_quota
+        quota.reset()
+        breaker.reset()
 
 
 def test_load_health_concurrent(client: TestClient) -> None:
