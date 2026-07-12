@@ -376,9 +376,8 @@ class TestRenderQuota:
 
         q = RenderQuota(max_concurrent=1, max_rss_mb=0)
         assert q.try_acquire() is True
-        with pytest.raises(QuotaExceeded):
-            with q.slot():
-                pass
+        with pytest.raises(QuotaExceeded), q.slot():
+            pass
         q.release()
         with q.slot():
             assert q.inflight == 1
