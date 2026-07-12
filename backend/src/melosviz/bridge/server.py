@@ -84,6 +84,10 @@ security_limiter = security.install_middleware(
     protected_paths=("/analyze", "/build", "/render", "/health", "/ready", "/metrics"),
 )
 
+# Shared render quota + MIR circuit breaker (tests may ``.reset()``).
+render_quota = security.RenderQuota()
+mir_breaker = security.CircuitBreaker()
+
 
 @app.middleware("http")
 async def _obs_middleware(request, call_next):  # type: ignore[no-untyped-def]
@@ -226,6 +230,26 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
     return data
 
 
+def _guarded_analyze(wav: Path) -> dict:
+    """Run MIR/Python analyze behind the circuit breaker; trip on systemic failures."""
+    if not mir_breaker.allow():
+        raise HTTPException(
+            status_code=503,
+            detail="circuit breaker open: MIR temporarily unavailable",
+        )
+    try:
+        data = _analyze_with_mir_or_python(wav)
+        mir_breaker.record_success()
+        return data
+    except HTTPException:
+        raise
+    except (TimeoutError, OSError, MemoryError, RuntimeError):
+        # Systemic / infrastructure failures trip the breaker; bad-WAV parse
+        # errors (ValueError, wave.Error, etc.) do not.
+        mir_breaker.record_failure()
+        raise
+
+
 # ---------------------------------------------------------------------------
 # Path containment helper
 # ---------------------------------------------------------------------------
@@ -331,8 +355,11 @@ async def analyze(req: AnalyzeRequest) -> str:
         if not wav.exists():
             raise HTTPException(status_code=400, detail=f"File not found: {wav}")
         tp = None  # request-scoped traceparent already applied by middleware
-        with obs.span("analyze", traceparent=tp, wav=str(wav)):
-            data = _analyze_with_mir_or_python(wav)
+        with render_quota.slot():
+            with obs.span("analyze", traceparent=tp, wav=str(wav)):
+                data = _guarded_analyze(wav)
+    except security.QuotaExceeded as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001 — surface as 400 (incl. stdlib `wave.Error`)
@@ -353,10 +380,13 @@ async def build(req: BuildRequest) -> str:
     try:
         if not wav.exists():
             raise HTTPException(status_code=400, detail=f"File not found: {wav}")
-        spec_data = _analyze_with_mir_or_python(wav)
-        # assemble_render_plan expects a RenderSpec object, not a dict
-        # For now, we'll pass the dict directly and let assemble_render_plan handle it
-        plan = assemble_render_plan(spec_data, mock_adapters=True)
+        with render_quota.slot():
+            spec_data = _guarded_analyze(wav)
+            # assemble_render_plan expects a RenderSpec object, not a dict
+            # For now, we'll pass the dict directly and let assemble_render_plan handle it
+            plan = assemble_render_plan(spec_data, mock_adapters=True)
+    except security.QuotaExceeded as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
@@ -381,10 +411,13 @@ async def render(req: RenderRequest) -> str:
         out = _check_inside(req.out_dir)
         out.mkdir(parents=True, exist_ok=True)
 
-        spec_data = _analyze_with_mir_or_python(wav)
-        # Use mock_adapters=False to attempt real adapters; they fail-open to mocks
-        # if Blender / TouchDesigner are absent.
-        plan = assemble_render_plan(spec_data, mock_adapters=False)
+        with render_quota.slot():
+            spec_data = _guarded_analyze(wav)
+            # Use mock_adapters=False to attempt real adapters; they fail-open to mocks
+            # if Blender / TouchDesigner are absent.
+            plan = assemble_render_plan(spec_data, mock_adapters=False)
+    except security.QuotaExceeded as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001

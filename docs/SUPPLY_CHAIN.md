@@ -29,6 +29,10 @@ Agents and CI **must not**:
 ## CI enforcement
 
 - `.github/workflows/supply-chain.yml` — frozen lock verify + cargo-deny + audits
+- `scripts/check_reserved_names.py` — reserved-name / dependency-confusion scanner
+  (allowlists `melosviz` / `melosviz-*` workspace names; fails on typo-adjacent
+  confuse deps such as `melosvis` / `melos-viz` / `melosvizs`, and on unexpected
+  private registry / `--extra-index-url` overrides in manifests)
 - Dependabot weekly PRs only (no ad-hoc unpinned bumps in feature PRs)
 - Release artifacts ship `SHA256SUMS` (`MelosViz-Checksums`)
 

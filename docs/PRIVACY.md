@@ -21,9 +21,16 @@ multi-tenant SaaS.
 
 ## Retention (audit JSONL)
 
-Default recommendation: rotate or delete `bridge.jsonl` every **30 days**, or
-when it exceeds **100 MiB**. Operators may ship the file to their own SIEM;
-MelosViz does not phone home.
+After each append, the bridge optionally prunes `$MELOSVIZ_DATA_DIR/audit/bridge.jsonl`
+when it exceeds:
+
+- `MELOSVIZ_AUDIT_MAX_BYTES` (default **5_000_000** bytes), or
+- `MELOSVIZ_AUDIT_MAX_LINES` (default **50_000** lines).
+
+Pruning keeps the newest ~**80%** of lines (temp rewrite then atomic replace).
+Set either knob to `0` (or negative) to disable that check. Operators may still
+rotate or ship the file to their own SIEM; MelosViz does not phone home.
+
 
 ## Multi-tenant future
 

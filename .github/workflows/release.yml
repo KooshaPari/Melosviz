@@ -7,8 +7,10 @@ on:
 
 # One release per tag: builds happen in parallel, then a single release job
 # collates all artifacts and creates the GitHub Release.
+# Least privilege: read by default; only the release job elevates for
+# GitHub Releases + keyless cosign + attestations (OSSF TokenPermissions).
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   macos-desktop:
