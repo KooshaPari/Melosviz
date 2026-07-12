@@ -359,7 +359,7 @@ class TestAuditRetention:
 
 class TestRenderQuota:
     def test_acquire_rejects_when_saturated(self):
-        from melosviz.bridge.security import QuotaExceeded, RenderQuota
+        from melosviz.bridge.security import RenderQuota
 
         q = RenderQuota(max_concurrent=2, max_rss_mb=0)
         assert q.try_acquire() is True
@@ -375,10 +375,14 @@ class TestRenderQuota:
         from melosviz.bridge.security import QuotaExceeded, RenderQuota
 
         q = RenderQuota(max_concurrent=1, max_rss_mb=0)
+        assert q.try_acquire() is True
+        with pytest.raises(QuotaExceeded):
+            with q.slot():
+                pass
+        q.release()
         with q.slot():
-            with pytest.raises(QuotaExceeded):
-                with q.slot():
-                    pass
+            assert q.inflight == 1
+        assert q.inflight == 0
 
     def test_analyze_returns_503_when_quota_saturated(
         self, bridge_env, monkeypatch: pytest.MonkeyPatch

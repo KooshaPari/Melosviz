@@ -355,9 +355,8 @@ async def analyze(req: AnalyzeRequest) -> str:
         if not wav.exists():
             raise HTTPException(status_code=400, detail=f"File not found: {wav}")
         tp = None  # request-scoped traceparent already applied by middleware
-        with render_quota.slot():
-            with obs.span("analyze", traceparent=tp, wav=str(wav)):
-                data = _guarded_analyze(wav)
+        with render_quota.slot(), obs.span("analyze", traceparent=tp, wav=str(wav)):
+            data = _guarded_analyze(wav)
     except security.QuotaExceeded as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:

@@ -469,10 +469,13 @@ class CircuitBreaker:
             self._half_open_probe = False
 
     def _maybe_half_open(self, now: float) -> None:
-        if self._state == "open" and self._opened_at is not None:
-            if now - self._opened_at >= self._reset:
-                self._state = "half_open"
-                self._half_open_probe = False
+        if (
+            self._state == "open"
+            and self._opened_at is not None
+            and now - self._opened_at >= self._reset
+        ):
+            self._state = "half_open"
+            self._half_open_probe = False
 
     def allow(self, *, now: float | None = None) -> bool:
         """Return ``True`` if a call may proceed (closed or one half-open probe)."""
