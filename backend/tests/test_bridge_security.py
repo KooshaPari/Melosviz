@@ -332,7 +332,9 @@ class TestAuditRetention:
             security.append_audit({"n": i, "path": "/health", "status": 200})
 
         path = security.audit_path()
-        lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        lines = [
+            ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()
+        ]
         # After crossing 10 lines, prune keeps ~80% of the then-current set.
         assert len(lines) <= 10
         assert len(lines) >= 8
@@ -408,9 +410,10 @@ class TestRenderQuota:
         assert resp.status_code == 503
         body = resp.json()
         assert body.get("status") == 503 or "quota" in str(body).lower()
-        assert resp.headers.get("content-type", "").startswith(
-            "application/problem+json"
-        ) or "quota" in str(body).lower()
+        assert (
+            resp.headers.get("content-type", "").startswith("application/problem+json")
+            or "quota" in str(body).lower()
+        )
 
 
 # ---------------------------------------------------------------------------
