@@ -30,6 +30,9 @@ jobs:
         # Keep install lean: smoke + golden need package + pytest only.
         run: pip install -e ".[test]"
 
+      - name: Install ffmpeg (diagnose required check)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
       - name: Run timing budget gate
         # Budgets: docs/TIMING_BUDGETS.md (WBS-P1.11 / C03 L30.10)
         run: python scripts/check_timing_budgets.py

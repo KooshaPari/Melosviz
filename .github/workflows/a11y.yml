@@ -28,16 +28,18 @@ jobs:
         run: |
           python3 -m http.server 8760 --directory web/a11y &
           echo $! > /tmp/http.pid
-          python3 -m http.server 8761 --directory desktop/views/main &
+          # Serve desktop/ root so splash can load ../../assets/brand/tokens.css SoT
+          python3 -m http.server 8761 --directory desktop &
           echo $! > /tmp/http2.pid
           for i in $(seq 1 20); do
             curl -sf http://127.0.0.1:8760/fixture.html >/dev/null && break
             sleep 0.5
           done
           for i in $(seq 1 20); do
-            curl -sf http://127.0.0.1:8761/splash.html >/dev/null && break
+            curl -sf http://127.0.0.1:8761/views/main/splash.html >/dev/null && break
             sleep 0.5
           done
+          curl -sf http://127.0.0.1:8761/assets/brand/tokens.css >/dev/null
       - name: axe-core CLI
         run: |
           npx --yes @axe-core/cli@4.10.1 \
@@ -55,7 +57,7 @@ jobs:
           npx --yes playwright@1.52.0 screenshot \
             --browser chromium \
             --viewport-size=1280,720 \
-            http://127.0.0.1:8761/splash.html \
+            http://127.0.0.1:8761/views/main/splash.html \
             eval/golden/screenshots/desktop-splash.png
           ls -la eval/golden/screenshots/
       - name: Pixel-diff vs committed baselines
