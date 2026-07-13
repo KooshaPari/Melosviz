@@ -25,6 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         target: [renderspec_json, wav_header]
+        # PR path filter stays 60s; schedule / workflow_dispatch use 300s (5 min).
+        duration: ${{ fromJSON(github.event_name == 'pull_request' && '[60]' || '[300]') }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
@@ -32,8 +34,8 @@ jobs:
           toolchain: nightly
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
-      - name: Fuzz ${{ matrix.target }} (60s)
+      - name: Fuzz ${{ matrix.target }} (${{ matrix.duration }}s)
         working-directory: fuzz
         run: |
           cargo fuzz run ${{ matrix.target }} -- \
-            -max_total_time=60 -len_control=0
+            -max_total_time=${{ matrix.duration }} -len_control=0

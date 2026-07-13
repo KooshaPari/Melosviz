@@ -71,6 +71,29 @@ directory = "vendor"
 
 Then `cargo build --release --locked -p melosviz-mir` with no network.
 
+## Hermetic CI smoke (WBS-P1.6 / C06 L54)
+
+CI does **not** yet ship a committed `vendor/` tree. Instead,
+`scripts/check_hermetic_smoke.sh` (job `hermetic-smoke` in
+`.github/workflows/supply-chain.yml`) exercises a realistic offline compile:
+
+1. `cargo fetch --locked` — online once (populate the local cargo cache)
+2. `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` — no network
+
+Locally (Linux / WSL):
+
+```bash
+make hermetic-smoke
+# or: ./scripts/check_hermetic_smoke.sh
+```
+
+Optional full-workspace offline check: `HERMETIC_WORKSPACE=1 ./scripts/check_hermetic_smoke.sh`.
+
+A full vendored dependency tree in-repo (and Python `uv sync --frozen` +
+`--no-index` wheelhouse in CI) remains future work beyond WBS-P1.6 hermetic
+smoke; Rust offline prefetch+check is the v1 gate. Operator air-gap install
+still uses the wheelhouse / `cargo vendor` steps above.
+
 ## Verification
 
 ```bash
@@ -82,6 +105,7 @@ Release artifacts also ship `SHA256SUMS` + cosign bundle — see `docs/PACKAGING
 
 ## Limits
 
+- Hermetic CI v1 uses prefetch + `CARGO_NET_OFFLINE` — not a committed vendor tree (WBS-P1.6 done for smoke; full vendor deferred).
 - Desktop Electrobun packages still need a host with Bun/OS toolchains (or a prebuilt DMG/zip from GitHub Releases copied offline).
 - Authenticode / Apple notarization remain org-certificate workflows (W-224).
 - Native mobile is out of scope (W-223).

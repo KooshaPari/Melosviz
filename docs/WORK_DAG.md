@@ -4,12 +4,12 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[SOURCE_DATE_EPOCH repro smoke]
-  A --> C[Timing budgets gate]
-  A --> D[Shared brand token SoT]
-  B --> E[Re-score C06 L52]
-  C --> F[Re-score C03 L30.10]
-  D --> G[Re-score C10 L96]
+  A[CI green] --> B[Hermetic smoke CI]
+  A --> C[cargo-fuzz 60/300]
+  A --> D[cargo-audit hard-fail]
+  B --> E[Re-score C06 L54]
+  C --> F[Re-score C07 L67]
+  D --> G[Close G-C02-05]
   E --> H[SCORECARD + audits]
   F --> H
   G --> H
@@ -19,15 +19,19 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-271 | SOURCE_DATE_EPOCH / bit-repro smoke (release + CI) | C06 L52 · WBS-P1.5 | M | THIS PR |
-| W-272 | Feedback-loop timing budgets gate | C03 L30.10 · WBS-P1.11 | M | THIS PR |
-| W-273 | Shared brand token SoT (web/desktop) | C10 L96 · WBS-P1.12 | M | THIS PR |
-| W-274 | Re-score SCORECARD (p1b-sde-timing-tokens) | audit | S | THIS PR |
+| W-275 | Hermetic CI smoke (fetch once + offline check) | C06 L54 · WBS-P1.6 | M | THIS PR |
+| W-276 | cargo-fuzz PR 60s / nightly 300s | C07 L67 · WBS-P1.9 | M | THIS PR |
+| W-277 | cargo-audit hard-fail (no continue-on-error) | C02 L28 | S | THIS PR |
+| W-278 | Re-score SCORECARD (p1c-hermetic-fuzz) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-271 | SOURCE_DATE_EPOCH / bit-repro smoke (release + CI) | #139 |
+| W-272 | Feedback-loop timing budgets gate | #139 |
+| W-273 | Shared brand token SoT (web/desktop) | #139 |
+| W-274 | Re-score SCORECARD (p1b-sde-timing-tokens) | #139 |
 | W-262 | Machine-trace gates (WBS/GAP/docs-trace CI) | #136 |
 | W-263 | RenderQuota (CPU/concurrency caps) | #136 |
 | W-264 | CircuitBreaker for bridge/render failures | #136 |
