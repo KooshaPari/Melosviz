@@ -24,6 +24,17 @@ jobs:
           node-version: "22"
       - name: Install Playwright Chromium
         run: npx --yes playwright@1.52.0 install --with-deps chromium
+      - name: Install web deps (R3F canvas fixture)
+        run: npm ci --prefix web
+      - name: Start R3F canvas fixture dev server (Vite)
+        working-directory: web
+        run: |
+          node_modules/.bin/vite --port 5183 --strictPort > /tmp/vite.log 2>&1 &
+          echo $! > /tmp/vite.pid
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:5183/fixtures/r3f-canvas.html >/dev/null && break
+            sleep 0.5
+          done
       - name: Serve fixtures
         run: |
           python3 -m http.server 8760 --directory web/a11y &
@@ -59,6 +70,16 @@ jobs:
             --viewport-size=1280,720 \
             http://127.0.0.1:8761/views/main/splash.html \
             eval/golden/screenshots/desktop-splash.png
+          # R3F canvas golden (G-C10-03 / WBS-P3.3): deterministic fixture —
+          # frameloop="demand" + frozen performance.now(), not the live App
+          # (no audio, no requestAnimationFrame drift). See
+          # web/src/fixtures/r3fCanvasFixture.tsx + docs/VISUAL_SPEC.md.
+          npx --yes playwright@1.52.0 screenshot \
+            --browser chromium \
+            --viewport-size=960,540 \
+            --wait-for-selector "body[data-fixture-ready='true']" \
+            http://127.0.0.1:5183/fixtures/r3f-canvas.html \
+            eval/golden/screenshots/r3f-canvas.png
           ls -la eval/golden/screenshots/
       - name: Pixel-diff vs committed baselines
         run: |
@@ -75,6 +96,12 @@ jobs:
             eval/golden/screenshots/desktop-splash.png \
             eval/golden/screenshots/desktop-splash.diff.png \
             0.02
+          test -f eval/golden/screenshots/r3f-canvas.baseline.png
+          node scripts/visual-gate/compare.mjs \
+            eval/golden/screenshots/r3f-canvas.baseline.png \
+            eval/golden/screenshots/r3f-canvas.png \
+            eval/golden/screenshots/r3f-canvas.diff.png \
+            0.04
       - name: Upload screenshot artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -85,6 +112,8 @@ jobs:
             eval/golden/screenshots/a11y-fixture.diff.png
             eval/golden/screenshots/desktop-splash.png
             eval/golden/screenshots/desktop-splash.diff.png
+            eval/golden/screenshots/r3f-canvas.png
+            eval/golden/screenshots/r3f-canvas.diff.png
           if-no-files-found: error
           retention-days: 14
       - name: Stop server
@@ -92,3 +121,4 @@ jobs:
         run: |
           kill $(cat /tmp/http.pid) || true
           kill $(cat /tmp/http2.pid) || true
+          kill $(cat /tmp/vite.pid) || true

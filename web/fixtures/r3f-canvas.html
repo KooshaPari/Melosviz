@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MelosViz — R3F canvas golden fixture</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #080808;
+      }
+      /* Fixed size so the CI screenshot + committed baseline never depend on
+         viewport/Tailwind wiring (this fixture intentionally does not load
+         the app's brand.css / Tailwind pipeline). */
+      #root {
+        width: 960px;
+        height: 540px;
+        overflow: hidden;
+      }
+      .h-full {
+        height: 100%;
+      }
+      .w-full {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/fixtures/r3fCanvasFixture.tsx"></script>
+  </body>
+</html>

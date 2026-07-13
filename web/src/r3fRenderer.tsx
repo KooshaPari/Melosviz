@@ -196,6 +196,13 @@ export interface SceneViewProps {
    * WebGL canvas pixels are opaque to AT; this exposes scene identity (G-C09-01).
    */
   currentSceneLabel?: string
+  /**
+   * R3F Canvas render mode. Defaults to `'always'` (continuous RAF loop) for
+   * live playback. Golden-screenshot fixtures pass `'demand'` so the canvas
+   * only renders on invalidation — required for deterministic CI pixelmatch
+   * (see `web/src/fixtures/r3fCanvasFixture.tsx`, G-C10-03).
+   */
+  frameloop?: 'always' | 'demand'
 }
 
 /**
@@ -210,6 +217,7 @@ export function SceneView({
   playbackT,
   className,
   currentSceneLabel,
+  frameloop = 'always',
 }: SceneViewProps) {
   // Store derived per-frame state in a ref so useFrame callbacks never trigger
   // React re-renders — critical for 60fps.
@@ -243,10 +251,14 @@ export function SceneView({
       >
         <Canvas
           className="h-full w-full"
+          frameloop={frameloop}
           gl={{
             antialias: true,
             powerPreference: 'high-performance',
             outputColorSpace: THREE.LinearSRGBColorSpace,
+            // Golden-fixture screenshots read back the WebGL buffer after the
+            // demand-mode frame settles; preserveDrawingBuffer keeps it intact.
+            preserveDrawingBuffer: frameloop === 'demand',
           }}
           dpr={[1, window.devicePixelRatio ?? 2]}
           camera={{ fov: 45, near: 0.1, far: 500, position: [0, 0, 8] }}
