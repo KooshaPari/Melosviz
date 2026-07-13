@@ -19,7 +19,8 @@
 | `MELOSVIZ_OTEL` | auto | observability | Force OTel on/off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | — | observability | OTLP HTTP endpoint (auto-enables OTel) |
 | `OTEL_SERVICE_NAME` | melosviz-bridge | observability | Resource service.name |
-| `MELOSVIZ_PROFILE` | unset/0 | bridge | Enable `GET /debug/profile` cProfile sample |
+| `MELOSVIZ_PROFILE` | unset/0 | bridge | Opt-in `GET /debug/profile`: `1`/`true` = one-shot cProfile; `continuous`/`2` = in-process background sampler (not a py-spy sidecar) |
+| `MELOSVIZ_PROFILE_INTERVAL_S` | `30` | bridge | Continuous sampler period (seconds); only used when `MELOSVIZ_PROFILE=continuous` or `2` |
 | `MELOSVIZ_LOCALE` | `en` | web / CLI / desktop | Locale (`en` / `es`) — see `docs/I18N.md` (scaffold; not full coverage) |
 | `MELOSVIZ_BACKEND_PORT` | — | desktop | Sidecar port hint |
 

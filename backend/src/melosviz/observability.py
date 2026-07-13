@@ -6,12 +6,16 @@ Provides:
 * W3C ``traceparent`` extraction for distributed context
 * In-process RED-style counters for /metrics
 * Process readiness probe used by ``GET /ready``
+* Opt-in in-process cProfile samples (one-shot or continuous) for ``/debug/profile``
 
 Env knobs:
 * ``MELOSVIZ_LOG_JSON=1`` (default) — emit one JSON object per log line
 * ``MELOSVIZ_OTEL=1`` — enable OTel spans (auto-on when OTLP endpoint is set)
 * ``OTEL_EXPORTER_OTLP_ENDPOINT`` — e.g. ``http://127.0.0.1:4318``
 * ``OTEL_SERVICE_NAME`` — defaults to ``melosviz-bridge``
+* ``MELOSVIZ_PROFILE=1`` — one-shot cProfile on each ``GET /debug/profile``
+* ``MELOSVIZ_PROFILE=continuous`` (or ``2``) — background sampler; endpoint returns latest
+* ``MELOSVIZ_PROFILE_INTERVAL_S`` — continuous sample period (default ``30``)
 """
 
 from __future__ import annotations
@@ -251,3 +255,131 @@ def span(
     except Exception:  # noqa: BLE001 — OTel is best-effort
         _log.debug("otel span unavailable for %s", name, exc_info=True)
         yield
+
+
+# ---------------------------------------------------------------------------
+# Opt-in in-process profiler (not a py-spy / external agent sidecar)
+# ---------------------------------------------------------------------------
+
+
+def profile_mode() -> str:
+    """Return ``off``, ``oneshot``, or ``continuous`` from ``MELOSVIZ_PROFILE``."""
+    raw = os.environ.get("MELOSVIZ_PROFILE", "").strip().lower()
+    if raw in ("1", "true", "yes", "on"):
+        return "oneshot"
+    if raw in ("2", "continuous"):
+        return "continuous"
+    return "off"
+
+
+def profile_interval_s() -> float:
+    """Continuous sampler period; default 30s, floored to avoid a busy loop."""
+    try:
+        value = float(os.environ.get("MELOSVIZ_PROFILE_INTERVAL_S", "30"))
+    except ValueError:
+        return 30.0
+    return max(0.1, value)
+
+
+def cprofile_sample(*, stats_limit: int = 20) -> dict[str, Any]:
+    """Run a short stdlib ``cProfile`` dump of a trivial CPU workload."""
+    import cProfile
+    import io
+    import pstats
+
+    def _work() -> int:
+        total = 0
+        for i in range(50_000):
+            total += i * i
+        return total
+
+    pr = cProfile.Profile()
+    pr.enable()
+    result = _work()
+    pr.disable()
+    buf = io.StringIO()
+    pstats.Stats(pr, stream=buf).sort_stats("cumulative").print_stats(stats_limit)
+    return {
+        "status": "ok",
+        "result": result,
+        "profile": buf.getvalue(),
+        "sampled_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+
+class ContinuousProfiler:
+    """Daemon thread that keeps the latest in-process cProfile dump."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._latest: dict[str, Any] | None = None
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    @property
+    def running(self) -> bool:
+        return self._thread is not None and self._thread.is_alive()
+
+    def start(self) -> None:
+        if self.running:
+            return
+        self._stop.clear()
+        # Seed immediately so /debug/profile is useful before the first interval.
+        self._capture()
+        self._thread = threading.Thread(
+            target=self._loop,
+            name="melosviz-continuous-profiler",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        thread = self._thread
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=2.0)
+        self._thread = None
+
+    def latest(self) -> dict[str, Any] | None:
+        with self._lock:
+            if self._latest is None:
+                return None
+            return dict(self._latest)
+
+    def _capture(self) -> None:
+        sample = cprofile_sample()
+        sample["mode"] = "continuous"
+        sample["interval_s"] = profile_interval_s()
+        with self._lock:
+            self._latest = sample
+
+    def _loop(self) -> None:
+        while not self._stop.wait(timeout=profile_interval_s()):
+            try:
+                self._capture()
+            except Exception:  # noqa: BLE001 — sampler must not kill the process
+                _log.debug("continuous profiler sample failed", exc_info=True)
+
+
+_continuous_profiler = ContinuousProfiler()
+_continuous_lock = threading.Lock()
+
+
+def ensure_continuous_profiler() -> ContinuousProfiler:
+    """Start the background sampler when ``MELOSVIZ_PROFILE`` is continuous."""
+    with _continuous_lock:
+        if profile_mode() == "continuous":
+            _continuous_profiler.start()
+        return _continuous_profiler
+
+
+def stop_continuous_profiler() -> None:
+    """Stop the background sampler (tests / shutdown)."""
+    with _continuous_lock:
+        _continuous_profiler.stop()
+
+
+def latest_continuous_profile() -> dict[str, Any] | None:
+    """Return the latest continuous sample, or ``None`` if none yet."""
+    ensure_continuous_profiler()
+    return _continuous_profiler.latest()

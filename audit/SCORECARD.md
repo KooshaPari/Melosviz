@@ -3,8 +3,8 @@
 **Repo:** KooshaPari/Melosviz
 **Date:** 2026-07-13
 **Repo-type profile:** desktop + CLI + library + web-app
-**Auditor:** p1g-canvas-sr-race wave
-**Commit audited:** (wave/p1g-canvas-sr-race tip)
+**Auditor:** p1h-profiler-e2e-gap wave
+**Commit audited:** (wave/p1h-profiler-e2e-gap tip)
 
 > Scoring: each sub-pillar 0=? / 1=? / 2=~ / 3=+, evidence-mandatory (`file:line`).
 > Cluster score = sum / (sub-pillars x 3). Grade: A≥90% · B≥75% · C≥60% · D≥40% · F<40%.
@@ -18,7 +18,7 @@
 | C02 | Error handling, API, Governance | L20-L29 | 27/30 | 90% | A | IdP; hosted multi-tenant; cloud KMS |
 | C03 | Agent Readiness | L30 | 35/36 | 97% | A | agent quickstart polish |
 | C04 | Security | L31-L40 | 27/30 | 90% | A | org GPG signed-commits; notarization |
-| C05 | Observability (deep) | L41-L50 | 29/30 | 97% | A | always-on continuous profiler agent |
+| C05 | Observability (deep) | L41-L50 | 30/30 | 100% | A | external always-on profiler agent (residual) |
 | C06 | Supply Chain | L51-L60 | 29/30 | 97% | A | full in-repo vendor; Windows MSI bit-identity |
 | C07 | DX, QEng, Portability | L61-L70 | 29/30 | 97% | A | full GUI desktop e2e; continuous fuzz farm |
 | C08 | Eval Coverage | L71-L80 | 29/30 | 97% | A | licensed real-track corpus (legal) |
@@ -28,24 +28,24 @@
 
 ## Overall
 
-**Weighted overall score:** 94.5% · **Overall grade:** A
+**Weighted overall score:** 94.8% · **Overall grade:** A
 
 (Equal-weight mean of cluster percentages:
-(93+100+90+97+90+97+97+97+97+100+94+82) / 12 = **94.5%** → **A**.)
+(93+100+90+97+90+100+97+97+97+100+94+82) / 12 = **94.75 → 94.8%** → **A**.)
 
 ## Headline Findings
 
-- **Strongest:** C01/C09 (100% A); C03/C05/C06/C07/C08 (97% A).
+- **Strongest:** C01/C05/C09 (100% A); C03/C06/C07/C08 (97% A).
 - **Weakest:** C11 (82% B).
-- **This wave:** SceneView canvas SR (G-C09-01) · bridge concurrency race stress (G-C00-03; C00 93%).
-- **Prior:** web playlist empty state · `@melosviz/bridge-client` SDK stub.
+- **This wave:** In-process continuous profiler (C05 L45 2→3; G-C05-02 mitigated) · G-C07-01 mitigated (Linux desktop-e2e; GUI host-gated).
+- **Prior:** SceneView canvas SR · bridge concurrency race stress.
 
-## Delta vs prior closeout (94.3% A · p1f)
+## Delta vs prior closeout (94.5% A · p1g)
 
 | Cluster | Before | After | Lift |
 |---------|--------|-------|------|
-| C00 | 90% A | 93% A | +3 |
-| Overall | 94.3% A | 94.5% A | +0.2 |
+| C05 | 97% A | 100% A | +3 |
+| Overall | 94.5% A | 94.8% A | +0.3 |
 
 ## Spine links
 

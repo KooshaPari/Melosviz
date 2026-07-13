@@ -4,9 +4,9 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[SceneView canvas SR]
-  A --> C[Bridge concurrency race stress]
-  B --> D[Re-score C00 93% / 94.5% A]
+  A[CI green] --> B[In-process continuous profiler]
+  A --> C[G-C07-01 mitigate / WBS-P1.9]
+  B --> D[Re-score C05 100% / 94.8% A]
   C --> D
 ```
 
@@ -14,14 +14,17 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-291 | SceneView canvas SR (role=img + aria-live) | C09 L83 · G-C09-01 | S | THIS PR |
-| W-292 | Bridge RateLimiter/RenderQuota race stress | C00 L7 · G-C00-03 | M | THIS PR |
-| W-293 | Re-score SCORECARD (p1g → 94.5% A) | audit | S | THIS PR |
+| W-294 | In-process continuous profiler (`MELOSVIZ_PROFILE=continuous`/`2`) | C05 L45 · G-C05-02 · WBS-P3.4 | M | THIS PR |
+| W-295 | Mitigate G-C07-01 (Linux desktop-e2e; GUI host-gated note) | C07 L64 · WBS-P1.9 | S | THIS PR |
+| W-296 | Re-score SCORECARD (p1h → 94.8% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-291 | SceneView canvas SR (role=img + aria-live) | #147 |
+| W-292 | Bridge RateLimiter/RenderQuota race stress | #147 |
+| W-293 | Re-score SCORECARD (p1g → 94.5% A) | #147 |
 | W-288 | Web playlist empty/zero state | #146 |
 | W-289 | `@melosviz/bridge-client` SDK stub | #146 |
 | W-290 | Re-score SCORECARD (p1f → 94.3% A) | #146 |

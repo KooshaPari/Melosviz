@@ -197,7 +197,7 @@
     },
     "/debug/profile": {
       "get": {
-        "description": "Opt-in CPU profile sample (enable with ``MELOSVIZ_PROFILE=1``).\n\nReturns a short ``cProfile`` dump for a trivial workload so operators can\nconfirm the profiler path without attaching an external agent. Disabled\n(404) unless explicitly enabled \u2014 keeps the default attack surface small.",
+        "description": "Opt-in CPU profile sample (``MELOSVIZ_PROFILE``).\n\n* ``1`` / ``true`` \u2014 one-shot in-process ``cProfile`` of a trivial workload\n  on each request.\n* ``continuous`` / ``2`` \u2014 return the latest dump from a lightweight\n  background sampler (interval ``MELOSVIZ_PROFILE_INTERVAL_S``, default 30s).\n  This is an in-process continuous sample, not a py-spy / external agent.\n\nDisabled (404) unless explicitly enabled \u2014 keeps the default attack surface\nsmall.",
         "operationId": "debug_profile_debug_profile_get",
         "responses": {
           "200": {

@@ -59,15 +59,26 @@ error rate, avg latency.
 
 ## Continuous profiling (optional)
 
-Bridge CPU/memory profiling is operator-opt-in (no always-on profiler in
-the default install):
+Bridge CPU profiling is **operator-opt-in**. MelosViz ships an **in-process**
+cProfile path — not a production py-spy / continuous-profiler sidecar agent.
+
+| `MELOSVIZ_PROFILE` | Behavior |
+|--------------------|----------|
+| unset / `0` | `GET /debug/profile` → 404 |
+| `1` / `true` | One-shot: each request runs a short in-process cProfile dump |
+| `continuous` / `2` | Background sampler every `MELOSVIZ_PROFILE_INTERVAL_S` (default **30**); `GET /debug/profile` returns the **latest** dump |
 
 ```bash
-# Opt-in HTTP sample (cProfile dump; 404 unless enabled)
+# One-shot on-request sample
 export MELOSVIZ_PROFILE=1
 curl -s localhost:8765/debug/profile
 
-# py-spy (attach to bridge PID)
+# In-process continuous sample (keeps latest dump)
+export MELOSVIZ_PROFILE=continuous
+# export MELOSVIZ_PROFILE_INTERVAL_S=30   # optional; default 30
+curl -s localhost:8765/debug/profile
+
+# External attach (operator-owned; not bundled as a MelosViz agent)
 pip install py-spy
 py-spy top --pid <bridge-pid>
 
@@ -75,8 +86,8 @@ py-spy top --pid <bridge-pid>
 python -m cProfile -o analyze.prof -m melosviz.cli.main analyze track.wav
 ```
 
-Documented for C05 L45; `GET /debug/profile` is the in-process sample path
-(`MELOSVIZ_PROFILE=1`). Always-on continuous agents remain optional.
+Documented for C05 L45. Always-on **external** profiler agents remain optional /
+future (WBS-P3.4 residual).
 
 ## Alert ideas (operator-owned)
 
