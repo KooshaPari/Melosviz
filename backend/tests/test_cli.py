@@ -6,6 +6,7 @@ needing click or any heavy optional dep (librosa, uvicorn, etc.).
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 
@@ -60,3 +61,17 @@ class TestServeHelp:
     def test_serve_help_mentions_host(self) -> None:
         result = _run("serve", "--help")
         assert "--host" in result.stdout
+
+
+class TestLocaleHelp:
+    def test_es_locale_translates_analyze_help(self) -> None:
+        env = {**os.environ, "MELOSVIZ_LOCALE": "es", "PYTHONIOENCODING": "utf-8"}
+        result = subprocess.run(
+            [sys.executable, "-m", "melosviz.cli.main", "--help"],
+            capture_output=True,
+            text=True,
+            env=env,
+            encoding="utf-8",
+        )
+        assert result.returncode == 0
+        assert "Analizar" in result.stdout

@@ -8,6 +8,7 @@
 import { Electroview } from "electrobun/view";
 import "@radix-ui/themes/styles.css";
 import type { BunRequests, WebviewRequests } from "../../src/rpc";
+import { applyShellChrome, t } from "./i18n";
 
 // ---------------------------------------------------------------------------
 // RPC bootstrap (webview side)
@@ -570,6 +571,7 @@ function initTabs() {
 // ---------------------------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyShellChrome();
   initDropzone();
   initTabs();
 
@@ -588,6 +590,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   qs("#btn-re-render").addEventListener("click", onRenderVideo);
 
-  setStatus("Ready", "ready");
+  setStatus(t("shell.status.ready"), "ready");
   syncButtons();
 });

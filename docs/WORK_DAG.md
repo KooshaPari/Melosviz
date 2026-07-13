@@ -4,30 +4,32 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[Desktop/web threat STRIDE]
-  A --> C[Hypothesis L66 expansion]
-  A --> D[Brand-tokens stub]
-  A --> E[Windows release soft-fail narrow]
-  B --> F[Re-score]
-  C --> F
-  D --> F
-  E --> F
+  A[CI green] --> B[Bun traceparent]
+  A --> C[SPA focus trap]
+  A --> D[CLI/desktop i18n scaffold]
+  B --> E[Re-score C01 100%]
+  C --> E
+  D --> E
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-279 | Desktop/web STRIDE threat model | C02 L20 · G-C02-04 | S | THIS PR |
-| W-280 | Hypothesis RenderSpec property expansion | C07 L66 | M | THIS PR |
-| W-281 | `@melosviz/brand-tokens` package stub | C10 L105 · WBS-P3.2 | S | THIS PR |
-| W-282 | Windows release soft-fail narrow | C00 L9 · WBS-P1.10 | M | THIS PR |
-| W-283 | Re-score SCORECARD (p1d wave → 93.8% A) | audit | S | THIS PR |
+| W-284 | Desktop Bun inject traceparent | C05 L44 · G-C05-03 | S | THIS PR |
+| W-285 | SPA focus-trap / modal restore polish | C09 L82 · G-C09-02 | M | THIS PR |
+| W-286 | CLI + desktop i18n scaffold (en/es) | C01 L16 · WBS-P3.5 | M | THIS PR |
+| W-287 | Re-score SCORECARD (p1e → 94.1% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-279 | Desktop/web STRIDE threat model | #141 |
+| W-280 | Hypothesis RenderSpec property expansion | #141 |
+| W-281 | `@melosviz/brand-tokens` package stub | #141 |
+| W-282 | Windows release soft-fail narrow | #141 |
+| W-283 | Re-score SCORECARD (p1d wave → 93.8% A) | #141 |
 | W-275 | Hermetic CI smoke (fetch once + offline check) | #140 |
 | W-276 | cargo-fuzz PR 60s / nightly 300s | #140 |
 | W-277 | cargo-audit hard-fail (no continue-on-error) | #140 |

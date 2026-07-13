@@ -219,6 +219,12 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[380px] max-w-[95vw] rounded-xl bg-[var(--mv-surface,#111118)] border border-white/10 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           aria-describedby="preset-editor-desc"
+          onOpenAutoFocus={(e) => {
+            // Prefer the Load Preset select as initial focus (FOCUS.md).
+            e.preventDefault()
+            const select = e.currentTarget.querySelector<HTMLSelectElement>('select')
+            select?.focus()
+          }}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-5">

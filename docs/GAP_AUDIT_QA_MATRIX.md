@@ -28,7 +28,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `audit/.lane-c00/C00.md` L7 | open | — | C00 L7 |
 | G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
-| G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `audit/.lane-c01/C01.md` | open | WBS-P3.5 | C01 L16 |
+| G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `backend/src/melosviz/i18n/`; `desktop/locales/`; `audit/.lane-c01/C01.md` | mitigated | WBS-P3.5 | C01 L16 |
 | G-C02-01 | C02 | L25 | No CPU/memory quotas for render workers | H | integ | `backend/src/melosviz/bridge/security.py` (`RenderQuota`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.2 | C02 L25 |
 | G-C02-02 | C02 | L26 | No circuit breaker library | H | integ | `backend/src/melosviz/bridge/security.py` (`CircuitBreaker`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.3 | C02 L26 |
 | G-C02-03 | C02 | L21 | No OAuth/SAML IdP | L | manual | localhost Bearer sufficient today | accepted | WBS-P2.3 | C02 L21 |
@@ -41,7 +41,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C04-03 | C04 | L35 | Per-binary cosign still optional (manifest-level) | L | ci | `release.yml` SHA256SUMS.cosign.bundle | mitigated | WBS-P0.9 | C04 L35 |
 | G-C05-01 | C05 | L49 | Audit JSONL retention not enforced in code | M | unit | `backend/src/melosviz/bridge/security.py` (`_maybe_prune_audit`); `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | closed | WBS-P1.7 | C05 L49 |
 | G-C05-02 | C05 | L45 | No always-on continuous profiler agent | M | manual | `/debug/profile` opt-in only | open | WBS-P3.4 | C05 L45 |
-| G-C05-03 | C05 | L44 | Desktop Bun client does not inject traceparent | L | integ | `audit/.lane-c05/C05.md` L44 | open | — | C05 L44 |
+| G-C05-03 | C05 | L44 | Desktop Bun client does not inject traceparent | L | integ | `desktop/src/index.ts` bridgeFetch + health; `docs/OBSERVABILITY.md` | closed | — | C05 L44 |
 | G-C06-01 | C06 | L55 | No automated reserved-name scanner in CI | H | ci | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | closed | WBS-P1.4 | C06 L55 |
 | G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.5 | C06 L52 |
 | G-C06-03 | C06 | L54 | Builds not hermetic (CI still fetches crates/pypi) | H | ci | `scripts/check_hermetic_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md` (full in-repo vendor still open) | mitigated | WBS-P1.6 | C06 L54 |
@@ -51,7 +51,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C08-01 | C08 | L71 | Licensed real-track corpus (legal) | L | manual | `docs/EVAL.md`; `audit/.lane-c08/C08.md` | open | WBS-P4.6 | C08 L71 |
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
 | G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | open | — | C09 L83 |
-| G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md` | open | — | C09 L82 |
+| G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
 | G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `packages/brand-tokens` stub; SoT `desktop/assets/brand/tokens.css`; full UI lib still open | mitigated | WBS-P3.2 | C10 L105 |
 | G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `audit/.lane-c10/C10.md` L107 | open | WBS-P3.3 | C10 L107 |

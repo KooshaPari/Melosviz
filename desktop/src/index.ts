@@ -18,7 +18,7 @@ const { openFileDialog, showItemInFolder } = Utils;
 import * as path from "path";
 import * as fs from "fs";
 import type { BunRequests, WebviewRequests } from "./rpc";
-
+import { t as i18n } from "./i18n";
 // ---------------------------------------------------------------------------
 // Backend sidecar state — populated asynchronously after window opens
 // ---------------------------------------------------------------------------
@@ -128,13 +128,44 @@ async function runVizCli(args: string[]): Promise<string> {
   return stdout;
 }
 
+/** W3C traceparent: `version-trace_id-span_id-flags` (sampled). */
+function generateTraceparent(): string {
+  const bytes = new Uint8Array(24); // 16-byte trace_id + 8-byte span_id
+  crypto.getRandomValues(bytes);
+  let hex = "";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return `00-${hex.slice(0, 32)}-${hex.slice(32, 48)}-01`;
+}
+
+const TRACEPARENT_RE =
+  /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/i;
+
+/** Forward a valid inbound traceparent; otherwise mint a new one. */
+function resolveTraceparent(existing?: string | null): string {
+  if (existing && TRACEPARENT_RE.test(existing.trim())) {
+    return existing.trim();
+  }
+  return generateTraceparent();
+}
+
 async function bridgeFetch(
   endpoint: string,
-  body: Record<string, string>
+  body: Record<string, string>,
+  init?: { headers?: Record<string, string> }
 ): Promise<string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(init?.headers ?? {}),
+  };
+  const inbound =
+    headers.traceparent ?? headers.Traceparent ?? headers["TRACEPARENT"];
+  delete headers.Traceparent;
+  delete headers["TRACEPARENT"];
+  headers.traceparent = resolveTraceparent(inbound);
+
   const res = await fetch(`http://127.0.0.1:${backendPort}${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -270,7 +301,7 @@ const rpc = defineElectrobunRPC<
 // which produces an opaque "null" origin (insecure); url: "views://..." goes
 // through electrobun's registered URL scheme handler which is secure.
 const win = new BrowserWindow({
-  title: "MelosViz",
+  title: i18n("app.name"),
   frame: { x: 100, y: 100, width: 1280, height: 800 },
   url: "views://main/index.html",
   titleBarStyle: "hiddenInset",
@@ -336,7 +367,9 @@ async function startBackendBridge(): Promise<void> {
   for (let i = 0; i < 10; i++) {
     await Bun.sleep(500);
     try {
-      const r = await fetch(`http://127.0.0.1:${backendPort}/health`);
+      const r = await fetch(`http://127.0.0.1:${backendPort}/health`, {
+        headers: { traceparent: generateTraceparent() },
+      });
       if (r.ok) {
         bridgeReady = true;
         console.log("[MelosViz] bridge ready");

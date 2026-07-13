@@ -79,7 +79,7 @@ where = ["src"]
 # (mypy, pyright, ...) treat the package as fully typed instead of
 # falling back to ``Any`` for unannotated functions.
 [tool.setuptools.package-data]
-"melosviz" = ["py.typed"]
+"melosviz" = ["py.typed", "i18n/locales/*.json"]
 
 [tool.ruff]
 line-length = 88
