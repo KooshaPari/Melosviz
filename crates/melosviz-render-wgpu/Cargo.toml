@@ -16,7 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # wgpu 24.x: Metal on macOS, Vulkan on Linux, DX12 on Windows (auto-selected)
-wgpu = { version = "24", features = ["metal"] }
+wgpu = { version = "30", features = ["metal"] }
 # Async runtime — wgpu's instance/adapter/device are async
 pollster = "0.4"
 # RenderSpec v2 deserialization
