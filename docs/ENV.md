@@ -13,6 +13,8 @@
 | `MELOSVIZ_AUDIT_MAX_LINES` | `50000` | bridge | Prune audit JSONL when line count exceeds this (`<=0` disables); keep newest ~80% |
 | `MELOSVIZ_RENDER_MAX_CONCURRENT` | `2` | bridge | Max concurrent `/analyze` `/build` `/render` slots (`<=0` disables) |
 | `MELOSVIZ_RENDER_MAX_RSS_MB` | `2048` | bridge | Soft RSS ceiling before refusing a new render slot (`<=0` disables; skipped if RSS unavailable) |
+| `MELOSVIZ_MEMORY_CAP_MB` | `4096` | bridge | **Global** hard process RSS ceiling; `/analyze` `/build` `/render` refuse new work with problem+json `503` once exceeded (`<=0` disables). Distinct from `MELOSVIZ_RENDER_MAX_RSS_MB` — independent of concurrency-slot accounting. |
+| `MELOSVIZ_MEMORY_SOFT_CAP_MB` | 85% of `MELOSVIZ_MEMORY_CAP_MB` | bridge | Soft RSS ceiling; refuses new work with problem+json `429` + `Retry-After` before the hard cap trips (`<=0` disables the soft tier only) |
 | `MELOSVIZ_BREAKER_FAILURE_THRESHOLD` | `5` | bridge | MIR/render failures before circuit opens |
 | `MELOSVIZ_BREAKER_RESET_SECONDS` | `30` | bridge | Seconds before open breaker enters half-open |
 | `MELOSVIZ_LOG_JSON` | 1 | observability | JSON structured logs |

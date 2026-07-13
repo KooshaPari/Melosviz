@@ -300,6 +300,23 @@ describe("MelosViz desktop app — launcher log invariants", () => {
       );
     expect(consoleErrors).toHaveLength(0);
   });
+
+  /**
+   * Tray/menubar quick-actions (C11 L110) — best-effort, must never crash
+   * startup. `setupTray()` in src/index.ts wraps native `Tray` construction
+   * in try/catch and runs before the backend bridge starts, so a platform
+   * without system-tray support (or a sandboxed CI runner) should still
+   * reach "window created" cleanly, with at most a caught warning logged.
+   */
+  test("Tray setup never crashes app startup", () => {
+    if (BRIDGE_ONLY) {
+      console.log("[e2e] BRIDGE_ONLY: skipping launcher-log test (no app process)");
+      return;
+    }
+    expect(launcherLog).toContain("[MelosViz] window created");
+    expect(launcherLog).not.toMatch(/Uncaught.*Tray/i);
+    expect(launcherLog).not.toMatch(/TypeError.*tray/i);
+  });
 });
 
 // ---------------------------------------------------------------------------

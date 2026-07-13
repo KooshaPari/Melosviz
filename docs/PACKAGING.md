@@ -86,6 +86,28 @@ mutmut run --paths-to-mutate src/melosviz/ --tests-dir tests/
 # Target: >=75% mutation score per .qgate.toml
 ```
 
+## Tray / menubar quick-actions (C11 L110)
+
+The desktop shell (`desktop/src/index.ts`) creates a system tray icon on
+startup via Electrobun's `Tray` API (`electrobun/bun` — ships in `1.18.1`,
+no extra dependency). Menu items:
+
+| Item | Action |
+|------|--------|
+| Show MelosViz | Unminimize (if needed) + show/activate the main window |
+| Open Bridge Health | Opens `http://127.0.0.1:<port>/health` in the default browser (`Utils.openExternal`) |
+| Quit | `Utils.quit()` — graceful app shutdown |
+
+Localized via the existing `desktop/locales/{en,es}.json` catalogs
+(`tray.show` / `tray.health` / `tray.quit`). Tray creation is best-effort:
+Electrobun's `Tray` constructor already swallows platform/sandbox failures
+internally (no native tray support → the icon is simply absent), and
+`setupTray()` wraps the whole thing in `try/catch` so a tray failure never
+blocks app startup or the main window.
+
+Not yet shipped: dynamic menu state (e.g. bridge-ready checkmark) or a
+tray-driven quick-render action — tracked as residual polish, not a blocker.
+
 ## Container (GHCR)
 
 Production-oriented bridge image:

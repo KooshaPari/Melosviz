@@ -58,8 +58,10 @@ async def http_exception_problem(request: Request, exc: Exception) -> JSONRespon
             instance=str(request.url.path),
         )
         status = exc.status_code
+    headers = dict(exc.headers) if exc.headers else None
     return JSONResponse(
         status_code=status,
         content=payload,
         media_type="application/problem+json",
+        headers=headers,
     )

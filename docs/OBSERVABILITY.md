@@ -100,6 +100,53 @@ Committed PrometheusRule sketches:
 | High error rate | `rate(melosviz_http_errors_total[5m]) > 0.1` | warning |
 | Analyze latency | `melosviz_http_latency_ms_avg{path="/analyze"} > 15000` | warning |
 
+## Global memory-cap enforcement (C00 L8)
+
+The bridge enforces a **process-level** soft/hard RSS ceiling on top of
+`RenderQuota`'s per-slot soft check (`MELOSVIZ_RENDER_MAX_RSS_MB`). This
+closes the "no global memory-cap enforcement" gap: `RenderQuota` only checks
+RSS at slot-acquisition time and is scoped to concurrency accounting; the
+global cap (`security.MemoryCapGuard`) checks RSS on every `/analyze`
+`/build` `/render` call regardless of how many slots are in flight.
+
+| `MELOSVIZ_MEMORY_CAP_MB` | Behavior |
+|---------------------------|----------|
+| unset (default `4096`) | Hard ceiling; RSS over this → `503` problem+json, request rejected |
+| `<=0` | Hard tier disabled |
+
+| `MELOSVIZ_MEMORY_SOFT_CAP_MB` | Behavior |
+|---------------------------------|----------|
+| unset (default: 85% of hard cap) | Soft ceiling; RSS over this (but under hard) → `429` problem+json + `Retry-After: 30` |
+| `<=0` | Soft tier disabled (hard cap still applies) |
+
+Both checks use the same best-effort RSS probe as `RenderQuota`
+(`resource.getrusage` on Linux/macOS, `psutil` fallback for Windows). If RSS
+can't be measured, the guard **fails open** — requests proceed and the
+process never crashes or wedges due to a measurement gap.
+
+Every rejection:
+
+* Returns `application/problem+json` (`503` hard / `429` soft) via the
+  existing `http_exception_problem` handler — no bespoke error shape.
+* Appends a dedicated audit row to `$MELOSVIZ_DATA_DIR/audit/bridge.jsonl`
+  with `reason=memory_cap_exceeded`, `tier`, `rss_mb`, `cap_mb` (in addition
+  to the generic per-request row the security middleware always writes).
+* Never terminates the process — enforcement is a request-level refusal,
+  not a `SIGKILL`/OOM-style intervention.
+
+`GET /metrics` exposes `melosviz_memory_rss_mb` (best-effort gauge) and
+`melosviz_memory_cap_mb` (configured hard cap; `0` = disabled) for operator
+dashboards/alerts.
+
+```bash
+# Lower the ceiling for a memory-constrained host
+export MELOSVIZ_MEMORY_CAP_MB=1024
+export MELOSVIZ_MEMORY_SOFT_CAP_MB=768
+python -m melosviz.bridge.server --port 8765
+```
+
+Tests: `backend/tests/test_bridge_memory_cap.py`.
+
 ## Audit log
 
 Protected requests append JSONL to `$MELOSVIZ_DATA_DIR/audit/bridge.jsonl`.

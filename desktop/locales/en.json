@@ -2,5 +2,8 @@
   "app.name": "MelosViz",
   "shell.tagline": "Festival Visualizer",
   "shell.status.ready": "Ready",
-  "shell.skip_link": "Skip to main content"
+  "shell.skip_link": "Skip to main content",
+  "tray.show": "Show MelosViz",
+  "tray.health": "Open Bridge Health",
+  "tray.quit": "Quit"
 }

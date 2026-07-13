@@ -1,7 +1,7 @@
 # MelosViz Phased WBS (project + org)
 
 Target: **audit-v38 A+ / 92%+** overall, plus org governance closure.
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~95.8% · A** (2026-07-13, p1j-design-system-ui).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.3% · A** (2026-07-13, p1k-memory-cap-tray).
 
 Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred`
 
@@ -44,11 +44,12 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | scaffold: `backend/src/melosviz/i18n/`; `desktop/locales/`; `docs/I18N.md` — full string coverage still open | machine |
 | WBS-P3.6 | P3 | project | Lift C02/C04/C06/C07/C10/C11 to ≥92% each | SCORECARD clusters | planned | `audit/SCORECARD.md` | human |
 | WBS-P4.1 | P4 | project | Native mobile (iOS/Android) | W-223 · C11 L117 | deferred | `audit/.lane-c11/C11.md` L117; `docs/DISTRIBUTION_POLICY.md` | human |
-| WBS-P4.2 | P4 | project | Tray/menubar quick-actions | C11 L110 | deferred | `audit/.lane-c11/C11.md` L110 | machine |
+| WBS-P4.2 | P4 | project | Tray/menubar quick-actions | C11 L110 · G-C11-03 | done | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | machine |
 | WBS-P4.3 | P4 | project | Full vendored Electrobun offline installer | C11 L121 | deferred | `docs/AIRGAP.md` | machine |
 | WBS-P4.4 | P4 | project | MSI uninstaller (after Authenticode) | C11 L120 · W-224 | deferred | `docs/UNINSTALL.md` | human |
 | WBS-P4.5 | P4 | org | Cloud KMS/HSM for bridge tokens | C02 L22 · C01 L18 | deferred | `docs/KEY_ROTATION.md` | human |
 | WBS-P4.6 | P4 | org | Licensed real-track eval corpus | C08 | deferred | `docs/EVAL.md`; `audit/.lane-c08/C08.md` (legal) | human |
+| WBS-P4.7 | P4 | project | Global memory-cap enforcement (process RSS ceiling) | C00 L8 · G-C00-04 | done | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | machine |
 
 ## Phase intent
 
@@ -58,7 +59,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | **P1** | Engineering wave: machine-trace, C02 quotas/breaker, C06 reserved-name+SDE/repro, C03 timing budgets, C10 token SoT, C07 hermetics, C05 audit retention, C04 token perms. |
 | **P2** | Org governance + certificate-backed distribution + re-audit to lock A+/92%+. |
 | **P3** | Cluster polish to clear remaining B grades (SDK, design-system package, profiler, i18n). |
-| **P4** | Explicitly deferred L-effort / out-of-scope product bets (mobile, tray, full airgap desktop, KMS, licensed corpus). |
+| **P4** | Explicitly deferred L-effort / out-of-scope product bets (mobile, full airgap desktop, KMS, licensed corpus); memory-cap (WBS-P4.7) and tray (WBS-P4.2) shipped this wave despite the P4 bucket. |
 
 ---
 

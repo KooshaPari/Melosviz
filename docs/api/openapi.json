@@ -240,7 +240,7 @@
     },
     "/metrics": {
       "get": {
-        "description": "Prometheus-text metrics for request counts, errors, and latency.",
+        "description": "Prometheus-text metrics for request counts, errors, latency, and RSS.",
         "operationId": "metrics_metrics_get",
         "responses": {
           "200": {

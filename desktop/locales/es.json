@@ -2,5 +2,8 @@
   "app.name": "MelosViz",
   "shell.tagline": "Visualizador de festivales",
   "shell.status.ready": "Listo",
-  "shell.skip_link": "Saltar al contenido principal"
+  "shell.skip_link": "Saltar al contenido principal",
+  "tray.show": "Mostrar MelosViz",
+  "tray.health": "Abrir estado del puente",
+  "tray.quit": "Salir"
 }
