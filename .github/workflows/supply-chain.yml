@@ -85,6 +85,19 @@ jobs:
       - name: cargo metadata --locked
         run: cargo metadata --locked --format-version 1 >/dev/null
 
+  repro-smoke:
+    name: SOURCE_DATE_EPOCH repro smoke (Linux)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+      - name: Repro smoke (archive + melosviz-mir double-build)
+        run: |
+          chmod +x scripts/check_repro_smoke.sh
+          ./scripts/check_repro_smoke.sh
+
   sbom:
     name: CycloneDX SBOM (python + cargo)
     runs-on: ubuntu-22.04

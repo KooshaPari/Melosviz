@@ -1,7 +1,7 @@
 # MelosViz Phased WBS (project + org)
 
 Target: **audit-v38 A+ / 92%+** overall, plus org governance closure.
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~92% · A** (2026-07-12, p1-trace-c02-c06).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~92.9% · A** (2026-07-13, p1b-sde-timing-tokens).
 
 Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred`
 
@@ -24,20 +24,21 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P1.2 | P1 | project | Render-worker CPU/memory quotas | C02 L25 | done | `backend/src/melosviz/bridge/security.py`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.3 | P1 | project | Circuit breaker for bridge/render failures | C02 L26 | done | `backend/src/melosviz/bridge/security.py`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.4 | P1 | project | Reserved-name CI scanner (dep-confusion) | C06 L55 | done | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | machine |
-| WBS-P1.5 | P1 | project | SOURCE_DATE_EPOCH / bit-repro check on release artifacts | C06 L52 | planned | `audit/.lane-c06/C06.md` L52 | machine |
+| WBS-P1.5 | P1 | project | SOURCE_DATE_EPOCH / bit-repro check on release artifacts | C06 L52 | done | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md`; `docs/PACKAGING.md` | machine |
 | WBS-P1.6 | P1 | project | Hermetic / offline build path (vendor + CI offline job) | C06 L54 · C07 | planned | `audit/.lane-c06/C06.md` L54; `docs/AIRGAP.md` | machine |
 | WBS-P1.7 | P1 | project | Audit JSONL retention enforcement (rotate/prune vs PRIVACY) | C05 L49 · C02 L23 | done | `backend/src/melosviz/bridge/security.py`; `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.8 | P1 | project | OSSF TokenPermissions sweep on remaining workflows | C04 L39 | done | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | machine |
 | WBS-P1.9 | P1 | project | Host-gated desktop e2e expansion + longer fuzz farm | C07 L64 · C07 L67 | planned | `desktop/tests/e2e_desktop.test.ts`; `.github/workflows/cargo-fuzz.yml` | machine |
 | WBS-P1.10 | P1 | project | Harden Windows desktop release (drop continue-on-error) | C00 L9 · C07 L68 | planned | `audit/.lane-c00/C00.md` L9 | machine |
-| WBS-P1.11 | P1 | project | Feedback-loop timing budgets (sccache/nextest/hyperfine gate) | C03 L30.11 | planned | `audit/.lane-c03/C03.md` | machine |
+| WBS-P1.11 | P1 | project | Feedback-loop timing budgets (sccache/nextest/hyperfine gate) | C03 L30.10 | done | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml`; `Makefile` (`timing-budgets`) | machine |
+| WBS-P1.12 | P1 | project | Shared brand token SoT across web/desktop (token share only) | C10 L96 | done | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `desktop/views/main/splash.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | machine |
 | WBS-P2.1 | P2 | org | Org GPG / signed-commit branch protection | W-228 · C04 L34 | planned | `CONTRIBUTING.md`; `audit/.lane-c04/C04.md` L34 | human |
 | WBS-P2.2 | P2 | org | Apple notarization + Authenticode signing | W-224 · C11 L112 · C04 | blocked | `docs/SIGNING.md`; `docs/PACKAGING.md` (needs org certs) | human |
 | WBS-P2.3 | P2 | org | IdP (OAuth/SAML) if hosted bridge ever required | C02 L21 | deferred | `audit/.lane-c02/C02.md` L21 (localhost Bearer OK today) | human |
 | WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | planned | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | human |
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts` | machine |
-| WBS-P3.2 | P3 | project | Design-system package + token SoT across web/desktop | C10 L96/L105 | planned | `audit/.lane-c10/C10.md`; `desktop/assets/brand/tokens.css` | machine |
+| WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | planned | `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | planned | `audit/.lane-c10/C10.md` L107 | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | planned | `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
 | WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | planned | `docs/I18N.md`; `audit/.lane-c01/C01.md` | machine |
@@ -54,13 +55,13 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | Phase | Intent |
 |-------|--------|
 | **P0** | Shipped waves already reflected in SCORECARD ~90% A (OpenAPI, journeys, theme, airgap, cosign, a11y, governance docs). |
-| **P1** | Next engineering wave: machine-trace gates, C02 quotas/breaker, C06 reserved-name+repro, C07 hermetics, C05 audit retention, C04 token perms. |
+| **P1** | Engineering wave: machine-trace, C02 quotas/breaker, C06 reserved-name+SDE/repro, C03 timing budgets, C10 token SoT, C07 hermetics, C05 audit retention, C04 token perms. |
 | **P2** | Org governance + certificate-backed distribution + re-audit to lock A+/92%+. |
-| **P3** | Cluster polish to clear remaining B grades (SDK, design-system, profiler, i18n). |
+| **P3** | Cluster polish to clear remaining B grades (SDK, design-system package, profiler, i18n). |
 | **P4** | Explicitly deferred L-effort / out-of-scope product bets (mobile, tray, full airgap desktop, KMS, licensed corpus). |
 
 ---
 
-`last_updated`: 2026-07-12
+`last_updated`: 2026-07-13
 
 Machine note: `scripts/check_wbs.py` validates that every row’s **Status** is one of `planned|in_progress|done|blocked|deferred`.

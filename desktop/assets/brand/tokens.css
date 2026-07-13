@@ -1,6 +1,7 @@
 /**
- * MelosViz Brand Tokens
+ * MelosViz Brand Tokens — Source of Truth (SoT)
  * Neon-on-dark festival visualizer palette.
+ * Shared by desktop shell (link) and web (import via brand.css / @melosviz/brand-tokens).
  * Import this file first, then override locally as needed.
  */
 

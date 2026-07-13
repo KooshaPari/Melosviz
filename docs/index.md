@@ -27,6 +27,8 @@ and acceptance material for MelosViz.
 - [`ENV.md`](ENV.md) - 12-factor env catalog
 - [`UNINSTALL.md`](UNINSTALL.md) - uninstall / cleanup matrix
 - [`SLO.md`](SLO.md) - bridge SLO / error-budget sketches
+- [`TIMING_BUDGETS.md`](TIMING_BUDGETS.md) - developer / agent feedback-loop wall-time budgets
+- [`SUPPLY_CHAIN.md`](SUPPLY_CHAIN.md) - lockfiles, reserved names, SOURCE_DATE_EPOCH
 
 ## Functional Specifications
 

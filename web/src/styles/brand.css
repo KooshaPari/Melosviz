@@ -1,25 +1,28 @@
-/* MelosViz brand design tokens — aligned with desktop --mv-accent (#7c6af7) */
+/**
+ * MelosViz web brand layer.
+ * Token SoT: desktop/assets/brand/tokens.css (shared with desktop shell).
+ * This file only adds web aliases + layout helpers — no divergent hex palette.
+ */
+/* Relative path works in Vite; alias `@melosviz/brand-tokens` is equivalent */
+@import '../../../desktop/assets/brand/tokens.css';
+
 :root {
-  --mv-primary: #7c6af7;
-  --mv-secondary: #22d3ee;
-  --mv-bg: #0d0d10;
-  --mv-surface: #13131a;
-  --mv-primary-glow: rgba(124, 106, 247, 0.28);
-  --mv-secondary-glow: rgba(34, 211, 238, 0.15);
-  --mv-text-display: 28px;
-  --mv-text-heading: 18px;
-  --mv-text-body: 14px;
-  --mv-text-caption: 12px;
-  --mv-measure: 65ch;
+  /* Web component aliases → SoT tokens */
+  --mv-primary: var(--mv-accent);
+  --mv-secondary: var(--mv-neon-cyan);
+  --mv-bg: var(--mv-bg-base);
+  --mv-surface: var(--mv-bg-surface);
+  --mv-primary-glow: var(--mv-accent-glow);
+  --mv-secondary-glow: var(--mv-neon-cyan-dim);
 }
 
 [data-theme="light"] {
-  --mv-primary: #5b4cdb;
-  --mv-secondary: #0891b2;
-  --mv-bg: #f6f8fa;
-  --mv-surface: #ffffff;
-  --mv-primary-glow: rgba(91, 76, 219, 0.18);
-  --mv-secondary-glow: rgba(8, 145, 178, 0.12);
+  --mv-primary: var(--mv-accent);
+  --mv-secondary: var(--mv-neon-cyan);
+  --mv-bg: var(--mv-bg-base);
+  --mv-surface: var(--mv-bg-surface);
+  --mv-primary-glow: var(--mv-accent-glow);
+  --mv-secondary-glow: var(--mv-neon-cyan-dim);
 }
 
 /* Mobile responsive breakpoints */

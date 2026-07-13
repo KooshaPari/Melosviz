@@ -33,8 +33,40 @@ Agents and CI **must not**:
   (allowlists `melosviz` / `melosviz-*` workspace names; fails on typo-adjacent
   confuse deps such as `melosvis` / `melos-viz` / `melosvizs`, and on unexpected
   private registry / `--extra-index-url` overrides in manifests)
+- `scripts/check_repro_smoke.sh` — Linux SOURCE_DATE_EPOCH smoke (same-epoch
+  double-build / deterministic archive hash compare); wired as `repro-smoke`
+  in `supply-chain.yml`
 - Dependabot weekly PRs only (no ad-hoc unpinned bumps in feature PRs)
 - Release artifacts ship `SHA256SUMS` (`MelosViz-Checksums`)
+
+## SOURCE_DATE_EPOCH / reproducible builds (WBS-P1.5 / C06 L52)
+
+Release Rust CLI jobs in `.github/workflows/release.yml` export
+`SOURCE_DATE_EPOCH` from the tagged commit’s author timestamp
+(`git log -1 --pretty=%ct`). That value is consumed by:
+
+- **rustc / cargo** — embeds a stable build epoch instead of wall-clock time
+- **Linux CLI tarball** — GNU tar `--mtime=@$SOURCE_DATE_EPOCH` (plus sorted
+  names / numeric owner) so the archive metadata is stable for a given tag
+
+### What we claim
+
+| Artifact | Claim | Notes |
+|----------|-------|-------|
+| Linux `melosviz-mir` / `melosviz-render` (same runner image, same toolchain) | Best-effort bit-identity under fixed epoch + path remap | Smoke-checked in CI |
+| Linux release `.tar.gz` metadata | Deterministic mtimes/owners for a given tag | Not a full hermetic rebuild across distros |
+| Windows CLI `.zip` / desktop MSI / Electrobun packages | **Not** bit-identical | PE timestamps, Authenticode, Electrobun bundling, and absolute paths differ across hosts |
+| macOS DMG | **Not** bit-identical | `hdiutil` / signing / notarization mutate bytes |
+
+Local / CI smoke (Linux):
+
+```bash
+./scripts/check_repro_smoke.sh
+```
+
+Windows developers: the script exits 0 with a skip message — use WSL or the
+`repro-smoke` GitHub Actions job. Full Windows desktop MSI bit-identity is
+out of scope.
 
 ## Incident response
 
