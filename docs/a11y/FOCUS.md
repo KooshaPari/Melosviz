@@ -31,11 +31,21 @@ Radix `Dialog` hosts (`KeyboardHelp`, `PresetEditor`) own modal choreography:
 - Do not nest focus traps. One modal at a time.
 - Backdrop clicks close when Radix dismiss is enabled; focus still restores.
 
+## Canvas / R3F screen reader (SceneView)
+
+WebGL `<canvas>` pixels are opaque to assistive tech. `SceneView` wraps the
+R3F canvas in a `role="img"` container with an `aria-label` that includes the
+current scene name, and keeps a sibling `aria-live="polite"` status (outside
+the img) announcing scene changes. Pass `currentSceneLabel` from the shell
+(see `App.tsx`). The canvas is `aria-hidden` so AT prefers the wrapper label.
+
 ## Verification
 
 - Manual: Tab from cold start; skip link appears; Enter lands in `#main`.
 - Manual (SPA): open Keyboard Help / Preset Editor — focus is inside the
   panel; Tab cycles within; Esc restores focus to the opener.
+- Manual (SPA): scrub playback / jump scenes — SR announces scene label via
+  the SceneView live region.
 - Automated: axe `wcag2a,wcag2aa` on fixture (includes focusable controls).
 - Fixture note: `web/a11y/fixture.html` documents the modal trap contract for
   Playwright / axe goldens (static page has no live Dialog; SPA tests cover

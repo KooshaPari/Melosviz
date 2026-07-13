@@ -217,6 +217,7 @@ export default function App() {
       <SceneView
         spec={activeSpec}
         playbackT={playbackT}
+        currentSceneLabel={currentSceneLabel}
         className={`absolute inset-0 w-full h-full${fullscreen ? ' z-40' : ''}`}
       />
 

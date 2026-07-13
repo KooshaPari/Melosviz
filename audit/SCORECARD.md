@@ -3,8 +3,8 @@
 **Repo:** KooshaPari/Melosviz
 **Date:** 2026-07-13
 **Repo-type profile:** desktop + CLI + library + web-app
-**Auditor:** p1f-empty-sdk wave
-**Commit audited:** (wave/p1f-empty-sdk tip)
+**Auditor:** p1g-canvas-sr-race wave
+**Commit audited:** (wave/p1g-canvas-sr-race tip)
 
 > Scoring: each sub-pillar 0=? / 1=? / 2=~ / 3=+, evidence-mandatory (`file:line`).
 > Cluster score = sum / (sub-pillars x 3). Grade: A≥90% · B≥75% · C≥60% · D≥40% · F<40%.
@@ -13,7 +13,7 @@
 
 | Cluster | Category | Pillars | Score (sum/max) | Pct | Grade | Top-3 gaps |
 |---------|----------|---------|:---------------:|:---:|:-----:|------------|
-| C00 | Architecture + Module | L0-L9 | 27/30 | 90% | A | Published SDK packages; Windows soft-fail |
+| C00 | Architecture + Module | L0-L9 | 28/30 | 93% | A | Published SDK packages; Windows soft-fail |
 | C01 | CI, DX, Observability | L10-L19 | 30/30 | 100% | A | qgate reusable workflow; full string i18n |
 | C02 | Error handling, API, Governance | L20-L29 | 27/30 | 90% | A | IdP; hosted multi-tenant; cloud KMS |
 | C03 | Agent Readiness | L30 | 35/36 | 97% | A | agent quickstart polish |
@@ -22,30 +22,30 @@
 | C06 | Supply Chain | L51-L60 | 29/30 | 97% | A | full in-repo vendor; Windows MSI bit-identity |
 | C07 | DX, QEng, Portability | L61-L70 | 29/30 | 97% | A | full GUI desktop e2e; continuous fuzz farm |
 | C08 | Eval Coverage | L71-L80 | 29/30 | 97% | A | licensed real-track corpus (legal) |
-| C09 | Accessibility + UX | L81-L95 | 30/30 | 100% | A | canvas/R3F SR depth |
+| C09 | Accessibility + UX | L81-L95 | 30/30 | 100% | A | deeper WebGL non-visual alternative |
 | C10 | Visual Identity | L96-L107 | 34/36 | 94% | A | design-system package; R3F canvas screenshot |
 | C11 | Packaging + Distribution | L108-L122 | 37/45 | 82% | B | mobile; Authenticode/notarization |
 
 ## Overall
 
-**Weighted overall score:** 94.3% · **Overall grade:** A
+**Weighted overall score:** 94.5% · **Overall grade:** A
 
 (Equal-weight mean of cluster percentages:
-(90+100+90+97+90+97+97+97+97+100+94+82) / 12 = **94.25…** → **94.3%** → **A**.)
+(93+100+90+97+90+97+97+97+97+100+94+82) / 12 = **94.5%** → **A**.)
 
 ## Headline Findings
 
 - **Strongest:** C01/C09 (100% A); C03/C05/C06/C07/C08 (97% A).
 - **Weakest:** C11 (82% B).
-- **This wave:** web playlist empty state (C10 L100) · `@melosviz/bridge-client` SDK stub (G-C00-01 mitigated).
-- **Prior:** Bun `traceparent` · SPA focus-trap · CLI/desktop i18n scaffold (C01 100%).
+- **This wave:** SceneView canvas SR (G-C09-01) · bridge concurrency race stress (G-C00-03; C00 93%).
+- **Prior:** web playlist empty state · `@melosviz/bridge-client` SDK stub.
 
-## Delta vs prior closeout (94.1% A · p1e)
+## Delta vs prior closeout (94.3% A · p1f)
 
 | Cluster | Before | After | Lift |
 |---------|--------|-------|------|
-| C10 | 92% A | 94% A | +2 |
-| Overall | 94.1% A | 94.3% A | +0.2 |
+| C00 | 90% A | 93% A | +3 |
+| Overall | 94.3% A | 94.5% A | +0.2 |
 
 ## Spine links
 

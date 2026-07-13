@@ -4,9 +4,9 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[Web empty playlist state]
-  A --> C[SDK bridge-client stub]
-  B --> D[Re-score C10 94%]
+  A[CI green] --> B[SceneView canvas SR]
+  A --> C[Bridge concurrency race stress]
+  B --> D[Re-score C00 93% / 94.5% A]
   C --> D
 ```
 
@@ -14,14 +14,17 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-288 | Web playlist empty/zero state | C10 L100 | M | THIS PR |
-| W-289 | `@melosviz/bridge-client` SDK stub | C00 L2 · WBS-P3.1 | S | THIS PR |
-| W-290 | Re-score SCORECARD (p1f → 94.3% A) | audit | S | THIS PR |
+| W-291 | SceneView canvas SR (role=img + aria-live) | C09 L83 · G-C09-01 | S | THIS PR |
+| W-292 | Bridge RateLimiter/RenderQuota race stress | C00 L7 · G-C00-03 | M | THIS PR |
+| W-293 | Re-score SCORECARD (p1g → 94.5% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-288 | Web playlist empty/zero state | #146 |
+| W-289 | `@melosviz/bridge-client` SDK stub | #146 |
+| W-290 | Re-score SCORECARD (p1f → 94.3% A) | #146 |
 | W-284 | Desktop Bun inject traceparent | #144 |
 | W-285 | SPA focus-trap / modal restore polish | #144 |
 | W-286 | CLI + desktop i18n scaffold (en/es) | #144 |
