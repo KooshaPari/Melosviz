@@ -1,8 +1,13 @@
 # MelosViz Product Threat Model
 
-Companion to the bridge-specific model in
-[`BRIDGE_THREAT_MODEL.md`](BRIDGE_THREAT_MODEL.md). This document covers the
-**whole product** (desktop, web, CLI, render adapters).
+Companion models:
+
+* Bridge endpoints: [`BRIDGE_THREAT_MODEL.md`](BRIDGE_THREAT_MODEL.md)
+* Desktop / web deep-dive (Electrobun ↔ sidecar, R3F XSS/CSP, path exfil,
+  FFmpeg/Blender): [`DESKTOP_WEB_THREAT_MODEL.md`](DESKTOP_WEB_THREAT_MODEL.md)
+
+This document covers the **whole product** (desktop, web, CLI, render adapters)
+at summary level. Use the companions for surface-specific STRIDE tables.
 
 ## Assets
 
@@ -20,7 +25,7 @@ Companion to the bridge-specific model in
 2. **Localhost HTTP bridge** — loopback-only unless explicitly opened.
 3. **Host tools** — ffmpeg / Blender / TouchDesigner invoked as subprocesses.
 4. **Optional cloud adapters** — Firefly / AE nexrender (credentials TBD).
-5. **Web surface** — browser talking to a local or remote bridge (operator-run).
+5. **Web surface** — browser / R3F talking to a local or remote bridge (operator-run).
 
 ## STRIDE summary (product-wide)
 
@@ -33,14 +38,20 @@ Companion to the bridge-specific model in
 | Denial of service | Bridge | Rate limit + body size cap |
 | Elevation of privilege | Subprocess tools | No shell=True; env-gated public bind |
 
+Desktop/web attack-surface detail (main↔sidecar, XSS/CSP, path exfil, host tools)
+lives in [`DESKTOP_WEB_THREAT_MODEL.md`](DESKTOP_WEB_THREAT_MODEL.md) — closes
+gap **G-C02-04**.
+
 ## Explicit non-goals
 
 - Multi-tenant SaaS isolation / IdP (OAuth/SAML) — out of scope for local studio.
+- Cloud KMS / HSM for bridge token — env-local rotation only (`docs/KEY_ROTATION.md`).
 - Full hermetic/air-gap builds — tracked as supply-chain soft goal.
 - Platform code signing / notarization — requires org secrets + Apple/Windows certs.
 
 ## Related
 
+- Desktop / web detail: [`DESKTOP_WEB_THREAT_MODEL.md`](DESKTOP_WEB_THREAT_MODEL.md)
 - Bridge detail: [`BRIDGE_THREAT_MODEL.md`](BRIDGE_THREAT_MODEL.md)
 - Security policy: [`../../SECURITY.md`](../../SECURITY.md)
 - Observability / alerts: [`../OBSERVABILITY.md`](../OBSERVABILITY.md)

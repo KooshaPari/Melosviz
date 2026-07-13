@@ -85,6 +85,7 @@ Sign-off line format: `Signed-off-by: Your Name <email@example.com>`
 - Layout overview: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Bridge threat model: [`docs/security/BRIDGE_THREAT_MODEL.md`](docs/security/BRIDGE_THREAT_MODEL.md)
 - Product threat model: [`docs/security/THREAT_MODEL.md`](docs/security/THREAT_MODEL.md)
+- Desktop / web threat model: [`docs/security/DESKTOP_WEB_THREAT_MODEL.md`](docs/security/DESKTOP_WEB_THREAT_MODEL.md)
 - Observability: [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md)
 - Packaging: [`docs/PACKAGING.md`](docs/PACKAGING.md)
 - Scorecard: [`audit/SCORECARD.md`](audit/SCORECARD.md)

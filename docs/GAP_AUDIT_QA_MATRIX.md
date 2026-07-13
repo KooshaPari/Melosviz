@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~93.5% · A** (2026-07-13, p1c-hermetic-fuzz).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~93.8% · A** (2026-07-13, p1d-threat-hypothesis).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -25,14 +25,14 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | GapID | Cluster | Pillar | Gap description | Severity | QA method | Test/evidence path | Status | Linked WBS | Trace FR |
 |-------|---------|--------|-----------------|----------|-----------|--------------------|--------|------------|----------|
 | G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` stubs | open | WBS-P3.1 | C00 L2 |
-| G-C00-02 | C00 | L9 | Windows desktop release still continue-on-error | M | ci | `audit/.lane-c00/C00.md` L9; `release.yml` | open | WBS-P1.10 | C00 L9 |
+| G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `audit/.lane-c00/C00.md` L7 | open | — | C00 L7 |
 | G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
 | G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `audit/.lane-c01/C01.md` | open | WBS-P3.5 | C01 L16 |
 | G-C02-01 | C02 | L25 | No CPU/memory quotas for render workers | H | integ | `backend/src/melosviz/bridge/security.py` (`RenderQuota`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.2 | C02 L25 |
 | G-C02-02 | C02 | L26 | No circuit breaker library | H | integ | `backend/src/melosviz/bridge/security.py` (`CircuitBreaker`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.3 | C02 L26 |
 | G-C02-03 | C02 | L21 | No OAuth/SAML IdP | L | manual | localhost Bearer sufficient today | accepted | WBS-P2.3 | C02 L21 |
-| G-C02-04 | C02 | L20 | Desktop/web threat deep-dive lighter than bridge | M | doc | `docs/security/THREAT_MODEL.md` | open | — | C02 L20 |
+| G-C02-04 | C02 | L20 | Desktop/web threat deep-dive lighter than bridge | M | doc | `docs/security/DESKTOP_WEB_THREAT_MODEL.md`; `docs/security/THREAT_MODEL.md` link | closed | — | C02 L20 |
 | G-C02-05 | C02 | L28 | cargo-audit soft-fail | L | ci | `.github/workflows/supply-chain.yml` (`rust-audit` / `cargo audit` hard-fail, no continue-on-error) | closed | — | C02 L28 |
 | G-C03-01 | C03 | L30.10 | No feedback-loop timing budget gate (diagnose/pytest/cargo/golden) | M | ci | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml` | closed | WBS-P1.11 | C03 L30.10 |
 | G-C03-02 | C03 | L30.1 | FR catalog not machine-exported (JSON/YAML) | M | ci | `docs/fr-status.yaml`; `scripts/check_fr_status.py`; `.github/workflows/docs-trace.yml` | closed | WBS-P1.1 | C03 L30.1 |
@@ -53,7 +53,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | open | — | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md` | open | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
-| G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | open | WBS-P3.2 | C10 L105 |
+| G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `packages/brand-tokens` stub; SoT `desktop/assets/brand/tokens.css`; full UI lib still open | mitigated | WBS-P3.2 | C10 L105 |
 | G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `audit/.lane-c10/C10.md` L107 | open | WBS-P3.3 | C10 L107 |
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |

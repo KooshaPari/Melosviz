@@ -1,10 +1,9 @@
 /**
  * MelosViz web brand layer.
- * Token SoT: desktop/assets/brand/tokens.css (shared with desktop shell).
+ * Token SoT: desktop/assets/brand/tokens.css (via @melosviz/brand-tokens stub).
  * This file only adds web aliases + layout helpers — no divergent hex palette.
  */
-/* Relative path works in Vite; alias `@melosviz/brand-tokens` is equivalent */
-@import '../../../desktop/assets/brand/tokens.css';
+@import '@melosviz/brand-tokens';
 
 :root {
   /* Web component aliases → SoT tokens */
