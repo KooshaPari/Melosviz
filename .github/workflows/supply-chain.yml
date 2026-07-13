@@ -107,8 +107,9 @@ jobs:
           toolchain: stable
       - name: Hermetic smoke (fetch once + offline melosviz-mir check)
         run: |
+          sed -i 's/\r$//' scripts/check_hermetic_smoke.sh
           chmod +x scripts/check_hermetic_smoke.sh
-          ./scripts/check_hermetic_smoke.sh
+          bash scripts/check_hermetic_smoke.sh
 
   sbom:
     name: CycloneDX SBOM (python + cargo)

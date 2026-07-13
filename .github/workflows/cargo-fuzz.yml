@@ -32,10 +32,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: nightly
+      # Repo rust-toolchain.toml pins stable; fuzz needs nightly (+Zsanitizer).
+      - name: Force nightly for fuzz workspace
+        run: rustup override set nightly
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
       - name: Fuzz ${{ matrix.target }} (${{ matrix.duration }}s)
         working-directory: fuzz
+        env:
+          RUSTUP_TOOLCHAIN: nightly
         run: |
-          cargo fuzz run ${{ matrix.target }} -- \
+          cargo +nightly fuzz run ${{ matrix.target }} -- \
             -max_total_time=${{ matrix.duration }} -len_control=0
