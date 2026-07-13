@@ -308,7 +308,7 @@ jobs:
           ls -la _artifacts/MelosViz-Checksums/
 
       - name: Attest release artifacts
-        # actions/attest-build-provenance v2.4.0 — SHA-pinned
+        # actions/attest-build-provenance v4.1.1 — SHA-pinned
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373
         with:
           subject-path: |
