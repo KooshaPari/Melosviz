@@ -63,7 +63,7 @@ def dense_keyframes(draw: st.DrawFn) -> list[dict[str, object]]:
     """v2 dense keyframes with stems (capped length)."""
     n = draw(st.integers(min_value=0, max_value=8))
     out: list[dict[str, object]] = []
-    for _i in range(n):
+    for i in range(n):
         out.append(
             {
                 "t": float(i) * 0.033,
@@ -98,7 +98,7 @@ def scene_segments(draw: st.DrawFn) -> list[dict[str, object]]:
     n = draw(st.integers(min_value=0, max_value=5))
     segs: list[dict[str, object]] = []
     t = 0.0
-    for _i in range(n):
+    for i in range(n):
         dur = draw(
             st.floats(
                 min_value=0.1, max_value=32.0, allow_nan=False, allow_infinity=False
@@ -129,7 +129,7 @@ def camera_path(draw: st.DrawFn) -> list[dict[str, object]]:
     """Procedural camera pose keyframes (scene.camera shape)."""
     n = draw(st.integers(min_value=0, max_value=6))
     path: list[dict[str, object]] = []
-    for _i in range(n):
+    for i in range(n):
         path.append(
             {
                 "t": float(i) * 0.5,
