@@ -16,6 +16,7 @@ Offline / air-gap installs: see `docs/AIRGAP.md` (lockfile + wheelhouse / cargo 
 
 Before starting work: claim a `docs/WORK_DAG.md` task (`claim W-2xx`, branch
 `feat/w2xx-<slug>`, link FR IDs in the PR). Do not overlap another agent's claim.
+One-page agent entry: `docs/AGENT_QUICKSTART.md`.
 
 ## Build & test
 
