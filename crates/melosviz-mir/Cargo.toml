@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Music Information Retrieval (MIR) crate for MelosViz — Rust-native STFT/onset/beat/chroma via rustfft+hound"
-rust-version = "1.80"
+rust-version = "1.86"
 
 [[bin]]
 name = "melosviz-mir"
@@ -37,7 +37,7 @@ num-complex = "0.4"
 hound = "3"
 tempfile = "3"
 # Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [features]
 default = []

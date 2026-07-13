@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Realtime preview renderer for MelosViz — wgpu/Metal backend, RenderSpec v2 input"
-rust-version = "1.80"
+rust-version = "1.86"
 
 [[bin]]
 name = "melosviz-render"
@@ -41,7 +41,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 # tempdir for headless tests
 tempfile = "3"
 # Criterion benchmarking framework
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [features]
 default = []
