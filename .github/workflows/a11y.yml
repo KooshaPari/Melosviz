@@ -25,7 +25,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx --yes playwright@1.52.0 install --with-deps chromium
       - name: Install web deps (R3F canvas fixture)
-        run: npm ci --prefix web
+        # vite@8 peer range vs @vitejs/plugin-react@4 — lockfile installed with legacy peers
+        run: npm ci --prefix web --legacy-peer-deps
       - name: Start R3F canvas fixture dev server (Vite)
         working-directory: web
         run: |
