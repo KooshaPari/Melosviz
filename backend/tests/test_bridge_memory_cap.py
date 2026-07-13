@@ -27,13 +27,17 @@ class TestMemoryCapGuardUnit:
     def test_under_both_ceilings_is_a_noop(self):
         from melosviz.bridge.security import MemoryCapGuard
 
-        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 10.0)
+        guard = MemoryCapGuard(
+            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 10.0
+        )
         guard.check()  # must not raise
 
     def test_over_soft_ceiling_raises_soft(self):
         from melosviz.bridge.security import MemoryCapExceeded, MemoryCapGuard
 
-        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 600.0)
+        guard = MemoryCapGuard(
+            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 600.0
+        )
         with pytest.raises(MemoryCapExceeded) as excinfo:
             guard.check()
         assert excinfo.value.tier == "soft"
@@ -44,7 +48,9 @@ class TestMemoryCapGuardUnit:
         """When RSS clears both ceilings, hard must win (worse outcome first)."""
         from melosviz.bridge.security import MemoryCapExceeded, MemoryCapGuard
 
-        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 1500.0)
+        guard = MemoryCapGuard(
+            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 1500.0
+        )
         with pytest.raises(MemoryCapExceeded) as excinfo:
             guard.check()
         assert excinfo.value.tier == "hard"
@@ -53,7 +59,9 @@ class TestMemoryCapGuardUnit:
     def test_disabled_when_both_caps_zero_or_negative(self):
         from melosviz.bridge.security import MemoryCapGuard
 
-        guard = MemoryCapGuard(hard_cap_mb=0, soft_cap_mb=0, rss_probe=lambda: 999_999.0)
+        guard = MemoryCapGuard(
+            hard_cap_mb=0, soft_cap_mb=0, rss_probe=lambda: 999_999.0
+        )
         guard.check()  # must not raise — fully disabled
 
     def test_fails_open_when_rss_unmeasurable(self):

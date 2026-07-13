@@ -323,7 +323,9 @@ def _enforce_memory_cap(request: Request) -> None:
             }
         )
         headers = {"Retry-After": "30"} if status == 429 else None
-        raise HTTPException(status_code=status, detail=str(exc), headers=headers) from exc
+        raise HTTPException(
+            status_code=status, detail=str(exc), headers=headers
+        ) from exc
 
 
 # ---------------------------------------------------------------------------

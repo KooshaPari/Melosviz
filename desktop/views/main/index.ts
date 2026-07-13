@@ -25,7 +25,6 @@ const rpc = Electroview.defineRPC<
   { bun: BunRequests; webview: WebviewRequests }
 >(
   {
-<<<<<<< Updated upstream
     // Electrobun's createRPC defaults maxRequestTime to 1000ms (see
     // electrobun/dist/api/shared/rpc.ts DEFAULT_MAX_REQUEST_TIME). Every
     // rpc.request.* that outlives 1s then rejects with "RPC request timed
@@ -33,10 +32,8 @@ const rpc = Electroview.defineRPC<
     // user paces) and any long analyze/render round-trip. These are all
     // user- or compute-bound, not network-bound, so there is no meaningful
     // client-side deadline: disable it (Infinity skips the timer, rpc.ts:270).
+    // pickFile still races a 120s Promise so a dropped transport cannot hang forever.
     maxRequestTime: Infinity,
-=======
-    maxRequestTime: Infinity, // client-side Promise.race (120 s) handles timeouts
->>>>>>> Stashed changes
     handlers: {
       requests: {},
     },
@@ -373,9 +370,6 @@ async function copyJson(obj: unknown, btnId: string) {
 
 async function onPickWav() {
   try {
-<<<<<<< Updated upstream
-    const picked = await rpc.request.pickFile({ accept: "wav" });
-=======
     // Race the RPC request against a client-side timeout so we never hang
     // forever even if the transport drops mid-dialog.
     const picked = await Promise.race([
@@ -384,7 +378,6 @@ async function onPickWav() {
         setTimeout(() => reject(new Error("pickFile timed out after 120 s")), 120_000)
       ),
     ]);
->>>>>>> Stashed changes
     if (!picked) return;
     wavPath = picked;
     const name = picked.split("/").pop() ?? picked;
@@ -395,11 +388,7 @@ async function onPickWav() {
     syncButtons();
     clearError();
   } catch (err) {
-<<<<<<< Updated upstream
-    showError(`pickFile failed: ${err instanceof Error ? err.message : String(err)}`);
-=======
     showError(err);
->>>>>>> Stashed changes
   }
 }
 
@@ -410,11 +399,7 @@ async function onPickOut() {
     outPath = picked;
     qs("#out-path").textContent = picked;
   } catch (err) {
-<<<<<<< Updated upstream
-    showError(`pickDirectory failed: ${err instanceof Error ? err.message : String(err)}`);
-=======
     showError(err);
->>>>>>> Stashed changes
   }
 }
 
