@@ -36,8 +36,33 @@ Agents and CI **must not**:
 - `scripts/check_repro_smoke.sh` — Linux SOURCE_DATE_EPOCH smoke (same-epoch
   double-build / deterministic archive hash compare); wired as `repro-smoke`
   in `supply-chain.yml`
+- `scripts/check_hermetic_smoke.sh` — Linux hermetic/offline smoke (`cargo fetch`
+  once, then `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked`);
+  wired as `hermetic-smoke` in `supply-chain.yml` (WBS-P1.6 / C06 L54)
 - Dependabot weekly PRs only (no ad-hoc unpinned bumps in feature PRs)
 - Release artifacts ship `SHA256SUMS` (`MelosViz-Checksums`)
+
+## Hermetic / offline CI (WBS-P1.6 / C06 L54)
+
+CI proves a Rust compile can proceed with **no further network** after a single
+prefetch of the locked dependency graph:
+
+```bash
+./scripts/check_hermetic_smoke.sh
+# or: make hermetic-smoke
+```
+
+| Step | Network | Command |
+|------|---------|---------|
+| Prefetch | online once | `cargo fetch --locked` |
+| Compile | offline | `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` |
+
+This is **not** a full vendored tree. Committing `vendor/` + `.cargo/config.toml`
+source replacement (and a Python wheelhouse offline install) remains future
+work beyond WBS-P1.6 — see `docs/AIRGAP.md` for the operator vendor path.
+
+Windows/macOS: the script exits 0 with a skip message; use the
+`hermetic-smoke` GitHub Actions job on `ubuntu-22.04`.
 
 ## SOURCE_DATE_EPOCH / reproducible builds (WBS-P1.5 / C06 L52)
 

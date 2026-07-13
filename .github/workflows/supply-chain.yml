@@ -42,10 +42,9 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
       - name: Run cargo audit
-        # Wired into CI; continue-on-error so transitive RUSTSEC noise does not
-        # block product PRs. pip-audit remains hard-fail for Python.
+        # Hard-fail: local `cargo audit` is clean (exit 0; unmaintained warnings
+        # only). pip-audit remains hard-fail for Python.
         run: cargo audit
-        continue-on-error: true
 
   cargo-deny:
     name: cargo-deny (licenses)
@@ -97,6 +96,20 @@ jobs:
         run: |
           chmod +x scripts/check_repro_smoke.sh
           ./scripts/check_repro_smoke.sh
+
+  hermetic-smoke:
+    name: Hermetic / offline build smoke (Linux)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+      - name: Hermetic smoke (fetch once + offline melosviz-mir check)
+        run: |
+          sed -i 's/\r$//' scripts/check_hermetic_smoke.sh
+          chmod +x scripts/check_hermetic_smoke.sh
+          bash scripts/check_hermetic_smoke.sh
 
   sbom:
     name: CycloneDX SBOM (python + cargo)
