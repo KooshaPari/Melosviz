@@ -191,6 +191,11 @@ export interface SceneViewProps {
   /** Optional beat energy [0, 1] — defaults to 0 until workstream B lands. */
   beatEnergy?: number
   className?: string
+  /**
+   * Current scene name for screen readers (wrapper `aria-label` + live status).
+   * WebGL canvas pixels are opaque to AT; this exposes scene identity (G-C09-01).
+   */
+  currentSceneLabel?: string
 }
 
 /**
@@ -200,7 +205,12 @@ export interface SceneViewProps {
  * Usage:
  *   <SceneView spec={renderSpec} playbackT={0.42} className="absolute inset-0" />
  */
-export function SceneView({ spec, playbackT, className }: SceneViewProps) {
+export function SceneView({
+  spec,
+  playbackT,
+  className,
+  currentSceneLabel,
+}: SceneViewProps) {
   // Store derived per-frame state in a ref so useFrame callbacks never trigger
   // React re-renders — critical for 60fps.
   const stateRef = useRef<FrameState>({
@@ -222,19 +232,33 @@ export function SceneView({ spec, playbackT, className }: SceneViewProps) {
     durationSecs: spec.durationSecs,
   }
 
+  const sceneLabel = currentSceneLabel?.trim() || 'Scene'
+
   return (
-    <Canvas
-      className={className}
-      gl={{
-        antialias: true,
-        powerPreference: 'high-performance',
-        outputColorSpace: THREE.LinearSRGBColorSpace,
-      }}
-      dpr={[1, window.devicePixelRatio ?? 2]}
-      camera={{ fov: 45, near: 0.1, far: 500, position: [0, 0, 8] }}
-      style={{ background: '#080808' }}
-    >
-      <MelosScene stateRef={stateRef} />
-    </Canvas>
+    <div className={className}>
+      <div
+        className="h-full w-full"
+        role="img"
+        aria-label={`Melosviz visualization: ${sceneLabel}`}
+      >
+        <Canvas
+          className="h-full w-full"
+          gl={{
+            antialias: true,
+            powerPreference: 'high-performance',
+            outputColorSpace: THREE.LinearSRGBColorSpace,
+          }}
+          dpr={[1, window.devicePixelRatio ?? 2]}
+          camera={{ fov: 45, near: 0.1, far: 500, position: [0, 0, 8] }}
+          style={{ background: '#080808' }}
+          aria-hidden
+        >
+          <MelosScene stateRef={stateRef} />
+        </Canvas>
+      </div>
+      <span className="sr-only" aria-live="polite">
+        Scene: {sceneLabel}
+      </span>
+    </div>
   )
 }

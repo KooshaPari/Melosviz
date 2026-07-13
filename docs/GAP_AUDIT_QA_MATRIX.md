@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~93.8% · A** (2026-07-13, p1d-threat-hypothesis).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~94.5% · A** (2026-07-13, p1g-canvas-sr-race).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -26,7 +26,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 |-------|---------|--------|-----------------|----------|-----------|--------------------|--------|------------|----------|
 | G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client` private publishable-shape stub); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
-| G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `audit/.lane-c00/C00.md` L7 | open | — | C00 L7 |
+| G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `backend/tests/test_bridge_concurrency_race.py`; `audit/.lane-c00/C00.md` L7 | closed | — | C00 L7 |
 | G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
 | G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `backend/src/melosviz/i18n/`; `desktop/locales/`; `audit/.lane-c01/C01.md` | mitigated | WBS-P3.5 | C01 L16 |
 | G-C02-01 | C02 | L25 | No CPU/memory quotas for render workers | H | integ | `backend/src/melosviz/bridge/security.py` (`RenderQuota`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.2 | C02 L25 |
@@ -50,7 +50,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C07-03 | C07 | L54/L70 | Hermetic/offline + external FFmpeg/Blender deps | M | doc | `docs/AIRGAP.md`; `scripts/check_hermetic_smoke.sh`; lane C07 L70 (FFmpeg/Blender still external) | mitigated | WBS-P1.6 | C07 L70 |
 | G-C08-01 | C08 | L71 | Licensed real-track corpus (legal) | L | manual | `docs/EVAL.md`; `audit/.lane-c08/C08.md` | open | WBS-P4.6 | C08 L71 |
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
-| G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | open | — | C09 L83 |
+| G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `web/src/r3fRenderer.tsx` SceneView role=img + aria-live; `docs/a11y/FOCUS.md`; `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | closed | — | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
 | G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `packages/brand-tokens` stub; SoT `desktop/assets/brand/tokens.css`; full UI lib still open | mitigated | WBS-P3.2 | C10 L105 |
