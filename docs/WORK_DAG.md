@@ -4,24 +4,30 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[In-process continuous profiler]
-  A --> C[G-C07-01 mitigate / WBS-P1.9]
-  B --> D[Re-score C05 100% / 94.8% A]
-  C --> D
+  A[CI green] --> B[R3F canvas golden]
+  A --> C[C00 L6 profiler resync]
+  A --> D[AGENT_QUICKSTART]
+  B --> E[Re-score 95.6% A]
+  C --> E
+  D --> E
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-294 | In-process continuous profiler (`MELOSVIZ_PROFILE=continuous`/`2`) | C05 L45 · G-C05-02 · WBS-P3.4 | M | THIS PR |
-| W-295 | Mitigate G-C07-01 (Linux desktop-e2e; GUI host-gated note) | C07 L64 · WBS-P1.9 | S | THIS PR |
-| W-296 | Re-score SCORECARD (p1h → 94.8% A) | audit | S | THIS PR |
+| W-297 | R3F canvas fixture + CI pixelmatch golden | C10 L107 · G-C10-03 · WBS-P3.3 | M | THIS PR |
+| W-298 | C00 L6 continuous-profiler audit resync | C00 L6 · WBS-P3.4 residual | S | THIS PR |
+| W-299 | AGENT_QUICKSTART + C03 100% | C03 L30.11 | S | THIS PR |
+| W-300 | Re-score SCORECARD (p1i → 95.6% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-294 | In-process continuous profiler (`MELOSVIZ_PROFILE=continuous`/`2`) | #148 |
+| W-295 | Mitigate G-C07-01 (Linux desktop-e2e; GUI host-gated note) | #148 |
+| W-296 | Re-score SCORECARD (p1h → 94.8% A) | #148 |
 | W-291 | SceneView canvas SR (role=img + aria-live) | #147 |
 | W-292 | Bridge RateLimiter/RenderQuota race stress | #147 |
 | W-293 | Re-score SCORECARD (p1g → 94.5% A) | #147 |

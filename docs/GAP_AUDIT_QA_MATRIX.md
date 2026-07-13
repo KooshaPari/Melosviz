@@ -54,7 +54,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
 | G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `packages/brand-tokens` stub; SoT `desktop/assets/brand/tokens.css`; full UI lib still open | mitigated | WBS-P3.2 | C10 L105 |
-| G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `audit/.lane-c10/C10.md` L107 | open | WBS-P3.3 | C10 L107 |
+| G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | mitigated | WBS-P3.3 | C10 L107 |
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |
 | G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `audit/.lane-c11/C11.md` L110 | open | WBS-P4.2 | C11 L110 |

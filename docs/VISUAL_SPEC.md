@@ -42,6 +42,7 @@ Demo media: `docs/assets/identity/` (`demo.svg`, `demo.mp4`).
 | Web R3F | `web/src/` | Vite + React Three Fiber |
 | Empty states | `desktop/assets/brand/gfx/` | SVG placeholders |
 | A11y fixture | `web/a11y/fixture.html` | axe + Playwright goldens |
+| R3F canvas fixture | `web/fixtures/r3f-canvas.html` | Deterministic SceneView golden (G-C10-03) |
 
 ## Theme
 
@@ -52,6 +53,9 @@ Dark studio default (`:root` tokens). Light theme: set
 ## Golden / regression
 
 - Shape goldens: `eval/golden/` (RenderSpec JSON)
-- Screenshot baseline: `eval/golden/screenshots/a11y-fixture.baseline.png`
-- Gate: `.github/workflows/a11y.yml` pixelmatch via `scripts/visual-gate/compare.mjs` (≤0.2%)
+- Screenshot baselines:
+  - `eval/golden/screenshots/a11y-fixture.baseline.png` (1280×720, ≤0.2%)
+  - `eval/golden/screenshots/desktop-splash.baseline.png` (1280×720, ≤2%)
+  - `eval/golden/screenshots/r3f-canvas.baseline.png` (960×540, ≤4% WebGL)
+- Gate: `.github/workflows/a11y.yml` pixelmatch via `scripts/visual-gate/compare.mjs`
 - Identity: `docs/visual/IDENTITY.md` · Provenance: `docs/visual/PROVENANCE.md`

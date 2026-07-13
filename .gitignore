@@ -53,6 +53,8 @@ eval/golden/screenshots/a11y-fixture.png
 eval/golden/screenshots/a11y-fixture.diff.png
 eval/golden/screenshots/desktop-splash.png
 eval/golden/screenshots/desktop-splash.diff.png
+eval/golden/screenshots/r3f-canvas.png
+eval/golden/screenshots/r3f-canvas.diff.png
 scripts/visual-gate/node_modules/
 
 # cargo-fuzz working trees
@@ -65,3 +67,6 @@ fuzz/coverage/
 target/
 eval/harbor/out/
 
+
+vite-err.log
+vite-out.log

@@ -12,7 +12,7 @@ and acceptance material for MelosViz.
 - [`PACKAGING.md`](PACKAGING.md) · [`AIRGAP.md`](AIRGAP.md) · [`DISTRIBUTION_POLICY.md`](DISTRIBUTION_POLICY.md)
 - [`a11y/FOCUS.md`](a11y/FOCUS.md) · [`a11y/CONTRAST.md`](a11y/CONTRAST.md)
 - [`I18N.md`](I18N.md) · [`PRIVACY.md`](PRIVACY.md) · [`KEY_ROTATION.md`](KEY_ROTATION.md)
-- [`PARALLEL_AGENTS.md`](PARALLEL_AGENTS.md) · [`sdk/README.md`](sdk/README.md) · [`api/openapi.json`](api/openapi.json)
+- [`PARALLEL_AGENTS.md`](PARALLEL_AGENTS.md) · [`AGENT_QUICKSTART.md`](AGENT_QUICKSTART.md) · [`sdk/README.md`](sdk/README.md) · [`api/openapi.json`](api/openapi.json)
 
 ## Traceability
 

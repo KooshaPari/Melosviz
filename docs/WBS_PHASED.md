@@ -39,7 +39,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts` | machine |
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | planned | token stub `@melosviz/brand-tokens` (`packages/brand-tokens`); full UI lib still open — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | machine |
-| WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | planned | `audit/.lane-c10/C10.md` L107 | machine |
+| WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | done | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | in_progress | in-process continuous sample ships (`MELOSVIZ_PROFILE=continuous`/`2`); external py-spy sidecar agent still open — `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
 | WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | scaffold: `backend/src/melosviz/i18n/`; `desktop/locales/`; `docs/I18N.md` — full string coverage still open | machine |
 | WBS-P3.6 | P3 | project | Lift C02/C04/C06/C07/C10/C11 to ≥92% each | SCORECARD clusters | planned | `audit/SCORECARD.md` | human |
