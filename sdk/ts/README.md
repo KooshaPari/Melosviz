@@ -1,33 +1,31 @@
-# MelosViz TypeScript bridge client (stub)
+# `@melosviz/bridge-client` (stub)
+
+Private TypeScript HTTP client stub for the MelosViz bridge.
+
+**Status:** not published to npm. `"private": true` in `package.json`.
+Publish remains WBS-P3.1 — see [`docs/sdk/README.md`](../../docs/sdk/README.md)
+and reserved-name policy in [`docs/SUPPLY_CHAIN.md`](../../docs/SUPPLY_CHAIN.md).
+
+## Package shape
+
+| Field | Value |
+|-------|--------|
+| name | `@melosviz/bridge-client` |
+| private | `true` |
+| exports | `.` → `src/index.ts` |
+| version | `0.0.0` (pre-publish) |
+
+## Usage (illustrative)
 
 ```ts
-// Illustrative — not a published package.
-export type AnalyzeRequest = { wav_path: string };
+import { analyze, BRIDGE_PATHS } from '@melosviz/bridge-client'
 
-export async function analyze(
-  baseUrl: string,
-  body: AnalyzeRequest,
-  token?: string,
-): Promise<unknown> {
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-  };
-  if (token) headers.authorization = `Bearer ${token}`;
-  const res = await fetch(`${baseUrl}/analyze`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    // Bridge returns application/problem+json on errors.
-    throw Object.assign(new Error(res.statusText), {
-      status: res.status,
-      problem: await res.json().catch(() => null),
-    });
-  }
-  return res.json();
-}
+const summary = await analyze('http://127.0.0.1:8765', {
+  audio_path: '/path/to/track.wav',
+})
+console.log(BRIDGE_PATHS)
 ```
 
-Wire this into `web/` or a future `@melosviz/bridge-client` only after an
-explicit publish decision (currently private).
+Wire this into `web/` only after an explicit publish / workspace-link decision.
+Until then, the live web app talks to the bridge via its own fetch helpers and
+the OpenAPI contract at `docs/api/openapi.json`.

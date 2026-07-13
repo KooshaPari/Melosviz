@@ -4,37 +4,34 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[Bun traceparent]
-  A --> C[SPA focus trap]
-  A --> D[CLI/desktop i18n scaffold]
-  B --> E[Re-score C01 100%]
-  C --> E
-  D --> E
+  A[CI green] --> B[Web empty playlist state]
+  A --> C[SDK bridge-client stub]
+  B --> D[Re-score C10 94%]
+  C --> D
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-284 | Desktop Bun inject traceparent | C05 L44 · G-C05-03 | S | THIS PR |
-| W-285 | SPA focus-trap / modal restore polish | C09 L82 · G-C09-02 | M | THIS PR |
-| W-286 | CLI + desktop i18n scaffold (en/es) | C01 L16 · WBS-P3.5 | M | THIS PR |
-| W-287 | Re-score SCORECARD (p1e → 94.1% A) | audit | S | THIS PR |
+| W-288 | Web playlist empty/zero state | C10 L100 | M | THIS PR |
+| W-289 | `@melosviz/bridge-client` SDK stub | C00 L2 · WBS-P3.1 | S | THIS PR |
+| W-290 | Re-score SCORECARD (p1f → 94.3% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-284 | Desktop Bun inject traceparent | #144 |
+| W-285 | SPA focus-trap / modal restore polish | #144 |
+| W-286 | CLI + desktop i18n scaffold (en/es) | #144 |
+| W-287 | Re-score SCORECARD (p1e → 94.1% A) | #144 |
 | W-279 | Desktop/web STRIDE threat model | #141 |
 | W-280 | Hypothesis RenderSpec property expansion | #141 |
 | W-281 | `@melosviz/brand-tokens` package stub | #141 |
 | W-282 | Windows release soft-fail narrow | #141 |
 | W-283 | Re-score SCORECARD (p1d wave → 93.8% A) | #141 |
 | W-275 | Hermetic CI smoke (fetch once + offline check) | #140 |
-| W-276 | cargo-fuzz PR 60s / nightly 300s | #140 |
-| W-277 | cargo-audit hard-fail (no continue-on-error) | #140 |
-| W-278 | Re-score SCORECARD (p1c-hermetic-fuzz) | #140 |
-| W-271 | SOURCE_DATE_EPOCH / bit-repro smoke (release + CI) | #139 |
 | W-272 | Feedback-loop timing budgets gate | #139 |
 | W-273 | Shared brand token SoT (web/desktop) | #139 |
 | W-274 | Re-score SCORECARD (p1b-sde-timing-tokens) | #139 |

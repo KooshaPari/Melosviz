@@ -10,6 +10,9 @@ registries via locked manifests only.
 | PyPI | `melosviz` (bridge / backend) | pypi.org | Install only via `backend/uv.lock` |
 | crates.io | `melosviz-*` workspace crates | crates.io | Workspace members; do not yank-replace |
 | npm | `melosviz-web` / desktop private | npmjs.com | `"private": true` — never publish |
+| npm | `@melosviz/bridge-client` (`sdk/ts`) | npmjs.com | Stub only — `"private": true`, **not published** (WBS-P3.1) |
+| npm | `@melosviz/brand-tokens` | npmjs.com | `"private": true` token stub — never publish |
+| npm | `@melosviz/*` (scoped) | npmjs.com | Reserved scope; publish only with release owner |
 
 Agents and CI **must not**:
 
