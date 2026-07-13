@@ -1,6 +1,7 @@
 # MelosViz visual identity
 
-Canonical identity for desktop + web. Tokens: `desktop/assets/brand/tokens.css`.
+Canonical identity for desktop + web. **Token SoT:**
+`desktop/assets/brand/tokens.css` (shared; web imports it via `brand.css`).
 Contract: `docs/VISUAL_SPEC.md`. Provenance: `docs/visual/PROVENANCE.md`.
 
 ## Signature

@@ -1,7 +1,10 @@
 # MelosViz Visual Spec (C10)
 
-Canonical visual language for desktop + web surfaces. Tokens live in
-`desktop/assets/brand/tokens.css`; this doc is the agent-facing contract.
+Canonical visual language for desktop + web surfaces. **Token SoT:**
+`desktop/assets/brand/tokens.css` — single shared file loaded by the desktop
+shell (`index.html` / `splash.html`) and imported by web `src/styles/brand.css`
+(Vite alias `@melosviz/brand-tokens`). Web keeps only aliases/layout helpers;
+do not fork hex values there. Full design-system package is WBS-P3.2.
 
 ## Brand mark
 
@@ -10,8 +13,8 @@ Canonical visual language for desktop + web surfaces. Tokens live in
 
 ## Palette (warm spectrum + shell)
 
-Shell chrome uses violet-neon tokens (`--mv-accent` / `--mv-primary` =
-`#7c6af7`). Web `brand.css` matches desktop — no `#7c3aed` drift.
+Shell chrome uses violet-neon tokens (`--mv-accent` / web alias `--mv-primary` =
+`#7c6af7`). Web aliases map to SoT vars — no `#7c3aed` drift.
 
 | Role | Token / hex |
 |------|-------------|

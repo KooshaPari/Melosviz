@@ -22,6 +22,12 @@ jobs:
         # actions/checkout v4.2.2 — SHA-pinned
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Set SOURCE_DATE_EPOCH from commit
+        run: |
+          EPOCH=$(git log -1 --pretty=%ct)
+          echo "SOURCE_DATE_EPOCH=${EPOCH}" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=${EPOCH}"
+
       - name: Set up Rust (stable)
         # dtolnay/rust-toolchain v1 — SHA-pinned
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
@@ -29,7 +35,7 @@ jobs:
           toolchain: stable
 
       - name: Build Rust crates
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Set up Bun
         # oven-sh/setup-bun v2 — SHA-pinned
@@ -98,13 +104,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Set SOURCE_DATE_EPOCH from commit
+        run: |
+          EPOCH=$(git log -1 --pretty=%ct)
+          echo "SOURCE_DATE_EPOCH=${EPOCH}" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=${EPOCH}"
+
       - name: Set up Rust (stable)
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
 
       - name: Build Rust crates (release)
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Package CLI tools as tarball
         run: |
@@ -112,7 +124,10 @@ jobs:
           cp target/release/melosviz-render    dist/
           cp target/release/melosviz-mir       dist/
           cp LICENSE dist/
-          tar czf "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz" \
+          tar --sort=name \
+            --mtime="@${SOURCE_DATE_EPOCH}" \
+            --owner=0 --group=0 --numeric-owner \
+            -czf "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz" \
             -C dist .
           ls -lh "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz"
 
@@ -132,13 +147,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Set SOURCE_DATE_EPOCH from commit
+        shell: pwsh
+        run: |
+          $epoch = git log -1 --pretty=%ct
+          Add-Content -Path $env:GITHUB_ENV -Value "SOURCE_DATE_EPOCH=$epoch"
+          Write-Host "SOURCE_DATE_EPOCH=$epoch"
+
       - name: Set up Rust (stable)
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
 
       - name: Build Rust crates (release)
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Package CLI tools as zip
         shell: pwsh
@@ -169,13 +191,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+      - name: Set SOURCE_DATE_EPOCH from commit
+        shell: pwsh
+        run: |
+          $epoch = git log -1 --pretty=%ct
+          Add-Content -Path $env:GITHUB_ENV -Value "SOURCE_DATE_EPOCH=$epoch"
+          Write-Host "SOURCE_DATE_EPOCH=$epoch"
+
       - name: Set up Rust (stable)
         uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
 
       - name: Build Rust crates
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76

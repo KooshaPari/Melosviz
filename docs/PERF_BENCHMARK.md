@@ -7,6 +7,10 @@
 **Test signal:** Synthetic 180 s WAV, 44 100 Hz mono, 15.1 MB  
 **Renderers tested:** `video_exporter` (ffmpeg PNG path), `blender_exporter` (Blender headless, EEVEE-Next)
 
+For **developer / agent feedback-loop** wall-time budgets (`diagnose`, pytest
+smoke, `cargo check`, `make golden`), see [`TIMING_BUDGETS.md`](TIMING_BUDGETS.md).
+This document covers product render / analysis latency, not CI loop gates.
+
 ---
 
 ## 1. Measured Numbers

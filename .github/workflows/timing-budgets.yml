@@ -1,0 +1,38 @@
+name: Timing budgets — feedback loops
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  timing-budgets:
+    name: Feedback-loop timing budgets
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
+        with:
+          toolchain: stable
+
+      - name: Install backend (test extras)
+        working-directory: backend
+        # Keep install lean: smoke + golden need package + pytest only.
+        run: pip install -e ".[test]"
+
+      - name: Install ffmpeg (diagnose required check)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Run timing budget gate
+        # Budgets: docs/TIMING_BUDGETS.md (WBS-P1.11 / C03 L30.10)
+        run: python scripts/check_timing_budgets.py

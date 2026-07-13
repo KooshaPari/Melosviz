@@ -11,7 +11,7 @@ Hand-authored brand surfaces (AI-coded SVG/CSS, not generative image dumps).
 | Empty-state art | `desktop/assets/brand/gfx/empty-state.svg` | Zero-data illustration | Hand-authored SVG |
 | Iconset | `desktop/assets/icons/MelosViz.iconset/` | macOS / Electrobun | Rasterized from logo |
 | Identity demo | `docs/assets/identity/demo.svg` (+ `.mp4`) | Motion showcase | Hand-authored |
-| Tokens | `desktop/assets/brand/tokens.css` | Color / type / motion SoT | Hand-authored CSS |
+| Tokens | `desktop/assets/brand/tokens.css` | Color / type / motion SoT (desktop + web) | Hand-authored CSS |
 | A11y fixture | `web/a11y/fixture.html` | axe + screenshot golden | Hand-authored HTML |
 | Screenshot baseline | `eval/golden/screenshots/a11y-fixture.baseline.png` | Visual regression gate | CI Chromium capture |
 

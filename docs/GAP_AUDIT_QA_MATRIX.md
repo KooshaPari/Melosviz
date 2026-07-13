@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~92% · A** (2026-07-12, p1-trace-c02-c06).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~92.9% · A** (2026-07-13, p1b-sde-timing-tokens).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -34,7 +34,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C02-03 | C02 | L21 | No OAuth/SAML IdP | L | manual | localhost Bearer sufficient today | accepted | WBS-P2.3 | C02 L21 |
 | G-C02-04 | C02 | L20 | Desktop/web threat deep-dive lighter than bridge | M | doc | `docs/security/THREAT_MODEL.md` | open | — | C02 L20 |
 | G-C02-05 | C02 | L28 | cargo-audit soft-fail | L | ci | `supply-chain.yml` | open | — | C02 L28 |
-| G-C03-01 | C03 | L30.11 | No sccache/nextest/hyperfine timing budget gate | M | ci | `audit/.lane-c03/C03.md` | open | WBS-P1.11 | C03 L30.11 |
+| G-C03-01 | C03 | L30.10 | No feedback-loop timing budget gate (diagnose/pytest/cargo/golden) | M | ci | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml` | closed | WBS-P1.11 | C03 L30.10 |
 | G-C03-02 | C03 | L30.1 | FR catalog not machine-exported (JSON/YAML) | M | ci | `docs/fr-status.yaml`; `scripts/check_fr_status.py`; `.github/workflows/docs-trace.yml` | closed | WBS-P1.1 | C03 L30.1 |
 | G-C04-01 | C04 | L34 | Org GPG / verified-commit branch protection | H | manual | `CONTRIBUTING.md`; lane soft_goal W-228 | open | WBS-P2.1 | C04 L34 · W-228 |
 | G-C04-02 | C04 | L39 | OSSF TokenPermissions findings on older workflows | M | ci | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | mitigated | WBS-P1.8 | C04 L39 |
@@ -43,7 +43,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C05-02 | C05 | L45 | No always-on continuous profiler agent | M | manual | `/debug/profile` opt-in only | open | WBS-P3.4 | C05 L45 |
 | G-C05-03 | C05 | L44 | Desktop Bun client does not inject traceparent | L | integ | `audit/.lane-c05/C05.md` L44 | open | — | C05 L44 |
 | G-C06-01 | C06 | L55 | No automated reserved-name scanner in CI | H | ci | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | closed | WBS-P1.4 | C06 L55 |
-| G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `audit/.lane-c06/C06.md` L52 | open | WBS-P1.5 | C06 L52 |
+| G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.5 | C06 L52 |
 | G-C06-03 | C06 | L54 | Builds not hermetic (CI still fetches crates/pypi) | H | ci | `audit/.lane-c06/C06.md` L54 | open | WBS-P1.6 | C06 L54 |
 | G-C07-01 | C07 | L64 | Full desktop e2e still macOS-host-only | M | e2e | `desktop/tests/e2e_desktop.test.ts` | open | WBS-P1.9 | C07 L64 |
 | G-C07-02 | C07 | L67 | Nightly fuzz window short (not continuous farm) | M | ci | `.github/workflows/cargo-fuzz.yml` | open | WBS-P1.9 | C07 L67 |
@@ -52,8 +52,8 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
 | G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | open | — | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md` | open | — | C09 L82 |
-| G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `web/src/styles/brand.css` | open | WBS-P3.2 | C10 L96 |
-| G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `audit/.lane-c10/C10.md` L105 | open | WBS-P3.2 | C10 L105 |
+| G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
+| G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | open | WBS-P3.2 | C10 L105 |
 | G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `audit/.lane-c10/C10.md` L107 | open | WBS-P3.3 | C10 L107 |
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |
@@ -69,4 +69,4 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 - C09 scores 100% A at cluster level; remaining rows are residual UX depth, not scorecard blockers.
 - G-C08-01 uses Status `open` with WBS deferred (legal/product gate); not marked `accepted` until counsel signs off.
 
-`last_updated`: 2026-07-12
+`last_updated`: 2026-07-13

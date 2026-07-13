@@ -5,68 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MelosViz</title>
   <link rel="icon" type="image/png" href="../../assets/brand/favicon-32.png" sizes="32x32"/>
+  <!-- Brand token SoT (shared with web via import / Vite alias) -->
+  <link rel="stylesheet" href="../../assets/brand/tokens.css" />
   <link rel="stylesheet" href="../../node_modules/@radix-ui/themes/styles.css" />
   <script type="module" src="./index.js"></script>
   <style>
-    /* ------------------------------------------------------------------ */
-    /* Brand tokens (inlined for single-file webview portability)           */
-    /* ------------------------------------------------------------------ */
+    /* Desktop shell shorthand aliases → SoT radius/shadow tokens */
     :root {
-      /* Background scale */
-      --mv-bg-base:        #0d0d10;
-      --mv-bg-surface:     #13131a;
-      --mv-bg-panel:       #1a1a26;
-      --mv-bg-elevated:    #21212f;
-      --mv-bg-hover:       #28283a;
-      --mv-bg-active:      #2e2e42;
+      --r-xs: var(--mv-radius-xs);
+      --r-sm: var(--mv-radius-sm);
+      --r-md: var(--mv-radius-md);
+      --r-lg: var(--mv-radius-lg);
+      --r-xl: var(--mv-radius-xl);
+      --r-full: var(--mv-radius-full);
 
-      /* Border */
-      --mv-border:         #2a2a3c;
-      --mv-border-subtle:  #1e1e2e;
-      --mv-border-focus:   #7c6af7;
-
-      /* Accent — violet spectrum */
-      --mv-accent-lo:      #312e81;
-      --mv-accent-dim:     #4c40b0;
-      --mv-accent:         #7c6af7;
-      --mv-accent-hi:      #a78bfa;
-      --mv-accent-glow:    rgba(124, 106, 247, 0.28);
-
-      /* Neons */
-      --mv-neon-pink:      #f472b6;
-      --mv-neon-purple:    #c084fc;
-      --mv-neon-cyan:      #22d3ee;
-
-      /* Gradients */
-      --mv-grad-spectrum:  linear-gradient(90deg, #4c40b0 0%, #7c6af7 40%, #c084fc 75%, #f472b6 100%);
-      --mv-grad-brand:     linear-gradient(135deg, #4c40b0 0%, #7c6af7 50%, #c084fc 100%);
-
-      /* Status */
-      --mv-success:        #4ade80;
-      --mv-success-dim:    rgba(74, 222, 128, 0.12);
-      --mv-warn:           #f59e0b;
-      --mv-warn-dim:       rgba(245, 158, 11, 0.12);
-      --mv-error:          #f87171;
-      --mv-error-dim:      rgba(248, 113, 113, 0.10);
-
-      /* Text */
-      --mv-text-hi:        #f0f0f8;
-      --mv-text-mid:       #9090b0;
-      --mv-text-lo:        #50505e;
-      --mv-text-accent:    #a78bfa;
-
-      /* Typography */
-      --mv-font-sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-      --mv-font-mono:    "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", ui-monospace, monospace;
-      --mv-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
-
-      /* Radius */
-      --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px; --r-full: 9999px;
-
-      /* Shadows */
-      --shadow-sm:   0 1px 3px rgba(0,0,0,0.5);
-      --shadow-md:   0 4px 16px rgba(0,0,0,0.6);
-      --shadow-glow: 0 0 24px var(--mv-accent-glow);
+      --shadow-sm: var(--mv-shadow-sm);
+      --shadow-md: var(--mv-shadow-md);
+      --shadow-glow: var(--mv-shadow-glow);
     }
 
     /* ------------------------------------------------------------------ */

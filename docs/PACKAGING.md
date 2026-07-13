@@ -37,6 +37,17 @@ bunx electrobun package
 Provenance: GitHub attestations + CycloneDX SBOM + `SHA256SUMS` + cosign
 keyless `SHA256SUMS.cosign.bundle` on each release (`release.yml`).
 
+## SOURCE_DATE_EPOCH (release builds)
+
+On `v*` tags, `release.yml` sets `SOURCE_DATE_EPOCH` from the commit timestamp
+before Rust CLI builds. Linux packaging also stamps the CLI tarball with that
+epoch (`tar --mtime=@$SOURCE_DATE_EPOCH --sort=name --owner=0 --group=0`).
+
+This improves reproducibility for **Linux CLI binaries / archives**. It does
+**not** make Windows MSI/zip or macOS DMG bit-identical across rebuilds — see
+`docs/SUPPLY_CHAIN.md` § SOURCE_DATE_EPOCH for the honest scope table and the
+`scripts/check_repro_smoke.sh` CI smoke.
+
 ## Auto-update
 
 Release artifacts land on GitHub Releases with SLSA-style attestations.
