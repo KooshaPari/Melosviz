@@ -11,10 +11,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      // Shared brand token SoT (desktop/assets/brand/tokens.css)
+      // Package stub re-exports SoT (packages/brand-tokens/tokens.css → desktop SoT)
       '@melosviz/brand-tokens': path.resolve(
         repoRoot,
-        'desktop/assets/brand/tokens.css',
+        'packages/brand-tokens/tokens.css',
       ),
     },
   },

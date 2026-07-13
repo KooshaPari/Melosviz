@@ -3,8 +3,10 @@
 Canonical visual language for desktop + web surfaces. **Token SoT:**
 `desktop/assets/brand/tokens.css` — single shared file loaded by the desktop
 shell (`index.html` / `splash.html`) and imported by web `src/styles/brand.css`
-(Vite alias `@melosviz/brand-tokens`). Web keeps only aliases/layout helpers;
-do not fork hex values there. Full design-system package is WBS-P3.2.
+via the private stub package `@melosviz/brand-tokens`
+(`packages/brand-tokens`; re-export `@import` → the SoT — do not copy/fork hex there).
+Web keeps only aliases/layout helpers. Full shared UI component library remains
+WBS-P3.2 / C10 L105.
 
 ## Brand mark
 

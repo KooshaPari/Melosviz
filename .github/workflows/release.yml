@@ -183,9 +183,9 @@ jobs:
   windows-desktop:
     name: Windows — desktop app (Electrobun)
     runs-on: windows-latest
-    # Electrobun Windows packaging can be flaky on fresh runners; keep
-    # continue-on-error so a CLI-only Windows release still ships.
-    continue-on-error: true
+    # Install/build steps hard-fail. Electrobun Windows packaging can still be
+    # flaky on fresh runners — soft-fail only package/collect/upload so a
+    # CLI-only Windows release still ships (docs/PACKAGING.md).
 
     steps:
       - name: Checkout
@@ -222,12 +222,14 @@ jobs:
         run: bunx electrobun build --env=stable
 
       - name: Package desktop app
+        continue-on-error: true
         working-directory: desktop
         env:
           ELECTROBUN_OS: windows
         run: bunx electrobun package --env=stable
 
       - name: Collect Windows desktop artifact
+        continue-on-error: true
         shell: pwsh
         run: |
           $candidates = @(
@@ -243,6 +245,7 @@ jobs:
           Get-ChildItem win-desktop-out | Format-Table Name,Length
 
       - name: Upload Windows desktop artifact
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MelosViz-Windows-Desktop
@@ -251,6 +254,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Electrobun update manifests (Windows)
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: MelosViz-Windows-Updates

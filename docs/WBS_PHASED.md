@@ -29,7 +29,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P1.7 | P1 | project | Audit JSONL retention enforcement (rotate/prune vs PRIVACY) | C05 L49 · C02 L23 | done | `backend/src/melosviz/bridge/security.py`; `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.8 | P1 | project | OSSF TokenPermissions sweep on remaining workflows | C04 L39 | done | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | machine |
 | WBS-P1.9 | P1 | project | Host-gated desktop e2e expansion + longer fuzz farm | C07 L64 · C07 L67 | planned | `desktop/tests/e2e_desktop.test.ts`; `.github/workflows/cargo-fuzz.yml` | machine |
-| WBS-P1.10 | P1 | project | Harden Windows desktop release (drop continue-on-error) | C00 L9 · C07 L68 | planned | `audit/.lane-c00/C00.md` L9 | machine |
+| WBS-P1.10 | P1 | project | Harden Windows desktop release (drop continue-on-error) | C00 L9 · C07 L68 | done | `release.yml` windows-desktop (job soft-fail removed; package/upload step soft-fail); `docs/PACKAGING.md`; `audit/.lane-c00/C00.md` L9 | machine |
 | WBS-P1.11 | P1 | project | Feedback-loop timing budgets (sccache/nextest/hyperfine gate) | C03 L30.10 | done | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml`; `Makefile` (`timing-budgets`) | machine |
 | WBS-P1.12 | P1 | project | Shared brand token SoT across web/desktop (token share only) | C10 L96 | done | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `desktop/views/main/splash.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | machine |
 | WBS-P2.1 | P2 | org | Org GPG / signed-commit branch protection | W-228 · C04 L34 | planned | `CONTRIBUTING.md`; `audit/.lane-c04/C04.md` L34 | human |
@@ -38,7 +38,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | planned | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | human |
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts` | machine |
-| WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | planned | `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | machine |
+| WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | planned | token stub `@melosviz/brand-tokens` (`packages/brand-tokens`); full UI lib still open — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | planned | `audit/.lane-c10/C10.md` L107 | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | planned | `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
 | WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | planned | `docs/I18N.md`; `audit/.lane-c01/C01.md` | machine |

@@ -10,11 +10,22 @@ This document is the Time-2 packaging map for audit-v38 cluster C11.
 | macOS desktop | DMG via Electrobun | `macos-desktop` |
 | Linux CLI | `melosviz-mir` + `melosviz-render` tarball | `linux-cli` |
 | Windows CLI | `melosviz-mir.exe` + `melosviz-render.exe` zip | `windows-cli` |
-| Windows desktop | Electrobun package (best-effort) | `windows-desktop` (`continue-on-error`) |
+| Windows desktop | Electrobun package (packaging soft-fail) | `windows-desktop` (install/build hard-fail; package/upload `continue-on-error`) |
 | GHCR bridge | `ghcr.io/kooshapari/melosviz-bridge` | `ghcr-bridge.yml` |
 | Air-gap tarball | `scripts/airgap_bundle.sh` → `dist/airgap/*.tar.gz` | local / operator |
 | SBOM | CycloneDX Python + Cargo | `sbom` |
 | Provenance | GitHub attestations + cosign | `release` |
+
+## Windows CLI-only fallback
+
+`windows-cli` is the supported Windows release path and is **not** gated on
+desktop packaging. If `windows-desktop` fails at Electrobun `package` /
+artifact collect/upload (soft-fail steps), the `release` job still proceeds
+when `windows-cli` (and other hard jobs) succeed — ship CLI zip only.
+
+Install + `cargo build` + Electrobun `build` on `windows-desktop` hard-fail
+so regressions in those steps block the job. Only packaging/artifact steps
+use step-level `continue-on-error` (job-level soft-fail removed; WBS-P1.10).
 
 ## From source
 
@@ -24,14 +35,14 @@ cargo run --release -p melosviz-mir -- --help
 cd web && bun install && bun run dev
 ```
 
-## Windows local (if CI desktop job is skipped)
+## Windows local (desktop when CI packaging soft-fails)
 
 ```powershell
 cd desktop
 bun install
 $env:ELECTROBUN_OS = "windows"
-bunx electrobun build
-bunx electrobun package
+bunx electrobun build --env=stable
+bunx electrobun package --env=stable
 ```
 
 Provenance: GitHub attestations + CycloneDX SBOM + `SHA256SUMS` + cosign

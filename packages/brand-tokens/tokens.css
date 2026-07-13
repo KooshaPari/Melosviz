@@ -1,0 +1,7 @@
+/*
+ * @melosviz/brand-tokens — re-export only.
+ * SYNC: do not edit token values here. Single SoT:
+ *   ../../desktop/assets/brand/tokens.css
+ * Prefer editing that file; this stub exists so consumers can import the package.
+ */
+@import "../../desktop/assets/brand/tokens.css";
