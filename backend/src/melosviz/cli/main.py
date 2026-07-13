@@ -186,20 +186,20 @@ def _cmd_apply(args: argparse.Namespace) -> int:
 
 def main() -> None:
     """Entry-point for the ``viz`` console script."""
+    from melosviz.i18n import t
+
     parser = argparse.ArgumentParser(
         prog="viz",
-        description="Melosviz conductor pipeline CLI.",
+        description=t("cli.description"),
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
     # viz analyze
-    p_analyze = sub.add_parser("analyze", help="Analyze a WAV file → RenderSpec JSON")
+    p_analyze = sub.add_parser("analyze", help=t("cli.analyze.help"))
     p_analyze.add_argument("wav", help="Path to WAV file")
 
     # viz build
-    p_build = sub.add_parser(
-        "build", help="Analyze + assemble render plan (mock adapters)"
-    )
+    p_build = sub.add_parser("build", help=t("cli.build.help"))
     p_build.add_argument("wav", help="Path to WAV file")
     p_build.add_argument("--out", metavar="DIR", help="Output directory for plan JSON")
     p_build.add_argument(
@@ -209,24 +209,22 @@ def main() -> None:
     )
 
     # viz render
-    p_render = sub.add_parser(
-        "render", help="Analyze + run real conductor (requires adapters)"
-    )
+    p_render = sub.add_parser("render", help=t("cli.render.help"))
     p_render.add_argument("wav", help="Path to WAV file")
     p_render.add_argument("--out", metavar="DIR", help="Output directory")
 
     # viz diff
-    p_diff = sub.add_parser("diff", help="Diff two RenderSpec JSON files")
+    p_diff = sub.add_parser("diff", help=t("cli.diff.help"))
     p_diff.add_argument("spec_a", help="First RenderSpec JSON")
     p_diff.add_argument("spec_b", help="Second RenderSpec JSON")
 
     # viz apply
-    p_apply = sub.add_parser("apply", help="Apply a named preset to a RenderSpec JSON")
+    p_apply = sub.add_parser("apply", help=t("cli.apply.help"))
     p_apply.add_argument("spec", help="RenderSpec JSON file")
     p_apply.add_argument("preset", help="Preset name (e.g. cinematic)")
 
     # melosviz serve
-    p_serve = sub.add_parser("serve", help="Start the FastAPI bridge server")
+    p_serve = sub.add_parser("serve", help=t("cli.serve.help"))
     p_serve.add_argument(
         "--host",
         default="127.0.0.1",
@@ -242,10 +240,10 @@ def main() -> None:
     )
 
     # melosviz presets
-    sub.add_parser("presets", help="List available presets")
+    sub.add_parser("presets", help=t("cli.presets.help"))
 
     # melosviz version
-    sub.add_parser("version", help="Print the package version")
+    sub.add_parser("version", help=t("cli.version.help"))
 
     args = parser.parse_args()
     dispatch = {

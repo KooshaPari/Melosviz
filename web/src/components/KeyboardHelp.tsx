@@ -17,6 +17,14 @@ export function KeyboardHelp({ open, onOpenChange }: KeyboardHelpProps) {
         <Dialog.Content
           className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#0e0e0e]/95 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
           aria-describedby="keyboard-help-desc"
+          onOpenAutoFocus={(e) => {
+            // Land on the labeled close control (docs/a11y/FOCUS.md initial-focus).
+            e.preventDefault()
+            const close = e.currentTarget.querySelector<HTMLElement>(
+              '[aria-label="Close keyboard help"]',
+            )
+            close?.focus()
+          }}
         >
           <Dialog.Title className="mb-1 text-base font-semibold text-white/90">
             Keyboard Shortcuts

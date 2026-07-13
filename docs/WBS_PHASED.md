@@ -41,7 +41,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | planned | token stub `@melosviz/brand-tokens` (`packages/brand-tokens`); full UI lib still open — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | planned | `audit/.lane-c10/C10.md` L107 | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | planned | `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
-| WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | planned | `docs/I18N.md`; `audit/.lane-c01/C01.md` | machine |
+| WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | scaffold: `backend/src/melosviz/i18n/`; `desktop/locales/`; `docs/I18N.md` — full string coverage still open | machine |
 | WBS-P3.6 | P3 | project | Lift C02/C04/C06/C07/C10/C11 to ≥92% each | SCORECARD clusters | planned | `audit/SCORECARD.md` | human |
 | WBS-P4.1 | P4 | project | Native mobile (iOS/Android) | W-223 · C11 L117 | deferred | `audit/.lane-c11/C11.md` L117; `docs/DISTRIBUTION_POLICY.md` | human |
 | WBS-P4.2 | P4 | project | Tray/menubar quick-actions | C11 L110 | deferred | `audit/.lane-c11/C11.md` L110 | machine |

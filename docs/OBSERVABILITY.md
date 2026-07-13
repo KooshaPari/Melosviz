@@ -35,6 +35,12 @@ The bridge reads inbound W3C `traceparent` headers and continues the trace
 for `http.request` / `analyze` spans. Desktop/web clients should forward
 `traceparent` when calling `/analyze`, `/build`, or `/render`.
 
+**Desktop Bun client** (`desktop/src/index.ts`): `bridgeFetch` and the
+startup `/health` probe always send a W3C `traceparent`
+(`00-<32-hex-trace_id>-<16-hex-span_id>-01`). If a caller already supplies a
+valid header, it is forwarded unchanged; otherwise Bun mints a new sampled
+context so bridge spans stay correlatable in logs / OTel.
+
 ## Prometheus scrape snippet
 
 ```yaml

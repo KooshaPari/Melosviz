@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { useKeyboardShortcuts, type KeyboardShortcutActions } from '../../hooks/useKeyboardShortcuts'
 import { KeyboardHelp } from '../KeyboardHelp'
 
@@ -154,5 +154,13 @@ describe('KeyboardHelp', () => {
     const closeBtn = screen.getByLabelText('Close keyboard help')
     fireEvent.click(closeBtn)
     expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('moves initial focus to the close control when opened (FOCUS.md)', async () => {
+    render(<KeyboardHelp open={true} onOpenChange={vi.fn()} />)
+    const closeBtn = screen.getByLabelText('Close keyboard help')
+    await waitFor(() => {
+      expect(document.activeElement).toBe(closeBtn)
+    })
   })
 })

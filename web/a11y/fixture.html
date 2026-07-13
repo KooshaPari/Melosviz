@@ -90,6 +90,11 @@
     </main>
     <footer id="help">
       <p>Keyboard: Tab to move, Enter to activate Analyze.</p>
+      <p class="hint">
+        SPA modal contract (KeyboardHelp / PresetEditor): focus trap inside
+        dialog, Esc closes, restore focus to opener — see docs/a11y/FOCUS.md.
+        This static fixture has no live Dialog; cover trap/restore in SPA tests.
+      </p>
     </footer>
     <script>
       document.getElementById("analyze").addEventListener("click", () => {

@@ -1,0 +1,12 @@
+{
+  "app.name": "MelosViz",
+  "cli.description": "Melosviz conductor pipeline CLI.",
+  "cli.analyze.help": "Analyze a WAV file -> RenderSpec JSON",
+  "cli.build.help": "Analyze + assemble render plan (mock adapters)",
+  "cli.render.help": "Analyze + run real conductor (requires adapters)",
+  "cli.diff.help": "Diff two RenderSpec JSON files",
+  "cli.apply.help": "Apply a named preset to a RenderSpec JSON",
+  "cli.serve.help": "Start the FastAPI bridge server",
+  "cli.presets.help": "List available presets",
+  "cli.version.help": "Print the package version"
+}
