@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -14,6 +14,50 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { PlaylistItem, UsePlaylistReturn } from '../hooks/usePlaylist'
+
+/** Compact spectrum mark — mirrors desktop/assets/brand/gfx/empty-state.svg */
+function EmptyQueueArt() {
+  const uid = useId().replace(/:/g, '')
+  const grad = `eq-${uid}`
+  const glow = `gl-${uid}`
+
+  return (
+    <svg
+      viewBox="0 0 320 200"
+      className="w-full max-w-[180px] mx-auto opacity-90"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id={grad} x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="var(--mv-accent, #4c40b0)" />
+          <stop offset="50%" stopColor="var(--mv-primary, #7c6af7)" />
+          <stop offset="100%" stopColor="#c084fc" />
+        </linearGradient>
+        <filter id={glow}>
+          <feGaussianBlur stdDeviation="3" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <circle cx="160" cy="90" r="70" fill="none" stroke="var(--mv-primary, #7c6af7)" strokeWidth="1" opacity="0.08" />
+      <circle cx="160" cy="90" r="52" fill="none" stroke="var(--mv-primary, #7c6af7)" strokeWidth="1" opacity="0.12" />
+      <circle cx="160" cy="90" r="34" fill="none" stroke="var(--mv-primary, #7c6af7)" strokeWidth="1.5" opacity="0.18" />
+      <circle cx="160" cy="90" r="16" fill="none" stroke="var(--mv-primary, #7c6af7)" strokeWidth="2" opacity="0.25" />
+      <g filter={`url(#${glow})`} opacity="0.65">
+        <rect x="122" y="80" width="8" height="20" rx="2" fill={`url(#${grad})`} />
+        <rect x="134" y="72" width="8" height="28" rx="2" fill={`url(#${grad})`} />
+        <rect x="146" y="66" width="8" height="34" rx="2" fill={`url(#${grad})`} />
+        <rect x="158" y="62" width="8" height="38" rx="2" fill={`url(#${grad})`} />
+        <rect x="170" y="66" width="8" height="34" rx="2" fill={`url(#${grad})`} />
+        <rect x="182" y="72" width="8" height="28" rx="2" fill={`url(#${grad})`} />
+        <rect x="194" y="80" width="8" height="20" rx="2" fill={`url(#${grad})`} />
+      </g>
+      <line x1="110" y1="100" x2="210" y2="100" stroke={`url(#${grad})`} strokeWidth="1.5" opacity="0.3" />
+    </svg>
+  )
+}
 
 // ---- Status badge -------------------------------------------------------
 
@@ -168,13 +212,6 @@ export function PlaylistPanel({ playlist, onSelectItem }: PlaylistPanelProps) {
         </div>
       </div>
 
-      {/* File picker button */}
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 text-center"
-      >
-        + Add files
-      </button>
       <input
         ref={fileInputRef}
         type="file"
@@ -184,30 +221,61 @@ export function PlaylistPanel({ playlist, onSelectItem }: PlaylistPanelProps) {
         onChange={handleFileChange}
       />
 
-      {/* Queue list */}
+      {/* Queue list / empty state */}
       {queue.length === 0 ? (
-        <p className="text-xs text-white/20 text-center py-3">
-          No files added yet
-        </p>
+        <div className="flex flex-col items-center gap-2 py-2 text-center">
+          <EmptyQueueArt />
+          <p
+            className="text-xs font-medium tracking-tight"
+            style={{
+              background: 'var(--mv-grad-brand, linear-gradient(90deg, #4c40b0, #7c6af7, #c084fc))',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            Queue is empty
+          </p>
+          <p className="text-[11px] text-white/40 leading-relaxed px-1">
+            Load audio to analyze beats and build a scene — or drop files here.
+          </p>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-0.5 w-full px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 text-center"
+          >
+            Load audio
+          </button>
+          <p className="text-[10px] text-white/25">WAV · MP3 · audio/*</p>
+        </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={queue.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
-              {queue.map((item, idx) => (
-                <SortableRow
-                  key={item.id}
-                  item={item}
-                  isActive={idx === currentIndex}
-                  onSelect={() => {
-                    setCurrentIndex(idx)
-                    if (item.status === 'done') onSelectItem(item)
-                  }}
-                  onRemove={() => removeItem(item.id)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 text-center"
+          >
+            + Add files
+          </button>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={queue.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
+                {queue.map((item, idx) => (
+                  <SortableRow
+                    key={item.id}
+                    item={item}
+                    isActive={idx === currentIndex}
+                    onSelect={() => {
+                      setCurrentIndex(idx)
+                      if (item.status === 'done') onSelectItem(item)
+                    }}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </>
       )}
     </div>
   )

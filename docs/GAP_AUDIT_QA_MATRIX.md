@@ -24,7 +24,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 
 | GapID | Cluster | Pillar | Gap description | Severity | QA method | Test/evidence path | Status | Linked WBS | Trace FR |
 |-------|---------|--------|-----------------|----------|-----------|--------------------|--------|------------|----------|
-| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` stubs | open | WBS-P3.1 | C00 L2 |
+| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client` private publishable-shape stub); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `audit/.lane-c00/C00.md` L7 | open | — | C00 L7 |
 | G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
