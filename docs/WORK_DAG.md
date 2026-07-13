@@ -4,27 +4,28 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[R3F canvas golden]
-  A --> C[C00 L6 profiler resync]
-  A --> D[AGENT_QUICKSTART]
-  B --> E[Re-score 95.6% A]
-  C --> E
-  D --> E
+  A[CI green] --> B[@melosviz/ui package]
+  A --> C[PlaylistPanel/Skeleton consume @melosviz/ui]
+  B --> C
+  C --> E[Re-score 95.8% A]
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-297 | R3F canvas fixture + CI pixelmatch golden | C10 L107 · G-C10-03 · WBS-P3.3 | M | THIS PR |
-| W-298 | C00 L6 continuous-profiler audit resync | C00 L6 · WBS-P3.4 residual | S | THIS PR |
-| W-299 | AGENT_QUICKSTART + C03 100% | C03 L30.11 | S | THIS PR |
-| W-300 | Re-score SCORECARD (p1i → 95.6% A) | audit | S | THIS PR |
+| W-301 | `@melosviz/ui` shared component package (`Button`/`EmptyState`/`Skeleton`) | C10 L105 · G-C10-02 · WBS-P3.2 | M | THIS PR |
+| W-302 | Wire `PlaylistPanel` + `Skeleton` re-export to `@melosviz/ui` (real consumer, not stub) | C10 L105 · WBS-P3.2 | S | THIS PR |
+| W-303 | Re-score SCORECARD (p1j → 95.8% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-297 | R3F canvas fixture + CI pixelmatch golden | #149 |
+| W-298 | C00 L6 continuous-profiler audit resync | #149 |
+| W-299 | AGENT_QUICKSTART + C03 100% | #149 |
+| W-300 | Re-score SCORECARD (p1i → 95.6% A) | #149 |
 | W-294 | In-process continuous profiler (`MELOSVIZ_PROFILE=continuous`/`2`) | #148 |
 | W-295 | Mitigate G-C07-01 (Linux desktop-e2e; GUI host-gated note) | #148 |
 | W-296 | Re-score SCORECARD (p1h → 94.8% A) | #148 |

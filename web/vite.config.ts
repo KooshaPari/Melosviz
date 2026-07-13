@@ -17,6 +17,10 @@ export default defineConfig({
         'packages/brand-tokens/tokens.css',
       ),
     },
+    // @melosviz/ui (packages/ui, linked via file: dependency) ships its own
+    // devDependency copy of react purely for standalone typecheck — dedupe
+    // so the app only ever bundles/runs a single React instance.
+    dedupe: ['react', 'react-dom'],
   },
   server: {
     // Allow importing the shared tokens file outside web/

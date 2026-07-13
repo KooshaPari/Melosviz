@@ -13,6 +13,7 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Button, EmptyState } from '@melosviz/ui'
 import type { PlaylistItem, UsePlaylistReturn } from '../hooks/usePlaylist'
 
 /** Compact spectrum mark — mirrors desktop/assets/brand/gfx/empty-state.svg */
@@ -223,40 +224,20 @@ export function PlaylistPanel({ playlist, onSelectItem }: PlaylistPanelProps) {
 
       {/* Queue list / empty state */}
       {queue.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-2 text-center">
-          <EmptyQueueArt />
-          <p
-            className="text-xs font-medium tracking-tight"
-            style={{
-              background: 'var(--mv-grad-brand, linear-gradient(90deg, #4c40b0, #7c6af7, #c084fc))',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-            }}
-          >
-            Queue is empty
-          </p>
-          <p className="text-[11px] text-white/40 leading-relaxed px-1">
-            Load audio to analyze beats and build a scene — or drop files here.
-          </p>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-0.5 w-full px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 text-center"
-          >
-            Load audio
-          </button>
-          <p className="text-[10px] text-white/25">WAV · MP3 · audio/*</p>
-        </div>
+        <EmptyState
+          icon={<EmptyQueueArt />}
+          title="Queue is empty"
+          description="Load audio to analyze beats and build a scene — or drop files here."
+          action={
+            <Button className="mt-0.5 w-full" onClick={() => fileInputRef.current?.click()}>
+              Load audio
+            </Button>
+          }
+          footnote="WAV · MP3 · audio/*"
+        />
       ) : (
         <>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 text-center"
-          >
-            + Add files
-          </button>
+          <Button onClick={() => fileInputRef.current?.click()}>+ Add files</Button>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={queue.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">

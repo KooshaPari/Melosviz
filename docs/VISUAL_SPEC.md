@@ -5,8 +5,28 @@ Canonical visual language for desktop + web surfaces. **Token SoT:**
 shell (`index.html` / `splash.html`) and imported by web `src/styles/brand.css`
 via the private stub package `@melosviz/brand-tokens`
 (`packages/brand-tokens`; re-export `@import` → the SoT — do not copy/fork hex there).
-Web keeps only aliases/layout helpers. Full shared UI component library remains
-WBS-P3.2 / C10 L105.
+Web keeps only aliases/layout helpers.
+
+## Shared UI component package (`@melosviz/ui`)
+
+`packages/ui` (`@melosviz/ui`, private) is the shared **component** package
+(WBS-P3.2 / C10 L105), companion to the token-only `@melosviz/brand-tokens`.
+It ships a deliberately small, real surface — components that already lived
+under `web/src/components/` and are now imported from the shared package
+instead of re-implemented per surface:
+
+| Component | Source | Consumed by |
+|-----------|--------|-------------|
+| `Skeleton`, `SkeletonBlock` | `packages/ui/src/Skeleton.tsx` | `web/src/components/Skeleton.tsx` (re-export), `LoadingOverlay.tsx` |
+| `Button` (`accent`/`ghost`) | `packages/ui/src/Button.tsx` | `web/src/components/PlaylistPanel.tsx` |
+| `EmptyState` | `packages/ui/src/EmptyState.tsx` | `web/src/components/PlaylistPanel.tsx` (zero-queue state) |
+
+Wiring mirrors `@melosviz/brand-tokens`: `web/package.json` depends on it via
+`"@melosviz/ui": "file:../packages/ui"`, and `web/vite.config.ts` sets
+`resolve.dedupe: ['react', 'react-dom']` so the linked package never bundles
+a second React copy. See `packages/ui/README.md` for full usage/non-goals —
+this is not a full app-wide UI rebuild; most feature views
+(`WaveformDisplay`, `PresetEditor`, `SpecViewer`, …) remain app-local.
 
 ## Brand mark
 

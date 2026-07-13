@@ -2,7 +2,7 @@
   "name": "@melosviz/brand-tokens",
   "version": "0.1.0",
   "private": true,
-  "description": "Thin stub exporting MelosViz brand CSS tokens. Single SoT remains desktop/assets/brand/tokens.css — do not fork values here (WBS-P3.2 partial).",
+  "description": "Thin stub exporting MelosViz brand CSS tokens. Single SoT remains desktop/assets/brand/tokens.css — do not fork values here. Companion component package: @melosviz/ui (WBS-P3.2).",
   "type": "module",
   "exports": {
     ".": "./tokens.css",

@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~94.8% · A** (2026-07-13, p1h-profiler-e2e-gap).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~95.8% · A** (2026-07-13, p1j-design-system-ui).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -53,7 +53,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `web/src/r3fRenderer.tsx` SceneView role=img + aria-live; `docs/a11y/FOCUS.md`; `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | closed | — | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
-| G-C10-02 | C10 | L105 | No shared design-system package | M | doc | `packages/brand-tokens` stub; SoT `desktop/assets/brand/tokens.css`; full UI lib still open | mitigated | WBS-P3.2 | C10 L105 |
+| G-C10-02 | C10 | L105 | No shared design-system package | M | integ | `packages/ui` (`@melosviz/ui`) real component package — `Button`/`EmptyState`/`Skeleton`; `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui`; `audit/.lane-c10/C10.md` L105 | closed | WBS-P3.2 | C10 L105 |
 | G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | mitigated | WBS-P3.3 | C10 L107 |
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |
