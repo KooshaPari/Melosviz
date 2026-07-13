@@ -4,24 +4,31 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[@melosviz/ui package]
-  A --> C[PlaylistPanel/Skeleton consume @melosviz/ui]
-  B --> C
-  C --> E[Re-score 95.8% A]
+  A[CI green] --> B[MemoryCapGuard global RSS cap]
+  A --> C[Tray/menubar quick-actions]
+  B --> D[C00 L8 3/3 -> C00 100%]
+  C --> E[C11 L110 3/3 -> C11 84%]
+  D --> F[Re-score 96.3% A]
+  E --> F
 ```
 
 ## Ready / in-flight (this wave)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-301 | `@melosviz/ui` shared component package (`Button`/`EmptyState`/`Skeleton`) | C10 L105 · G-C10-02 · WBS-P3.2 | M | THIS PR |
-| W-302 | Wire `PlaylistPanel` + `Skeleton` re-export to `@melosviz/ui` (real consumer, not stub) | C10 L105 · WBS-P3.2 | S | THIS PR |
-| W-303 | Re-score SCORECARD (p1j → 95.8% A) | audit | S | THIS PR |
+| W-304 | Global memory-cap enforcement (`security.MemoryCapGuard`; soft 429 / hard 503 problem+json; audited; fails open) | C00 L8 · G-C00-04 · WBS-P4.7 | M | THIS PR |
+| W-305 | Wire memory-cap check into `/analyze` `/build` `/render`; RSS/cap gauges on `/metrics` | C00 L8 · WBS-P4.7 | S | THIS PR |
+| W-306 | Forward `HTTPException.headers` (e.g. `Retry-After`) through `http_exception_problem` | C00 L8 | S | THIS PR |
+| W-307 | Electrobun tray/menubar quick-actions (Show/Open Bridge Health/Quit) | C11 L110 · G-C11-03 · WBS-P4.2 | M | THIS PR |
+| W-308 | Re-score SCORECARD (p1k → 96.3% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-301 | `@melosviz/ui` shared component package (`Button`/`EmptyState`/`Skeleton`) | #150 |
+| W-302 | Wire `PlaylistPanel` + `Skeleton` re-export to `@melosviz/ui` (real consumer, not stub) | #150 |
+| W-303 | Re-score SCORECARD (p1j → 95.8% A) | #150 |
 | W-297 | R3F canvas fixture + CI pixelmatch golden | #149 |
 | W-298 | C00 L6 continuous-profiler audit resync | #149 |
 | W-299 | AGENT_QUICKSTART + C03 100% | #149 |

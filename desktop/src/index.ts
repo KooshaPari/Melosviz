@@ -10,6 +10,7 @@
 
 import {
   BrowserWindow,
+  Tray,
   Updater,
   defineElectrobunRPC,
   Utils,
@@ -309,6 +310,72 @@ const win = new BrowserWindow({
 });
 
 console.log("[MelosViz] window created, id=", win.id);
+
+// ---------------------------------------------------------------------------
+// Tray / menubar quick-actions (C11 L110) — Show window, bridge health, quit.
+//
+// Best-effort: Electrobun's Tray falls back to a disabled no-op object (see
+// Tray.createNativeTray try/catch) on platforms/sandboxes without system-tray
+// support, so this never crashes app startup — it just silently has no icon.
+// ---------------------------------------------------------------------------
+
+const TRAY_ACTION_SHOW = "melosviz.tray.show";
+const TRAY_ACTION_HEALTH = "melosviz.tray.health";
+const TRAY_ACTION_QUIT = "melosviz.tray.quit";
+
+/** Bridge health URL for the currently-known port (falls back to the default). */
+function bridgeHealthUrl(): string {
+  return `http://127.0.0.1:${backendPort || 8765}/health`;
+}
+
+function setupTray(): void {
+  try {
+    const tray = new Tray({ title: i18n("app.name"), template: true });
+    tray.setMenu([
+      {
+        type: "normal",
+        label: i18n("tray.show", "Show MelosViz"),
+        action: TRAY_ACTION_SHOW,
+      },
+      {
+        type: "normal",
+        label: i18n("tray.health", "Open Bridge Health"),
+        action: TRAY_ACTION_HEALTH,
+      },
+      { type: "divider" },
+      {
+        type: "normal",
+        label: i18n("tray.quit", "Quit"),
+        action: TRAY_ACTION_QUIT,
+      },
+    ]);
+    tray.on("tray-clicked", (event) => {
+      const action = (event as { data?: { action?: string } } | undefined)
+        ?.data?.action;
+      switch (action) {
+        case TRAY_ACTION_SHOW:
+          if (win.isMinimized()) win.unminimize();
+          win.show();
+          break;
+        case TRAY_ACTION_HEALTH:
+          Utils.openExternal(bridgeHealthUrl());
+          break;
+        case TRAY_ACTION_QUIT:
+          Utils.quit();
+          break;
+        default:
+          break; // clicking the tray icon itself (no menu action) — no-op
+      }
+    });
+  } catch (err) {
+    console.warn(
+      "[MelosViz] Tray setup skipped (unsupported platform?):",
+      err
+    );
+  }
+}
+
+setupTray();
 
 // ---------------------------------------------------------------------------
 // Backend bridge — starts AFTER the window is open (non-blocking)

@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~95.8% · A** (2026-07-13, p1j-design-system-ui).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.3% · A** (2026-07-13, p1k-memory-cap-tray).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -27,6 +27,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client` private publishable-shape stub); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `backend/tests/test_bridge_concurrency_race.py`; `audit/.lane-c00/C00.md` L7 | closed | — | C00 L7 |
+| G-C00-04 | C00 | L8 | No global memory-cap enforcement | M | unit | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | closed | WBS-P4.7 | C00 L8 |
 | G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
 | G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `backend/src/melosviz/i18n/`; `desktop/locales/`; `audit/.lane-c01/C01.md` | mitigated | WBS-P3.5 | C01 L16 |
 | G-C02-01 | C02 | L25 | No CPU/memory quotas for render workers | H | integ | `backend/src/melosviz/bridge/security.py` (`RenderQuota`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.2 | C02 L25 |
@@ -57,7 +58,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C10-03 | C10 | L107 | R3F canvas screenshot still optional | M | e2e | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | mitigated | WBS-P3.3 | C10 L107 |
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |
-| G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `audit/.lane-c11/C11.md` L110 | open | WBS-P4.2 | C11 L110 |
+| G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | mitigated | WBS-P4.2 | C11 L110 |
 | G-C11-04 | C11 | L121 | Full vendored Electrobun offline installer | M | manual | `docs/AIRGAP.md` | open | WBS-P4.3 | C11 L121 |
 | G-C11-05 | C11 | L120 | No MSI uninstaller until Authenticode | M | doc | `docs/UNINSTALL.md` | open | WBS-P4.4 | C11 L120 |
 | G-C11-06 | C11 | L109 | No PyPI / crates.io publish | M | manual | `docs/PACKAGING.md` | open | WBS-P3.1 | C11 L109 |

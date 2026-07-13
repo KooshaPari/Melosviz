@@ -27,6 +27,10 @@ The bridge ships with five defense layers installed by default:
 * **Body size cap** — POST bodies > 1 MiB are rejected with 413.
 * **Path containment** — ``wav_path`` and ``out_dir`` must resolve inside the
   configured allowed directory.
+* **Global memory cap** — ``/analyze`` ``/build`` ``/render`` refuse new work
+  with problem+json 503 (hard) / 429 (soft) once process RSS crosses
+  ``MELOSVIZ_MEMORY_CAP_MB`` / ``MELOSVIZ_MEMORY_SOFT_CAP_MB``; the process
+  itself never crashes.
 """
 
 from __future__ import annotations
@@ -44,7 +48,7 @@ from pathlib import Path
 
 try:
     import uvicorn
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI, HTTPException, Request
     from fastapi.responses import PlainTextResponse
     from pydantic import BaseModel
 except (
@@ -88,6 +92,10 @@ security_limiter = security.install_middleware(
 # Shared render quota + MIR circuit breaker (tests may ``.reset()``).
 render_quota = security.RenderQuota()
 mir_breaker = security.CircuitBreaker()
+# Global process-level RSS ceiling — independent of render_quota's per-slot
+# soft check (see security.MemoryCapGuard docstring). Stateless; safe to
+# share across requests without a reset hook.
+memory_cap = security.MemoryCapGuard()
 
 
 @app.middleware("http")
@@ -286,6 +294,38 @@ def _check_inside(path_str: str) -> Path:
     return target
 
 
+def _enforce_memory_cap(request: Request) -> None:
+    """Reject heavy work with problem+json 503/429 when RSS is over cap.
+
+    Raises :class:`HTTPException` — never lets a memory-cap breach crash the
+    process. Also appends a dedicated audit row (beyond the generic
+    per-request row the security middleware already writes) so operators can
+    grep ``reason=memory_cap_exceeded`` independent of HTTP status codes.
+    """
+    try:
+        memory_cap.check()
+    except security.MemoryCapExceeded as exc:
+        status = 503 if exc.tier == "hard" else 429
+        ip = request.client.host if request.client else "unknown"
+        security.append_audit(
+            security.build_audit_row(
+                ip=ip,
+                method=request.method,
+                path=request.url.path,
+                status=status,
+                dur_ms=0.0,
+            )
+            | {
+                "reason": "memory_cap_exceeded",
+                "tier": exc.tier,
+                "rss_mb": round(exc.rss_mb, 1),
+                "cap_mb": exc.cap_mb,
+            }
+        )
+        headers = {"Retry-After": "30"} if status == 429 else None
+        raise HTTPException(status_code=status, detail=str(exc), headers=headers) from exc
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -306,8 +346,19 @@ async def ready() -> dict[str, object]:
 
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics() -> str:
-    """Prometheus-text metrics for request counts, errors, and latency."""
-    return obs.metrics_prometheus()
+    """Prometheus-text metrics for request counts, errors, latency, and RSS."""
+    lines = [obs.metrics_prometheus().rstrip("\n")]
+    rss = memory_cap.current_rss_mb()
+    if rss is not None:
+        lines.append("# HELP melosviz_memory_rss_mb Current bridge process RSS (MiB)")
+        lines.append("# TYPE melosviz_memory_rss_mb gauge")
+        lines.append(f"melosviz_memory_rss_mb {rss:.1f}")
+    lines.append(
+        "# HELP melosviz_memory_cap_mb Configured hard memory cap (MiB); 0 = disabled"
+    )
+    lines.append("# TYPE melosviz_memory_cap_mb gauge")
+    lines.append(f"melosviz_memory_cap_mb {max(memory_cap.hard_cap_mb, 0)}")
+    return "\n".join(lines) + "\n"
 
 
 @app.get("/debug/profile")
@@ -337,11 +388,12 @@ async def debug_profile() -> dict[str, object]:
 
 
 @app.post("/analyze", response_class=PlainTextResponse)
-async def analyze(req: AnalyzeRequest) -> str:
+async def analyze(req: AnalyzeRequest, request: Request) -> str:
     """Analyze a WAV file and return the RenderSpec as JSON text.
 
     Uses the fast Rust MIR analyzer when available; falls back to Python.
     """
+    _enforce_memory_cap(request)
     wav = _check_inside(req.wav_path)
 
     try:
@@ -360,13 +412,14 @@ async def analyze(req: AnalyzeRequest) -> str:
 
 
 @app.post("/build", response_class=PlainTextResponse)
-async def build(req: BuildRequest) -> str:
+async def build(req: BuildRequest, request: Request) -> str:
     """Analyze a WAV then assemble a render plan; return plan JSON.
 
     Uses the fast Rust MIR analyzer when available; falls back to Python.
     """
     from melosviz.compose.assemble import assemble_render_plan
 
+    _enforce_memory_cap(request)
     wav = _check_inside(req.wav_path)
 
     try:
@@ -387,13 +440,14 @@ async def build(req: BuildRequest) -> str:
 
 
 @app.post("/render", response_class=PlainTextResponse)
-async def render(req: RenderRequest) -> str:
+async def render(req: RenderRequest, request: Request) -> str:
     """Run the full conductor pipeline; return output directory path.
 
     Uses the fast Rust MIR analyzer when available; falls back to Python.
     """
     from melosviz.compose.assemble import assemble_render_plan
 
+    _enforce_memory_cap(request)
     wav = _check_inside(req.wav_path)
 
     try:

@@ -39,6 +39,12 @@ the bridge module.
 8. **Circuit breaker** — fail-fast when MIR/render call sites trip repeatedly
    (``MELOSVIZ_BREAKER_FAILURE_THRESHOLD`` / ``MELOSVIZ_BREAKER_RESET_SECONDS``).
 
+9. **Global memory cap** — process-level RSS ceiling independent of
+   :class:`RenderQuota`'s per-slot soft check. ``MELOSVIZ_MEMORY_CAP_MB``
+   (hard) and ``MELOSVIZ_MEMORY_SOFT_CAP_MB`` (soft, default 85% of hard)
+   reject new analyze/build/render work with 503/429 rather than let the
+   process grow unbounded; measurement failures fail open (never crashes).
+
 The module is intentionally dependency-free (stdlib only) so the security
 boundary is auditable without FastAPI/Pydantic in the loop.
 """
@@ -509,7 +515,113 @@ class CircuitBreaker:
 
 
 # ---------------------------------------------------------------------------
-# 8. Middleware factory
+# 9. Global memory cap (process-level RSS ceiling, independent of RenderQuota)
+# ---------------------------------------------------------------------------
+
+
+def memory_cap_mb() -> int:
+    """Hard process RSS ceiling in MiB; ``<=0`` disables the hard tier."""
+    return _env_int("MELOSVIZ_MEMORY_CAP_MB", 4096)
+
+
+def memory_soft_cap_mb() -> int:
+    """Soft RSS ceiling in MiB — throttled (429) before the hard reject (503).
+
+    Explicit ``MELOSVIZ_MEMORY_SOFT_CAP_MB`` always wins. When unset, defaults
+    to 85% of the hard cap so operators get a two-tier warning for free;
+    ``<=0`` disables the soft tier only (the hard cap still applies).
+    """
+    raw = os.environ.get("MELOSVIZ_MEMORY_SOFT_CAP_MB")
+    if raw is not None and raw != "":
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+    hard = memory_cap_mb()
+    return max(1, int(hard * 0.85)) if hard > 0 else 0
+
+
+MemoryTier = Literal["soft", "hard"]
+
+
+class MemoryCapExceeded(Exception):
+    """Raised by :class:`MemoryCapGuard` when RSS is over a configured ceiling."""
+
+    def __init__(self, tier: MemoryTier, rss_mb: float, cap_mb: int) -> None:
+        self.tier = tier
+        self.rss_mb = rss_mb
+        self.cap_mb = cap_mb
+        super().__init__(
+            f"memory cap exceeded ({tier}): rss={rss_mb:.0f}MB > cap={cap_mb}MB"
+        )
+
+
+class MemoryCapGuard:
+    """Process-level RSS guard for heavy bridge work (analyze/build/render).
+
+    Distinct from :class:`RenderQuota`'s per-slot soft RSS check: this
+    enforces a *global* ceiling independent of concurrency accounting, with
+    two tiers:
+
+      * **soft** — throttle new work (HTTP 429, retryable) once RSS crosses
+        ``MELOSVIZ_MEMORY_SOFT_CAP_MB``.
+      * **hard** — reject outright (HTTP 503) once RSS crosses
+        ``MELOSVIZ_MEMORY_CAP_MB``.
+
+    :meth:`check` never raises for measurement failures — when RSS can't be
+    read (no ``psutil`` / unsupported platform) the guard fails **open** so
+    the bridge keeps serving rather than crash or wedge.
+
+    Env:
+      * ``MELOSVIZ_MEMORY_CAP_MB`` (default ``4096``); ``<=0`` disables the
+        hard tier.
+      * ``MELOSVIZ_MEMORY_SOFT_CAP_MB`` (default 85% of hard); ``<=0``
+        disables the soft tier only.
+    """
+
+    def __init__(
+        self,
+        hard_cap_mb: int | None = None,
+        soft_cap_mb: int | None = None,
+        *,
+        rss_probe: Callable[[], float | None] | None = None,
+    ) -> None:
+        self._hard = hard_cap_mb if hard_cap_mb is not None else memory_cap_mb()
+        self._soft = soft_cap_mb if soft_cap_mb is not None else memory_soft_cap_mb()
+        self._rss_probe = rss_probe or _process_rss_mb
+
+    @property
+    def hard_cap_mb(self) -> int:
+        return self._hard
+
+    @property
+    def soft_cap_mb(self) -> int:
+        return self._soft
+
+    def current_rss_mb(self) -> float | None:
+        """Best-effort current RSS in MiB; ``None`` if unmeasurable."""
+        return self._rss_probe()
+
+    def check(self) -> None:
+        """Raise :class:`MemoryCapExceeded` when over a configured ceiling.
+
+        No-op (fails open) when both tiers are disabled or RSS can't be read.
+        Checks the hard ceiling first so a process over *both* ceilings is
+        reported as a hard (503) rejection, not a soft (429) one.
+        """
+        if self._hard <= 0 and self._soft <= 0:
+            return
+        rss = self._rss_probe()
+        if rss is None:
+            return
+        if self._hard > 0 and rss > self._hard:
+            raise MemoryCapExceeded("hard", rss, self._hard)
+        if self._soft > 0 and rss > self._soft:
+            raise MemoryCapExceeded("soft", rss, self._soft)
+
+
+# ---------------------------------------------------------------------------
+# 10. Middleware factory
 # ---------------------------------------------------------------------------
 
 
