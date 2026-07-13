@@ -72,6 +72,7 @@ from melosviz.bridge.errors import http_exception_problem  # noqa: E402
 
 obs.configure_logging()
 obs.configure_otel()
+obs.ensure_continuous_profiler()
 _log = __import__("logging").getLogger("melosviz.bridge")
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
@@ -311,36 +312,28 @@ async def metrics() -> str:
 
 @app.get("/debug/profile")
 async def debug_profile() -> dict[str, object]:
-    """Opt-in CPU profile sample (enable with ``MELOSVIZ_PROFILE=1``).
+    """Opt-in CPU profile sample (``MELOSVIZ_PROFILE``).
 
-    Returns a short ``cProfile`` dump for a trivial workload so operators can
-    confirm the profiler path without attaching an external agent. Disabled
-    (404) unless explicitly enabled — keeps the default attack surface small.
+    * ``1`` / ``true`` — one-shot in-process ``cProfile`` of a trivial workload
+      on each request.
+    * ``continuous`` / ``2`` — return the latest dump from a lightweight
+      background sampler (interval ``MELOSVIZ_PROFILE_INTERVAL_S``, default 30s).
+      This is an in-process continuous sample, not a py-spy / external agent.
+
+    Disabled (404) unless explicitly enabled — keeps the default attack surface
+    small.
     """
-    if os.environ.get("MELOSVIZ_PROFILE", "").strip() not in ("1", "true", "True"):
+    mode = obs.profile_mode()
+    if mode == "off":
         raise HTTPException(status_code=404, detail="profiler disabled")
-    import cProfile
-    import io
-    import pstats
-
-    def _work() -> int:
-        total = 0
-        for i in range(50_000):
-            total += i * i
-        return total
-
-    pr = cProfile.Profile()
-    pr.enable()
-    result = _work()
-    pr.disable()
-    buf = io.StringIO()
-    stats = pstats.Stats(pr, stream=buf).sort_stats("cumulative")
-    stats.print_stats(20)
-    return {
-        "status": "ok",
-        "result": result,
-        "profile": buf.getvalue(),
-    }
+    if mode == "continuous":
+        latest = obs.latest_continuous_profile()
+        if latest is None:
+            raise HTTPException(status_code=503, detail="no continuous sample yet")
+        return latest
+    sample = obs.cprofile_sample()
+    sample["mode"] = "oneshot"
+    return sample
 
 
 @app.post("/analyze", response_class=PlainTextResponse)

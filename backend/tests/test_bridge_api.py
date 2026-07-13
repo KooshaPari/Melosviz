@@ -167,9 +167,52 @@ class TestReadyAndMetrics:
             assert response.status_code == 200
             data = response.json()
             assert data["status"] == "ok"
+            assert data.get("mode") == "oneshot"
             assert "profile" in data
             assert "function calls" in data["profile"]
         finally:
+            os.environ.pop("MELOSVIZ_PROFILE", None)
+
+    def test_debug_profile_continuous_enabled(self, client: TestClient) -> None:
+        """MELOSVIZ_PROFILE=continuous starts a sampler; GET returns latest dump."""
+        import os
+
+        from melosviz import observability as obs
+
+        os.environ["MELOSVIZ_PROFILE"] = "continuous"
+        os.environ["MELOSVIZ_PROFILE_INTERVAL_S"] = "0.2"
+        try:
+            obs.stop_continuous_profiler()
+            obs.ensure_continuous_profiler()
+            response = client.get("/debug/profile")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "ok"
+            assert data["mode"] == "continuous"
+            assert "profile" in data
+            assert "function calls" in data["profile"]
+            assert "sampled_at" in data
+            assert data["interval_s"] == 0.2
+        finally:
+            obs.stop_continuous_profiler()
+            os.environ.pop("MELOSVIZ_PROFILE", None)
+            os.environ.pop("MELOSVIZ_PROFILE_INTERVAL_S", None)
+
+    def test_debug_profile_continuous_via_2(self, client: TestClient) -> None:
+        """MELOSVIZ_PROFILE=2 is an alias for continuous mode."""
+        import os
+
+        from melosviz import observability as obs
+
+        os.environ["MELOSVIZ_PROFILE"] = "2"
+        try:
+            obs.stop_continuous_profiler()
+            obs.ensure_continuous_profiler()
+            response = client.get("/debug/profile")
+            assert response.status_code == 200
+            assert response.json()["mode"] == "continuous"
+        finally:
+            obs.stop_continuous_profiler()
             os.environ.pop("MELOSVIZ_PROFILE", None)
 
 
