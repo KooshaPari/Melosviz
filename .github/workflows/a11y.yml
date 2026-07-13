@@ -25,18 +25,36 @@ jobs:
       - name: Install Playwright Chromium
         run: npx --yes playwright@1.52.0 install --with-deps chromium
       - name: Install web deps (R3F canvas fixture)
-        # package-lock omits some nested drei peers (three@0.170…); install (not ci)
-        # with legacy peers so vite@8 + plugin-react@4 resolve on the runner.
-        run: npm install --prefix web --legacy-peer-deps --no-audit --no-fund
+        # Prefer lock when valid; fall back to install for nested drei peers.
+        run: |
+          npm ci --prefix web --legacy-peer-deps --no-audit --no-fund \
+            || npm install --prefix web --legacy-peer-deps --no-audit --no-fund
       - name: Start R3F canvas fixture dev server (Vite)
         working-directory: web
         run: |
-          node_modules/.bin/vite --port 5183 --strictPort > /tmp/vite.log 2>&1 &
+          set -euo pipefail
+          npx vite --host 127.0.0.1 --port 5183 --strictPort > /tmp/vite.log 2>&1 &
           echo $! > /tmp/vite.pid
-          for i in $(seq 1 40); do
-            curl -sf http://127.0.0.1:5183/fixtures/r3f-canvas.html >/dev/null && break
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5183/fixtures/r3f-canvas.html >/dev/null; then
+              ready=1
+              break
+            fi
+            # Bail early if vite exited
+            if ! kill -0 "$(cat /tmp/vite.pid)" 2>/dev/null; then
+              echo "vite exited early; log:"
+              cat /tmp/vite.log || true
+              exit 1
+            fi
             sleep 0.5
           done
+          if [ "$ready" != 1 ]; then
+            echo "vite did not become ready; log:"
+            cat /tmp/vite.log || true
+            exit 1
+          fi
+          echo "vite ready on :5183"
       - name: Serve fixtures
         run: |
           python3 -m http.server 8760 --directory web/a11y &
