@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.8% · A** (2026-07-13, p1l-sdk-pack-parity).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.0% · A** (2026-07-13, p1m-flaky-profiler).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -41,7 +41,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C04-02 | C04 | L39 | OSSF TokenPermissions findings on older workflows | M | ci | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | mitigated | WBS-P1.8 | C04 L39 |
 | G-C04-03 | C04 | L35 | Per-binary cosign still optional (manifest-level) | L | ci | `release.yml` SHA256SUMS.cosign.bundle | mitigated | WBS-P0.9 | C04 L35 |
 | G-C05-01 | C05 | L49 | Audit JSONL retention not enforced in code | M | unit | `backend/src/melosviz/bridge/security.py` (`_maybe_prune_audit`); `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | closed | WBS-P1.7 | C05 L49 |
-| G-C05-02 | C05 | L45 | No always-on continuous profiler agent | M | manual | in-process continuous via `MELOSVIZ_PROFILE=continuous`/`2` + `MELOSVIZ_PROFILE_INTERVAL_S`; `docs/OBSERVABILITY.md` (not py-spy sidecar; external agent still future) | mitigated | WBS-P3.4 | C05 L45 |
+| G-C05-02 | C05 | L45 | No always-on continuous profiler agent | M | manual | in-process `MELOSVIZ_PROFILE=continuous`/`2` + `scripts/profile_bridge_sidecar.sh`/`.ps1` (`MELOSVIZ_PROFILE_SIDECAR=1`; py-spy optional host dep); `docs/OBSERVABILITY.md` | closed | WBS-P3.4 | C05 L45 |
 | G-C05-03 | C05 | L44 | Desktop Bun client does not inject traceparent | L | integ | `desktop/src/index.ts` bridgeFetch + health; `docs/OBSERVABILITY.md` | closed | — | C05 L44 |
 | G-C06-01 | C06 | L55 | No automated reserved-name scanner in CI | H | ci | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | closed | WBS-P1.4 | C06 L55 |
 | G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.5 | C06 L52 |
@@ -51,6 +51,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C07-03 | C07 | L54/L70 | Hermetic/offline + external FFmpeg/Blender deps | M | doc | `docs/AIRGAP.md`; `scripts/check_hermetic_smoke.sh`; lane C07 L70 (FFmpeg/Blender still external) | mitigated | WBS-P1.6 | C07 L70 |
 | G-C08-01 | C08 | L71 | Licensed real-track corpus (legal) | L | manual | `docs/EVAL.md`; `audit/.lane-c08/C08.md` | open | WBS-P4.6 | C08 L71 |
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
+| G-C08-03 | C08 | L78 | No flaky quarantine auto-detect / registry sync | M | ci | `scripts/check_flaky_quarantine.py`; `docs/EVAL.md` registry; `.github/workflows/docs-trace.yml` | closed | WBS-P1.13 | C08 L78 |
 | G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `web/src/r3fRenderer.tsx` SceneView role=img + aria-live; `docs/a11y/FOCUS.md`; `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | closed | — | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |

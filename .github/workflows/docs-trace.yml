@@ -32,6 +32,17 @@ jobs:
         run: python scripts/check_journeys.py
       - name: Check TRACEABILITY matrix
         run: python backend/scripts/check/check_traceability.py
+      - name: Check flaky quarantine registry sync
+        run: |
+          python scripts/check_flaky_quarantine.py \
+            --summary-out artifacts/flaky-quarantine-summary.md
+      - name: Upload flaky quarantine summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: flaky-quarantine-summary
+          path: artifacts/flaky-quarantine-summary.md
+          if-no-files-found: ignore
       - name: Verify docs/index.md links WBS + GAP matrix
         run: |
           python - <<'PY'

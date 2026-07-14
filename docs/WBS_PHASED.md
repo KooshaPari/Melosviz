@@ -1,7 +1,7 @@
 # MelosViz Phased WBS (project + org)
 
 Target: **audit-v38 A+ / 92%+** overall, plus org governance closure.
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.8% · A** (2026-07-13, p1l-sdk-pack-parity).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.0% · A** (2026-07-13, p1m-flaky-profiler).
 
 Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred`
 
@@ -32,6 +32,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P1.10 | P1 | project | Harden Windows desktop release (drop continue-on-error) | C00 L9 · C07 L68 | done | `release.yml` windows-desktop (job soft-fail removed; package/upload step soft-fail); `docs/PACKAGING.md`; `audit/.lane-c00/C00.md` L9 | machine |
 | WBS-P1.11 | P1 | project | Feedback-loop timing budgets (sccache/nextest/hyperfine gate) | C03 L30.10 | done | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml`; `Makefile` (`timing-budgets`) | machine |
 | WBS-P1.12 | P1 | project | Shared brand token SoT across web/desktop (token share only) | C10 L96 | done | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `desktop/views/main/splash.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | machine |
+| WBS-P1.13 | P1 | project | Flaky quarantine registry sync gate | C08 L78 | done | `scripts/check_flaky_quarantine.py`; `docs/EVAL.md` registry table; `.github/workflows/docs-trace.yml` | machine |
 | WBS-P2.1 | P2 | org | Org GPG / signed-commit branch protection | W-228 · C04 L34 | planned | `CONTRIBUTING.md`; `audit/.lane-c04/C04.md` L34 | human |
 | WBS-P2.2 | P2 | org | Apple notarization + Authenticode signing | W-224 · C11 L112 · C04 | blocked | `docs/SIGNING.md`; `docs/PACKAGING.md` (needs org certs) | human |
 | WBS-P2.3 | P2 | org | IdP (OAuth/SAML) if hosted bridge ever required | C02 L21 | deferred | `audit/.lane-c02/C02.md` L21 (localhost Bearer OK today) | human |
@@ -40,7 +41,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts`; `scripts/check_sdk_pack_smoke.sh` (pack smoke partial — registry publish still open) | machine |
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | done | `@melosviz/ui` (`packages/ui`) real component package (`Button`/`EmptyState`/`Skeleton`); `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui` — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md`; `packages/ui/README.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | done | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | machine |
-| WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | in_progress | in-process continuous sample ships (`MELOSVIZ_PROFILE=continuous`/`2`); external py-spy sidecar agent still open — `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
+| WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | done | in-process `MELOSVIZ_PROFILE=continuous`/`2` + `scripts/profile_bridge_sidecar.sh`/`.ps1` (`MELOSVIZ_PROFILE_SIDECAR=1`; py-spy host dep); `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
 | WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | scaffold: `backend/src/melosviz/i18n/`; `desktop/locales/`; `docs/I18N.md` — full string coverage still open | machine |
 | WBS-P3.6 | P3 | project | Lift C02/C04/C06/C07/C10/C11 to ≥92% each | SCORECARD clusters | planned | `audit/SCORECARD.md` | human |
 | WBS-P4.1 | P4 | project | Native mobile (iOS/Android) | W-223 · C11 L117 | deferred | `audit/.lane-c11/C11.md` L117; `docs/DISTRIBUTION_POLICY.md` | human |
