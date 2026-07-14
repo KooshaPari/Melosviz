@@ -25,8 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         target: [renderspec_json, wav_header]
-        # PR path filter stays 60s; schedule / workflow_dispatch use 300s (5 min).
-        duration: ${{ fromJSON(github.event_name == 'pull_request' && '[60]' || '[300]') }}
+        # PR path filter stays 60s; schedule / workflow_dispatch use 420s (7 min).
+        duration: ${{ fromJSON(github.event_name == 'pull_request' && '[60]' || '[420]') }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
