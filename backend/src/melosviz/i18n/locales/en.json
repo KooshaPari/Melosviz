@@ -8,5 +8,20 @@
   "cli.apply.help": "Apply a named preset to a RenderSpec JSON",
   "cli.serve.help": "Start the FastAPI bridge server",
   "cli.presets.help": "List available presets",
-  "cli.version.help": "Print the package version"
+  "cli.version.help": "Print the package version",
+  "cli.arg.wav.help": "Path to WAV file",
+  "cli.arg.out.help": "Output directory for plan JSON",
+  "cli.arg.out.render.help": "Output directory",
+  "cli.arg.real.help": "Use real adapters instead of mocks (requires tool installs)",
+  "cli.arg.spec_a.help": "First RenderSpec JSON",
+  "cli.arg.spec_b.help": "Second RenderSpec JSON",
+  "cli.arg.spec.help": "RenderSpec JSON file",
+  "cli.arg.preset.help": "Preset name (e.g. cinematic)",
+  "cli.arg.host.help": "Bind host (default: 127.0.0.1)",
+  "cli.arg.port.help": "Bind port (default: 8000)",
+  "cli.error.file_not_found": "viz {cmd}: file not found: {path}",
+  "cli.error.uvicorn_missing": "viz serve: uvicorn is not installed. Install it with: pip install \"melosviz[bridge]\"",
+  "cli.error.unknown_preset": "viz apply: unknown preset {preset!r}. Available: {available}",
+  "cli.msg.plan_written": "viz build: plan written to {path}",
+  "cli.msg.no_diff": "(no differences)"
 }

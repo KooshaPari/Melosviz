@@ -31,4 +31,13 @@ export function t(key: string, fallback?: string): string {
   return catalogs[current][key] ?? catalogs.en[key] ?? fallback ?? key;
 }
 
+/** Interpolate `{name}` placeholders in a catalog string. */
+export function tf(key: string, vars: Record<string, string | number>, fallback?: string): string {
+  let text = t(key, fallback);
+  for (const [name, value] of Object.entries(vars)) {
+    text = text.replaceAll(`{${name}}`, String(value));
+  }
+  return text;
+}
+
 export const supportedLocales: Locale[] = ["en", "es"];

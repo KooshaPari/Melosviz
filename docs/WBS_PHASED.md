@@ -29,7 +29,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P1.14 | P1 | project | Hermetic Python wheelhouse offline CI smoke | C06 L54 · C07 L70 | done | `scripts/check_hermetic_python_smoke.sh`; `scripts/check_portability_smoke.py`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`, `portability-smoke`); `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | machine |
 | WBS-P1.7 | P1 | project | Audit JSONL retention enforcement (rotate/prune vs PRIVACY) | C05 L49 · C02 L23 | done | `backend/src/melosviz/bridge/security.py`; `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.8 | P1 | project | OSSF TokenPermissions sweep on remaining workflows | C04 L39 | done | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | machine |
-| WBS-P1.9 | P1 | project | Host-gated desktop e2e expansion + longer fuzz farm | C07 L64 · C07 L67 | in_progress | fuzz longer done (G-C07-02 mitigated); Linux bridge-layer desktop-e2e in CI (G-C07-01 mitigated); full GUI Electrobun still host-gated | machine |
+| WBS-P1.9 | P1 | project | Host-gated desktop e2e expansion + longer fuzz farm | C07 L64 · C07 L67 | in_progress | fuzz longer done (G-C07-02 mitigated); Linux bridge-layer expanded (/ready, /metrics, /debug/profile, /analyze validation, /render) via `run_bridge_e2e.sh` + CI; full GUI Electrobun still host-gated | machine |
 | WBS-P1.10 | P1 | project | Harden Windows desktop release (drop continue-on-error) | C00 L9 · C07 L68 | done | `release.yml` windows-desktop (job soft-fail removed; package/upload step soft-fail); `docs/PACKAGING.md`; `audit/.lane-c00/C00.md` L9 | machine |
 | WBS-P1.11 | P1 | project | Feedback-loop timing budgets (sccache/nextest/hyperfine gate) | C03 L30.10 | done | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml`; `Makefile` (`timing-budgets`) | machine |
 | WBS-P1.12 | P1 | project | Shared brand token SoT across web/desktop (token share only) | C10 L96 | done | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `desktop/views/main/splash.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | machine |
@@ -37,13 +37,13 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P2.1 | P2 | org | Org GPG / signed-commit branch protection | W-228 · C04 L34 | planned | `CONTRIBUTING.md`; `audit/.lane-c04/C04.md` L34 | human |
 | WBS-P2.2 | P2 | org | Apple notarization + Authenticode signing | W-224 · C11 L112 · C04 | blocked | `docs/SIGNING.md`; `docs/PACKAGING.md` (needs org certs) | human |
 | WBS-P2.3 | P2 | org | IdP (OAuth/SAML) if hosted bridge ever required | C02 L21 | deferred | `audit/.lane-c02/C02.md` L21 (localhost Bearer OK today) | human |
-| WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | planned | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | human |
+| WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | done | `.github/workflows/reusable/quality-gate.yml`; `.github/workflows/qgate.yml`; `.github/workflows/ci.yml` (`quality-gate` job); `.qgate.toml`; `docs/QGATE_BASELINE.md` | machine |
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | in_progress | `docs/sdk/README.md`; `.github/workflows/publish-sdk-packages.yml`; `scripts/publish_sdk_packages.sh`; `scripts/check_sdk_pack_smoke.sh` (npm GH Packages path — PyPI/crates + first publish run still open) | machine |
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | done | `@melosviz/ui` (`packages/ui`) real component package (`Button`/`EmptyState`/`Skeleton`); `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui` — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md`; `packages/ui/README.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | done | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | done | in-process `MELOSVIZ_PROFILE=continuous`/`2` + `scripts/profile_bridge_sidecar.sh`/`.ps1` (`MELOSVIZ_PROFILE_SIDECAR=1`; py-spy host dep); `docs/OBSERVABILITY.md`; `/debug/profile` | machine |
-| WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | scaffold: `backend/src/melosviz/i18n/`; `desktop/locales/`; `docs/I18N.md` — full string coverage still open | machine |
+| WBS-P3.5 | P3 | project | Full locale coverage (desktop/CLI beyond en/es web) | C01 L16 | in_progress | en/es CLI+desktop+web; keyboard help + preset editor chrome + bridge-down errors + web onboarding banner localized (`web/src/i18n`); residual: deeper desktop tray strings / rare CLI errors | machine |
 | WBS-P3.6 | P3 | project | Lift C02/C04/C06/C07/C10/C11 to ≥92% each | SCORECARD clusters | planned | `audit/SCORECARD.md` | human |
 | WBS-P4.1 | P4 | project | Native mobile (iOS/Android) | W-223 · C11 L117 | deferred | `audit/.lane-c11/C11.md` L117; `docs/DISTRIBUTION_POLICY.md` | human |
 | WBS-P4.2 | P4 | project | Tray/menubar quick-actions | C11 L110 · G-C11-03 | done | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | machine |
@@ -65,6 +65,6 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 
 ---
 
-`last_updated`: 2026-07-13 (p1o-gh-packages)
+`last_updated`: 2026-07-13 (p1p-qgate-ci)
 
 Machine note: `scripts/check_wbs.py` validates that every row’s **Status** is one of `planned|in_progress|done|blocked|deferred`.

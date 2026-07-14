@@ -33,10 +33,11 @@ from pathlib import Path
 def _cmd_analyze(args: argparse.Namespace) -> int:
     """Analyze a WAV file and print the RenderSpec as JSON."""
     from melosviz.analysis.audio import spec_from_wav_rich
+    from melosviz.i18n import t
 
     wav_path = Path(args.wav)
     if not wav_path.exists():
-        print(f"viz analyze: file not found: {wav_path}", file=sys.stderr)
+        print(t("cli.error.file_not_found", cmd="analyze", path=wav_path), file=sys.stderr)
         return 1
 
     spec = spec_from_wav_rich(wav_path)
@@ -49,10 +50,11 @@ def _cmd_build(args: argparse.Namespace) -> int:
     """Analyze a WAV then assemble a render plan (mock adapters by default)."""
     from melosviz.analysis.audio import spec_from_wav_rich
     from melosviz.compose.assemble import assemble_render_plan
+    from melosviz.i18n import t
 
     wav_path = Path(args.wav)
     if not wav_path.exists():
-        print(f"viz build: file not found: {wav_path}", file=sys.stderr)
+        print(t("cli.error.file_not_found", cmd="build", path=wav_path), file=sys.stderr)
         return 1
 
     spec = spec_from_wav_rich(wav_path)
@@ -63,7 +65,7 @@ def _cmd_build(args: argparse.Namespace) -> int:
         out_path = Path(args.out) / "render_plan.json"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(out)
-        print(f"viz build: plan written to {out_path}", file=sys.stderr)
+        print(t("cli.msg.plan_written", path=out_path), file=sys.stderr)
     else:
         print(out)
     return 0
@@ -78,11 +80,12 @@ def _cmd_render(args: argparse.Namespace) -> int:
 def _cmd_diff(args: argparse.Namespace) -> int:
     """Print field-level diff between two RenderSpec JSON files."""
     from melosviz.analysis.models import RenderSpec
+    from melosviz.i18n import t
 
     path_a, path_b = Path(args.spec_a), Path(args.spec_b)
     for p in (path_a, path_b):
         if not p.exists():
-            print(f"viz diff: file not found: {p}", file=sys.stderr)
+            print(t("cli.error.file_not_found", cmd="diff", path=p), file=sys.stderr)
             return 1
 
     spec_a = RenderSpec.model_validate_json(path_a.read_text())
@@ -111,20 +114,18 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     if diff_lines:
         print("\n".join(diff_lines))
     else:
-        print("(no differences)")
+        print(t("cli.msg.no_diff"))
     return 0
 
 
 def _cmd_serve(args: argparse.Namespace) -> int:
     """Start the FastAPI bridge server via uvicorn."""
+    from melosviz.i18n import t
+
     try:
         import uvicorn  # type: ignore[import-untyped]
     except ImportError:
-        print(
-            "viz serve: uvicorn is not installed. "
-            'Install it with: pip install "melosviz[bridge]"',
-            file=sys.stderr,
-        )
+        print(t("cli.error.uvicorn_missing"), file=sys.stderr)
         return 1
 
     uvicorn.run(
@@ -159,18 +160,23 @@ def _cmd_version(_args: argparse.Namespace) -> int:
 def _cmd_apply(args: argparse.Namespace) -> int:
     """Apply a named preset to a RenderSpec JSON and print the result."""
     from melosviz.analysis.models import RenderSpec
+    from melosviz.i18n import t
     from melosviz.presets import list_presets
 
     spec_path = Path(args.spec)
     if not spec_path.exists():
-        print(f"viz apply: file not found: {spec_path}", file=sys.stderr)
+        print(t("cli.error.file_not_found", cmd="apply", path=spec_path), file=sys.stderr)
         return 1
 
     preset_name = args.preset
     available = list_presets()
     if preset_name not in available:
         print(
-            f"viz apply: unknown preset {preset_name!r}. Available: {available}",
+            t(
+                "cli.error.unknown_preset",
+                preset=preset_name,
+                available=available,
+            ),
             file=sys.stderr,
         )
         return 1
@@ -196,32 +202,32 @@ def main() -> None:
 
     # viz analyze
     p_analyze = sub.add_parser("analyze", help=t("cli.analyze.help"))
-    p_analyze.add_argument("wav", help="Path to WAV file")
+    p_analyze.add_argument("wav", help=t("cli.arg.wav.help"))
 
     # viz build
     p_build = sub.add_parser("build", help=t("cli.build.help"))
-    p_build.add_argument("wav", help="Path to WAV file")
-    p_build.add_argument("--out", metavar="DIR", help="Output directory for plan JSON")
+    p_build.add_argument("wav", help=t("cli.arg.wav.help"))
+    p_build.add_argument("--out", metavar="DIR", help=t("cli.arg.out.help"))
     p_build.add_argument(
         "--real",
         action="store_true",
-        help="Use real adapters instead of mocks (requires tool installs)",
+        help=t("cli.arg.real.help"),
     )
 
     # viz render
     p_render = sub.add_parser("render", help=t("cli.render.help"))
-    p_render.add_argument("wav", help="Path to WAV file")
-    p_render.add_argument("--out", metavar="DIR", help="Output directory")
+    p_render.add_argument("wav", help=t("cli.arg.wav.help"))
+    p_render.add_argument("--out", metavar="DIR", help=t("cli.arg.out.render.help"))
 
     # viz diff
     p_diff = sub.add_parser("diff", help=t("cli.diff.help"))
-    p_diff.add_argument("spec_a", help="First RenderSpec JSON")
-    p_diff.add_argument("spec_b", help="Second RenderSpec JSON")
+    p_diff.add_argument("spec_a", help=t("cli.arg.spec_a.help"))
+    p_diff.add_argument("spec_b", help=t("cli.arg.spec_b.help"))
 
     # viz apply
     p_apply = sub.add_parser("apply", help=t("cli.apply.help"))
-    p_apply.add_argument("spec", help="RenderSpec JSON file")
-    p_apply.add_argument("preset", help="Preset name (e.g. cinematic)")
+    p_apply.add_argument("spec", help=t("cli.arg.spec.help"))
+    p_apply.add_argument("preset", help=t("cli.arg.preset.help"))
 
     # melosviz serve
     p_serve = sub.add_parser("serve", help=t("cli.serve.help"))
@@ -229,14 +235,14 @@ def main() -> None:
         "--host",
         default="127.0.0.1",
         metavar="HOST",
-        help="Bind host (default: 127.0.0.1)",
+        help=t("cli.arg.host.help"),
     )
     p_serve.add_argument(
         "--port",
         type=int,
         default=8000,
         metavar="PORT",
-        help="Bind port (default: 8000)",
+        help=t("cli.arg.port.help"),
     )
 
     # melosviz presets

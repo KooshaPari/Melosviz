@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { Dialog, DialogContent, DialogOverlay } from './Dialog'
 import * as Slider from '@radix-ui/react-slider'
+import { t, tf } from '../i18n'
 import type { RenderSpec } from '../renderSpec'
 
 // ---- Types ------------------------------------------------------------------
@@ -44,6 +45,10 @@ const DEFAULT_PARAMS: PresetParams = {
   tempoMultiplier: 1.0,
   colorSaturation: 0.7,
   brightness: 0.7,
+}
+
+export function presetDisplayName(id: string, fallback: string): string {
+  return t(`preset.builtin.${id}`, fallback)
 }
 
 // ---- Local storage helpers --------------------------------------------------
@@ -170,7 +175,7 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
   )
 
   const handleSave = useCallback(async () => {
-    const name = saveName.trim() || 'Custom Preset'
+    const name = saveName.trim() || t('preset.custom_default')
     const id = `user_${Date.now()}`
     const preset: NamedPreset = { id, name, params }
 
@@ -195,29 +200,32 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
 
   const handleApply = useCallback(() => {
     const id = selectedPresetId || `user_apply_${Date.now()}`
-    const preset: NamedPreset = { id, name: saveName.trim() || 'Custom', params }
+    const preset: NamedPreset = { id, name: saveName.trim() || t('preset.custom'), params }
     onApplyPreset?.(preset)
     setOpen(false)
   }, [selectedPresetId, saveName, params, onApplyPreset])
 
-  const durationLabel = `${spec.durationSecs}s · ${spec.bpm ?? 120} BPM`
+  const durationLabel = tf('preset.duration_bpm', {
+    seconds: spec.durationSecs,
+    bpm: spec.bpm ?? 120,
+  })
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
         <button
           className="px-3 py-1.5 rounded bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 text-xs font-medium transition-colors border border-fuchsia-500/30"
-          title="Edit visual preset"
+          title={t('preset.edit_title')}
         >
-          Edit Preset
+          {t('preset.edit')}
         </button>
       </Dialog.Trigger>
 
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogOverlay className="z-40" />
 
-        <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[380px] max-w-[95vw] rounded-xl bg-[var(--mv-surface,#111118)] border border-white/10 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        <DialogContent
+          className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[380px] max-w-[95vw] rounded-xl bg-[var(--mv-surface,#111118)] border border-white/10 p-6 shadow-2xl"
           aria-describedby="preset-editor-desc"
           onOpenAutoFocus={(e) => {
             // Prefer the Load Preset select as initial focus (FOCUS.md).
@@ -230,7 +238,7 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
           <div className="flex items-center justify-between mb-5">
             <div>
               <Dialog.Title className="text-sm font-semibold text-white/90">
-                Preset Editor
+                {t('preset.editor_title')}
               </Dialog.Title>
               <p id="preset-editor-desc" className="text-xs text-white/40 mt-0.5">{durationLabel}</p>
             </div>
@@ -242,21 +250,21 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
           {/* Load preset dropdown */}
           <div className="mb-5">
             <label className="text-xs text-white/50 font-medium uppercase tracking-wider block mb-1.5">
-              Load Preset
+              {t('preset.load')}
             </label>
             <select
               value={selectedPresetId}
               onChange={(e) => handleLoadPreset(e.target.value)}
               className="w-full px-2.5 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white/80 focus:outline-none focus:border-fuchsia-500/50 appearance-none cursor-pointer"
             >
-              <option value="">— choose a preset —</option>
-              <optgroup label="Built-in">
+              <option value="">{t('preset.choose')}</option>
+              <optgroup label={t('preset.group.builtin')}>
                 {BUILTIN_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                  <option key={p.id} value={p.id}>{presetDisplayName(p.id, p.name)}</option>
                 ))}
               </optgroup>
               {userPresets.length > 0 && (
-                <optgroup label="Saved">
+                <optgroup label={t('preset.group.saved')}>
                   {userPresets.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
@@ -268,25 +276,25 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
           {/* Sliders */}
           <div className="flex flex-col gap-4 mb-5">
             <LabeledSlider
-              label="Energy"
+              label={t('preset.param.energy')}
               value={params.energy}
               min={0} max={1} step={0.01}
               onChange={(v) => handleParamChange('energy', v)}
             />
             <LabeledSlider
-              label="Tempo Multiplier"
+              label={t('preset.param.tempo_multiplier')}
               value={params.tempoMultiplier}
               min={0.5} max={2.0} step={0.05}
               onChange={(v) => handleParamChange('tempoMultiplier', v)}
             />
             <LabeledSlider
-              label="Color Saturation"
+              label={t('preset.param.color_saturation')}
               value={params.colorSaturation}
               min={0} max={1} step={0.01}
               onChange={(v) => handleParamChange('colorSaturation', v)}
             />
             <LabeledSlider
-              label="Brightness"
+              label={t('preset.param.brightness')}
               value={params.brightness}
               min={0} max={1} step={0.01}
               onChange={(v) => handleParamChange('brightness', v)}
@@ -299,14 +307,14 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
               type="text"
               value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
-              placeholder="Preset name…"
+              placeholder={t('preset.name_placeholder')}
               className="flex-1 px-2.5 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
             />
             <button
               onClick={() => void handleSave()}
               className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30"
             >
-              Save
+              {t('preset.save')}
             </button>
           </div>
 
@@ -315,9 +323,9 @@ export function PresetEditor({ spec, onPreviewChange, onApplyPreset }: PresetEdi
             onClick={handleApply}
             className="w-full py-2 rounded-lg bg-fuchsia-500/25 hover:bg-fuchsia-500/35 text-fuchsia-200 text-sm font-medium transition-colors border border-fuchsia-500/40"
           >
-            Apply Preset
+            {t('preset.apply')}
           </button>
-        </Dialog.Content>
+        </DialogContent>
       </Dialog.Portal>
     </Dialog.Root>
   )
