@@ -19,6 +19,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-CL-08 | C04 | L34 | No DCO Signed-off-by gate | M | ci | `.github/workflows/dco.yml` | closed | WBS-P0.10 | C04 L34 |
 | G-CL-09 | C09 | L81 | No axe a11y CI / FOCUS docs | H | ci | `.github/workflows/a11y.yml`; `docs/a11y/` | closed | WBS-P0.11 | C09 L81 |
 | G-CL-10 | C06 | L60 | No dedicated supply-chain policy | M | doc | `docs/SUPPLY_CHAIN.md` | closed | WBS-P0.12 | C06 L60 |
+| G-CL-11 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `.github/workflows/reusable/quality-gate.yml`; `.github/workflows/qgate.yml`; `.github/workflows/ci.yml` (`quality-gate` job); `.qgate.toml`; `docs/QGATE_BASELINE.md` | closed | WBS-P2.4 | C01 L11 |
 
 ## Remaining gaps (by cluster)
 
@@ -28,7 +29,6 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `backend/tests/test_bridge_concurrency_race.py`; `audit/.lane-c00/C00.md` L7 | closed | — | C00 L7 |
 | G-C00-04 | C00 | L8 | No global memory-cap enforcement | M | unit | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | closed | WBS-P4.7 | C00 L8 |
-| G-C01-01 | C01 | L11 | Full qgate reusable workflow still optional | M | ci | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | open | WBS-P2.4 | C01 L11 |
 | G-C01-02 | C01 | L16 | Desktop/CLI locale coverage incomplete (en-first) | M | e2e | `docs/I18N.md`; `backend/src/melosviz/i18n/`; `desktop/locales/`; `audit/.lane-c01/C01.md` | mitigated | WBS-P3.5 | C01 L16 |
 | G-C02-01 | C02 | L25 | No CPU/memory quotas for render workers | H | integ | `backend/src/melosviz/bridge/security.py` (`RenderQuota`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.2 | C02 L25 |
 | G-C02-02 | C02 | L26 | No circuit breaker library | H | integ | `backend/src/melosviz/bridge/security.py` (`CircuitBreaker`); `backend/tests/test_bridge_security.py` | closed | WBS-P1.3 | C02 L26 |
@@ -46,13 +46,13 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C06-01 | C06 | L55 | No automated reserved-name scanner in CI | H | ci | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | closed | WBS-P1.4 | C06 L55 |
 | G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.5 | C06 L52 |
 | G-C06-03 | C06 | L54 | Builds not hermetic (CI still fetches crates/pypi) | H | ci | `scripts/check_hermetic_smoke.sh`; `scripts/check_hermetic_python_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md` (committed vendor/ optional) | closed | WBS-P1.6 · WBS-P1.14 | C06 L54 |
-| G-C07-01 | C07 | L64 | Full desktop e2e still macOS-host-only | M | e2e | Linux CI `desktop-e2e` (bridge HTTP layer, no display) — L64 score 3; full GUI Electrobun/AppKit still host-gated | mitigated | WBS-P1.9 | C07 L64 |
-| G-C07-02 | C07 | L67 | Nightly fuzz window short (not continuous farm) | M | ci | `.github/workflows/cargo-fuzz.yml` (PR 60s / schedule+dispatch 300s per target; continuous farm still open) | mitigated | WBS-P1.9 | C07 L67 |
+| G-C07-01 | C07 | L64 | Full desktop e2e still macOS-host-only | M | e2e | Linux CI `desktop-e2e` (bridge HTTP: /health, /ready, /metrics, /analyze+/build+/render, validation; `run_bridge_e2e.sh`) — L64 score 3; full GUI Electrobun/AppKit still host-gated | mitigated | WBS-P1.9 | C07 L64 |
+| G-C07-02 | C07 | L67 | Nightly fuzz window short (not continuous farm) | M | ci | `.github/workflows/cargo-fuzz.yml` (PR 60s / schedule+dispatch 420s per target; continuous farm still open) | mitigated | WBS-P1.9 | C07 L67 |
 | G-C07-03 | C07 | L54/L70 | Hermetic/offline + external FFmpeg/Blender deps | M | ci | `scripts/check_hermetic_python_smoke.sh`; `scripts/check_portability_smoke.py`; `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.6 · WBS-P1.14 | C07 L70 |
 | G-C08-01 | C08 | L71 | Licensed real-track corpus (legal) | L | manual | `docs/EVAL.md`; `audit/.lane-c08/C08.md` | open | WBS-P4.6 | C08 L71 |
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
 | G-C08-03 | C08 | L78 | No flaky quarantine auto-detect / registry sync | M | ci | `scripts/check_flaky_quarantine.py`; `docs/EVAL.md` registry; `.github/workflows/docs-trace.yml` | closed | WBS-P1.13 | C08 L78 |
-| G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `web/src/r3fRenderer.tsx` SceneView role=img + aria-live; `docs/a11y/FOCUS.md`; `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | closed | — | C09 L83 |
+| G-C09-01 | C09 | L83 | Canvas/R3F screen-reader depth limited | M | e2e | `web/src/r3fRenderer.tsx` SceneView text mirror; `web/src/utils/sceneSummary.ts`; `docs/a11y/CANVAS_SR.md`; `docs/a11y/FOCUS.md`; `audit/.lane-c09/C09.md` L83; `USER_JOURNEYS.md` J3 | closed | W-329 | C09 L83 |
 | G-C09-02 | C09 | L82 | SPA focus trap / modal choreography thin | M | e2e | `docs/a11y/FOCUS.md`; KeyboardHelp/PresetEditor focus restore | closed | — | C09 L82 |
 | G-C10-01 | C10 | L96 | Token SoT not shared (desktop inline vs web subset) | M | unit | `desktop/assets/brand/tokens.css`; `desktop/views/main/index.html`; `web/src/styles/brand.css`; `web/vite.config.ts`; `docs/VISUAL_SPEC.md` | closed | WBS-P1.12 | C10 L96 |
 | G-C10-02 | C10 | L105 | No shared design-system package | M | integ | `packages/ui` (`@melosviz/ui`) real component package — `Button`/`EmptyState`/`Skeleton`; `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui`; `audit/.lane-c10/C10.md` L105 | closed | WBS-P3.2 | C10 L105 |
@@ -60,7 +60,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C11-01 | C11 | L112 | No Apple notarization / Authenticode | H | manual | `docs/SIGNING.md` (org certs) | blocked | WBS-P2.2 · W-224 | C11 L112 |
 | G-C11-02 | C11 | L117 | No native iOS/Android package | H | manual | `audit/.lane-c11/C11.md` L117 | open | WBS-P4.1 · W-223 | C11 L117 |
 | G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | mitigated | WBS-P4.2 | C11 L110 |
-| G-C11-04 | C11 | L121 | Full vendored Electrobun offline installer | M | manual | `docs/AIRGAP.md` | open | WBS-P4.3 | C11 L121 |
+| G-C11-04 | C11 | L121 | Full vendored Electrobun offline installer | M | manual | `docs/AIRGAP.md` § Desktop prebuilt path; `scripts/airgap_fetch_desktop.sh`; `scripts/airgap_bundle.sh` (`INCLUDE_DESKTOP=1`); `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L121 — prebuilt release copy mitigates; full vendor build farm still deferred (WBS-P4.3) | mitigated | WBS-P4.3 | C11 L121 |
 | G-C11-05 | C11 | L120 | No MSI uninstaller until Authenticode | M | doc | `docs/UNINSTALL.md` | open | WBS-P4.4 | C11 L120 |
 | G-C11-06 | C11 | L109 | PyPI / crates.io / public npm still unpublished; npm via GitHub Packages workflow | M | manual | `.github/workflows/publish-sdk-packages.yml`; `scripts/publish_sdk_packages.sh`; `docs/PACKAGING.md`; `docs/sdk/README.md` (first green publish run pending) | mitigated | WBS-P3.1 | C11 L109 · L116 |
 
@@ -71,4 +71,4 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 - C09 scores 100% A at cluster level; remaining rows are residual UX depth, not scorecard blockers.
 - G-C08-01 uses Status `open` with WBS deferred (legal/product gate); not marked `accepted` until counsel signs off.
 
-`last_updated`: 2026-07-13 (p1o-gh-packages)
+`last_updated`: 2026-07-13 (p1p-airgap-desktop)

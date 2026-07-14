@@ -25,6 +25,7 @@ Copy the tarball (USB / sneaker-net) to the air-gapped host and extract.
 | `locks/uv.lock` + `Cargo.lock` | Frozen dependency graphs |
 | `locks/pyproject.toml` | Python package metadata |
 | `docs/` | PACKAGING / SUPPLY_CHAIN / this guide |
+| `desktop/` | Optional prebuilt Electrobun release artifacts (`INCLUDE_DESKTOP=1`) |
 | `SHA256SUMS` | Integrity of bundle members |
 
 ## Offline bridge (container)
@@ -112,6 +113,27 @@ operators who need fully vendored Rust sources; CI wheelhouse/wheel prefetch
 is the v2 gate. Operator air-gap install still uses the wheelhouse /
 `cargo vendor` steps above.
 
+## Desktop prebuilt path (Electrobun)
+
+MelosViz desktop packages are built in CI and published to GitHub Releases. On a
+networked host you can fetch signed artifacts for offline transfer without
+vendoring the full Electrobun toolchain:
+
+```bash
+./scripts/airgap_fetch_desktop.sh
+# → dist/airgap/desktop/ (DMG + SHA256SUMS.local)
+
+# Include in the dated bundle:
+INCLUDE_DESKTOP=1 ./scripts/airgap_bundle.sh
+```
+
+On the air-gapped host, open the macOS DMG or extract any Windows desktop zip
+from the bundle's `desktop/` directory. Verify with `SHA256SUMS.local` and compare
+against release `SHA256SUMS` when copied.
+
+This is a **prebuilt release copy** path — not a fully vendored offline Electrobun
+build (WBS-P4.3 full installer remains deferred).
+
 ## Verification
 
 ```bash
@@ -124,6 +146,6 @@ Release artifacts also ship `SHA256SUMS` + cosign bundle — see `docs/PACKAGING
 ## Limits
 
 - Hermetic CI v2 uses prefetch + offline gates for **both** Rust (`CARGO_NET_OFFLINE`) and Python (`PIP_NO_INDEX` wheelhouse import). A committed `vendor/` tree remains optional.
-- Desktop Electrobun packages still need a host with Bun/OS toolchains (or a prebuilt DMG/zip from GitHub Releases copied offline).
+- Desktop Electrobun packages: use prebuilt release copy (`airgap_fetch_desktop.sh`) or build on a networked host with Bun/OS toolchains.
 - Authenticode / Apple notarization remain org-certificate workflows (W-224).
 - Native mobile is out of scope (W-223).
