@@ -56,6 +56,29 @@ jobs:
           command: check licenses bans sources
           arguments: --all-features
 
+  pip-licenses:
+    name: pip-licenses (backend)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install package + pip-licenses
+        working-directory: backend
+        run: |
+          pip install -e ".[bridge,analysis]"
+          pip install pip-licenses
+      - name: Enforce allowed Python dependency licenses (C06 L56)
+        working-directory: backend
+        # Allowlist mirrors deny.toml [licenses].allow; PyPI metadata strings vary.
+        run: |
+          pip-licenses \
+            --partial-match \
+            --allow-only="MIT;Apache Software License;Apache-2.0;Apache License 2.0;Apache-2.0 WITH LLVM-exception;BSD;BSD License;BSD-2-Clause;BSD-3-Clause;ISC;ISC License;Zlib;CC0-1.0;Public Domain;BSL-1.0;Boost Software License 1.0;Python Software Foundation License;Mozilla Public License 2.0 (MPL 2.0);The Unlicense;Unlicense;Unicode-3.0;Unicode-DFS-2016" \
+            --format=plain-vertical
+
   reserved-names:
     name: Reserved-name / dep-confusion
     runs-on: ubuntu-22.04

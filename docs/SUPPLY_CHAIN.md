@@ -33,6 +33,9 @@ Agents and CI **must not**:
 ## CI enforcement
 
 - `.github/workflows/supply-chain.yml` — frozen lock verify + cargo-deny + audits
+- `pip-licenses` job — Python license allowlist for the installed `bridge` +
+  `analysis` graph (same install surface as `pip-audit`); allowlist mirrors
+  `deny.toml` `[licenses].allow` (C06 L56 / W-328)
 - `scripts/check_reserved_names.py` — reserved-name / dependency-confusion scanner
   (allowlists `melosviz` / `melosviz-*` workspace names; fails on typo-adjacent
   confuse deps such as `melosvis` / `melos-viz` / `melosvizs`, and on unexpected
@@ -83,6 +86,30 @@ for core CLI/analysis usage.
 
 Windows/macOS: Rust hermetic scripts exit 0 with a skip message; use the
 `hermetic-smoke` / `portability-smoke` GitHub Actions jobs on `ubuntu-22.04`.
+
+## Python license compliance (C06 L56 / W-328)
+
+Rust workspace licenses are enforced by `cargo-deny` (`deny.toml`). Python bridge +
+analysis dependencies are enforced by the `pip-licenses` job in
+`supply-chain.yml`:
+
+| Policy source | Tool | Install graph |
+|---------------|------|---------------|
+| `deny.toml` `[licenses].allow` | `pip-licenses --partial-match --allow-only=…` | `pip install -e ".[bridge,analysis]"` |
+
+The job fails closed on any dependency whose PyPI metadata license string is
+outside the allowlist. SPDX IDs in `deny.toml` are mapped to common PyPI license
+name variants (`Apache Software License`, `BSD License`, etc.).
+
+Local smoke (after installing the same extras):
+
+```bash
+cd backend
+pip install -e ".[bridge,analysis]" pip-licenses
+pip-licenses --partial-match --allow-only="MIT;Apache Software License;…"
+```
+
+Use the exact `--allow-only` string from `.github/workflows/supply-chain.yml`.
 
 ## SOURCE_DATE_EPOCH / reproducible builds (WBS-P1.5 / C06 L52)
 
