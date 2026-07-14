@@ -1,26 +1,6 @@
 import { useState, useCallback } from 'react'
-import type { RenderSpec, Keyframe } from '../renderSpec'
-
-/** Raw shape returned by the /api/analyze endpoint. */
-export interface AnalysisRenderSpec {
-  title?: string
-  bpm?: number
-  key?: string
-  duration_sec?: number
-  durationSecs?: number
-  keyframes?: Keyframe[]
-  color_palette?: string[]
-  [key: string]: unknown
-}
-
-/** Map the loose backend response to the canonical RenderSpec contract. */
-function toRenderSpec(raw: AnalysisRenderSpec): RenderSpec {
-  return {
-    durationSecs: raw.durationSecs ?? raw.duration_sec ?? 240,
-    keyframes: raw.keyframes ?? [],
-    bpm: raw.bpm,
-  }
-}
+import type { RenderSpec } from '../renderSpec'
+import { mapAnalysisToRenderSpec, type RawAnalysisSpec } from '../mapAnalysisSpec'
 
 interface AnalysisState {
   data: RenderSpec | null
@@ -46,8 +26,8 @@ export function useAnalysis() {
       if (!res.ok) {
         throw new Error(`Server error: ${res.status} ${res.statusText}`)
       }
-      const raw = (await res.json()) as AnalysisRenderSpec
-      setState({ data: toRenderSpec(raw), loading: false, error: null })
+      const raw = (await res.json()) as RawAnalysisSpec
+      setState({ data: mapAnalysisToRenderSpec(raw), loading: false, error: null })
     } catch (err) {
       setState({
         data: null,

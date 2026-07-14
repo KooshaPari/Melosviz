@@ -1,42 +1,19 @@
-// Three.js / React Three Fiber scene-graph renderer for melosviz.
-//
-// Accepts a RenderSpec + normalised playbackT [0-1] and drives:
-//   - Camera position  (spherical → Cartesian from keyframe.camera)
-//   - Background color (tinted from keyframe.color.primary)
-//   - Mesh emissive    (keyframe.color.primary)
-//   - Mesh scale pulse (bpm-rate sine from keyframe.color.brightness)
-//
-// Architecture:
-//   SceneView (public, exported)   — R3F <Canvas> mount + resize observer
-//   MelosScene (internal)          — useFrame loop reading SceneParams
-//   SceneBackground (internal)     — background color/brightness driven by params
-//   SceneCamera (internal)         — camera position driven by params
-//
-// Workstream plug-in points (future):
-//   A — pass spectral FFT → SpectralMesh inside MelosScene
-//   B — pass beatEnergy → ParticleSystem inside MelosScene
-//   D — replace lerpKeyframe linear lerp with spline easing
-
 import { useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { RenderSpec } from './renderSpec'
-import { lerpKeyframe } from './utils/interpolate'
-import type { InterpolatedFrame } from './utils/interpolate'
 import { BeatPulse } from './components/BeatPulse'
+import { getSceneTemplate, type SceneTemplate, type SceneTemplateId } from './sceneTemplates'
+import { resolveSceneBlend, type SceneBlendState } from './utils/sceneBlend'
 
 // ---- Internal: per-frame state ref -----------------------------------------
 
 interface FrameState {
-  frame: InterpolatedFrame
+  blend: SceneBlendState
   bpm: number
-  /** Elapsed wall-clock seconds — used for bpm pulse independent of playbackT. */
   elapsedSecs: number
-  /** Beat onset times (seconds) from RenderSpec. */
   beatTimes: number[]
-  /** Normalised playhead position [0, 1]. */
   playbackT: number
-  /** Track duration in seconds. */
   durationSecs: number
 }
 
@@ -48,9 +25,8 @@ function SceneCamera({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   useFrame(() => {
     const s = stateRef.current
     if (!s) return
-    const { distance, azimuth, elevation } = s.frame.camera
+    const { distance, azimuth, elevation } = s.blend.frame.camera
 
-    // Spherical → Cartesian (Three.js Y-up)
     camera.position.set(
       distance * Math.cos(elevation) * Math.sin(azimuth),
       distance * Math.sin(elevation),
@@ -71,10 +47,9 @@ function SceneBackground({ stateRef }: { stateRef: React.RefObject<FrameState> }
   useFrame(() => {
     const s = stateRef.current
     if (!s) return
-    const { brightness } = s.frame.color
-    // Dark festival background tinted by primary palette
-    colorRef.current.set(s.frame.color.primary)
-    colorRef.current.multiplyScalar(Math.min(0.2, brightness * 0.15))
+    const { brightness, primary } = s.blend.frame.color
+    colorRef.current.set(primary)
+    colorRef.current.multiplyScalar(Math.min(0.25, brightness * 0.18))
     scene.background = colorRef.current.clone()
   })
 
@@ -92,13 +67,12 @@ function SceneLights({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
     if (!s) return
 
     if (ambientRef.current) {
-      ambientRef.current.intensity = 0.3 + s.frame.color.brightness * 0.4
+      ambientRef.current.intensity = 0.25 + s.blend.frame.color.brightness * 0.45
     }
     if (pointRef.current) {
-      pointRef.current.color.set(s.frame.color.secondary)
-      // Subtle beat-locked accent brightness via bpm sine
+      pointRef.current.color.set(s.blend.frame.color.secondary)
       const beatPhase = (s.elapsedSecs * s.bpm) / 60
-      pointRef.current.intensity = 1.5 + 0.8 * Math.abs(Math.sin(Math.PI * beatPhase))
+      pointRef.current.intensity = 1.2 + 0.9 * Math.abs(Math.sin(Math.PI * beatPhase))
     }
   })
 
@@ -110,46 +84,155 @@ function SceneLights({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
   )
 }
 
-// ---- Internal: primary geometry driven by frame state ----------------------
+// ---- Internal: template-specific geometry ----------------------------------
 
-function CoreMesh({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
-  const meshRef = useRef<THREE.Mesh>(null)
+function TemplateGeometry({ template }: { template: SceneTemplate }) {
+  switch (template.geometry) {
+    case 'icosahedron':
+      return <icosahedronGeometry args={template.geometryArgs as [number, number]} />
+    case 'torusKnot':
+      return (
+        <torusKnotGeometry
+          args={template.geometryArgs as [number, number, number, number]}
+        />
+      )
+    case 'octahedron':
+      return <octahedronGeometry args={template.geometryArgs as [number, number]} />
+    case 'torusRing':
+      return (
+        <torusGeometry args={template.geometryArgs as [number, number, number, number]} />
+      )
+    case 'gridPlane':
+      return (
+        <planeGeometry args={[template.geometryArgs[0] ?? 12, template.geometryArgs[1] ?? 24, 1, 1]} />
+      )
+    case 'octahedronCluster':
+      return <OctahedronCluster count={template.geometryArgs[1] ?? 5} radius={template.geometryArgs[0] ?? 0.9} />
+    default:
+      return <boxGeometry args={[1, 1, 1]} />
+  }
+}
+
+function OctahedronCluster({ count, radius }: { count: number; radius: number }) {
+  const meshes = Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2
+    const r = radius * 0.55
+    return (
+      <mesh key={i} position={[Math.cos(angle) * r, Math.sin(angle * 0.5) * 0.4, Math.sin(angle) * r]}>
+        <octahedronGeometry args={[radius * 0.35, 0]} />
+      </mesh>
+    )
+  })
+  return <group>{meshes}</group>
+}
+
+function SceneLayer({
+  templateId,
+  opacity,
+  stateRef,
+}: {
+  templateId: SceneTemplateId
+  opacity: number
+  stateRef: React.RefObject<FrameState>
+}) {
+  const rootRef = useRef<THREE.Group>(null)
   const matRef = useRef<THREE.MeshStandardMaterial>(null)
+  const template = getSceneTemplate(templateId)
 
   useFrame((_state, delta) => {
     const s = stateRef.current
-    const mesh = meshRef.current
+    const root = rootRef.current
     const mat = matRef.current
-    if (!s || !mesh || !mat) return
+    if (!s || !root) return
 
-    // Slow base rotation
-    mesh.rotation.x += delta * 0.3
-    mesh.rotation.y += delta * 0.5
+    const [rx, ry, rz] = template.rotationSpeed
+    root.rotation.x += delta * rx
+    root.rotation.y += delta * ry
+    root.rotation.z += delta * rz
 
-    // BPM-rate scale pulse: subtle ±10% pulse per beat
     const beatPhase = (s.elapsedSecs * s.bpm) / 60
-    const pulse = 0.9 + 0.1 * Math.abs(Math.sin(Math.PI * beatPhase))
-    const base = 0.8 + s.frame.color.brightness * 0.4
-    mesh.scale.setScalar(base * pulse)
+    const pulse = 0.88 + 0.12 * Math.abs(Math.sin(Math.PI * beatPhase))
+    const base = 0.75 + s.blend.frame.color.brightness * 0.45
+    root.scale.setScalar(base * pulse)
 
-    // Color morphs from keyframe interpolation
-    mat.color.set(s.frame.color.primary)
-    mat.emissive.set(s.frame.color.primary)
-    mat.emissiveIntensity = 0.15 + s.frame.color.brightness * 0.4
+    if (mat) {
+      mat.color.set(s.blend.frame.color.primary)
+      mat.emissive.set(s.blend.frame.color.primary)
+      mat.emissiveIntensity =
+        template.material.emissiveScale * (0.3 + s.blend.frame.color.brightness * 0.7)
+      mat.opacity = opacity
+      mat.transparent = opacity < 0.999
+    }
   })
 
+  if (opacity < 0.01) return null
+
+  if (template.geometry === 'octahedronCluster') {
+    return (
+      <group ref={rootRef}>
+        <OctahedronCluster
+          count={template.geometryArgs[1] ?? 5}
+          radius={template.geometryArgs[0] ?? 0.9}
+        />
+      </group>
+    )
+  }
+
+  if (template.geometry === 'gridPlane') {
+    return (
+      <group ref={rootRef} rotation={[-Math.PI / 2.2, 0, 0]} position={[0, -1.2, -2]}>
+        <mesh>
+          <planeGeometry args={[template.geometryArgs[0] ?? 12, template.geometryArgs[1] ?? 24]} />
+          <meshStandardMaterial
+            ref={matRef}
+            color="#22d3ee"
+            emissive="#22d3ee"
+            emissiveIntensity={0.2}
+            wireframe
+            roughness={0.9}
+            metalness={0.1}
+            transparent
+            opacity={opacity}
+          />
+        </mesh>
+      </group>
+    )
+  }
+
   return (
-    <mesh ref={meshRef}>
-      <torusKnotGeometry args={[1, 0.35, 128, 16]} />
-      <meshStandardMaterial
-        ref={matRef}
-        color="#7c6af7"
-        emissive="#7c6af7"
-        emissiveIntensity={0.2}
-        roughness={0.3}
-        metalness={0.7}
+    <group ref={rootRef}>
+      <mesh>
+        <TemplateGeometry template={template} />
+        <meshStandardMaterial
+          ref={matRef}
+          color="#7c6af7"
+          emissive="#7c6af7"
+          emissiveIntensity={0.2}
+          roughness={template.material.roughness}
+          metalness={template.material.metalness}
+          wireframe={template.material.wireframe ?? false}
+          transparent
+          opacity={opacity}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ---- Internal: dual-layer crossfade ----------------------------------------
+
+function MultiSceneLayers({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
+  const s = stateRef.current
+  const blend = s.blend.blend
+  return (
+    <>
+      <SceneLayer
+        templateId={s.blend.fromTemplate}
+        opacity={1 - blend}
+        stateRef={stateRef}
       />
-    </mesh>
+      <SceneLayer templateId={s.blend.toTemplate} opacity={blend} stateRef={stateRef} />
+    </>
   )
 }
 
@@ -169,7 +252,7 @@ function MelosScene({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
           durationSecs={s.durationSecs}
         />
       )}
-      <CoreMesh stateRef={stateRef} />
+      <MultiSceneLayers stateRef={stateRef} />
     </>
   )
 }
@@ -177,41 +260,14 @@ function MelosScene({ stateRef }: { stateRef: React.RefObject<FrameState> }) {
 // ---- Public: SceneView -----------------------------------------------------
 
 export interface SceneViewProps {
-  /**
-   * The full RenderSpec produced by spec_builder.py (or the placeholder).
-   * Keyframe interpolation happens inside SceneView so consumers only need
-   * to track a single normalised position.
-   */
   spec: RenderSpec
-  /**
-   * Normalised playhead position in [0, 1].
-   * 0 = start of track, 1 = end of track.
-   */
   playbackT: number
-  /** Optional beat energy [0, 1] — defaults to 0 until workstream B lands. */
   beatEnergy?: number
   className?: string
-  /**
-   * Current scene name for screen readers (wrapper `aria-label` + live status).
-   * WebGL canvas pixels are opaque to AT; this exposes scene identity (G-C09-01).
-   */
   currentSceneLabel?: string
-  /**
-   * R3F Canvas render mode. Defaults to `'always'` (continuous RAF loop) for
-   * live playback. Golden-screenshot fixtures pass `'demand'` so the canvas
-   * only renders on invalidation — required for deterministic CI pixelmatch
-   * (see `web/src/fixtures/r3fCanvasFixture.tsx`, G-C10-03).
-   */
   frameloop?: 'always' | 'demand'
 }
 
-/**
- * SceneView mounts the R3F Canvas and drives the scene from `spec` keyframes
- * interpolated at `playbackT`.
- *
- * Usage:
- *   <SceneView spec={renderSpec} playbackT={0.42} className="absolute inset-0" />
- */
 export function SceneView({
   spec,
   playbackT,
@@ -219,10 +275,10 @@ export function SceneView({
   currentSceneLabel,
   frameloop = 'always',
 }: SceneViewProps) {
-  // Store derived per-frame state in a ref so useFrame callbacks never trigger
-  // React re-renders — critical for 60fps.
+  const blend = resolveSceneBlend(spec, playbackT)
+
   const stateRef = useRef<FrameState>({
-    frame: lerpKeyframe(spec.keyframes, playbackT),
+    blend,
     bpm: spec.bpm ?? 120,
     elapsedSecs: 0,
     beatTimes: spec.beatTimes ?? [],
@@ -230,9 +286,8 @@ export function SceneView({
     durationSecs: spec.durationSecs,
   })
 
-  // Keep ref current every render (no useEffect needed — synchronous update)
   stateRef.current = {
-    frame: lerpKeyframe(spec.keyframes, playbackT),
+    blend: resolveSceneBlend(spec, playbackT),
     bpm: spec.bpm ?? 120,
     elapsedSecs: performance.now() / 1000,
     beatTimes: spec.beatTimes ?? [],
@@ -240,7 +295,7 @@ export function SceneView({
     durationSecs: spec.durationSecs,
   }
 
-  const sceneLabel = currentSceneLabel?.trim() || 'Scene'
+  const sceneLabel = currentSceneLabel?.trim() || blend.sceneLabel || 'Scene'
 
   return (
     <div className={className}>
@@ -256,8 +311,6 @@ export function SceneView({
             antialias: true,
             powerPreference: 'high-performance',
             outputColorSpace: THREE.LinearSRGBColorSpace,
-            // Golden-fixture screenshots read back the WebGL buffer after the
-            // demand-mode frame settles; preserveDrawingBuffer keeps it intact.
             preserveDrawingBuffer: frameloop === 'demand',
           }}
           dpr={[1, window.devicePixelRatio ?? 2]}
