@@ -11,6 +11,11 @@ For **developer / agent feedback-loop** wall-time budgets (`diagnose`, pytest
 smoke, `cargo check`, `make golden`), see [`TIMING_BUDGETS.md`](TIMING_BUDGETS.md).
 This document covers product render / analysis latency, not CI loop gates.
 
+**Render engine choice (wgpu vs Bevy vs Unreal):** see [`RENDER_ENGINE.md`](RENDER_ENGINE.md).
+
+**Engine policy (wgpu vs Bevy vs Unreal, GPU APIs):** see
+[`RENDER_ENGINE_DECISION.md`](RENDER_ENGINE_DECISION.md).
+
 ---
 
 ## 1. Measured Numbers
