@@ -1,101 +1,138 @@
 # MelosViz Work DAG
 
 Atomic, FR-linked tasks agents can claim independently.
+**Parallel policy (p1p+):** claim non-overlapping lanes; prefer worktrees under
+`../Melosviz-wtrees/<lane>/`; merge into `main` via separate PRs (or integrate
+worktree) — do not serialize one tiny score bump per tick.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[GH Packages publish workflow]
-  A --> C[SDK publishConfig + consume docs]
-  B --> D[G-C11-06 mitigated]
-  C --> E[COMMIT_SIGNING.md C04 L34 1→2]
-  D --> F[Re-score 97.8% A]
-  E --> F
+  CI[CI green / main tip]
+  CI --> Q[qgate reusable WF]
+  CI --> I[i18n full coverage]
+  CI --> A[airgap Electrobun bundle]
+  CI --> E[desktop GUI e2e expand]
+  CI --> P[pip-licenses CI]
+  CI --> W[WebGL non-visual a11y]
+  CI --> F[fuzz farm continuous]
+  CI --> U[uninstall MSI polish]
+  CI --> R[registry re-score]
+  Q --> S[Re-score / mirror audits]
+  I --> S
+  A --> S
+  E --> S
+  P --> S
+  W --> S
 ```
 
-## Ready / in-flight (this wave)
+## Parallel lanes (claim one; do not overlap files)
+
+| Lane | Branch / worktree | Owns (do not cross) | Effort | Status |
+|------|-------------------|---------------------|--------|--------|
+| qgate-ci | `wave/p1p-qgate-ci` | `.github/workflows/*qgate*`, `.qgate.toml`, `docs/QGATE*`, C01 L11 | M | ON DISK · publish blocked (Shell) |
+| i18n-expand | `wave/p1p-i18n-expand` | `backend/src/melosviz/i18n/`, `desktop/locales/`, `web` locale JSON, `docs/I18N.md` | M | ON DISK · publish blocked (Shell) |
+| airgap-desktop | `wave/p1p-airgap-desktop` | `docs/AIRGAP.md`, `scripts/airgap*`, desktop offline notes, C11 L121 | M | ON DISK · publish blocked (Shell) |
+| desktop-e2e | `wave/p1p-desktop-e2e` | `desktop/tests/`, e2e workflow bits, WBS-P1.9 | M | ON DISK · publish blocked (Shell) |
+| pip-licenses | `wave/p1p-pip-licenses` | supply-chain pip-licenses job, `docs/SUPPLY_CHAIN.md` | S | ON DISK · publish blocked (Shell) |
+| webgl-a11y | `wave/p1p-webgl-a11y` | `web/src/r3fRenderer.tsx` a11y surface, `docs/a11y/*`, C09 residual | M | ON DISK · publish blocked (Shell) |
+| dag-widen | `wave/p1p-dag-widen` | `docs/WORK_DAG.md`, `.github/workflows/cargo-fuzz.yml`, `docs/UNINSTALL.md` | S | ON DISK · publish blocked (Shell/AMDRMPATH) |
+| fuzz-farm | `wave/p1p-fuzz-farm` | fuzz workflow duration/nightly, C07 residual | S | ON DISK · dag-widen |
+| uninstall-docs | `wave/p1p-uninstall-docs` | `docs/UNINSTALL.md`, G-C11-05 | S | ON DISK · dag-widen |
+| studio-polish | `wave/p1q-studio-polish` | p1q W-333–352 consolidated (sdk, bridge DX, web studio UX/a11y) | M | ON DISK · publish via API |
+| sdk-consume | _(folded → studio-polish)_ | `docs/sdk/README.md`, `docs/PACKAGING.md` SDK § cross-links | S | ON DISK |
+| bridge-dev-dx | _(folded → studio-polish)_ | `scripts/dev_bridge.sh`, `scripts/dev_bridge.ps1`, `docs/LOCAL_RUN.md` bridge § | S | ON DISK |
+
+## Ready / in-flight (p1q product polish)
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-319 | GitHub Packages publish workflow (`publish-sdk-packages.yml` + `publish_sdk_packages.sh`) | C11 L109 · G-C11-06 · WBS-P3.1 | M | THIS PR |
-| W-320 | `publishConfig` + consume docs (`docs/sdk/README.md`, `docs/PACKAGING.md`) | C11 L116 · G-C11-06 | S | THIS PR |
-| W-321 | Commit signing contributor guide (`docs/COMMIT_SIGNING.md`) | C04 L34 · G-C04-01 | S | THIS PR |
-| W-322 | Re-score SCORECARD (p1o → 97.8% A) | audit | S | THIS PR |
+| W-333 | SDK GH Packages consumer guide (`docs/sdk/README.md` first-run `.npmrc`) | G-C00-01 · G-C11-06 · WBS-P3.1 | S | ON DISK |
+| W-334 | Bridge dev helper (`dev_bridge` health/start/stop; default port 8765) | C05 · LOCAL_RUN | S | ON DISK |
+| W-335 | LOCAL_RUN bridge operator quick-start cross-link | C07 · WBS-P1.9 | S | ON DISK |
+| W-336 | Web first-visit onboarding banner (studio empty state) | C09 residual · C10 L100 | S | ON DISK |
+| W-337 | Bridge client error UX + i18n (useAnalysis / App alert) | C01 L16 · LOCAL_RUN | S | ON DISK |
+| W-338 | LOCAL_RUN desktop tray bridge-health operator note | C07 · WBS-P4.2 | S | ON DISK |
+| W-339 | Web analysis cancel (useAnalysis AbortController + LoadingOverlay) | C01 L16 · LOCAL_RUN | S | ON DISK |
+| W-340 | PlaylistPanel batch progress summary (multi-track queue UX) | C10 L100 | S | ON DISK |
+| W-341 | Web memory-cap error UX (parse bridge RSS hints; stop misclassifying 503) | C00 L8 · G-C00-04 · LOCAL_RUN | S | ON DISK |
+| W-342 | Web RenderSpec JSON download (SpecViewer export/share) | C10 L100 | S | ON DISK |
+| W-343 | Web locale persistence + LocaleSwitcher (localStorage restore) | C01 L16 · WBS-P3.5 | S | ON DISK |
+| W-344 | LoadingOverlay a11y (Radix dialog, focus trap, Escape cancel, live region) | C09 residual · C10 L100 | S | ON DISK |
+| W-345 | Playlist keyboard reorder (Alt+↑/↓ + move buttons; i18n aria labels) | C10 L100 · C09 residual | S | ON DISK |
+| W-346 | SpecViewer copy RenderSpec JSON to clipboard (beside download) | C10 L100 | S | ON DISK |
+| W-347 | Web prefers-reduced-motion (LoadingOverlay / Dialog / OnboardingBanner) | C09 residual · C10 L100 | S | ON DISK |
+| W-348 | Web recent audio files + AudioDropzone (localStorage name+size+lastUsed) | C10 L100 · C01 L16 | S | ON DISK |
+| W-349 | Web high-contrast mode + WCAG focus rings (ThemeProvider + brand.css) | C09 residual · C10 L104 | S | ON DISK |
+| W-350 | Analysis cancel/retry idle reset (useAnalysis generation guard + overlay unmount) | C01 L16 · LOCAL_RUN | S | ON DISK |
+| W-351 | LOCAL_RUN local studio checklist (bridge → web → analyze → export) | C07 · LOCAL_RUN | S | ON DISK |
+| W-352 | Web skip-link + `#main` landmark (en+es, Vitest) | C09 residual · docs/a11y/FOCUS.md | S | ON DISK |
+| W-353 | p1q API publisher (`scripts/_recover_p1q_api_all.py` → `wave/p1q-studio-polish`) | process · W-333–352 | S | ON DISK · `RUN_P1Q_RECOVERY.cmd` · file list synced W-365 |
+| W-354 | Pending-merge evidence note in audits mirror | process · tick 85 | S | ON DISK · `../phenotype-org-audits-v38/audit-v38/output/MelosViz/WAVE_P1PQ_PENDING.md` |
+| W-355 | Recover-script file-list sync (post-W-352 Vitest + keyboard help paths) | process · W-353 | S | ON DISK · `scripts/_recover_p1q_api_all.py` |
+| W-356 | Web fullscreen scene control (visible toggle, Escape exit, aria-pressed, i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/App.tsx`, `web/src/i18n/` |
+| W-357 | Copy-spec toast + aria-live; audits mirror tick-87 (W-354–355 evidence) | C09 residual · process | S | ON DISK · `web/src/components/Toast.tsx`, `../phenotype-org-audits-v38/.../WAVE_P1PQ_PENDING.md` |
+| W-358 | PlaybackTransport i18n aria-labels + elapsed/total time readout | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-359 | SpecViewer human-readable BPM/duration/keyframes summary | C10 L100 | S | ON DISK · `web/src/components/SpecViewer.tsx`, `web/src/i18n/` |
+| W-360 | PlaybackTransport volume/mute (hidden audio + localStorage persist; i18n aria) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/lib/playbackVolume.ts`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-361 | LoadingOverlay analysis progress % (useAnalysis ramp + live region progressbar) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/LoadingOverlay.tsx`, `web/src/hooks/useAnalysis.ts`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-362 | Preset quick-apply dropdown (built-in presets, i18n, no editor dialog) | C10 L100 | S | ON DISK · `web/src/components/PresetQuickApply.tsx`, `web/src/components/PresetEditor.tsx`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-363 | PlaybackTransport keyboard seek hint chips (±5 s, i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/i18n/`, `web/src/components/__tests__/PlaybackTransport.test.tsx` |
+| W-364 | LOCAL_RUN studio checklist densify (W-356–363 transport, progress, presets, fullscreen, toast, HC/locale) | C07 · LOCAL_RUN | S | ON DISK · `docs/LOCAL_RUN.md` |
+| W-365 | AudioDropzone clear-recent control + analysis error dismiss (i18n, FOCUS.md tab order) | C10 L100 · C09 residual | S | ON DISK · `web/src/components/AudioDropzone.tsx`, `web/src/lib/recentAudioFiles.ts`, `web/src/hooks/useAnalysis.ts`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-366 | Combined recovery runner (`RUN_ALL_RECOVERY.cmd` p1p→p1q) + keyboard mute shortcut (M) in help | process · C09 residual | S | ON DISK · `RUN_ALL_RECOVERY.cmd`, `web/src/hooks/useKeyboardShortcuts.ts`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-367 | PlaybackTransport scene speed 0.5×–1.5× (RAF + audio `playbackRate`, localStorage, i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/lib/playbackRate.ts`, `web/src/App.tsx`, `web/src/i18n/` |
+| W-368 | KeyboardHelp section grouping (Playback / View / Help) + LOCAL_RUN recovery/publish § | C09 residual · C07 · LOCAL_RUN | S | ON DISK · `web/src/components/KeyboardHelp.tsx`, `web/src/hooks/useKeyboardShortcuts.ts`, `docs/LOCAL_RUN.md`, `web/src/i18n/` |
+| W-369 | PlaybackTransport loop toggle (restart scene at end, localStorage, i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/lib/playbackLoop.ts`, `web/src/App.tsx`, `web/src/i18n/`, `web/src/lib/__tests__/playbackLoop.test.ts`, `web/src/components/__tests__/PlaybackTransport.test.tsx` |
+| W-370 | PlaybackTransport rate preset buttons (0.5× / 1× / 1.5×, i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/components/PlaybackTransport.tsx`, `web/src/lib/playbackRate.ts`, `web/src/i18n/`, `web/src/components/__tests__/PlaybackTransport.test.tsx` |
+| W-371 | FOCUS.md transport tab order + SR notes (W-358–370 volume/mute/rate/loop/seek/fullscreen/presets) | C09 residual · docs/a11y | S | ON DISK · `docs/a11y/FOCUS.md` |
+| W-372 | Keyboard loop shortcut **L** (wire like mute **M**; KeyboardHelp + i18n) | C09 residual · C10 L100 | S | ON DISK · `web/src/hooks/useKeyboardShortcuts.ts`, `web/src/App.tsx`, `web/src/i18n/`, `web/src/components/__tests__/KeyboardShortcuts.test.tsx` |
+| W-373 | LOCAL_RUN checklist loop (L), rate presets, mute (M), Space/slider guard (W-366–372 operator path) | C07 · LOCAL_RUN | S | ON DISK · `docs/LOCAL_RUN.md` |
+| W-374 | Scene jump panel i18n (panel label, beat fallback, jump aria-labels) | C09 residual · C10 L100 | S | ON DISK · `web/src/App.tsx`, `web/src/i18n/`, `web/src/__tests__/App.a11y.test.tsx` |
+| W-375 | I18N.md catalog table for W-358–374 keys (playback/fullscreen/scene/keyboard; honest residual note) | C01 L16 · WBS-P3.5 | S | ON DISK · `docs/I18N.md` |
+| W-376 | App live-audio Start/Stop i18n + studio-prefix en/es parity test | C09 residual · C10 L100 | S | ON DISK · `web/src/App.tsx`, `web/src/i18n/`, `web/src/test/i18n.test.ts` |
+
+## Ready / in-flight (p1p multi-lane wave)
+
+| ID | Task | FR / pillar | Effort | Status |
+|----|------|-------------|--------|--------|
+| W-323 | Expand WORK_DAG to parallel lane matrix | process | S | ON DISK |
+| W-324 | qgate reusable workflow promotion (in-repo callable WF) | C01 L11 · G-C01-01 · WBS-P2.4 | M | ON DISK · publish blocked (Shell) |
+| W-325 | Full locale coverage push (CLI/desktop/web en+es depth) | C01 L16 · WBS-P3.5 | M | ON DISK (keyboard+preset web chrome) |
+| W-326 | Air-gap Electrobun offline installer path strengthen | C11 L121 · G-C11-04 · WBS-P4.3 | M | ON DISK |
+| W-327 | Desktop GUI e2e expansion (more bridge+shell cases; host-gated GUI noted) | C07 · WBS-P1.9 | M | ON DISK · publish blocked (Shell) |
+| W-328 | pip-licenses CI gate for Python deps | C06 L56 soft | S | ON DISK · publish blocked (Shell) |
+| W-329 | Deeper WebGL non-visual alternative (canvas SR / text mirror) | C09 residual | M | ON DISK · publish blocked (Shell) |
+| W-330 | Continuous fuzz farm / nightly widen | C07 residual | S | ON DISK (420s nightly) |
+| W-331 | MSI uninstall docs polish (pre-Authenticode honest) | G-C11-05 | S | ON DISK |
+| W-332 | Phenotype registry + audits tip re-score after parallel land | WBS-P2.5 | S | READY |
+
+## Org / blocked (do not claim in machine lanes)
+
+| ID | Task | Status |
+|----|------|--------|
+| W-228 | Org GPG verified-commit branch protection | blocked · human |
+| W-224 | Apple notarization + Authenticode | blocked · human |
+| W-223 | Native mobile | deferred |
+| — | IdP / cloud KMS / licensed corpus | deferred |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
-| W-316 | Hermetic Python wheelhouse offline CI (`check_hermetic_python_smoke.sh` + supply-chain) | #154 |
-| W-317 | Portability smoke without FFmpeg/Blender (`check_portability_smoke.py`) | #154 |
+| W-319 | GitHub Packages publish workflow | #155 |
+| W-320 | `publishConfig` + consume docs | #155 |
+| W-321 | Commit signing contributor guide | #155 |
+| W-322 | Re-score SCORECARD (p1o → 97.8% A) | #155 |
+| W-316 | Hermetic Python wheelhouse offline CI | #154 |
+| W-317 | Portability smoke without FFmpeg/Blender | #154 |
 | W-318 | Re-score SCORECARD (p1n → 97.5% A) | #154 |
-| W-314 | External profiler sidecar (`profile_bridge_sidecar.sh`/`.ps1`) | #153 |
+| W-314 | External profiler sidecar | #153 |
 | W-315 | Re-score SCORECARD (p1m → 97.0% A) | #153 |
-| W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | #152 |
-| W-310 | Document publishable-shape gate + future publish steps | #152 |
+| W-309 | SDK pack smoke CI | #152 |
+| W-310 | Document publishable-shape gate | #152 |
 | W-311 | Re-score SCORECARD (p1l → 96.8% A) | #152 |
-| W-312 | Desktop-spawned bridge bearer auth by default (`INSECURE_LOOPBACK` opt-out) | #152 |
-| W-304 | Global memory-cap enforcement (`security.MemoryCapGuard`; soft 429 / hard 503 problem+json; audited; fails open) | #151 |
-| W-305 | Wire memory-cap check into `/analyze` `/build` `/render`; RSS/cap gauges on `/metrics` | #151 |
-| W-306 | Forward `HTTPException.headers` (e.g. `Retry-After`) through `http_exception_problem` | #151 |
-| W-307 | Electrobun tray/menubar quick-actions (Show/Open Bridge Health/Quit) | #151 |
-| W-308 | Re-score SCORECARD (p1k → 96.3% A) | #151 |
-| W-301 | `@melosviz/ui` shared component package (`Button`/`EmptyState`/`Skeleton`) | #150 |
-| W-302 | Wire `PlaylistPanel` + `Skeleton` re-export to `@melosviz/ui` (real consumer, not stub) | #150 |
-| W-303 | Re-score SCORECARD (p1j → 95.8% A) | #150 |
-| W-297 | R3F canvas fixture + CI pixelmatch golden | #149 |
-| W-298 | C00 L6 continuous-profiler audit resync | #149 |
-| W-299 | AGENT_QUICKSTART + C03 100% | #149 |
-| W-300 | Re-score SCORECARD (p1i → 95.6% A) | #149 |
-| W-294 | In-process continuous profiler (`MELOSVIZ_PROFILE=continuous`/`2`) | #148 |
-| W-295 | Mitigate G-C07-01 (Linux desktop-e2e; GUI host-gated note) | #148 |
-| W-296 | Re-score SCORECARD (p1h → 94.8% A) | #148 |
-| W-291 | SceneView canvas SR (role=img + aria-live) | #147 |
-| W-292 | Bridge RateLimiter/RenderQuota race stress | #147 |
-| W-293 | Re-score SCORECARD (p1g → 94.5% A) | #147 |
-| W-288 | Web playlist empty/zero state | #146 |
-| W-289 | `@melosviz/bridge-client` SDK stub | #146 |
-| W-290 | Re-score SCORECARD (p1f → 94.3% A) | #146 |
-| W-284 | Desktop Bun inject traceparent | #144 |
-| W-285 | SPA focus-trap / modal restore polish | #144 |
-| W-286 | CLI + desktop i18n scaffold (en/es) | #144 |
-| W-287 | Re-score SCORECARD (p1e → 94.1% A) | #144 |
-| W-279 | Desktop/web STRIDE threat model | #141 |
-| W-280 | Hypothesis RenderSpec property expansion | #141 |
-| W-281 | `@melosviz/brand-tokens` package stub | #141 |
-| W-282 | Windows release soft-fail narrow | #141 |
-| W-283 | Re-score SCORECARD (p1d wave → 93.8% A) | #141 |
-| W-275 | Hermetic CI smoke (fetch once + offline check) | #140 |
-| W-272 | Feedback-loop timing budgets gate | #139 |
-| W-273 | Shared brand token SoT (web/desktop) | #139 |
-| W-274 | Re-score SCORECARD (p1b-sde-timing-tokens) | #139 |
-| W-262 | Machine-trace gates (WBS/GAP/docs-trace CI) | #136 |
-| W-263 | RenderQuota (CPU/concurrency caps) | #136 |
-| W-264 | CircuitBreaker for bridge/render failures | #136 |
-| W-265 | Audit JSONL retention prune | #136 |
-| W-266 | Reserved-name / dep-confusion CI scanner | #136 |
-| W-267 | OSSF TokenPermissions sweep | #136 |
-| W-268 | Hermetics docs (LOCAL_RUN / CLAUDE / AIRGAP) | #136 |
-| W-269 | fr-status.yaml + check_fr_status.py | #136 |
-| W-270 | Re-score SCORECARD (p1-trace-c02-c06) | #136 |
-| W-255 | OpenAPI export + drift CI | #135 |
-| W-256 | Journey friction gate CI | #135 |
-| W-257 | PARALLEL_AGENTS.md concurrency policy | #135 |
-| W-258 | ThemeProvider + light theme | #135 |
-| W-259 | Splash + desktop screenshot baseline | #135 |
-| W-260 | Skeleton loading blocks | #135 |
-| W-261 | Re-score + SCORECARD (openapi-theme-journeys) | #135 |
-| W-101…W-254 | prior closeouts | #127–#134 |
-
-## Backlog (hard / org)
-
-| ID | Task | Effort |
-|----|------|--------|
-| W-223 | Native mobile (iOS/Android) | L |
-| W-224 | Apple notarization / Authenticode | L |
-| W-228 | Org GPG/signed-commit branch protection | org |
-
-## Claim protocol
-
-1. `claim W-2xx` on PR/issue.
-2. Branch `feat/w2xx-<slug>`.
-3. Reference FR ID in PR body.
+| W-312 | Desktop-spawned bridge bearer auth by default | #152 |
+| W-304–W-308 | Memory-cap + tray (p1k) | #151 |
+| W-301–W-303 | `@melosviz/ui` design-system (p1j) | #150 |
+| W-297–W-300 | R3F golden + C00/C03 (p1i) | #149 |
+| W-294–W-296 | Continuous profiler (p1h) | #148 |
