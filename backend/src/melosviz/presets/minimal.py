@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..analysis.models import RenderSpec
+from ..compose.web_spec import enrich_render_spec_for_web
 
 MINIMAL_PALETTE: list[str] = [
     "#000000",  # pure black
@@ -99,4 +100,5 @@ def apply(spec: RenderSpec) -> RenderSpec:
             "data": {"name": "resolution", "mood": "still"},
         },
     ]
-    return spec
+    enriched = enrich_render_spec_for_web(spec, preset_name="minimal")
+    return RenderSpec.model_validate(enriched)

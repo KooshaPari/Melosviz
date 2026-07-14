@@ -267,6 +267,9 @@ def _guarded_analyze(wav: Path) -> dict:
         )
     try:
         data = _analyze_with_mir_or_python(wav)
+        from melosviz.compose.web_spec import enrich_render_spec_for_web
+
+        data = enrich_render_spec_for_web(data)
         mir_breaker.record_success()
         return data
     except HTTPException:

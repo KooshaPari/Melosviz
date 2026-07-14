@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
+import { mapAnalysisToRenderSpec, applyPresetToSpec } from './mapAnalysisSpec'
 import type { RenderSpec } from './renderSpec'
 import { SpecViewer } from './components/SpecViewer'
 import { useAnalysis, analyzeAudioPath } from './hooks/useAnalysis'
@@ -21,34 +22,47 @@ import { useTheme } from './theme/ThemeProvider'
 const PLACEHOLDER_SPEC: RenderSpec = {
   durationSecs: 240,
   bpm: 128,
+  transitionFraction: 0.12,
   keyframes: [
     {
       t: 0,
       scene: 'Establishing',
+      scene_template: 'wire_orb',
       camera: { distance: 8, azimuth: 0, elevation: 0.15 },
       color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.7 },
     },
     {
       t: 0.18,
       scene: 'Performance',
+      scene_template: 'torus_flow',
       camera: { distance: 5, azimuth: 0.4, elevation: 0.1 },
       color: { primary: '#ec4899', secondary: '#f59e0b', brightness: 0.9 },
     },
     {
       t: 0.45,
       scene: 'Anthem',
+      scene_template: 'crystal_burst',
       camera: { distance: 4, azimuth: -0.3, elevation: 0.3 },
       color: { primary: '#f97316', secondary: '#a3e635', brightness: 1.0 },
     },
     {
       t: 0.72,
       scene: 'Interlude',
+      scene_template: 'ring_drift',
       camera: { distance: 7, azimuth: 0, elevation: 0.05 },
       color: { primary: '#0ea5e9', secondary: '#818cf8', brightness: 0.6 },
     },
     {
       t: 0.88,
       scene: 'Outro',
+      scene_template: 'wire_orb',
+      camera: { distance: 10, azimuth: 0.2, elevation: 0.2 },
+      color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 },
+    },
+    {
+      t: 1,
+      scene: 'Outro',
+      scene_template: 'wire_orb',
       camera: { distance: 10, azimuth: 0.2, elevation: 0.2 },
       color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 },
     },
@@ -64,24 +78,32 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const { theme, toggle: toggleTheme } = useTheme()
+  const [presetSpec, setPresetSpec] = useState<RenderSpec | null>(null)
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
+  const [playlistViewSpec, setPlaylistViewSpec] = useState<RenderSpec | null>(null)
 
-  // Playlist: wraps analyzeAudioPath for blob: URLs (upload → analyze)
+  const handleApplyPreset = useCallback(
+    (preset: { id: string }) => {
+      const base = playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
+      setPresetSpec(applyPresetToSpec(base, preset.id))
+    },
+    [playlistViewSpec, renderSpec],
+  )
+
+  // Playlist: upload blob: URLs then analyze (single /api path — no double-fetch)
   const analyzeFile = useCallback(
     (objectUrl: string) => analyzeAudioPath(objectUrl),
     [],
   )
 
   const playlist = usePlaylist(analyzeFile)
-  // Track which playlist item the user is actively viewing
-  const [playlistViewSpec, setPlaylistViewSpec] = useState<RenderSpec | null>(null)
 
   const handleSelectPlaylistItem = useCallback((item: PlaylistItem) => {
     if (item.spec) setPlaylistViewSpec(item.spec)
   }, [])
 
-  // Active spec priority: playlist-selected > analyzed > placeholder
-  const activeSpec: RenderSpec = playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
+  // Active spec priority: preset-applied > playlist-selected > analyzed > placeholder
+  const activeSpec: RenderSpec = presetSpec ?? playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
 
   // ---- Playback state ------------------------------------------------------
   const [playbackT, setPlaybackT] = useState(0)
@@ -135,6 +157,7 @@ export default function App() {
   useEffect(() => {
     setPlaybackT(0)
     setAutoPlay(false)
+    setPresetSpec(null)
   }, [renderSpec])
 
   // Dispose audio on unmount
@@ -275,6 +298,7 @@ export default function App() {
           <PresetEditor
             spec={activeSpec}
             onPreviewChange={(t) => { setAutoPlay(false); setPlaybackT(t) }}
+            onApplyPreset={handleApplyPreset}
           />
         </div>
 

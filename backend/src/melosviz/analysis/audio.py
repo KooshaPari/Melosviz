@@ -1215,7 +1215,7 @@ def analyze_wav_rich(
     )
 
     # --- 9. Assemble RenderSpec v2 ---------------------------------------
-    return RenderSpec(
+    spec = RenderSpec(
         metadata={
             "source_audio": str(wav_path),
             "sample_rate": base.sample_rate,
@@ -1238,6 +1238,12 @@ def analyze_wav_rich(
         stem_channels={k: [round(v, 4) for v in ch] for k, ch in stem_channels.items()},
         mir=mir_summary.model_dump(),
     )
+
+    # --- 10. Web shot keyframes (multi-scene R3F composition) ------------
+    from melosviz.compose.web_spec import enrich_render_spec_for_web
+
+    enriched = enrich_render_spec_for_web(spec)
+    return RenderSpec.model_validate(enriched)
 
 
 def spec_from_wav_rich(path: str | Path, **kwargs: Any) -> RenderSpec:

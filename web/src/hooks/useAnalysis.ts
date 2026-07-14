@@ -1,26 +1,9 @@
 import { useState, useCallback } from 'react'
-import type { RenderSpec, Keyframe } from '../renderSpec'
+import type { RenderSpec } from '../renderSpec'
+import { mapAnalysisToRenderSpec, type RawAnalysisSpec } from '../mapAnalysisSpec'
 
-/** Raw shape returned by the /api/analyze endpoint. */
-export interface AnalysisRenderSpec {
-  title?: string
-  bpm?: number
-  key?: string
-  duration_sec?: number
-  durationSecs?: number
-  keyframes?: Keyframe[]
-  color_palette?: string[]
-  [key: string]: unknown
-}
-
-/** Map the loose backend response to the canonical RenderSpec contract. */
-export function toRenderSpec(raw: AnalysisRenderSpec): RenderSpec {
-  return {
-    durationSecs: raw.durationSecs ?? raw.duration_sec ?? 240,
-    keyframes: raw.keyframes ?? [],
-    bpm: raw.bpm,
-  }
-}
+/** @deprecated Prefer RawAnalysisSpec from mapAnalysisSpec — kept for test imports. */
+export type AnalysisRenderSpec = RawAnalysisSpec
 
 const BLOB_PREFIX = 'blob:'
 const LARGE_UPLOAD_BYTES = 10 * 1024 * 1024
@@ -131,9 +114,7 @@ export async function resolveServerAudioPath(
   return uploadAudioFile(file, onProgress)
 }
 
-export async function fetchAnalyze(
-  wavPath: string,
-): Promise<AnalysisRenderSpec> {
+export async function fetchAnalyze(wavPath: string): Promise<RawAnalysisSpec> {
   const res = await fetch('/api/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -143,7 +124,7 @@ export async function fetchAnalyze(
     const detail = await readErrorDetail(res)
     throw Object.assign(new Error(`Server error: ${detail}`), { status: res.status })
   }
-  return (await res.json()) as AnalysisRenderSpec
+  return (await res.json()) as RawAnalysisSpec
 }
 
 /** Analyze a pasted path or blob: URL end-to-end. */
@@ -153,7 +134,7 @@ export async function analyzeAudioPath(
 ): Promise<RenderSpec> {
   const wavPath = await resolveServerAudioPath(audioPath, onProgress)
   const raw = await fetchAnalyze(wavPath)
-  return toRenderSpec(raw)
+  return mapAnalysisToRenderSpec(raw)
 }
 
 interface AnalysisState {
