@@ -4,11 +4,11 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[Flaky quarantine gate]
-  A --> C[Profiler sidecar script]
-  B --> D[C08 L78 3/3 -> C08 100%]
-  C --> E[WBS-P3.4 done]
-  D --> F[Re-score 97.0% A]
+  A[CI green] --> B[Hermetic Python wheelhouse smoke]
+  A --> C[Portability smoke without FFmpeg/Blender]
+  B --> D[C06 L54 3/3 -> C06 100%]
+  C --> E[C07 L70 3/3 -> C07 100%]
+  D --> F[Re-score 97.5% A]
   E --> F
 ```
 
@@ -16,14 +16,17 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-313 | Flaky quarantine machine gate (`check_flaky_quarantine.py` + docs-trace CI) | C08 L78 · G-C08-03 · WBS-P1.13 | M | THIS PR |
-| W-314 | External profiler sidecar (`profile_bridge_sidecar.sh`/`.ps1`) | C05 L45 · G-C05-02 · WBS-P3.4 | S | THIS PR |
-| W-315 | Re-score SCORECARD (p1m → 97.0% A) | audit | S | THIS PR |
+| W-316 | Hermetic Python wheelhouse offline CI (`check_hermetic_python_smoke.sh` + supply-chain) | C06 L54 · G-C06-03 · WBS-P1.14 | M | THIS PR |
+| W-317 | Portability smoke without FFmpeg/Blender (`check_portability_smoke.py`) | C07 L70 · G-C07-03 · WBS-P1.14 | S | THIS PR |
+| W-318 | Re-score SCORECARD (p1n → 97.5% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-313 | Flaky quarantine machine gate (`check_flaky_quarantine.py` + docs-trace CI) | #153 |
+| W-314 | External profiler sidecar (`profile_bridge_sidecar.sh`/`.ps1`) | #153 |
+| W-315 | Re-score SCORECARD (p1m → 97.0% A) | #153 |
 | W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | #152 |
 | W-310 | Document publishable-shape gate + future publish steps | #152 |
 | W-311 | Re-score SCORECARD (p1l → 96.8% A) | #152 |

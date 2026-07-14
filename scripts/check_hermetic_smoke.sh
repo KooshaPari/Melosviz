@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# Hermetic / offline build smoke (WBS-P1.6 partial / C06 L54).
+# Hermetic / offline Rust build smoke (WBS-P1.6 / C06 L54).
 #
-# Scope (intentionally narrow — see docs/AIRGAP.md + docs/SUPPLY_CHAIN.md):
+# Scope (see docs/AIRGAP.md + docs/SUPPLY_CHAIN.md):
 #   1) Online once: cargo fetch --locked (populate the local cargo cache)
 #   2) Offline: CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked
 #
-# This proves CI can compile against a prefetched registry without further
-# network access. A full vendored tree (`cargo vendor` + committed vendor/)
-# remains future work under WBS-P1.6 — this smoke is the hermetic CI gate v1.
-#
-# Python wheelhouse / `uv sync --frozen` offline install is documented in
-# AIRGAP.md but not required here (Rust offline is enough for v1).
+# Python offline wheelhouse smoke lives in ``check_hermetic_python_smoke.sh``
+# (same ``hermetic-smoke`` CI job). A committed ``vendor/`` tree remains optional.
 #
 # Linux-only. On Windows/macOS the script skips (exit 0).
 
@@ -55,5 +51,4 @@ if [[ "${HERMETIC_WORKSPACE:-0}" == "1" ]]; then
   "${CARGO[@]}" check --workspace --locked
 fi
 
-echo "OK: hermetic smoke passed (prefetch + CARGO_NET_OFFLINE melosviz-mir check)"
-echo "Note: full cargo vendor tree is still future (WBS-P1.6 partial)."
+echo "OK: hermetic rust smoke passed (prefetch + CARGO_NET_OFFLINE melosviz-mir check)"

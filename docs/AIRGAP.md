@@ -71,28 +71,46 @@ directory = "vendor"
 
 Then `cargo build --release --locked -p melosviz-mir` with no network.
 
-## Hermetic CI smoke (WBS-P1.6 / C06 L54)
+## Hermetic CI smoke (WBS-P1.6 / WBS-P1.14 / C06 L54)
 
-CI does **not** yet ship a committed `vendor/` tree. Instead,
-`scripts/check_hermetic_smoke.sh` (job `hermetic-smoke` in
-`.github/workflows/supply-chain.yml`) exercises a realistic offline compile:
+CI does **not** ship a committed `vendor/` tree. Instead, supply-chain
+`.github/workflows/supply-chain.yml` job `hermetic-smoke` exercises offline
+install paths after a single online prefetch:
 
-1. `cargo fetch --locked` — online once (populate the local cargo cache)
-2. `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` — no network
+| Surface | Script | Offline step |
+|---------|--------|--------------|
+| Rust | `scripts/check_hermetic_smoke.sh` | `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` |
+| Python | `scripts/check_hermetic_python_smoke.sh` | `PIP_NO_INDEX=1 pip install --no-index --find-links=dist/wheelhouse-python-smoke` then `import melosviz` |
+
+**Python wheelhouse flow (CI + operators):**
+
+```bash
+cd backend
+uv export --frozen --no-dev --no-emit-project --no-hashes -o /tmp/reqs.txt
+uv build --wheel -o ../dist/wheelhouse/
+python -m pip download -r /tmp/reqs.txt -d ../dist/wheelhouse/
+# transfer dist/wheelhouse/ to air-gap host, then:
+python -m venv .venv && source .venv/bin/activate
+export PIP_NO_INDEX=1
+pip install --no-index --find-links=../dist/wheelhouse melosviz-*.whl
+python -c "import melosviz"
+```
 
 Locally (Linux / WSL):
 
 ```bash
-make hermetic-smoke
-# or: ./scripts/check_hermetic_smoke.sh
+make hermetic-smoke          # Rust offline check
+make hermetic-python-smoke   # Python wheelhouse offline import
+# or run the scripts directly under scripts/
 ```
 
-Optional full-workspace offline check: `HERMETIC_WORKSPACE=1 ./scripts/check_hermetic_smoke.sh`.
+Optional full-workspace offline Rust check:
+`HERMETIC_WORKSPACE=1 ./scripts/check_hermetic_smoke.sh`.
 
-A full vendored dependency tree in-repo (and Python `uv sync --frozen` +
-`--no-index` wheelhouse in CI) remains future work beyond WBS-P1.6 hermetic
-smoke; Rust offline prefetch+check is the v1 gate. Operator air-gap install
-still uses the wheelhouse / `cargo vendor` steps above.
+A committed in-repo `vendor/` tree (`cargo vendor`) remains **optional** for
+operators who need fully vendored Rust sources; CI wheelhouse/wheel prefetch
+is the v2 gate. Operator air-gap install still uses the wheelhouse /
+`cargo vendor` steps above.
 
 ## Verification
 
@@ -105,7 +123,7 @@ Release artifacts also ship `SHA256SUMS` + cosign bundle — see `docs/PACKAGING
 
 ## Limits
 
-- Hermetic CI v1 uses prefetch + `CARGO_NET_OFFLINE` — not a committed vendor tree (WBS-P1.6 done for smoke; full vendor deferred).
+- Hermetic CI v2 uses prefetch + offline gates for **both** Rust (`CARGO_NET_OFFLINE`) and Python (`PIP_NO_INDEX` wheelhouse import). A committed `vendor/` tree remains optional.
 - Desktop Electrobun packages still need a host with Bun/OS toolchains (or a prebuilt DMG/zip from GitHub Releases copied offline).
 - Authenticode / Apple notarization remain org-certificate workflows (W-224).
 - Native mobile is out of scope (W-223).

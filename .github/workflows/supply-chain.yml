@@ -117,14 +117,36 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
       - uses: dtolnay/rust-toolchain@fa04a1451ff1842e2626ccb99004d0195b455a88
         with:
           toolchain: stable
-      - name: Hermetic smoke (fetch once + offline melosviz-mir check)
+      - name: Hermetic Rust smoke (fetch once + offline melosviz-mir check)
         run: |
           sed -i 's/\r$//' scripts/check_hermetic_smoke.sh
           chmod +x scripts/check_hermetic_smoke.sh
           bash scripts/check_hermetic_smoke.sh
+      - name: Hermetic Python smoke (wheelhouse prefetch + offline import)
+        run: |
+          sed -i 's/\r$//' scripts/check_hermetic_python_smoke.sh
+          chmod +x scripts/check_hermetic_python_smoke.sh
+          bash scripts/check_hermetic_python_smoke.sh
+
+  portability-smoke:
+    name: Core portability without FFmpeg/Blender
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b
+        with:
+          python-version: "3.12"
+      - name: Portability smoke (core import + graceful host-tool absence)
+        run: python scripts/check_portability_smoke.py
 
   sbom:
     name: CycloneDX SBOM (python + cargo)

@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.0% · A** (2026-07-13, p1m-flaky-profiler).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.5% · A** (2026-07-13, p1n-hermetic-python).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -45,10 +45,10 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C05-03 | C05 | L44 | Desktop Bun client does not inject traceparent | L | integ | `desktop/src/index.ts` bridgeFetch + health; `docs/OBSERVABILITY.md` | closed | — | C05 L44 |
 | G-C06-01 | C06 | L55 | No automated reserved-name scanner in CI | H | ci | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | closed | WBS-P1.4 | C06 L55 |
 | G-C06-02 | C06 | L52 | No SOURCE_DATE_EPOCH / bit-identical release check | H | ci | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.5 | C06 L52 |
-| G-C06-03 | C06 | L54 | Builds not hermetic (CI still fetches crates/pypi) | H | ci | `scripts/check_hermetic_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md` (full in-repo vendor still open) | mitigated | WBS-P1.6 | C06 L54 |
+| G-C06-03 | C06 | L54 | Builds not hermetic (CI still fetches crates/pypi) | H | ci | `scripts/check_hermetic_smoke.sh`; `scripts/check_hermetic_python_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md` (committed vendor/ optional) | closed | WBS-P1.6 · WBS-P1.14 | C06 L54 |
 | G-C07-01 | C07 | L64 | Full desktop e2e still macOS-host-only | M | e2e | Linux CI `desktop-e2e` (bridge HTTP layer, no display) — L64 score 3; full GUI Electrobun/AppKit still host-gated | mitigated | WBS-P1.9 | C07 L64 |
 | G-C07-02 | C07 | L67 | Nightly fuzz window short (not continuous farm) | M | ci | `.github/workflows/cargo-fuzz.yml` (PR 60s / schedule+dispatch 300s per target; continuous farm still open) | mitigated | WBS-P1.9 | C07 L67 |
-| G-C07-03 | C07 | L54/L70 | Hermetic/offline + external FFmpeg/Blender deps | M | doc | `docs/AIRGAP.md`; `scripts/check_hermetic_smoke.sh`; lane C07 L70 (FFmpeg/Blender still external) | mitigated | WBS-P1.6 | C07 L70 |
+| G-C07-03 | C07 | L54/L70 | Hermetic/offline + external FFmpeg/Blender deps | M | ci | `scripts/check_hermetic_python_smoke.sh`; `scripts/check_portability_smoke.py`; `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | closed | WBS-P1.6 · WBS-P1.14 | C07 L70 |
 | G-C08-01 | C08 | L71 | Licensed real-track corpus (legal) | L | manual | `docs/EVAL.md`; `audit/.lane-c08/C08.md` | open | WBS-P4.6 | C08 L71 |
 | G-C08-02 | C08 | L72 | Full 180s Criterion not on every PR | L | ci | `criterion-smoke.yml` (1s filter) | accepted | — | C08 L72 |
 | G-C08-03 | C08 | L78 | No flaky quarantine auto-detect / registry sync | M | ci | `scripts/check_flaky_quarantine.py`; `docs/EVAL.md` registry; `.github/workflows/docs-trace.yml` | closed | WBS-P1.13 | C08 L78 |
