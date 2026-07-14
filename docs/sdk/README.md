@@ -1,128 +1,151 @@
-# MelosViz external SDK stubs
+# MelosViz SDK — GitHub Packages consumer guide
 
-MelosViz is consumed primarily as:
+MelosViz ships **publishable-shape** npm packages on **GitHub Packages**
+(`npm.pkg.github.com`), not public npmjs.com. PyPI and crates.io publish remain
+deferred — see `docs/SUPPLY_CHAIN.md` reserved-name policy.
 
-1. **CLI / Python package** — `backend/` (`pip install -e backend/`)
-2. **HTTP bridge** — FastAPI on `:8765` (OpenAPI at `/docs` when running)
-3. **Rust crates** — `melosviz-mir`, `melosviz-render-wgpu` (workspace members)
+| Package | Path in repo | Purpose |
+|---------|--------------|---------|
+| `@melosviz/bridge-client` | `sdk/ts/` | Bridge HTTP client stub |
+| `@melosviz/brand-tokens` | `packages/brand-tokens/` | Brand CSS token re-export |
+| `@melosviz/ui` | `packages/ui/` | Shared React design-system components |
 
-## GitHub Packages (npm) — publish path
+**Publish:** `.github/workflows/publish-sdk-packages.yml` (`workflow_dispatch` or
+tag `sdk-v*`) via `scripts/publish_sdk_packages.sh`. First green Actions publish
+run may still be pending — until then, consume from the monorepo with `file:`
+links (how `web/package.json` wires UI today).
 
-Three scoped npm packages are configured for **GitHub Packages**
-(`https://npm.pkg.github.com`) under the `KooshaPari/Melosviz` repository:
+## First-run: authenticate to GitHub Packages
 
-| Package | Path |
-|---------|------|
-| `@melosviz/bridge-client` | `sdk/ts/` |
-| `@melosviz/brand-tokens` | `packages/brand-tokens/` |
-| `@melosviz/ui` | `packages/ui/` |
+You need a GitHub **personal access token (classic or fine-grained)** with
+`read:packages` for the `KooshaPari/Melosviz` org/user scope.
 
-**Publish workflow:** `.github/workflows/publish-sdk-packages.yml`
+### Project-local `.npmrc` (recommended)
 
-- `workflow_dispatch` (optional `dry_run` input — pack only, no registry write)
-- `push` on tags matching `sdk-v*` (e.g. `sdk-v0.1.0`)
+Create or merge into your app's `.npmrc` (do **not** commit tokens):
 
-Uses `GITHUB_TOKEN` / `NODE_AUTH_TOKEN` with `packages: write`. Publish order:
-`@melosviz/brand-tokens` → `@melosviz/bridge-client` → `@melosviz/ui` (see
-`scripts/publish_sdk_packages.sh`).
+```ini
+@melosviz:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
+```
 
-**Status (honest):** workflow + `publishConfig` + consumption docs ship in-repo.
-G-C11-06 is **mitigated** until the first successful Actions publish run lands on
-`main`. PyPI and crates.io remain open (same gap row).
+Export the token in your shell (or CI secret):
 
-### Consume from GitHub Packages
+```bash
+export GITHUB_PACKAGES_TOKEN=ghp_xxxxxxxx   # read:packages
+```
 
-1. Create a [GitHub personal access token](https://github.com/settings/tokens) with
-   `read:packages` (and `repo` if the package is private).
-
-2. Authenticate npm to GitHub Packages:
+### One-shot login (interactive)
 
 ```bash
 npm login --registry=https://npm.pkg.github.com
 # Username: your GitHub username
-# Password: <PAT with read:packages>
-# Email: your GitHub email
+# Password: PAT with read:packages (not your GitHub password)
+# Email: (optional)
 ```
 
-Or write `~/.npmrc`:
+## Install published packages
 
-```ini
-@melosviz:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=ghp_xxxxxxxx
-```
-
-3. Install (publish `@melosviz/brand-tokens` before `@melosviz/ui` if you pin versions manually):
+After a successful publish workflow run:
 
 ```bash
 npm install @melosviz/brand-tokens @melosviz/bridge-client @melosviz/ui
 ```
 
-4. Import (TypeScript / bundler):
+`@melosviz/ui` depends on `@melosviz/brand-tokens` — install both or let npm
+resolve the peer tree.
 
-```ts
-import { analyze, BRIDGE_PATHS } from "@melosviz/bridge-client";
-import { Button, EmptyState, Skeleton } from "@melosviz/ui";
-import "@melosviz/brand-tokens/tokens.css";
-```
+### Bun / pnpm
 
-### Local publish dry-run (no registry)
+Bun respects the same `.npmrc` scope mapping:
 
 ```bash
-make sdk-publish-dry-run
-# or: MELOSVIZ_SDK_PUBLISH_DRY_RUN=1 bash scripts/publish_sdk_packages.sh
+bun add @melosviz/bridge-client @melosviz/brand-tokens @melosviz/ui
 ```
 
-## Not on public npm / PyPI / crates.io yet
+## Consume without publish (monorepo / fork)
 
-- **npmjs.com** — MelosViz does not publish to the public npm registry today.
-- **PyPI / crates.io** — Python and Rust SDK surfaces remain in-repo / from source;
-  `cargo publish` / `twine upload` require an explicit release owner (WBS-P3.1).
+Inside this repository, web and smoke tests use **workspace file links** — no
+registry auth required:
 
-Reserved / scoped names are listed in [`docs/SUPPLY_CHAIN.md`](../SUPPLY_CHAIN.md).
+```json
+{
+  "dependencies": {
+    "@melosviz/brand-tokens": "file:../packages/brand-tokens",
+    "@melosviz/ui": "file:../packages/ui"
+  }
+}
+```
 
-## Publishable-shape gate (CI)
+Bridge client stub:
 
-`.github/workflows/supply-chain.yml` job **`sdk-pack-smoke`** runs
-`scripts/check_sdk_pack_smoke.sh` on every PR / `main` push:
+```json
+"@melosviz/bridge-client": "file:../sdk/ts"
+```
 
-1. `npm pack` for `@melosviz/brand-tokens`, `@melosviz/bridge-client`, `@melosviz/ui`
-2. Install the tarballs into a throwaway directory (`npm install *.tgz`)
-3. Import entrypoints via `scripts/sdk_pack_smoke.mjs` (bun)
+Verify publishable shape locally:
 
-This proves tarball layout + exports are installable. Registry publish is a
-separate workflow (`publish-sdk-packages.yml`).
+```bash
+./scripts/check_sdk_pack_smoke.sh
+```
 
-## Planned SDK surfaces (stubs)
+## Minimal usage
 
-| SDK | Language | Status | Entry |
-|-----|----------|--------|-------|
-| Bridge HTTP client | TypeScript | stub (GH Packages path) | `sdk/ts/` (`@melosviz/bridge-client`) |
-| Brand tokens | CSS | stub (GH Packages path) | `packages/brand-tokens` (`@melosviz/brand-tokens`) |
-| Design system | React/TS | shipped in-repo | `packages/ui` (`@melosviz/ui`) |
-| RenderSpec types | TypeScript | partial | `web/src/renderSpec.ts` |
-| MIR CLI | Rust binary | shipped | `cargo run -p melosviz-mir` |
+**Tokens** — load CSS once in your app entry (web loads `brand.css` which
+`@import`s the package):
 
-### TypeScript package shape (`sdk/ts`)
+```ts
+import '@melosviz/brand-tokens/tokens.css'
+```
 
-`@melosviz/bridge-client` is a publishable-shape stub with:
+**UI components:**
 
-- `publishConfig.registry` → `https://npm.pkg.github.com`
-- Scoped name reserved under the MelosViz supply-chain policy
-- `exports` map pointing at `src/index.ts` (placeholder API)
+```tsx
+import { Button, EmptyState, Skeleton } from '@melosviz/ui'
+```
 
-See `sdk/ts/README.md` and `sdk/ts/package.json`. Full client generation from
-OpenAPI remains WBS-P3.1.
+**Bridge client** (after publish or `file:` link):
 
-## Stability
+```ts
+import { analyze, BRIDGE_PATHS } from '@melosviz/bridge-client'
 
-- RenderSpec v2 JSON is the cross-language contract (Python pydantic + Rust serde).
-- Bridge paths `/health`, `/ready`, `/metrics`, `/analyze`, `/build`, `/render`
-  are the supported HTTP surface; `/debug/profile` is opt-in.
-- Contract SoT: `docs/api/openapi.json` (CI drift gate).
+const summary = await analyze('http://127.0.0.1:8765', {
+  audio_path: '/path/to/track.wav',
+})
+```
 
-## Related
+The live web app still uses its own fetch helpers against the OpenAPI contract
+(`docs/api/openapi.json`) until you explicitly adopt the stub client.
 
-- `docs/PACKAGING.md` — channel map + SDK gate + GH Packages consume
-- `docs/SUPPLY_CHAIN.md` — reserved names, install surfaces
-- `docs/DISTRIBUTION_POLICY.md` — what MelosViz does / does not ship
-- `docs/WBS_PHASED.md` — WBS-P3.1 publish milestone
+## Bridge dev URL (default port)
+
+Local bridge sidecar defaults to **`http://127.0.0.1:8765`**. Quick health probe:
+
+```bash
+./scripts/dev_bridge.sh health
+# or: curl -sf http://127.0.0.1:8765/health
+```
+
+Packaged desktop may mint bearer auth — for manual bridge debugging set
+`MELOSVIZ_BRIDGE_INSECURE_LOOPBACK=1` (see `docs/ENV.md`).
+
+## CI / automation
+
+In GitHub Actions, use `GITHUB_TOKEN` or a dedicated `read:packages` PAT:
+
+```yaml
+- run: npm ci
+  env:
+    GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Ensure `.npmrc` in the job uses `${GITHUB_PACKAGES_TOKEN}` as above. For
+cross-repo consumers outside GitHub Actions, use a PAT stored as a repository
+secret.
+
+## Related docs
+
+- `docs/PACKAGING.md` — SDK publishable-shape gate (C11 L116)
+- `docs/SUPPLY_CHAIN.md` — reserved names, dependency-confusion policy
+- `sdk/ts/README.md` — bridge-client stub details
+- `packages/ui/README.md` — design-system scope and wiring

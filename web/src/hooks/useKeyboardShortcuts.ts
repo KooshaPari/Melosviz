@@ -1,20 +1,27 @@
 import { useEffect } from 'react'
 
+export type ShortcutGroup = 'playback' | 'view' | 'help'
+
 export interface ShortcutDef {
   key: string
-  label: string
+  labelKey: string
   description: string
+  group: ShortcutGroup
 }
 
+export const SHORTCUT_GROUPS: ShortcutGroup[] = ['playback', 'view', 'help']
+
 export const SHORTCUT_DEFS: ShortcutDef[] = [
-  { key: 'Space', label: 'Space', description: 'Toggle play / pause' },
-  { key: '←', label: '← Arrow', description: 'Seek back 5 s' },
-  { key: '→', label: '→ Arrow', description: 'Seek forward 5 s' },
-  { key: '?', label: '?', description: 'Open keyboard shortcut help' },
-  { key: 'Escape', label: 'Esc', description: 'Close modal / reset focus' },
-  { key: 'p', label: 'P', description: 'Open preset editor' },
-  { key: 'f', label: 'F', description: 'Toggle fullscreen scene view' },
-  { key: 'r', label: 'R', description: 'Restart playback from beginning' },
+  { key: 'Space', labelKey: 'keyboard.label.space', description: 'keyboard.shortcut.play_pause', group: 'playback' },
+  { key: '←', labelKey: 'keyboard.label.arrow_left', description: 'keyboard.shortcut.seek_back', group: 'playback' },
+  { key: '→', labelKey: 'keyboard.label.arrow_right', description: 'keyboard.shortcut.seek_forward', group: 'playback' },
+  { key: 'm', labelKey: 'keyboard.label.m', description: 'keyboard.shortcut.toggle_mute', group: 'playback' },
+  { key: 'l', labelKey: 'keyboard.label.l', description: 'keyboard.shortcut.toggle_loop', group: 'playback' },
+  { key: 'r', labelKey: 'keyboard.label.r', description: 'keyboard.shortcut.restart', group: 'playback' },
+  { key: 'p', labelKey: 'keyboard.label.p', description: 'keyboard.shortcut.open_preset', group: 'view' },
+  { key: 'f', labelKey: 'keyboard.label.f', description: 'keyboard.shortcut.toggle_fullscreen', group: 'view' },
+  { key: '?', labelKey: 'keyboard.label.question', description: 'keyboard.shortcut.open_help', group: 'help' },
+  { key: 'Escape', labelKey: 'keyboard.label.escape', description: 'keyboard.shortcut.close_modal', group: 'help' },
 ]
 
 export interface KeyboardShortcutActions {
@@ -25,6 +32,8 @@ export interface KeyboardShortcutActions {
   closeModal: () => void
   openPresetEditor: () => void
   toggleFullscreen: () => void
+  toggleMute: () => void
+  toggleLoop: () => void
   restartPlayback: () => void
 }
 
@@ -70,6 +79,14 @@ export function useKeyboardShortcuts(actions: KeyboardShortcutActions): void {
         case 'f':
         case 'F':
           actions.toggleFullscreen()
+          break
+        case 'm':
+        case 'M':
+          actions.toggleMute()
+          break
+        case 'l':
+        case 'L':
+          actions.toggleLoop()
           break
         case 'r':
         case 'R':

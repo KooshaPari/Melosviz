@@ -24,6 +24,55 @@
   --mv-secondary-glow: var(--mv-neon-cyan-dim);
 }
 
+/* Optional high-contrast boost — toggled via ThemeProvider (data-high-contrast on <html>) */
+[data-high-contrast="true"] {
+  --mv-border: #c8c8dc;
+  --mv-border-subtle: #9898b8;
+  --mv-border-focus: #22d3ee;
+  --mv-text-lo: #c0c0d8;
+  --mv-text-mid: #ececf8;
+  --mv-text-hi: #ffffff;
+  --mv-accent-glow: rgba(124, 106, 247, 0.45);
+}
+
+[data-theme="light"][data-high-contrast="true"] {
+  --mv-border: #1a0e1f;
+  --mv-border-subtle: #3d3550;
+  --mv-border-focus: #312e81;
+  --mv-text-lo: #374151;
+  --mv-text-mid: #111827;
+  --mv-text-hi: #000000;
+}
+
+/* Skip link — first focusable control; see docs/a11y/FOCUS.md */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 8px 14px;
+  background: var(--mv-accent, #7c6af7);
+  color: #fff;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+}
+.skip-link:focus {
+  left: 12px;
+  top: 8px;
+}
+
+/* Studio chrome: visible focus rings on dark/light panels (WCAG 2.4.7) */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--mv-border-focus, #22d3ee);
+  outline-offset: 2px;
+}
+
 /* Mobile responsive breakpoints */
 @media (max-width: 768px) {
   .mv-layout { flex-direction: column !important; }

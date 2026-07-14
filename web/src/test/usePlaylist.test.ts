@@ -89,6 +89,24 @@ describe('usePlaylist', () => {
     expect(newIds[1]).toBe(originalIds[2])
   })
 
+  it('reorder move-down keeps currentIndex on the moved item', () => {
+    const analyze = vi.fn().mockImplementation(pendingAnalyze)
+    const { result } = renderHook(() => usePlaylist(analyze))
+
+    act(() => {
+      result.current.addFiles([makeFile('a.mp3'), makeFile('b.mp3'), makeFile('c.mp3')])
+    })
+    act(() => {
+      result.current.setCurrentIndex(1)
+    })
+    act(() => {
+      result.current.reorder(1, 2)
+    })
+
+    expect(result.current.currentIndex).toBe(2)
+    expect(result.current.queue[2]?.file.name).toBe('b.mp3')
+  })
+
   it('clearQueue empties the queue and resets state', () => {
     const analyze = vi.fn().mockImplementation(pendingAnalyze)
     const { result } = renderHook(() => usePlaylist(analyze))

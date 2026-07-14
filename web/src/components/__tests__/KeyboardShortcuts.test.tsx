@@ -18,6 +18,8 @@ function makeActions(overrides: Partial<KeyboardShortcutActions> = {}): Keyboard
     closeModal: vi.fn(),
     openPresetEditor: vi.fn(),
     toggleFullscreen: vi.fn(),
+    toggleMute: vi.fn(),
+    toggleLoop: vi.fn(),
     restartPlayback: vi.fn(),
     ...overrides,
   }
@@ -85,6 +87,20 @@ describe('useKeyboardShortcuts', () => {
     expect(actions.toggleFullscreen).toHaveBeenCalledTimes(1)
   })
 
+  it('calls toggleMute on m', () => {
+    const actions = makeActions()
+    renderHook(() => useKeyboardShortcuts(actions))
+    fireKey('m')
+    expect(actions.toggleMute).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls toggleLoop on l', () => {
+    const actions = makeActions()
+    renderHook(() => useKeyboardShortcuts(actions))
+    fireKey('l')
+    expect(actions.toggleLoop).toHaveBeenCalledTimes(1)
+  })
+
   it('calls restartPlayback on r', () => {
     const actions = makeActions()
     renderHook(() => useKeyboardShortcuts(actions))
@@ -140,7 +156,13 @@ describe('KeyboardHelp', () => {
   it('renders shortcut rows when open=true', () => {
     render(<KeyboardHelp open={true} onOpenChange={vi.fn()} />)
     expect(screen.getByText('Keyboard Shortcuts')).toBeTruthy()
+    expect(screen.getByText('Playback')).toBeTruthy()
+    expect(screen.getByText('View')).toBeTruthy()
+    expect(screen.getByText('Help')).toBeTruthy()
     expect(screen.getByText('Toggle play / pause')).toBeTruthy()
+    expect(screen.getByText('Toggle fullscreen scene view')).toBeTruthy()
+    expect(screen.getByText('Toggle track audio mute')).toBeTruthy()
+    expect(screen.getByText('Toggle scene loop at end')).toBeTruthy()
   })
 
   it('does not render content when open=false', () => {
@@ -151,14 +173,15 @@ describe('KeyboardHelp', () => {
   it('calls onOpenChange(false) when close button is clicked', async () => {
     const onOpenChange = vi.fn()
     render(<KeyboardHelp open={true} onOpenChange={onOpenChange} />)
-    const closeBtn = screen.getByLabelText('Close keyboard help')
-    fireEvent.click(closeBtn)
+    const closeBtn = document.getElementById('keyboard-help-close')
+    expect(closeBtn).toBeTruthy()
+    fireEvent.click(closeBtn!)
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it('moves initial focus to the close control when opened (FOCUS.md)', async () => {
     render(<KeyboardHelp open={true} onOpenChange={vi.fn()} />)
-    const closeBtn = screen.getByLabelText('Close keyboard help')
+    const closeBtn = document.getElementById('keyboard-help-close')
     await waitFor(() => {
       expect(document.activeElement).toBe(closeBtn)
     })

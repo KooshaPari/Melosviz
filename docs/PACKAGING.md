@@ -13,8 +13,22 @@ This document is the Time-2 packaging map for audit-v38 cluster C11.
 | Windows desktop | Electrobun package (packaging soft-fail) | `windows-desktop` (install/build hard-fail; package/upload `continue-on-error`) |
 | GHCR bridge | `ghcr.io/kooshapari/melosviz-bridge` | `ghcr-bridge.yml` |
 | Air-gap tarball | `scripts/airgap_bundle.sh` → `dist/airgap/*.tar.gz` | local / operator |
+| Air-gap desktop (prebuilt) | `scripts/airgap_fetch_desktop.sh` → `dist/airgap/desktop/`; optional `INCLUDE_DESKTOP=1` in bundle | local / operator |
 | SBOM | CycloneDX Python + Cargo | `sbom` |
 | Provenance | GitHub attestations + cosign | `release` |
+
+## Air-gap desktop (offline operator path)
+
+Isolated networks should **not** attempt a from-source Electrobun build without
+Bun/OS toolchains. Use the prebuilt release copy path instead:
+
+```bash
+MELOSVIZ_RELEASE_TAG=v0.4.0 ./scripts/airgap_fetch_desktop.sh
+INCLUDE_DESKTOP=1 ./scripts/airgap_bundle.sh   # fold into dated tarball
+```
+
+See `docs/AIRGAP.md` § Desktop prebuilt path. Full vendored offline Electrobun
+build remains deferred (**WBS-P4.3** / **G-C11-04 mitigated**).
 
 ## Windows CLI-only fallback
 
@@ -26,6 +40,12 @@ when `windows-cli` (and other hard jobs) succeed — ship CLI zip only.
 Install + `cargo build` + Electrobun `build` on `windows-desktop` hard-fail
 so regressions in those steps block the job. Only packaging/artifact steps
 use step-level `continue-on-error` (job-level soft-fail removed; WBS-P1.10).
+
+**What this means for Windows users:** a tagged release may ship **CLI zip only**
+when desktop packaging soft-fails — that is expected, not a broken release. Use
+`windows-cli` artifacts from GitHub Releases, or build desktop locally (below).
+Bridge sidecar dev is independent: `./scripts/dev_bridge.sh health` (default
+`:8765`).
 
 ## From source
 
@@ -161,8 +181,9 @@ npm login --registry=https://npm.pkg.github.com
 npm install @melosviz/brand-tokens @melosviz/bridge-client @melosviz/ui
 ```
 
-See `docs/sdk/README.md` for full `~/.npmrc` examples. PyPI / crates.io publish
-remains open under G-C11-06 / WBS-P3.1.
+See [`docs/sdk/README.md`](sdk/README.md) for first-run `.npmrc`, PAT scopes,
+monorepo `file:` wiring, and CI token patterns. PyPI / crates.io publish remains
+open under G-C11-06 / WBS-P3.1.
 
 ## Desktop bridge auth (C04 L40)
 

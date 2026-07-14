@@ -1,4 +1,5 @@
 import { useId, useRef } from 'react'
+import { t, tf } from '../i18n'
 import {
   DndContext,
   closestCenter,
@@ -70,10 +71,10 @@ const STATUS_STYLES: Record<PlaylistItem['status'], string> = {
 }
 
 const STATUS_LABELS: Record<PlaylistItem['status'], string> = {
-  pending: 'pending',
-  analyzing: 'analyzing…',
-  done: 'done',
-  error: 'error',
+  pending: t('status.pending'),
+  analyzing: t('status.analyzing_badge'),
+  done: t('status.done'),
+  error: t('status.error_badge'),
 }
 
 function formatDuration(secs?: number): string {
@@ -87,12 +88,27 @@ function formatDuration(secs?: number): string {
 
 interface SortableItemProps {
   item: PlaylistItem
+  index: number
   isActive: boolean
+  canMoveUp: boolean
+  canMoveDown: boolean
   onSelect: () => void
   onRemove: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
 }
 
-function SortableRow({ item, isActive, onSelect, onRemove }: SortableItemProps) {
+function SortableRow({
+  item,
+  index,
+  isActive,
+  canMoveUp,
+  canMoveDown,
+  onSelect,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+}: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id })
 
@@ -102,22 +118,39 @@ function SortableRow({ item, isActive, onSelect, onRemove }: SortableItemProps) 
     opacity: isDragging ? 0.5 : 1,
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!e.altKey) return
+    if (e.key === 'ArrowUp' && canMoveUp) {
+      e.preventDefault()
+      onMoveUp()
+    } else if (e.key === 'ArrowDown' && canMoveDown) {
+      e.preventDefault()
+      onMoveDown()
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer select-none border transition-colors ${
+      role="listitem"
+      tabIndex={0}
+      aria-posinset={index + 1}
+      className={`flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer select-none border transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-fuchsia-500/50 ${
         isActive
           ? 'bg-fuchsia-500/20 border-fuchsia-500/40'
           : 'bg-white/5 border-white/10 hover:bg-white/10'
       }`}
       onClick={onSelect}
+      onKeyDown={handleKeyDown}
     >
       {/* Drag handle */}
       <span
         {...attributes}
         {...listeners}
         className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing text-xs flex-shrink-0"
+        title={t('playlist.drag_hint')}
+        aria-label={t('playlist.drag_hint')}
         onClick={(e) => e.stopPropagation()}
       >
         ⠿
@@ -142,6 +175,36 @@ function SortableRow({ item, isActive, onSelect, onRemove }: SortableItemProps) 
         {STATUS_LABELS[item.status]}
       </span>
 
+      {/* Reorder buttons (keyboard: Alt+↑/↓ when row focused) */}
+      <div className="flex flex-col flex-shrink-0 gap-0.5">
+        <button
+          type="button"
+          className="text-[10px] leading-none text-white/25 hover:text-white/60 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          disabled={!canMoveUp}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveUp()
+          }}
+          aria-label={tf('playlist.move_up_aria', { name: item.file.name })}
+          title={t('playlist.move_up')}
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          className="text-[10px] leading-none text-white/25 hover:text-white/60 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          disabled={!canMoveDown}
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveDown()
+          }}
+          aria-label={tf('playlist.move_down_aria', { name: item.file.name })}
+          title={t('playlist.move_down')}
+        >
+          ▼
+        </button>
+      </div>
+
       {/* Remove button */}
       <button
         className="flex-shrink-0 text-white/20 hover:text-red-400 text-xs transition-colors"
@@ -149,7 +212,7 @@ function SortableRow({ item, isActive, onSelect, onRemove }: SortableItemProps) 
           e.stopPropagation()
           onRemove()
         }}
-        title="Remove"
+        title={t('playlist.remove')}
       >
         ✕
       </button>
@@ -190,24 +253,29 @@ export function PlaylistPanel({ playlist, onSelectItem }: PlaylistPanelProps) {
     e.target.value = ''
   }
 
+  const doneCount = queue.filter((i) => i.status === 'done').length
+  const settledCount = queue.filter((i) => i.status === 'done' || i.status === 'error').length
+  const analyzingItem = queue.find((i) => i.status === 'analyzing')
+  const progressPct = queue.length > 0 ? Math.round((settledCount / queue.length) * 100) : 0
+
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-black/40 border border-white/10 p-3 w-64">
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-xs text-white/50 font-medium uppercase tracking-wider">
-          Playlist {queue.length > 0 && `(${queue.length})`}
+          {t('playlist.title')} {queue.length > 0 && `(${queue.length})`}
         </span>
         <div className="flex items-center gap-1">
           {isProcessing && (
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" title="Processing" />
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" title={t('playlist.processing')} />
           )}
           {queue.length > 0 && (
             <button
               onClick={clearQueue}
               className="text-[10px] text-white/30 hover:text-red-400 transition-colors px-1"
-              title="Clear all"
+              title={t('playlist.clear')}
             >
-              Clear
+              {t('playlist.clear')}
             </button>
           )}
         </div>
@@ -226,31 +294,69 @@ export function PlaylistPanel({ playlist, onSelectItem }: PlaylistPanelProps) {
       {queue.length === 0 ? (
         <EmptyState
           icon={<EmptyQueueArt />}
-          title="Queue is empty"
-          description="Load audio to analyze beats and build a scene — or drop files here."
+          title={t('empty.queue_title')}
+          description={t('empty.queue_hint')}
           action={
             <Button className="mt-0.5 w-full" onClick={() => fileInputRef.current?.click()}>
-              Load audio
+              {t('empty.queue_action')}
             </Button>
           }
-          footnote="WAV · MP3 · audio/*"
+          footnote={t('empty.queue_footnote')}
         />
       ) : (
         <>
-          <Button onClick={() => fileInputRef.current?.click()}>+ Add files</Button>
+          {queue.length > 1 && (
+            <div className="flex flex-col gap-1.5" aria-live="polite">
+              <div className="flex items-center justify-between gap-2 text-[10px] text-white/40 min-w-0">
+                <span className="truncate">
+                  {isProcessing && analyzingItem
+                    ? tf('playlist.processing_current', {
+                        index: settledCount + 1,
+                        total: queue.length,
+                        name: analyzingItem.file.name,
+                      })
+                    : tf('playlist.progress', { done: doneCount, total: queue.length })}
+                </span>
+                <span className="flex-shrink-0 tabular-nums">{progressPct}%</span>
+              </div>
+              <div
+                className="h-1 rounded-full bg-white/10 overflow-hidden"
+                role="progressbar"
+                aria-valuenow={progressPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={tf('playlist.progress', { done: doneCount, total: queue.length })}
+              >
+                <div
+                  className="h-full rounded-full bg-cyan-500/70 transition-[width] duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <Button onClick={() => fileInputRef.current?.click()}>{t('playlist.add_files')}</Button>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={queue.map((i) => i.id)} strategy={verticalListSortingStrategy}>
-              <div className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1">
+              <div
+                className="flex flex-col gap-1 max-h-64 overflow-y-auto pr-1"
+                role="list"
+                aria-label={t('playlist.title')}
+              >
                 {queue.map((item, idx) => (
                   <SortableRow
                     key={item.id}
                     item={item}
+                    index={idx}
                     isActive={idx === currentIndex}
+                    canMoveUp={idx > 0}
+                    canMoveDown={idx < queue.length - 1}
                     onSelect={() => {
                       setCurrentIndex(idx)
                       if (item.status === 'done') onSelectItem(item)
                     }}
                     onRemove={() => removeItem(item.id)}
+                    onMoveUp={() => reorder(idx, idx - 1)}
+                    onMoveDown={() => reorder(idx, idx + 1)}
                   />
                 ))}
               </div>
