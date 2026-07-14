@@ -3,7 +3,7 @@ import { SceneView } from './r3fRenderer'
 import { AudioAdapter } from './audioAdapter'
 import type { RenderSpec } from './renderSpec'
 import { SpecViewer } from './components/SpecViewer'
-import { useAnalysis } from './hooks/useAnalysis'
+import { useAnalysis, analyzeAudioPath } from './hooks/useAnalysis'
 import { usePlaylist } from './hooks/usePlaylist'
 import type { PlaylistItem } from './hooks/usePlaylist'
 import { PlaylistPanel } from './components/PlaylistPanel'
@@ -66,23 +66,11 @@ export default function App() {
   const { theme, toggle: toggleTheme } = useTheme()
   const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
 
-  // Playlist: wraps useAnalysis.analyze for file-based inputs
-  const analyzeFile = useCallback(async (objectUrl: string): Promise<RenderSpec> => {
-    await analyze(objectUrl)
-    // analyze() updates state; we need a direct fetch here for the playlist
-    const res = await fetch('/api/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audio_path: objectUrl }),
-    })
-    if (!res.ok) throw new Error(`Server error: ${res.status}`)
-    const raw = (await res.json()) as Record<string, unknown>
-    return {
-      durationSecs: (raw.durationSecs as number) ?? (raw.duration_sec as number) ?? 240,
-      keyframes: (raw.keyframes as RenderSpec['keyframes']) ?? [],
-      bpm: raw.bpm as number | undefined,
-    }
-  }, [analyze])
+  // Playlist: wraps analyzeAudioPath for blob: URLs (upload → analyze)
+  const analyzeFile = useCallback(
+    (objectUrl: string) => analyzeAudioPath(objectUrl),
+    [],
+  )
 
   const playlist = usePlaylist(analyzeFile)
   // Track which playlist item the user is actively viewing

@@ -322,3 +322,66 @@ class TestAnalyzeHappyPath:
         assert tempo is None or isinstance(tempo, (int, float)), (
             f"mir.tempo_bpm must be numeric or null, got {type(tempo)}"
         )
+
+
+# ---------------------------------------------------------------------------
+# POST /analyze — audio_path alias
+# ---------------------------------------------------------------------------
+
+
+class TestAnalyzeAudioPathAlias:
+    def test_audio_path_accepted(
+        self,
+        client: TestClient,
+        minimal_wav: Path,
+        mock_render_spec: dict,
+    ) -> None:
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python",
+            return_value=mock_render_spec,
+        ):
+            response = client.post(
+                "/analyze", json={"audio_path": str(minimal_wav)}
+            )
+        assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# POST /upload
+# ---------------------------------------------------------------------------
+
+
+class TestUploadEndpoint:
+    def test_upload_returns_wav_path(
+        self, client: TestClient, minimal_wav: Path
+    ) -> None:
+        with minimal_wav.open("rb") as fh:
+            response = client.post(
+                "/upload",
+                files={"file": ("tone.wav", fh, "audio/wav")},
+            )
+        assert response.status_code == 200
+        body = response.json()
+        assert "wav_path" in body
+        uploaded = Path(body["wav_path"])
+        assert uploaded.exists()
+        assert uploaded.stat().st_size > 0
+
+    def test_uploaded_file_can_be_analyzed(
+        self,
+        client: TestClient,
+        minimal_wav: Path,
+        mock_render_spec: dict,
+    ) -> None:
+        with minimal_wav.open("rb") as fh:
+            up = client.post(
+                "/upload",
+                files={"file": ("tone.wav", fh, "audio/wav")},
+            )
+        wav_path = up.json()["wav_path"]
+        with patch(
+            "melosviz.bridge.server._analyze_with_mir_or_python",
+            return_value=mock_render_spec,
+        ):
+            response = client.post("/analyze", json={"wav_path": wav_path})
+        assert response.status_code == 200

@@ -92,6 +92,11 @@ def max_body_bytes() -> int:
     return _env_int("MELOSVIZ_BRIDGE_MAX_BODY_BYTES", 1 * 1024 * 1024)
 
 
+def max_upload_bytes() -> int:
+    """Multipart upload cap (distinct from JSON POST body cap)."""
+    return _env_int("MELOSVIZ_BRIDGE_MAX_UPLOAD_BYTES", 1024 * 1024 * 1024)
+
+
 # ---------------------------------------------------------------------------
 # 1. Loopback guard
 # ---------------------------------------------------------------------------
@@ -659,13 +664,19 @@ def install_middleware(
                 method == "POST" and path.startswith(("/analyze", "/build", "/render"))
             )
 
-            # Body size cap.
+            # Body / upload size cap (JSON vs multipart upload use separate limits).
             if method == "POST" and is_protected:
                 clen = int(request.headers.get("content-length") or 0)
-                if clen > max_body_bytes():
+                cap = (
+                    max_upload_bytes()
+                    if path == "/upload"
+                    else max_body_bytes()
+                )
+                if clen > cap:
                     self._audit(ip, method, path, 413, start)
+                    label = "Upload" if path == "/upload" else "Body"
                     return JSONResponse(
-                        {"detail": f"Body exceeds {max_body_bytes()} bytes"},
+                        {"detail": f"{label} exceeds {cap} bytes"},
                         status_code=413,
                     )
 
