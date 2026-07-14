@@ -1,0 +1,304 @@
+# In-repo reusable quality gate — powered by qgate (built from phenotype-tooling).
+#
+# MelosViz promotes this locally because KooshaPari/phenotype-tooling's
+# workflow_call entrypoint is unparseable on GitHub (see ci.yml history).
+#
+# Callers in this repo:
+#   jobs:
+#     quality-gate:
+#       needs: backend
+#       uses: ./.github/workflows/reusable/quality-gate.yml
+#       with:
+#         coverage-artifact-name: backend-coverage-py3.12
+#         coverage-report: backend/coverage/lcov.info
+#         threshold: 100
+#         not-applicable: a11y
+#
+# External repos may call:
+#   uses: KooshaPari/Melosviz/.github/workflows/reusable/quality-gate.yml@main
+
+name: quality-gate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      coverage-report:
+        description: "Path to coverage report (lcov, cobertura XML, or JSON)"
+        type: string
+        default: "backend/coverage/lcov.info"
+      coverage-format:
+        description: "Coverage format: lcov | cobertura | json"
+        type: string
+        default: "lcov"
+      threshold:
+        description: "Coverage threshold 0–100 (applied to every module recursively)"
+        type: number
+        default: 100
+      not-applicable:
+        description: "Comma-separated check categories to mark N/A (e.g. 'chaos,a11y')"
+        type: string
+        default: "a11y"
+      qgate-ref:
+        description: "Git ref of phenotype-tooling to build qgate from"
+        type: string
+        default: "main"
+      working-directory:
+        description: "Working directory for qgate (default: repo root)"
+        type: string
+        default: "."
+      coverage-artifact-name:
+        description: "Artifact name from upstream CI job (empty = generate coverage in-job)"
+        type: string
+        default: ""
+      run-baseline-checks:
+        description: "Run MelosViz qgate baseline pytest/bandit/e2e categories before qgate"
+        type: boolean
+        default: true
+      dast-base-url:
+        description: "Base URL for schemathesis DAST runs (empty = N/A)"
+        type: string
+        default: ""
+      dast-schema-url:
+        description: "OpenAPI schema URL for schemathesis (empty = use base URL)"
+        type: string
+        default: ""
+      sast-config:
+        description: "Semgrep config: 'auto' or path to .semgrep.yml (empty = N/A)"
+        type: string
+        default: ""
+      sbom-command:
+        description: "Shell command to generate target/sbom.cdx.json (empty = N/A)"
+        type: string
+        default: ""
+    outputs:
+      gate-status:
+        description: "PASS or FAIL"
+        value: ${{ jobs.gate.outputs.gate-status }}
+      report-json:
+        description: "Full qgate JSON report"
+        value: ${{ jobs.gate.outputs.report-json }}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    name: qgate — granular-recursive quality gate
+    runs-on: ubuntu-22.04
+    outputs:
+      gate-status: ${{ steps.run-gate.outputs.gate-status }}
+      report-json: ${{ steps.run-gate.outputs.report-json }}
+
+    steps:
+      - name: Checkout calling repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download coverage artifact (from caller)
+        if: inputs.coverage-artifact-name != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v4.1.8
+        with:
+          name: ${{ inputs.coverage-artifact-name }}
+          path: backend/coverage
+
+      - name: Set up Python 3.12
+        if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install backend test deps
+        if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
+        working-directory: backend
+        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx pytest-bdd bandit
+
+      - name: Generate coverage (standalone caller)
+        if: inputs.coverage-artifact-name == ''
+        working-directory: backend
+        run: |
+          python -m pytest \
+            --cov=melosviz \
+            --cov-fail-under=85 \
+            --cov-report=term-missing \
+            --cov-report=lcov:coverage/lcov.info \
+            --tb=short -q
+
+      - name: Baseline — static (ruff)
+        if: inputs.run-baseline-checks
+        working-directory: backend
+        run: |
+          python -m ruff check src/ tests/
+          python -m ruff format --check src/ tests/
+
+      - name: Baseline — security (bandit high/critical)
+        if: inputs.run-baseline-checks
+        working-directory: backend
+        run: |
+          python -m bandit -r src/ -ll -ii --quiet || true
+          python -m bandit -r src/ -lll -iii --quiet
+
+      - name: Baseline — chaos / perf / property
+        if: inputs.run-baseline-checks
+        working-directory: backend
+        run: |
+          python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
+          python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
+          python -m pytest tests/test_qgate_backfill.py::TestPropertyPresets -q --tb=short
+
+      - name: Baseline — backend e2e pipeline smoke
+        if: inputs.run-baseline-checks
+        working-directory: backend
+        run: python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@4305c38b25d97ef04a54b3a52498a5f41e40895c # stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea00a3571f6e0 # v2.7.8
+        with:
+          shared-key: qgate-${{ inputs.qgate-ref }}
+
+      - name: Checkout phenotype-tooling (qgate source)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: KooshaPari/phenotype-tooling
+          ref: ${{ inputs.qgate-ref }}
+          path: _phenotype-tooling
+
+      - name: Build qgate
+        run: |
+          cd _phenotype-tooling
+          cargo build --release -p qgate 2>&1
+          echo "QGATE_BIN=$(pwd)/target/release/qgate" >> "$GITHUB_ENV"
+
+      - name: Validate inputs
+        env:
+          INPUT_THRESHOLD: ${{ inputs.threshold }}
+          INPUT_COVERAGE_REPORT: ${{ inputs.coverage-report }}
+          INPUT_COVERAGE_FORMAT: ${{ inputs.coverage-format }}
+          INPUT_NOT_APPLICABLE: ${{ inputs.not-applicable }}
+          INPUT_WORKING_DIR: ${{ inputs.working-directory }}
+          INPUT_DAST_BASE_URL: ${{ inputs.dast-base-url }}
+          INPUT_DAST_SCHEMA_URL: ${{ inputs.dast-schema-url }}
+          INPUT_SAST_CONFIG: ${{ inputs.sast-config }}
+          INPUT_SBOM_COMMAND: ${{ inputs.sbom-command }}
+        run: |
+          if ! echo "$INPUT_THRESHOLD" | grep -qE '^[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::threshold must be a number, got: $INPUT_THRESHOLD"
+            exit 1
+          fi
+          pct=$(echo "$INPUT_THRESHOLD" | awk '{if($1<0||$1>100) exit 1}')
+          if [ $? -ne 0 ]; then
+            echo "::error::threshold must be between 0 and 100"
+            exit 1
+          fi
+          case "$INPUT_COVERAGE_FORMAT" in
+            lcov|cobertura|json|xml) ;;
+            *) echo "::error::coverage-format must be lcov|cobertura|json|xml"; exit 1 ;;
+          esac
+          if echo "$INPUT_COVERAGE_REPORT" | grep -qE '(^|/)\.\.(/|$)'; then
+            echo "::error::coverage-report path must not contain '..'"
+            exit 1
+          fi
+          if echo "$INPUT_WORKING_DIR" | grep -qE '(^|/)\.\.(/|$)'; then
+            echo "::error::working-directory must not contain '..'"
+            exit 1
+          fi
+          if ! echo "$INPUT_NOT_APPLICABLE" | grep -qE '^[a-zA-Z0-9_,]*$'; then
+            echo "::error::not-applicable must only contain letters, digits, underscores, and commas"
+            exit 1
+          fi
+          for v in "$INPUT_DAST_BASE_URL" "$INPUT_DAST_SCHEMA_URL"; do
+            if [ -n "$v" ] && ! echo "$v" | grep -qE '^https?://[A-Za-z0-9._/:?=&%+-]+$'; then
+              echo "::error::dast URL must be http(s)://... or empty"
+              exit 1
+            fi
+          done
+          if [ -n "$INPUT_SAST_CONFIG" ] \
+            && [ "$INPUT_SAST_CONFIG" != "auto" ] \
+            && echo "$INPUT_SAST_CONFIG" | grep -qE '[`$;&|<>]|\.\./'; then
+            echo "::error::sast-config must be 'auto' or a relative path"
+            exit 1
+          fi
+          if echo "$INPUT_SBOM_COMMAND" | grep -qE '[\n`$()]'; then
+            echo "::error::sbom-command must not contain backticks or $()"
+            exit 1
+          fi
+          echo "Input validation passed."
+
+      - name: Write .qgate.toml overrides
+        env:
+          INPUT_THRESHOLD: ${{ inputs.threshold }}
+          INPUT_COVERAGE_REPORT: ${{ inputs.coverage-report }}
+          INPUT_COVERAGE_FORMAT: ${{ inputs.coverage-format }}
+          INPUT_NOT_APPLICABLE: ${{ inputs.not-applicable }}
+          INPUT_WORKING_DIR: ${{ inputs.working-directory }}
+          INPUT_SBOM_COMMAND: ${{ inputs.sbom-command }}
+        run: |
+          WORK_DIR="${INPUT_WORKING_DIR}"
+          cd "$WORK_DIR"
+          NOT_APPLICABLE_TOML=$(printf '%s' "$INPUT_NOT_APPLICABLE" \
+            | tr ',' '\n' \
+            | grep -v '^$' \
+            | sed 's/.*/"&"/' \
+            | paste -sd ',' -)
+          {
+            echo '[coverage]'
+            echo "threshold = ${INPUT_THRESHOLD}"
+            echo "path = \"${INPUT_COVERAGE_REPORT}\""
+            echo "format = \"${INPUT_COVERAGE_FORMAT}\""
+            echo ''
+            echo '[checks]'
+            echo "not_applicable = [${NOT_APPLICABLE_TOML}]"
+          } > .qgate-ci-override.toml
+          if [ -n "$INPUT_SBOM_COMMAND" ]; then
+            printf 'sbom_command = "%s"\n' "$INPUT_SBOM_COMMAND" >> .qgate-ci-override.toml
+          fi
+          if [ -f .qgate.toml ]; then
+            cp .qgate.toml .qgate.toml.bak
+          fi
+          cat .qgate-ci-override.toml >> .qgate.toml
+
+      - name: Run qgate
+        id: run-gate
+        env:
+          INPUT_THRESHOLD: ${{ inputs.threshold }}
+          INPUT_COVERAGE_REPORT: ${{ inputs.coverage-report }}
+          INPUT_COVERAGE_FORMAT: ${{ inputs.coverage-format }}
+          INPUT_WORKING_DIR: ${{ inputs.working-directory }}
+        run: |
+          cd "${INPUT_WORKING_DIR}"
+          if [ ! -f "$INPUT_COVERAGE_REPORT" ]; then
+            echo "::error::coverage report missing at $INPUT_COVERAGE_REPORT"
+            exit 1
+          fi
+          set +e
+          "$QGATE_BIN" run \
+            --coverage-report "$INPUT_COVERAGE_REPORT" \
+            --coverage-format "$INPUT_COVERAGE_FORMAT" \
+            --threshold "$INPUT_THRESHOLD" \
+            --path "." \
+            > /tmp/qgate-report.json \
+            2>/tmp/qgate-summary.txt
+          EXIT=$?
+          set -e
+          cat /tmp/qgate-summary.txt >> "$GITHUB_STEP_SUMMARY"
+          STATUS=$([ "$EXIT" -eq 0 ] && echo "PASS" || echo "FAIL")
+          echo "gate-status=$STATUS" >> "$GITHUB_OUTPUT"
+          {
+            echo 'report-json<<QGATE_EOF'
+            cat /tmp/qgate-report.json
+            echo 'QGATE_EOF'
+          } >> "$GITHUB_OUTPUT"
+          exit $EXIT
+
+      - name: Upload qgate report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: qgate-report
+          path: /tmp/qgate-report.json
+          if-no-files-found: warn
+          retention-days: 30

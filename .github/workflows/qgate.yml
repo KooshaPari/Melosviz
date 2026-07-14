@@ -1,0 +1,64 @@
+# Standalone qgate baseline gate — also callable via workflow_call from other repos.
+#
+# Runs the in-repo reusable workflow with MelosViz defaults from .qgate.toml
+# and docs/QGATE_BASELINE.md.
+
+name: qgate baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "Granular-recursive coverage threshold"
+        type: number
+        default: 100
+      not-applicable:
+        description: "Comma-separated N/A categories"
+        type: string
+        default: "a11y"
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/qgate.yml"
+      - ".github/workflows/reusable/quality-gate.yml"
+      - ".qgate.toml"
+      - "docs/QGATE_BASELINE.md"
+      - "backend/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/qgate.yml"
+      - ".github/workflows/reusable/quality-gate.yml"
+      - ".qgate.toml"
+      - "docs/QGATE_BASELINE.md"
+      - "backend/**"
+  workflow_call:
+    inputs:
+      threshold:
+        description: "Granular-recursive coverage threshold"
+        type: number
+        default: 100
+      not-applicable:
+        description: "Comma-separated N/A categories"
+        type: string
+        default: "a11y"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: qgate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: qgate — MelosViz baseline
+    uses: ./.github/workflows/reusable/quality-gate.yml
+    with:
+      coverage-report: backend/coverage/lcov.info
+      coverage-format: lcov
+      threshold: 100
+      not-applicable: a11y
+      working-directory: .
+      run-baseline-checks: true

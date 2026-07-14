@@ -1,9 +1,13 @@
 # qgate configuration for MelosViz
-# Granular-recursive quality gate — 85% per module, recursively.
-# "1 via 2": gate stands RED first (tight grip), then backfill toward green.
+# Granular-recursive quality gate — 100% per module, recursively.
 #
-# Reusable workflow:
-#   uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
+# In-repo reusable workflow (promoted from phenotype-tooling; upstream workflow_call
+# entrypoint is unparseable on GitHub — see .github/workflows/ci.yml history):
+#   uses: ./.github/workflows/reusable/quality-gate.yml
+# Standalone baseline gate:
+#   .github/workflows/qgate.yml
+# External repos may call:
+#   uses: KooshaPari/Melosviz/.github/workflows/reusable/quality-gate.yml@main
 
 [coverage]
 # Threshold applied to every module recursively — no module hides behind the average.
