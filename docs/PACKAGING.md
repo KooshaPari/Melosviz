@@ -119,3 +119,42 @@ docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:local
 
 CI workflow `.github/workflows/ghcr-bridge.yml` builds on PRs and pushes to
 GHCR on `main` / `v*` tags (`ghcr.io/<owner>/melosviz-bridge`).
+
+## SDK publishable-shape gate (C11 L116)
+
+MelosViz ships **private** npm stubs with publishable layout — not live registry
+packages (G-C11-06 / WBS-P3.1 remain open).
+
+| Package | Path | Scope |
+|---------|------|-------|
+| `@melosviz/bridge-client` | `sdk/ts/` | Bridge HTTP client stub |
+| `@melosviz/brand-tokens` | `packages/brand-tokens/` | Brand CSS token re-export |
+| `@melosviz/ui` | `packages/ui/` | Shared React design-system components |
+
+CI (`.github/workflows/supply-chain.yml` → `sdk-pack-smoke`) runs
+`scripts/check_sdk_pack_smoke.sh`:
+
+```bash
+./scripts/check_sdk_pack_smoke.sh
+```
+
+Steps: `npm pack` each package → install tarballs in a temp dir → bun import smoke
+(`scripts/sdk_pack_smoke.mjs`). This is the honest evidence for audit L116 without
+claiming npm/GitHub Packages publish.
+
+### Future registry publish (WBS-P3.1 — not automated here)
+
+1. Release owner removes `"private": true` and adds `publishConfig` per package.
+2. Publish `@melosviz/brand-tokens` before `@melosviz/ui` (dependency order).
+3. Use `npm publish` to npmjs.com **or** GitHub Packages with `NODE_AUTH_TOKEN`.
+4. Rust crates: `cargo publish` from workspace with version bump policy.
+
+See `docs/sdk/README.md` for the full checklist. Do not claim published until a
+registry version exists.
+
+## Desktop bridge auth (C04 L40)
+
+Packaged desktop builds spawn the sidecar bridge with `MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`
+and a desktop-minted `MELOSVIZ_BRIDGE_TOKEN` (bearer on all RPC fetches). Set
+`MELOSVIZ_BRIDGE_INSECURE_LOOPBACK=1` to preserve legacy loopback-open mode for
+LOCAL_RUN, e2e, or manual `python server.py` debugging — see `docs/ENV.md`.

@@ -28,6 +28,29 @@ let backendDir: string | null = null;
 let backendPort: number = 0;
 let bridgeProc: ReturnType<typeof Bun.spawn> | null = null;
 let bridgeReady = false;
+/** Bearer token shared with the desktop-spawned bridge when auth is enabled. */
+let bridgeToken: string | null = null;
+
+function bridgeLoopbackInsecure(): boolean {
+  return process.env.MELOSVIZ_BRIDGE_INSECURE_LOOPBACK === "1";
+}
+
+function bridgeAuthEnabled(): boolean {
+  return !bridgeLoopbackInsecure();
+}
+
+function mintBridgeToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let hex = "";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return hex;
+}
+
+function bridgeAuthHeaders(): Record<string, string> {
+  if (!bridgeAuthEnabled() || !bridgeToken) return {};
+  return { authorization: `Bearer ${bridgeToken}` };
+}
 
 // ---------------------------------------------------------------------------
 // Python resolver — prefer the bundled uv venv over system python3.
@@ -156,6 +179,7 @@ async function bridgeFetch(
 ): Promise<string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    ...bridgeAuthHeaders(),
     ...(init?.headers ?? {}),
   };
   const inbound =
@@ -415,15 +439,29 @@ async function startBackendBridge(): Promise<void> {
 
   const python = resolvePython(backendDir);
   console.log(`[MelosViz] python        : ${python}`);
+
+  const bridgeEnv: Record<string, string> = {
+    ...process.env,
+    MELOSVIZ_BACKEND_PORT: String(backendPort),
+    PYTHONPATH: path.join(backendDir, "src"),
+  };
+  if (bridgeAuthEnabled()) {
+    bridgeToken = mintBridgeToken();
+    bridgeEnv.MELOSVIZ_BRIDGE_REQUIRE_AUTH = "1";
+    bridgeEnv.MELOSVIZ_BRIDGE_TOKEN = bridgeToken;
+    console.log("[MelosViz] bridge auth   : enabled (desktop-spawned token)");
+  } else {
+    bridgeToken = null;
+    console.log(
+      "[MelosViz] bridge auth   : legacy loopback (MELOSVIZ_BRIDGE_INSECURE_LOOPBACK=1)"
+    );
+  }
+
   bridgeProc = Bun.spawn(
     [python, bridgeScript, "--port", String(backendPort)],
     {
       cwd: backendDir,
-      env: {
-        ...process.env,
-        MELOSVIZ_BACKEND_PORT: String(backendPort),
-        PYTHONPATH: path.join(backendDir, "src"),
-      },
+      env: bridgeEnv,
       stdout: "inherit",
       stderr: "inherit",
     }
@@ -435,7 +473,10 @@ async function startBackendBridge(): Promise<void> {
     await Bun.sleep(500);
     try {
       const r = await fetch(`http://127.0.0.1:${backendPort}/health`, {
-        headers: { traceparent: generateTraceparent() },
+        headers: {
+          traceparent: generateTraceparent(),
+          ...bridgeAuthHeaders(),
+        },
       });
       if (r.ok) {
         bridgeReady = true;
