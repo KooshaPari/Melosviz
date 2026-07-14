@@ -3,7 +3,7 @@ name = "melosviz-render-wgpu"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-description = "Realtime preview renderer for MelosViz — wgpu/Metal backend, RenderSpec v2 input"
+description = "Realtime preview renderer for MelosViz — wgpu (DX12/Vulkan/Metal/GLES), RenderSpec v2 input"
 rust-version = "1.86"
 
 [[bin]]
@@ -15,8 +15,10 @@ name = "melosviz_render_wgpu"
 path = "src/lib.rs"
 
 [dependencies]
-# wgpu 24.x: Metal on macOS, Vulkan on Linux, DX12 on Windows (auto-selected)
-wgpu = { version = "24", features = ["metal"] }
+# wgpu 24.x: DX12/Vulkan/Metal + GLES (per-target). WGPU_BACKEND overrides at runtime.
+# vulkan/gles are not top-level features in wgpu 24 — wgpu-core enables them per OS.
+# angle = GLES on macOS; vulkan-portability = MoltenVK on Apple. default-features stays on.
+wgpu = { version = "24", default-features = true, features = ["dx12", "metal", "wgsl", "angle", "vulkan-portability"] }
 # Async runtime — wgpu's instance/adapter/device are async
 pollster = "0.4"
 # RenderSpec v2 deserialization
