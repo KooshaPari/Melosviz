@@ -20,6 +20,12 @@ import * as path from "path";
 import * as fs from "fs";
 import type { BunRequests, WebviewRequests } from "./rpc";
 import { t as i18n } from "./i18n";
+import {
+  formatMelosvizRenderSearchHint,
+  melosvizRenderMp4Argv,
+  resolveMelosvizRenderBinary,
+  truncateStderr,
+} from "./renderBinary";
 // ---------------------------------------------------------------------------
 // Backend sidecar state — populated asynchronously after window opens
 // ---------------------------------------------------------------------------
@@ -237,34 +243,35 @@ const rpc = defineElectrobunRPC<
         const specPath = path.join(outDir, `.melosviz-spec-${Date.now()}.json`);
         await Bun.write(specPath, renderSpec);
 
-        // Find the melosviz-render binary (built from crates/melosviz-render-wgpu)
-        const renderBinary = path.join(
-          import.meta.dir,
-          "..",
-          "..",
-          "target",
-          "release",
-          "melosviz-render"
-        );
-
-        if (!fs.existsSync(renderBinary)) {
+        const renderBinary = resolveMelosvizRenderBinary();
+        if (!renderBinary) {
           throw new Error(
-            `[MelosViz] melosviz-render binary not found at ${renderBinary}. ` +
-              `Run 'cargo build --release' in the crates/melosviz-render-wgpu directory.`
+            `[MelosViz] melosviz-render binary not found. ${formatMelosvizRenderSearchHint()}`
           );
         }
 
         const videoPath = path.join(outDir, `melosviz-preview-${Date.now()}.mp4`);
-        const proc = Bun.spawn([renderBinary, "--spec", specPath, "--output", videoPath], {
-          env: { ...process.env, RUST_LOG: "info" },
-          stdout: "inherit",
-          stderr: "inherit",
-        });
+        const proc = Bun.spawn(
+          melosvizRenderMp4Argv(renderBinary, specPath, videoPath),
+          {
+            env: { ...process.env, RUST_LOG: "info" },
+            stdout: "inherit",
+            stderr: "pipe",
+          },
+        );
 
-        const exitCode = await proc.exited;
+        const [stderr, exitCode] = await Promise.all([
+          new Response(proc.stderr).text(),
+          proc.exited,
+        ]);
         if (exitCode !== 0) {
+          const detail = truncateStderr(stderr);
+          if (detail) {
+            console.error("[MelosViz] melosviz-render stderr:", stderr.trim());
+          }
           throw new Error(
-            `[MelosViz] melosviz-render failed (exit ${exitCode})`
+            `[MelosViz] melosviz-render render-mp4 failed (exit ${exitCode})` +
+              (detail ? `: ${detail}` : ""),
           );
         }
 
