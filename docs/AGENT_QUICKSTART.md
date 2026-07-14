@@ -9,6 +9,7 @@ One-page entry for coding agents (C03 L30.11). Prefer this over skimming the who
 | [`CLAUDE.md`](../CLAUDE.md) | Commands, layout, non-negotiables |
 | [`README.md`](../README.md) | Product + local run |
 | [`docs/LOCAL_RUN.md`](LOCAL_RUN.md) | Bridge + desktop + web ports |
+| [`docs/RENDER_ENGINE_DECISION.md`](RENDER_ENGINE_DECISION.md) | wgpu studio renderer; Bevy/UE scope |
 | [`docs/USER_JOURNEYS.md`](USER_JOURNEYS.md) | J1–J5 acceptance stories |
 | [`audit/SCORECARD.md`](../audit/SCORECARD.md) | audit-v38 status |
 
