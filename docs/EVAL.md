@@ -16,7 +16,7 @@ Index of evaluation, benchmark, load, and golden-corpus tooling (audit-v38 C08).
 | Mutation testing | `.github/workflows/mutmut.yml` | Weekly |
 | Coverage | `ci.yml` `--cov-fail-under=85` | PR fail |
 | A11y + screenshot baseline | `.github/workflows/a11y.yml` + `eval/golden/screenshots/` | axe + pixelmatch ≤0.2% |
-| Flaky quarantine | pytest marker `flaky` (see below) | Skip in default CI |
+| Flaky quarantine | pytest marker `flaky` + `scripts/check_flaky_quarantine.py` | Skip in default CI; docs-trace gate |
 
 ## Golden corpus
 
@@ -60,7 +60,17 @@ Mark unstable tests with `@pytest.mark.flaky` and exclude from default CI:
 pytest -m "not flaky"
 ```
 
-Document quarantined cases in this file when adding the marker.
+Document quarantined cases in the registry table below when adding the marker.
+
+### Flaky quarantine registry
+
+Machine-checked by `scripts/check_flaky_quarantine.py` (docs-trace CI). Each
+`@pytest.mark.flaky` test must have a matching **Node ID** row (or maintain
+`docs/eval/FLAKY_QUARANTINE.md` with the same table).
+
+| Node ID | Reason | Owner | Since |
+|---------|--------|-------|-------|
+| *(none)* | — | — | — |
 
 ## Related
 

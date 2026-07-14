@@ -4,11 +4,11 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[SDK pack smoke CI]
-  A --> C[Desktop bridge auth default]
-  B --> D[C11 L116 3/3 -> C11 87%]
-  C --> E[C04 L40 3/3 -> C04 93%]
-  D --> F[Re-score 96.8% A]
+  A[CI green] --> B[Flaky quarantine gate]
+  A --> C[Profiler sidecar script]
+  B --> D[C08 L78 3/3 -> C08 100%]
+  C --> E[WBS-P3.4 done]
+  D --> F[Re-score 97.0% A]
   E --> F
 ```
 
@@ -16,15 +16,18 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | C11 L116 · G-C00-01 · WBS-P3.1 partial | M | THIS PR |
-| W-310 | Document publishable-shape gate + future publish steps | C11 L116 · docs | S | THIS PR |
-| W-311 | Re-score SCORECARD (p1l → 96.8% A) | audit | S | THIS PR |
-| W-312 | Desktop-spawned bridge bearer auth by default (`INSECURE_LOOPBACK` opt-out) | C04 L40 | S | THIS PR |
+| W-313 | Flaky quarantine machine gate (`check_flaky_quarantine.py` + docs-trace CI) | C08 L78 · G-C08-03 · WBS-P1.13 | M | THIS PR |
+| W-314 | External profiler sidecar (`profile_bridge_sidecar.sh`/`.ps1`) | C05 L45 · G-C05-02 · WBS-P3.4 | S | THIS PR |
+| W-315 | Re-score SCORECARD (p1m → 97.0% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | #152 |
+| W-310 | Document publishable-shape gate + future publish steps | #152 |
+| W-311 | Re-score SCORECARD (p1l → 96.8% A) | #152 |
+| W-312 | Desktop-spawned bridge bearer auth by default (`INSECURE_LOOPBACK` opt-out) | #152 |
 | W-304 | Global memory-cap enforcement (`security.MemoryCapGuard`; soft 429 / hard 503 problem+json; audited; fails open) | #151 |
 | W-305 | Wire memory-cap check into `/analyze` `/build` `/render`; RSS/cap gauges on `/metrics` | #151 |
 | W-306 | Forward `HTTPException.headers` (e.g. `Retry-After`) through `http_exception_problem` | #151 |

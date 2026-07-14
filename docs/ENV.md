@@ -22,8 +22,14 @@
 | `MELOSVIZ_OTEL` | auto | observability | Force OTel on/off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | — | observability | OTLP HTTP endpoint (auto-enables OTel) |
 | `OTEL_SERVICE_NAME` | melosviz-bridge | observability | Resource service.name |
-| `MELOSVIZ_PROFILE` | unset/0 | bridge | Opt-in `GET /debug/profile`: `1`/`true` = one-shot cProfile; `continuous`/`2` = in-process background sampler (not a py-spy sidecar) |
+| `MELOSVIZ_PROFILE` | unset/0 | bridge | Opt-in `GET /debug/profile`: `1`/`true` = one-shot cProfile; `continuous`/`2` = in-process background sampler |
 | `MELOSVIZ_PROFILE_INTERVAL_S` | `30` | bridge | Continuous sampler period (seconds); only used when `MELOSVIZ_PROFILE=continuous` or `2` |
+| `MELOSVIZ_PROFILE_SIDECAR` | unset/0 | observability | Opt-in external py-spy attach via `scripts/profile_bridge_sidecar.sh` / `.ps1` (host dep) |
+| `MELOSVIZ_PROFILE_SIDECAR_MODE` | `top` | observability | Sidecar mode: `top` (live) or `record` (SVG flamegraph) |
+| `MELOSVIZ_PROFILE_SIDECAR_DURATION` | `60` | observability | `record` mode seconds |
+| `MELOSVIZ_PROFILE_SIDECAR_OUT` | `bridge-profile.svg` | observability | `record` mode output path |
+| `MELOSVIZ_BRIDGE_PID` | — | observability | Explicit bridge PID for sidecar (else resolved from port after `/health`) |
+| `MELOSVIZ_BRIDGE_URL` | `http://127.0.0.1:8765` | observability | Bridge base URL for sidecar health + port inference |
 | `MELOSVIZ_LOCALE` | `en` | web / CLI / desktop | Locale (`en` / `es`) — see `docs/I18N.md` (scaffold; not full coverage) |
 | `MELOSVIZ_BACKEND_PORT` | — | desktop | Sidecar port hint |
 

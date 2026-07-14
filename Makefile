@@ -1,7 +1,7 @@
 # MelosViz — top-level Makefile
 # Companion self-check surface for MV-FR-50.
 
-.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke sdk-pack-smoke
+.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke sdk-pack-smoke flaky-quarantine
 
 diagnose:
 	python3 scripts/diagnose.py
@@ -42,6 +42,9 @@ gap-matrix:
 journeys:
 	python3 scripts/check_journeys.py
 
-trace: wbs gap-matrix journeys
+flaky-quarantine:
+	python3 scripts/check_flaky_quarantine.py
+
+trace: wbs gap-matrix journeys flaky-quarantine
 	python3 backend/scripts/check/check_traceability.py
 

@@ -60,7 +60,8 @@ error rate, avg latency.
 ## Continuous profiling (optional)
 
 Bridge CPU profiling is **operator-opt-in**. MelosViz ships an **in-process**
-cProfile path — not a production py-spy / continuous-profiler sidecar agent.
+cProfile path plus an optional **external** `profile_bridge_sidecar` wrapper
+(py-spy host dependency — not bundled).
 
 | `MELOSVIZ_PROFILE` | Behavior |
 |--------------------|----------|
@@ -78,16 +79,21 @@ export MELOSVIZ_PROFILE=continuous
 # export MELOSVIZ_PROFILE_INTERVAL_S=30   # optional; default 30
 curl -s localhost:8765/debug/profile
 
-# External attach (operator-owned; not bundled as a MelosViz agent)
+# External attach — operator-owned py-spy sidecar (WBS-P3.4)
 pip install py-spy
-py-spy top --pid <bridge-pid>
+export MELOSVIZ_PROFILE_SIDECAR=1
+# MELOSVIZ_BRIDGE_PID=<pid>  # optional; else resolved from /health + listen port
+./scripts/profile_bridge_sidecar.sh
+# record flamegraph: MELOSVIZ_PROFILE_SIDECAR_MODE=record ./scripts/profile_bridge_sidecar.sh
+# Windows: $env:MELOSVIZ_PROFILE_SIDECAR=1; .\scripts\profile_bridge_sidecar.ps1
 
 # stdlib cProfile for a single analyze
 python -m cProfile -o analyze.prof -m melosviz.cli.main analyze track.wav
 ```
 
-Documented for C05 L45. Always-on **external** profiler agents remain optional /
-future (WBS-P3.4 residual).
+Documented for C05 L45. **In-process** continuous sampling (`MELOSVIZ_PROFILE=continuous`)
+and the **external** `profile_bridge_sidecar` wrapper both ship; py-spy remains an
+optional host dependency (not bundled).
 
 ## Alert ideas (operator-owned)
 
