@@ -1,7 +1,7 @@
 # MelosViz — top-level Makefile
 # Companion self-check surface for MV-FR-50.
 
-.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke sdk-pack-smoke flaky-quarantine
+.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke hermetic-python-smoke portability-smoke sdk-pack-smoke flaky-quarantine
 
 diagnose:
 	python3 scripts/diagnose.py
@@ -23,6 +23,12 @@ repro-smoke:
 
 hermetic-smoke:
 	bash scripts/check_hermetic_smoke.sh
+
+hermetic-python-smoke:
+	bash scripts/check_hermetic_python_smoke.sh
+
+portability-smoke:
+	python3 scripts/check_portability_smoke.py
 
 sdk-pack-smoke:
 	bash scripts/check_sdk_pack_smoke.sh

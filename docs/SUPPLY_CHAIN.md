@@ -39,36 +39,49 @@ Agents and CI **must not**:
 - `scripts/check_repro_smoke.sh` — Linux SOURCE_DATE_EPOCH smoke (same-epoch
   double-build / deterministic archive hash compare); wired as `repro-smoke`
   in `supply-chain.yml`
-- `scripts/check_hermetic_smoke.sh` — Linux hermetic/offline smoke (`cargo fetch`
+- `scripts/check_hermetic_smoke.sh` — Linux Rust hermetic/offline smoke (`cargo fetch`
   once, then `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked`);
   wired as `hermetic-smoke` in `supply-chain.yml` (WBS-P1.6 / C06 L54)
+- `scripts/check_hermetic_python_smoke.sh` — Linux Python wheelhouse prefetch +
+  `PIP_NO_INDEX=1` offline install + `import melosviz` smoke; same
+  `hermetic-smoke` job (WBS-P1.14 / C06 L54)
+- `scripts/check_portability_smoke.py` — core import + CLI version without
+  FFmpeg/Blender (graceful `FFMpegNotFoundError` / `BlenderNotFoundError`);
+  wired as `portability-smoke` in `supply-chain.yml` (C07 L70)
 - `scripts/check_sdk_pack_smoke.sh` — SDK `npm pack` + tarball install + import
   smoke for `@melosviz/*` stubs; wired as `sdk-pack-smoke` in `supply-chain.yml`
   (C11 L116 publishable-shape gate; does not publish to a registry)
 - Dependabot weekly PRs only (no ad-hoc unpinned bumps in feature PRs)
 - Release artifacts ship `SHA256SUMS` (`MelosViz-Checksums`)
 
-## Hermetic / offline CI (WBS-P1.6 / C06 L54)
+## Hermetic / offline CI (WBS-P1.6 / WBS-P1.14 / C06 L54)
 
-CI proves a Rust compile can proceed with **no further network** after a single
-prefetch of the locked dependency graph:
+CI proves locked dependency graphs can be consumed with **no further network**
+after a single online prefetch:
 
 ```bash
-./scripts/check_hermetic_smoke.sh
-# or: make hermetic-smoke
+./scripts/check_hermetic_smoke.sh         # Rust
+./scripts/check_hermetic_python_smoke.sh  # Python wheelhouse
+# or: make hermetic-smoke / make hermetic-python-smoke
 ```
 
-| Step | Network | Command |
-|------|---------|---------|
-| Prefetch | online once | `cargo fetch --locked` |
-| Compile | offline | `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` |
+| Step | Network | Rust | Python |
+|------|---------|------|--------|
+| Prefetch | online once | `cargo fetch --locked` | `uv export` + `uv build` + `pip download` → `dist/wheelhouse-python-smoke/` |
+| Verify | offline | `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked` | `PIP_NO_INDEX=1 pip install --no-index --find-links=wheelhouse` + `import melosviz` |
 
-This is **not** a full vendored tree. Committing `vendor/` + `.cargo/config.toml`
-source replacement (and a Python wheelhouse offline install) remains future
-work beyond WBS-P1.6 — see `docs/AIRGAP.md` for the operator vendor path.
+Committed `vendor/` + `.cargo/config.toml` source replacement remains **optional**
+for operators — see `docs/AIRGAP.md` for the full vendor path.
 
-Windows/macOS: the script exits 0 with a skip message; use the
-`hermetic-smoke` GitHub Actions job on `ubuntu-22.04`.
+## Core portability without host render tools (C07 L70)
+
+`scripts/check_portability_smoke.py` (job `portability-smoke`) asserts the
+default Python install imports cleanly and FFmpeg/Blender resolution fails with
+actionable errors when absent — host render binaries are optional, not required
+for core CLI/analysis usage.
+
+Windows/macOS: Rust hermetic scripts exit 0 with a skip message; use the
+`hermetic-smoke` / `portability-smoke` GitHub Actions jobs on `ubuntu-22.04`.
 
 ## SOURCE_DATE_EPOCH / reproducible builds (WBS-P1.5 / C06 L52)
 

@@ -1,7 +1,7 @@
 # MelosViz Phased WBS (project + org)
 
 Target: **audit-v38 A+ / 92%+** overall, plus org governance closure.
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.0% · A** (2026-07-13, p1m-flaky-profiler).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.5% · A** (2026-07-13, p1n-hermetic-python).
 
 Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred`
 
@@ -25,7 +25,8 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P1.3 | P1 | project | Circuit breaker for bridge/render failures | C02 L26 | done | `backend/src/melosviz/bridge/security.py`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.4 | P1 | project | Reserved-name CI scanner (dep-confusion) | C06 L55 | done | `scripts/check_reserved_names.py`; `docs/SUPPLY_CHAIN.md`; `.github/workflows/supply-chain.yml` | machine |
 | WBS-P1.5 | P1 | project | SOURCE_DATE_EPOCH / bit-repro check on release artifacts | C06 L52 | done | `scripts/check_repro_smoke.sh`; `.github/workflows/supply-chain.yml` (`repro-smoke`); `.github/workflows/release.yml`; `docs/SUPPLY_CHAIN.md`; `docs/PACKAGING.md` | machine |
-| WBS-P1.6 | P1 | project | Hermetic / offline build path (CI offline smoke after fetch) | C06 L54 · C07 | done | `scripts/check_hermetic_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | machine |
+| WBS-P1.6 | P1 | project | Hermetic / offline Rust build path (CI offline smoke after fetch) | C06 L54 · C07 | done | `scripts/check_hermetic_smoke.sh`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`); `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | machine |
+| WBS-P1.14 | P1 | project | Hermetic Python wheelhouse offline CI smoke | C06 L54 · C07 L70 | done | `scripts/check_hermetic_python_smoke.sh`; `scripts/check_portability_smoke.py`; `.github/workflows/supply-chain.yml` (`hermetic-smoke`, `portability-smoke`); `docs/AIRGAP.md`; `docs/SUPPLY_CHAIN.md` | machine |
 | WBS-P1.7 | P1 | project | Audit JSONL retention enforcement (rotate/prune vs PRIVACY) | C05 L49 · C02 L23 | done | `backend/src/melosviz/bridge/security.py`; `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | machine |
 | WBS-P1.8 | P1 | project | OSSF TokenPermissions sweep on remaining workflows | C04 L39 | done | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | machine |
 | WBS-P1.9 | P1 | project | Host-gated desktop e2e expansion + longer fuzz farm | C07 L64 · C07 L67 | in_progress | fuzz longer done (G-C07-02 mitigated); Linux bridge-layer desktop-e2e in CI (G-C07-01 mitigated); full GUI Electrobun still host-gated | machine |
