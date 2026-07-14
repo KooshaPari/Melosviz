@@ -17,13 +17,15 @@
 //   B — pass beatEnergy → ParticleSystem inside MelosScene
 //   D — replace lerpKeyframe linear lerp with spline easing
 
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import type { RenderSpec } from './renderSpec'
 import { lerpKeyframe } from './utils/interpolate'
 import type { InterpolatedFrame } from './utils/interpolate'
 import { BeatPulse } from './components/BeatPulse'
+import { SceneSummaryAnnouncer } from './components/SceneSummary'
+import { buildSceneSummary } from './utils/sceneSummary'
 
 // ---- Internal: per-frame state ref -----------------------------------------
 
@@ -193,7 +195,8 @@ export interface SceneViewProps {
   className?: string
   /**
    * Current scene name for screen readers (wrapper `aria-label` + live status).
-   * WebGL canvas pixels are opaque to AT; this exposes scene identity (G-C09-01).
+   * WebGL canvas pixels are opaque to AT; combined with `buildSceneSummary` this
+   * exposes scene identity, playback, tempo, palette, and camera (G-C09-01 / W-329).
    */
   currentSceneLabel?: string
   /**
@@ -241,13 +244,20 @@ export function SceneView({
   }
 
   const sceneLabel = currentSceneLabel?.trim() || 'Scene'
+  const summaryDetailId = useId()
+  const sceneSummary = buildSceneSummary({
+    spec,
+    playbackT,
+    sceneLabel,
+  })
 
   return (
     <div className={className}>
       <div
         className="h-full w-full"
         role="img"
-        aria-label={`Melosviz visualization: ${sceneLabel}`}
+        aria-label={sceneSummary.imgLabel}
+        aria-describedby={summaryDetailId}
       >
         <Canvas
           className="h-full w-full"
@@ -268,9 +278,10 @@ export function SceneView({
           <MelosScene stateRef={stateRef} />
         </Canvas>
       </div>
-      <span className="sr-only" aria-live="polite">
-        Scene: {sceneLabel}
-      </span>
+      <SceneSummaryAnnouncer
+        summary={sceneSummary}
+        detailId={summaryDetailId}
+      />
     </div>
   )
 }
