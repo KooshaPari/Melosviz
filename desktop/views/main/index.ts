@@ -98,6 +98,19 @@ function showError(err: unknown) {
   setStatus("Error", "error");
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message || String(err);
+  }
+  return String(err);
+}
+
+function truncateStatus(msg: string, maxLen = 120): string {
+  const trimmed = msg.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen - 1)}…`;
+}
+
 function clearError() {
   qs("#error-card").classList.add("hidden");
 }
@@ -489,7 +502,10 @@ async function onRenderVideo() {
       );
       const wgpuHint = truncateStatus(wgpuMsg);
       setStatus(`wgpu failed: ${wgpuHint}`, "error");
-      setOverlayProgress(15, `wgpu failed — ${wgpuHint}; falling back to Python…`);
+      setOverlayProgress(
+        15,
+        `wgpu failed — ${wgpuHint}; falling back to Python conductor…`,
+      );
       const result = await rpc.request.renderVideo({ wavPath, outDir });
       const mp4Match = result.match(/([^\n\r]+\.mp4)/);
       if (!mp4Match) throw new Error("Could not find MP4 path in render output");

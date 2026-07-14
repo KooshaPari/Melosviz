@@ -114,6 +114,15 @@ export function resolveMelosvizRenderBinary(
     candidates.push(...melosvizRenderCandidatePaths(root));
   }
 
+  // Honor CARGO_TARGET_DIR (e.g. shared caches outside the repo).
+  const cargoTarget = process.env.CARGO_TARGET_DIR;
+  if (cargoTarget) {
+    candidates.push(
+      path.join(cargoTarget, "release", name),
+      path.join(cargoTarget, "debug", name),
+    );
+  }
+
   const bundledDirs = options.bundledDirs ?? [
     path.join(searchFrom, ".."),
     path.dirname(process.execPath),
