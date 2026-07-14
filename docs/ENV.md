@@ -4,6 +4,7 @@
 |----------|---------|---------|---------|
 | `MELOSVIZ_BRIDGE_REQUIRE_AUTH` | unset/0 | bridge | Require Bearer token when set |
 | `MELOSVIZ_BRIDGE_TOKEN` | — | bridge | Shared secret for auth |
+| `MELOSVIZ_BRIDGE_INSECURE_LOOPBACK` | unset/0 | desktop / bridge | When `1`, desktop spawn skips bearer auth (LOCAL_RUN, e2e, manual bridge debugging) |
 | `MELOSVIZ_BRIDGE_RATE_LIMIT` | 30 | bridge | Requests per window |
 | `MELOSVIZ_BRIDGE_WINDOW` | 60 | bridge | Rate-limit window (seconds) |
 | `MELOSVIZ_BRIDGE_MAX_BODY_BYTES` | 1 MiB | bridge | POST body cap |

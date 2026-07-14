@@ -97,6 +97,21 @@ jobs:
           chmod +x scripts/check_repro_smoke.sh
           ./scripts/check_repro_smoke.sh
 
+  sdk-pack-smoke:
+    name: SDK pack + tarball install smoke
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@39370e3970a6d050bdd588c1fbc944043e30c8e0
+        with:
+          node-version: "20"
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
+      - name: SDK pack smoke (@melosviz/* publishable shape)
+        run: |
+          sed -i 's/\r$//' scripts/check_sdk_pack_smoke.sh
+          chmod +x scripts/check_sdk_pack_smoke.sh
+          ./scripts/check_sdk_pack_smoke.sh
+
   hermetic-smoke:
     name: Hermetic / offline build smoke (Linux)
     runs-on: ubuntu-22.04

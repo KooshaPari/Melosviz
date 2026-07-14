@@ -1,7 +1,7 @@
 # MelosViz Phased WBS (project + org)
 
 Target: **audit-v38 A+ / 92%+** overall, plus org governance closure.
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.3% · A** (2026-07-13, p1k-memory-cap-tray).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.8% · A** (2026-07-13, p1l-sdk-pack-parity).
 
 Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred`
 
@@ -37,7 +37,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P2.3 | P2 | org | IdP (OAuth/SAML) if hosted bridge ever required | C02 L21 | deferred | `audit/.lane-c02/C02.md` L21 (localhost Bearer OK today) | human |
 | WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | planned | `audit/.lane-c01/C01.md` L11; `.qgate.toml` | human |
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
-| WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts` | machine |
+| WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | planned | `docs/sdk/README.md`; `sdk/ts`; `scripts/check_sdk_pack_smoke.sh` (pack smoke partial — registry publish still open) | machine |
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | done | `@melosviz/ui` (`packages/ui`) real component package (`Button`/`EmptyState`/`Skeleton`); `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui` — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md`; `packages/ui/README.md` | machine |
 | WBS-P3.3 | P3 | project | R3F canvas screenshot baseline in CI | C10 L107 | done | `web/fixtures/r3f-canvas.html`; `web/src/fixtures/r3fCanvasFixture.tsx`; `eval/golden/screenshots/r3f-canvas.baseline.png`; `.github/workflows/a11y.yml` | machine |
 | WBS-P3.4 | P3 | project | Always-on continuous profiler agent (opt-in prod path) | C05 L45 | in_progress | in-process continuous sample ships (`MELOSVIZ_PROFILE=continuous`/`2`); external py-spy sidecar agent still open — `docs/OBSERVABILITY.md`; `/debug/profile` | machine |

@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.3% · A** (2026-07-13, p1k-memory-cap-tray).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~96.8% · A** (2026-07-13, p1l-sdk-pack-parity).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -24,7 +24,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 
 | GapID | Cluster | Pillar | Gap description | Severity | QA method | Test/evidence path | Status | Linked WBS | Trace FR |
 |-------|---------|--------|-----------------|----------|-----------|--------------------|--------|------------|----------|
-| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client` private publishable-shape stub); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
+| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client`); `packages/ui`; `packages/brand-tokens`; `scripts/check_sdk_pack_smoke.sh`; `.github/workflows/supply-chain.yml` (`sdk-pack-smoke`); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `backend/tests/test_bridge_concurrency_race.py`; `audit/.lane-c00/C00.md` L7 | closed | — | C00 L7 |
 | G-C00-04 | C00 | L8 | No global memory-cap enforcement | M | unit | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | closed | WBS-P4.7 | C00 L8 |
@@ -61,7 +61,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | mitigated | WBS-P4.2 | C11 L110 |
 | G-C11-04 | C11 | L121 | Full vendored Electrobun offline installer | M | manual | `docs/AIRGAP.md` | open | WBS-P4.3 | C11 L121 |
 | G-C11-05 | C11 | L120 | No MSI uninstaller until Authenticode | M | doc | `docs/UNINSTALL.md` | open | WBS-P4.4 | C11 L120 |
-| G-C11-06 | C11 | L109 | No PyPI / crates.io publish | M | manual | `docs/PACKAGING.md` | open | WBS-P3.1 | C11 L109 |
+| G-C11-06 | C11 | L109 | No PyPI / crates.io / npm registry publish | M | manual | `docs/PACKAGING.md`; `docs/sdk/README.md` (pack smoke ≠ publish) | open | WBS-P3.1 | C11 L109 · L116 |
 
 ## Notes
 

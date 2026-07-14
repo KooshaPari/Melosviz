@@ -4,11 +4,11 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[MemoryCapGuard global RSS cap]
-  A --> C[Tray/menubar quick-actions]
-  B --> D[C00 L8 3/3 -> C00 100%]
-  C --> E[C11 L110 3/3 -> C11 84%]
-  D --> F[Re-score 96.3% A]
+  A[CI green] --> B[SDK pack smoke CI]
+  A --> C[Desktop bridge auth default]
+  B --> D[C11 L116 3/3 -> C11 87%]
+  C --> E[C04 L40 3/3 -> C04 93%]
+  D --> F[Re-score 96.8% A]
   E --> F
 ```
 
@@ -16,16 +16,20 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-304 | Global memory-cap enforcement (`security.MemoryCapGuard`; soft 429 / hard 503 problem+json; audited; fails open) | C00 L8 · G-C00-04 · WBS-P4.7 | M | THIS PR |
-| W-305 | Wire memory-cap check into `/analyze` `/build` `/render`; RSS/cap gauges on `/metrics` | C00 L8 · WBS-P4.7 | S | THIS PR |
-| W-306 | Forward `HTTPException.headers` (e.g. `Retry-After`) through `http_exception_problem` | C00 L8 | S | THIS PR |
-| W-307 | Electrobun tray/menubar quick-actions (Show/Open Bridge Health/Quit) | C11 L110 · G-C11-03 · WBS-P4.2 | M | THIS PR |
-| W-308 | Re-score SCORECARD (p1k → 96.3% A) | audit | S | THIS PR |
+| W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | C11 L116 · G-C00-01 · WBS-P3.1 partial | M | THIS PR |
+| W-310 | Document publishable-shape gate + future publish steps | C11 L116 · docs | S | THIS PR |
+| W-311 | Re-score SCORECARD (p1l → 96.8% A) | audit | S | THIS PR |
+| W-312 | Desktop-spawned bridge bearer auth by default (`INSECURE_LOOPBACK` opt-out) | C04 L40 | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
+| W-304 | Global memory-cap enforcement (`security.MemoryCapGuard`; soft 429 / hard 503 problem+json; audited; fails open) | #151 |
+| W-305 | Wire memory-cap check into `/analyze` `/build` `/render`; RSS/cap gauges on `/metrics` | #151 |
+| W-306 | Forward `HTTPException.headers` (e.g. `Retry-After`) through `http_exception_problem` | #151 |
+| W-307 | Electrobun tray/menubar quick-actions (Show/Open Bridge Health/Quit) | #151 |
+| W-308 | Re-score SCORECARD (p1k → 96.3% A) | #151 |
 | W-301 | `@melosviz/ui` shared component package (`Button`/`EmptyState`/`Skeleton`) | #150 |
 | W-302 | Wire `PlaylistPanel` + `Skeleton` re-export to `@melosviz/ui` (real consumer, not stub) | #150 |
 | W-303 | Re-score SCORECARD (p1j → 95.8% A) | #150 |

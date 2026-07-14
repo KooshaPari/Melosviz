@@ -42,6 +42,9 @@ Agents and CI **must not**:
 - `scripts/check_hermetic_smoke.sh` — Linux hermetic/offline smoke (`cargo fetch`
   once, then `CARGO_NET_OFFLINE=true cargo check -p melosviz-mir --locked`);
   wired as `hermetic-smoke` in `supply-chain.yml` (WBS-P1.6 / C06 L54)
+- `scripts/check_sdk_pack_smoke.sh` — SDK `npm pack` + tarball install + import
+  smoke for `@melosviz/*` stubs; wired as `sdk-pack-smoke` in `supply-chain.yml`
+  (C11 L116 publishable-shape gate; does not publish to a registry)
 - Dependabot weekly PRs only (no ad-hoc unpinned bumps in feature PRs)
 - Release artifacts ship `SHA256SUMS` (`MelosViz-Checksums`)
 

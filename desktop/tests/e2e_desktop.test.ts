@@ -168,6 +168,8 @@ beforeAll(async () => {
       ...process.env,
       CI: "1",
       MELOSVIZ_BACKEND_DIR: BACKEND_DIR,
+      // External health probes in this suite lack the desktop-minted bearer token.
+      MELOSVIZ_BRIDGE_INSECURE_LOOPBACK: "1",
     },
     stdout: "pipe",
     stderr: "pipe",
