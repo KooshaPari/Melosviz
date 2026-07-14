@@ -1,9 +1,16 @@
 {
   "name": "@melosviz/bridge-client",
   "version": "0.0.0",
-  "private": true,
-  "description": "MelosViz HTTP bridge client stub (WBS-P3.1 partial). Publishable shape only — not published to npm.",
+  "description": "MelosViz HTTP bridge client stub (WBS-P3.1). Published to GitHub Packages via publish-sdk-packages workflow.",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KooshaPari/Melosviz.git",
+    "directory": "sdk/ts"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "exports": {
     ".": {

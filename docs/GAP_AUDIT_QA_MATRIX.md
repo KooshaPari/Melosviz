@@ -1,6 +1,6 @@
 # Gap Audit + QA Matrix (audit-v38)
 
-Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.5% · A** (2026-07-13, p1n-hermetic-python).
+Baseline: [`audit/SCORECARD.md`](../audit/SCORECARD.md) — **~97.8% · A** (2026-07-13, p1o-gh-packages).
 Sources: `audit/.lane-c00`…`c11`. Linked WBS → [`WBS_PHASED.md`](WBS_PHASED.md).
 
 Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
@@ -24,7 +24,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 
 | GapID | Cluster | Pillar | Gap description | Severity | QA method | Test/evidence path | Status | Linked WBS | Trace FR |
 |-------|---------|--------|-----------------|----------|-----------|--------------------|--------|------------|----------|
-| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client`); `packages/ui`; `packages/brand-tokens`; `scripts/check_sdk_pack_smoke.sh`; `.github/workflows/supply-chain.yml` (`sdk-pack-smoke`); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
+| G-C00-01 | C00 | L2 | Public npm/crates SDK still unpublished | M | manual | `docs/sdk/README.md`; `sdk/ts` (`@melosviz/bridge-client`); `packages/ui`; `packages/brand-tokens`; `scripts/check_sdk_pack_smoke.sh`; `.github/workflows/publish-sdk-packages.yml`; `.github/workflows/supply-chain.yml` (`sdk-pack-smoke`); `docs/SUPPLY_CHAIN.md` reserved names | mitigated | WBS-P3.1 | C00 L2 |
 | G-C00-02 | C00 | L9 | Windows desktop package/upload still step-level continue-on-error (job soft-fail narrowed) | L | ci | `audit/.lane-c00/C00.md` L9; `release.yml`; `docs/PACKAGING.md` | mitigated | WBS-P1.10 | C00 L9 |
 | G-C00-03 | C00 | L7 | No loom/race stress suite | L | unit | `backend/tests/test_bridge_concurrency_race.py`; `audit/.lane-c00/C00.md` L7 | closed | — | C00 L7 |
 | G-C00-04 | C00 | L8 | No global memory-cap enforcement | M | unit | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | closed | WBS-P4.7 | C00 L8 |
@@ -37,7 +37,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C02-05 | C02 | L28 | cargo-audit soft-fail | L | ci | `.github/workflows/supply-chain.yml` (`rust-audit` / `cargo audit` hard-fail, no continue-on-error) | closed | — | C02 L28 |
 | G-C03-01 | C03 | L30.10 | No feedback-loop timing budget gate (diagnose/pytest/cargo/golden) | M | ci | `docs/TIMING_BUDGETS.md`; `scripts/check_timing_budgets.py`; `.github/workflows/timing-budgets.yml` | closed | WBS-P1.11 | C03 L30.10 |
 | G-C03-02 | C03 | L30.1 | FR catalog not machine-exported (JSON/YAML) | M | ci | `docs/fr-status.yaml`; `scripts/check_fr_status.py`; `.github/workflows/docs-trace.yml` | closed | WBS-P1.1 | C03 L30.1 |
-| G-C04-01 | C04 | L34 | Org GPG / verified-commit branch protection | H | manual | `CONTRIBUTING.md`; lane soft_goal W-228 | open | WBS-P2.1 | C04 L34 · W-228 |
+| G-C04-01 | C04 | L34 | Org GPG / verified-commit branch protection | H | manual | `CONTRIBUTING.md`; `docs/COMMIT_SIGNING.md` (SSH/GPG local signing + DCO); lane soft_goal W-228 | open | WBS-P2.1 | C04 L34 · W-228 |
 | G-C04-02 | C04 | L39 | OSSF TokenPermissions findings on older workflows | M | ci | `.github/workflows/ci.yml`; `.github/workflows/supply-chain.yml`; `.github/workflows/release.yml`; `.github/workflows/docs-trace.yml` | mitigated | WBS-P1.8 | C04 L39 |
 | G-C04-03 | C04 | L35 | Per-binary cosign still optional (manifest-level) | L | ci | `release.yml` SHA256SUMS.cosign.bundle | mitigated | WBS-P0.9 | C04 L35 |
 | G-C05-01 | C05 | L49 | Audit JSONL retention not enforced in code | M | unit | `backend/src/melosviz/bridge/security.py` (`_maybe_prune_audit`); `docs/PRIVACY.md`; `backend/tests/test_bridge_security.py` | closed | WBS-P1.7 | C05 L49 |
@@ -62,7 +62,7 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 | G-C11-03 | C11 | L110 | No tray/menubar quick-actions | L | manual | `desktop/src/index.ts` `setupTray()`; `desktop/locales/{en,es}.json`; `desktop/tests/e2e_desktop.test.ts`; `docs/PACKAGING.md`; `audit/.lane-c11/C11.md` L110 | mitigated | WBS-P4.2 | C11 L110 |
 | G-C11-04 | C11 | L121 | Full vendored Electrobun offline installer | M | manual | `docs/AIRGAP.md` | open | WBS-P4.3 | C11 L121 |
 | G-C11-05 | C11 | L120 | No MSI uninstaller until Authenticode | M | doc | `docs/UNINSTALL.md` | open | WBS-P4.4 | C11 L120 |
-| G-C11-06 | C11 | L109 | No PyPI / crates.io / npm registry publish | M | manual | `docs/PACKAGING.md`; `docs/sdk/README.md` (pack smoke ≠ publish) | open | WBS-P3.1 | C11 L109 · L116 |
+| G-C11-06 | C11 | L109 | PyPI / crates.io / public npm still unpublished; npm via GitHub Packages workflow | M | manual | `.github/workflows/publish-sdk-packages.yml`; `scripts/publish_sdk_packages.sh`; `docs/PACKAGING.md`; `docs/sdk/README.md` (first green publish run pending) | mitigated | WBS-P3.1 | C11 L109 · L116 |
 
 ## Notes
 
@@ -71,4 +71,4 @@ Status enum: `open` | `mitigated` | `closed` | `accepted` | `blocked`
 - C09 scores 100% A at cluster level; remaining rows are residual UX depth, not scorecard blockers.
 - G-C08-01 uses Status `open` with WBS deferred (legal/product gate); not marked `accepted` until counsel signs off.
 
-`last_updated`: 2026-07-13
+`last_updated`: 2026-07-13 (p1o-gh-packages)

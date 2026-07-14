@@ -10,9 +10,10 @@ registries via locked manifests only.
 | PyPI | `melosviz` (bridge / backend) | pypi.org | Install only via `backend/uv.lock` |
 | crates.io | `melosviz-*` workspace crates | crates.io | Workspace members; do not yank-replace |
 | npm | `melosviz-web` / desktop private | npmjs.com | `"private": true` — never publish |
-| npm | `@melosviz/bridge-client` (`sdk/ts`) | npmjs.com | Stub only — `"private": true`, **not published** (WBS-P3.1) |
-| npm | `@melosviz/brand-tokens` | npmjs.com | `"private": true` token stub — never publish |
-| npm | `@melosviz/*` (scoped) | npmjs.com | Reserved scope; publish only with release owner |
+| npm | `@melosviz/bridge-client` (`sdk/ts`) | npm.pkg.github.com | GH Packages publish via `publish-sdk-packages.yml` (G-C11-06 mitigated) |
+| npm | `@melosviz/brand-tokens` | npm.pkg.github.com | GH Packages; SoT remains `desktop/assets/brand/tokens.css` |
+| npm | `@melosviz/ui` | npm.pkg.github.com | GH Packages; depends on published `@melosviz/brand-tokens` |
+| npm | `@melosviz/*` (scoped) | npmjs.com | Reserved — **not** published to public npm |
 
 Agents and CI **must not**:
 

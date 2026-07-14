@@ -3,7 +3,9 @@
 #
 # Proves @melosviz/* packages are publishable-shape: `npm pack` succeeds,
 # tarballs install into a throwaway dir, and entrypoints import cleanly.
-# Does NOT publish to npm/GitHub Packages — live registry publish stays G-C11-06.
+# Live registry publish is handled separately by publish-sdk-packages.yml /
+# scripts/publish_sdk_packages.sh (G-C11-06 mitigated — first green publish run
+# still pending).
 #
 # Requires: npm, bun (TypeScript entrypoints; matches desktop/web toolchain).
 
