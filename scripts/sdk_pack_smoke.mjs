@@ -9,7 +9,8 @@
  */
 
 import { existsSync } from "node:fs";
-import { join, pathToFileURL } from "node:path";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 const installDir = process.argv[2];
 if (!installDir || !existsSync(installDir)) {
