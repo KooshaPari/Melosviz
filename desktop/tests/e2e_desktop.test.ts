@@ -11,8 +11,10 @@
  *   BRIDGE-ONLY MODE (CI / Linux, or BRIDGE_ONLY=1 env):
  *     Skips the launcher-log invariants (no display / no app process) and
  *     runs only the bridge HTTP round-trips against a pre-started bridge
- *     server on BRIDGE_PORT.
+ *     server on BRIDGE_PORT (/health, /ready, /metrics, /debug/profile,
+ *     /analyze, /build, /render).
  *     Set: BRIDGE_PORT=18765 BRIDGE_ONLY=1 bun test tests/e2e_desktop.test.ts
+ *     Or: ./desktop/tests/run_bridge_e2e.sh (from repo root)
  *
  * Three recent bugs this suite would have caught:
  *
@@ -42,7 +44,7 @@
  *     headless mode; screenshot comparison needs a real display.
  *   - File-picker dialog (openFileDialog): requires native UI interaction.
  *   - Drag-and-drop into the webview.
- *   These are tracked in docs/QGATE_BASELINE.md → "manual-only checks".
+ *   See desktop/tests/README.md and docs/GAP_AUDIT_QA_MATRIX.md (G-C07-01).
  */
 
 import { test, expect, beforeAll, afterAll, describe } from "bun:test";
@@ -129,9 +131,13 @@ function parseBridgePort(log: string): number | null {
   return m ? parseInt(m[1], 10) : null;
 }
 
+function bridgeUrl(port: number, path: string): string {
+  return `http://127.0.0.1:${port}${path}`;
+}
+
 async function probeHealth(port: number): Promise<boolean> {
   try {
-    const r = await fetch(`http://127.0.0.1:${port}/health`, {
+    const r = await fetch(bridgeUrl(port, "/health"), {
       signal: AbortSignal.timeout(3000),
     });
     return r.ok;
@@ -343,12 +349,62 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
       return;
     }
     expect(bridgeReady).toBe(true);
-    const r = await fetch(`http://127.0.0.1:${bridgePort}/health`, {
+    const r = await fetch(bridgeUrl(bridgePort, "/health"), {
       signal: AbortSignal.timeout(5000),
     });
     expect(r.status).toBe(200);
     const body = (await r.json()) as { status: string };
     expect(body.status).toBe("ok");
+  });
+
+  /**
+   * Bridge /ready — readiness probe once observability stack is up.
+   */
+  test("Bridge /ready responds 200 with uptime", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /ready");
+      return;
+    }
+    const r = await fetch(bridgeUrl(bridgePort, "/ready"), {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(r.status).toBe(200);
+    const body = (await r.json()) as { status: string; uptime_s: number };
+    expect(body.status).toBe("ready");
+    expect(typeof body.uptime_s).toBe("number");
+    expect(body.uptime_s).toBeGreaterThanOrEqual(0);
+  });
+
+  /**
+   * Bridge /metrics — Prometheus exposition (desktop ops / SLO probes).
+   */
+  test("Bridge /metrics returns Prometheus text", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /metrics");
+      return;
+    }
+    const r = await fetch(bridgeUrl(bridgePort, "/metrics"), {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(r.status).toBe(200);
+    const body = await r.text();
+    expect(body).toContain("melosviz_up 1");
+    expect(body).toContain("melosviz_ready");
+    expect(body).toContain("melosviz_http_requests_total");
+  });
+
+  /**
+   * Bridge /debug/profile — disabled unless MELOSVIZ_PROFILE is set (404 default).
+   */
+  test("Bridge /debug/profile is 404 when profiler disabled", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /debug/profile");
+      return;
+    }
+    const r = await fetch(bridgeUrl(bridgePort, "/debug/profile"), {
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(r.status).toBe(404);
   });
 
   /**
@@ -369,7 +425,7 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
     }
     expect(fs.existsSync(FIXTURE_WAV)).toBe(true);
 
-    const r = await fetch(`http://127.0.0.1:${bridgePort}/analyze`, {
+    const r = await fetch(bridgeUrl(bridgePort, "/analyze"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wav_path: FIXTURE_WAV }),
@@ -395,6 +451,40 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
   }, 50_000);
 
   /**
+   * Bridge /analyze validation — Pydantic + filesystem guards surface as 4xx.
+   */
+  test("Bridge /analyze rejects missing wav_path with 422", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /analyze validation");
+      return;
+    }
+    const r = await fetch(bridgeUrl(bridgePort, "/analyze"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(r.status).toBe(422);
+  });
+
+  test("Bridge /analyze rejects nonexistent file with 400", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /analyze validation");
+      return;
+    }
+    const ghost = path.join(BACKEND_DIR, "tests", "fixtures", "no_such_file.wav");
+    const r = await fetch(bridgeUrl(bridgePort, "/analyze"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wav_path: ghost }),
+      signal: AbortSignal.timeout(5000),
+    });
+    expect(r.status).toBe(400);
+    const body = await r.text();
+    expect(body.length).toBeGreaterThan(0);
+  });
+
+  /**
    * Bridge /build — analyze → assemble render plan.
    *
    * The simple test_tone.wav fixture produces 0 scene_segments (a pure sine
@@ -413,7 +503,7 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
       return;
     }
 
-    const r = await fetch(`http://127.0.0.1:${bridgePort}/build`, {
+    const r = await fetch(bridgeUrl(bridgePort, "/build"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ wav_path: FIXTURE_WAV }),
@@ -434,4 +524,32 @@ describe("MelosViz desktop app — bridge HTTP layer (RPC proxy)", () => {
       expect(body.length).toBeGreaterThan(0);
     }
   }, 35_000);
+
+  /**
+   * Bridge /render — full conductor path; same flat fixture semantics as /build.
+   *
+   * Proves the endpoint is wired and returns an application-level 400 (or 200
+   * on richer WAV) rather than 404/502.
+   */
+  test("Bridge /render is reachable (400 on empty-segment fixture is expected)", async () => {
+    if (!bridgeReady || !bridgePort) {
+      console.warn("[e2e] Bridge not ready — skipping /render reachability check");
+      return;
+    }
+    const outDir = path.join(BACKEND_DIR, "tests", "fixtures", "_e2e_render_out");
+    fs.mkdirSync(outDir, { recursive: true });
+
+    const r = await fetch(bridgeUrl(bridgePort, "/render"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wav_path: FIXTURE_WAV, out_dir: outDir }),
+      signal: AbortSignal.timeout(45_000),
+    });
+
+    expect([200, 400]).toContain(r.status);
+    if (r.status === 400) {
+      const body = await r.text();
+      expect(body.length).toBeGreaterThan(0);
+    }
+  }, 50_000);
 });
