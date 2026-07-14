@@ -1,7 +1,8 @@
 # qgate Quality Gate Baseline — MelosViz
 
-**Date:** 2026-06-30
-**Gate:** `KooshaPari/phenotype-tooling` reusable workflow `quality-gate.yml@main`
+**Date:** 2026-07-13
+**Gate:** in-repo reusable workflow `.github/workflows/reusable/quality-gate.yml` (qgate binary built from `KooshaPari/phenotype-tooling`)
+**CI entrypoints:** `.github/workflows/ci.yml` (`quality-gate` job) · `.github/workflows/qgate.yml` (standalone baseline)
 **Threshold:** 100% granular-recursive (every module, not averaged)
 **Status:** 100% overall — every module at 100%. Gate GREEN.
 
@@ -105,3 +106,4 @@ All excluded lines are documented below. No lazy excludes — each has a concret
 - `ci(quality): wire qgate granular-recursive gate (baseline red)` — CI workflow + .qgate.toml
 - `test(backfill): coverage + property/chaos/perf/security/e2e toward 85%` — test_qgate_backfill.py + test fixes
 - `test(coverage): 100% granular-recursive + gate threshold 100` — 300+ targeted tests, pragmas with justifications, gate raised to 100
+- `ci(qgate): promote in-repo reusable quality-gate workflow` — `.github/workflows/reusable/quality-gate.yml`, `qgate.yml`, ci.yml `quality-gate` job

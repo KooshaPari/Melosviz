@@ -88,9 +88,9 @@ jobs:
     name: Desktop e2e — bridge HTTP layer (Linux, no display)
     # This job runs the bridge/HTTP-layer subset of the desktop e2e suite on Linux.
     # The launcher-log invariants (window created, blank-view, RPC-transport) require
-    # macOS + AppKit and are validated on host (see desktop/tests/e2e_desktop.test.ts
-    # and docs/QGATE_BASELINE.md "manual/host-only checks").
-    # Linux CI covers: bridge /health, /analyze (RenderSpec shape), /build (render plan).
+    # macOS + AppKit and are validated on host (see desktop/tests/README.md).
+    # Linux CI covers: bridge /health, /ready, /metrics, /debug/profile (404),
+    # /analyze (+ validation), /build, /render (render plan).
     #
     # Billing note: standard ubuntu-22.04 runner — no macOS billing triggered.
     runs-on: ubuntu-22.04
@@ -122,60 +122,24 @@ jobs:
         working-directory: desktop
         run: bun install
 
-      - name: Start bridge sidecar
-        # Spin up the Python FastAPI bridge on a fixed port so the Bun e2e
-        # tests can probe it directly (no Electrobun app process needed on Linux).
-        run: |
-          python -m melosviz.bridge.server --port 18765 &
-          BRIDGE_PID=$!
-          echo "BRIDGE_PID=$BRIDGE_PID" >> $GITHUB_ENV
-          echo "BRIDGE_PORT=18765" >> $GITHUB_ENV
-          # Wait up to 15 s for the bridge to become ready
-          for i in $(seq 1 30); do
-            sleep 0.5
-            curl -sf http://127.0.0.1:18765/health && break
-          done
-        working-directory: backend
+      - name: Run bridge e2e tests (shell + Bun)
+        # desktop/tests/run_bridge_e2e.sh starts the sidecar, runs BRIDGE_ONLY
+        # Bun e2e, and tears down. Launcher-log GUI tests remain host-gated
+        # (macOS + display); see desktop/tests/README.md.
+        run: bash desktop/tests/run_bridge_e2e.sh
 
-      - name: Run bridge e2e tests (Bun)
-        # Run only the bridge HTTP layer tests — the launcher-log tests are
-        # skipped automatically on Linux (no Electrobun app process here).
-        working-directory: desktop
-        env:
-          BRIDGE_PORT: "18765"
-          MELOSVIZ_BACKEND_DIR: ${{ github.workspace }}/backend
-          CI: "1"
-        run: |
-          # bun test exits non-zero on any failure — rely on exit code directly.
-          # BRIDGE_ONLY=1 + BRIDGE_PORT are set so the launcher-log tests auto-skip
-          # (no display/AppKit on Linux); bridge HTTP tests run and must pass.
-          BRIDGE_ONLY=1 bun test tests/e2e_desktop.test.ts --timeout 60000
-
-      - name: Stop bridge sidecar
-        if: always()
-        run: kill $BRIDGE_PID 2>/dev/null || true
-
-  # quality-gate: TEMPORARILY DISABLED.
-  # KooshaPari/phenotype-tooling's reusable workflow
-  # `.github/workflows/reusable/quality-gate.yml@main` makes every calling
-  # workflow file unparseable on GitHub's side ("workflow file may be
-  # broken", zero jobs ever created, referenced_workflows: [] on the run
-  # object) — reproduced in isolation with a minimal caller (bare job,
-  # no `with:` inputs, no sibling jobs) invoking only this one reusable
-  # workflow, so the defect is in phenotype-tooling's workflow itself, not
-  # in how Melosviz calls it. Root-cause needs to be fixed upstream in
-  # phenotype-tooling; re-enable this job once that repo's workflow_call
-  # entrypoint is confirmed valid.
-  # quality-gate:
-  #   name: qgate — granular-recursive quality gate (85%)
-  #   needs: backend
-  #   uses: KooshaPari/phenotype-tooling/.github/workflows/reusable/quality-gate.yml@main
-  #   with:
-  #     coverage-report: backend/coverage/lcov.info
-  #     coverage-format: lcov
-  #     threshold: 100
-  #     # a11y: webview UI only testable on host (no headless Electron CI)
-  #     # chaos: covered by test_qgate_backfill.py but not auto-categorised
-  #     # mutation: mutmut config in place, full run is slow for CI
-  #     not-applicable: "a11y"
-  #     working-directory: .
+  quality-gate:
+    name: qgate — granular-recursive quality gate (100%)
+    needs: backend
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/reusable/quality-gate.yml
+    with:
+      coverage-artifact-name: backend-coverage-py3.12
+      coverage-report: backend/coverage/lcov.info
+      coverage-format: lcov
+      threshold: 100
+      not-applicable: a11y
+      working-directory: .
+      run-baseline-checks: false
