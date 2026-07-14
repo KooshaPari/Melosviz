@@ -8,6 +8,7 @@
 | GHCR `melosviz-bridge` | Operators / k8s | Image digest via GHCR | `Dockerfile` + `ghcr-bridge.yml` |
 | Source (this repo) | Developers | N/A | MIT; use lockfiles |
 | Air-gap tarball | Isolated networks | Bundle `SHA256SUMS` | `scripts/airgap_bundle.sh` |
+| Air-gap desktop (prebuilt) | Isolated networks | Release `SHA256SUMS` + local checksums | `scripts/airgap_fetch_desktop.sh`; see `docs/AIRGAP.md` |
 | PyPI / crates.io | — | — | **Not published** (see `docs/SUPPLY_CHAIN.md`) |
 | npm | — | — | Packages marked `"private": true` |
 
@@ -33,6 +34,8 @@ as authoritative.
 - Shipping unsigned Windows Authenticode / Apple notarized installers without
   org certificate ownership (tracked as W-224)
 - Native iOS/Android stores (W-223)
+- Claiming a fully vendored Electrobun offline build farm in-repo (WBS-P4.3
+  deferred; prebuilt release copy is the operator mitigation)
 
 ## Related
 
