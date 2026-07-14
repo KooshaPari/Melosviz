@@ -39,6 +39,7 @@ import argparse
 import json
 import os
 import sys
+import uuid
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -48,9 +49,9 @@ from pathlib import Path
 
 try:
     import uvicorn
-    from fastapi import FastAPI, HTTPException, Request
+    from fastapi import FastAPI, File, HTTPException, Request, UploadFile
     from fastapi.responses import PlainTextResponse
-    from pydantic import BaseModel
+    from pydantic import BaseModel, model_validator
 except (
     ImportError
 ):  # pragma: no cover — only reachable without [bridge] extras installed
@@ -86,7 +87,15 @@ app.add_exception_handler(_HTTPException, http_exception_problem)
 # need to reset state between cases can call ``server.security_limiter.reset()``.
 security_limiter = security.install_middleware(
     app,
-    protected_paths=("/analyze", "/build", "/render", "/health", "/ready", "/metrics"),
+    protected_paths=(
+        "/analyze",
+        "/build",
+        "/render",
+        "/upload",
+        "/health",
+        "/ready",
+        "/metrics",
+    ),
 )
 
 # Shared render quota + MIR circuit breaker (tests may ``.reset()``).
@@ -129,7 +138,17 @@ async def _obs_middleware(request, call_next):  # type: ignore[no-untyped-def]
 
 
 class AnalyzeRequest(BaseModel):
-    wav_path: str
+    wav_path: str | None = None
+    audio_path: str | None = None
+
+    @model_validator(mode="after")
+    def _require_audio_path(self) -> "AnalyzeRequest":
+        if not self.wav_path and not self.audio_path:
+            raise ValueError("Either wav_path or audio_path is required")
+        return self
+
+    def resolved_path(self) -> str:
+        return self.wav_path or self.audio_path or ""
 
 
 class BuildRequest(BaseModel):
@@ -396,7 +415,7 @@ async def analyze(req: AnalyzeRequest, request: Request) -> str:
     Uses the fast Rust MIR analyzer when available; falls back to Python.
     """
     _enforce_memory_cap(request)
-    wav = _check_inside(req.wav_path)
+    wav = _check_inside(req.resolved_path())
 
     try:
         if not wav.exists():
@@ -411,6 +430,57 @@ async def analyze(req: AnalyzeRequest, request: Request) -> str:
     except Exception as exc:  # noqa: BLE001 — surface as 400 (incl. stdlib `wave.Error`)
         raise HTTPException(status_code=400, detail=f"invalid WAV: {exc}") from exc
     return json.dumps(data, indent=2, default=str)
+
+
+_UPLOAD_CHUNK_BYTES = 1024 * 1024  # 1 MiB streaming chunks
+_UPLOAD_SUFFIXES = frozenset({".wav", ".wave", ".mp3", ".flac", ".ogg", ".m4a", ".aac"})
+
+
+@app.post("/upload")
+async def upload_audio(
+    request: Request, file: UploadFile = File(...)
+) -> dict[str, str]:
+    """Stream a browser-uploaded audio file into the allowed data directory.
+
+    Returns ``{"wav_path": "<absolute path>"}`` for use with ``POST /analyze``.
+    """
+    upload_root = security.allowed_dir() / "uploads"
+    upload_root.mkdir(parents=True, exist_ok=True)
+
+    raw_suffix = Path(file.filename or "audio.wav").suffix.lower()
+    suffix = raw_suffix if raw_suffix in _UPLOAD_SUFFIXES else ".wav"
+    dest = upload_root / f"{uuid.uuid4().hex}{suffix}"
+
+    written = 0
+    max_bytes = security.max_upload_bytes()
+    try:
+        with dest.open("wb") as out:
+            while True:
+                chunk = await file.read(_UPLOAD_CHUNK_BYTES)
+                if not chunk:
+                    break
+                written += len(chunk)
+                if written > max_bytes:
+                    dest.unlink(missing_ok=True)
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"Upload exceeds {max_bytes} bytes",
+                    )
+                out.write(chunk)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        dest.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=f"upload failed: {exc}") from exc
+
+    resolved = dest.resolve()
+    if not security.is_path_allowed(resolved):
+        dest.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=400,
+            detail="upload path is outside the allowed data directory",
+        )
+    return {"wav_path": str(resolved)}
 
 
 @app.post("/build", response_class=PlainTextResponse)
