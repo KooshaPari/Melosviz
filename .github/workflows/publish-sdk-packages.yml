@@ -1,0 +1,60 @@
+name: Publish SDK packages (GitHub Packages)
+
+# Publishes @melosviz/bridge-client, @melosviz/brand-tokens, @melosviz/ui to
+# npm.pkg.github.com (G-C11-06 mitigated path / WBS-P3.1). PyPI and crates.io
+# remain out of scope for this workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Pack + smoke only (no registry publish)
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "sdk-v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-sdk-packages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish @melosviz/* to GitHub Packages
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - uses: oven-sh/setup-bun@6f17a27db93e87c4e39e8cd9b1ea9e6d4b5a2d0e
+        with:
+          bun-version: "1.2.2"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          registry-url: https://npm.pkg.github.com
+          scope: "@melosviz"
+
+      - name: Pack + install smoke (publishable-shape gate)
+        run: bash scripts/check_sdk_pack_smoke.sh
+
+      - name: Configure npm auth for GitHub Packages
+        run: |
+          cat >> "${HOME}/.npmrc" <<'EOF'
+          @melosviz:registry=https://npm.pkg.github.com
+          always-auth=true
+          EOF
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish packages (or dry-run)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MELOSVIZ_SDK_PUBLISH_DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: bash scripts/publish_sdk_packages.sh

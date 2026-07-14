@@ -33,7 +33,8 @@ Or use the [devcontainer](.devcontainer/devcontainer.json).
    - `cd backend && pytest -q`
 4. Use the PR template (What / Why / How / Testing).
 5. **DCO** — every commit must be signed-off (`git commit -s`) affirming the
-   Developer Certificate of Origin (see below). Org branch protection for
+   Developer Certificate of Origin (see below). Optional SSH/GPG signing:
+   [`docs/COMMIT_SIGNING.md`](docs/COMMIT_SIGNING.md). Org branch protection for
    verified/signed commits is tracked separately (W-228).
 
 ## Developer Certificate of Origin

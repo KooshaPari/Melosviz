@@ -1,19 +1,22 @@
 # `@melosviz/bridge-client` (stub)
 
-Private TypeScript HTTP client stub for the MelosViz bridge.
+TypeScript HTTP client stub for the MelosViz bridge.
 
-**Status:** not published to npm. `"private": true` in `package.json`.
-Publish remains WBS-P3.1 — see [`docs/sdk/README.md`](../../docs/sdk/README.md)
-and reserved-name policy in [`docs/SUPPLY_CHAIN.md`](../../docs/SUPPLY_CHAIN.md).
+**Status:** configured for **GitHub Packages** (`publishConfig.registry` →
+`npm.pkg.github.com`). Publish via `.github/workflows/publish-sdk-packages.yml`
+(WBS-P3.1 / G-C11-06 mitigated — first green publish run pending).
+
+See [`docs/sdk/README.md`](../../docs/sdk/README.md) for consume/login steps and
+reserved-name policy in [`docs/SUPPLY_CHAIN.md`](../../docs/SUPPLY_CHAIN.md).
 
 ## Package shape
 
 | Field | Value |
 |-------|--------|
 | name | `@melosviz/bridge-client` |
-| private | `true` |
+| registry | GitHub Packages (`npm.pkg.github.com`) |
 | exports | `.` → `src/index.ts` |
-| version | `0.0.0` (pre-publish) |
+| version | `0.0.0` (pre-first-publish) |
 
 ## Usage (illustrative)
 

@@ -4,11 +4,11 @@ Atomic, FR-linked tasks agents can claim independently.
 
 ```mermaid
 flowchart TD
-  A[CI green] --> B[Hermetic Python wheelhouse smoke]
-  A --> C[Portability smoke without FFmpeg/Blender]
-  B --> D[C06 L54 3/3 -> C06 100%]
-  C --> E[C07 L70 3/3 -> C07 100%]
-  D --> F[Re-score 97.5% A]
+  A[CI green] --> B[GH Packages publish workflow]
+  A --> C[SDK publishConfig + consume docs]
+  B --> D[G-C11-06 mitigated]
+  C --> E[COMMIT_SIGNING.md C04 L34 1→2]
+  D --> F[Re-score 97.8% A]
   E --> F
 ```
 
@@ -16,15 +16,18 @@ flowchart TD
 
 | ID | Task | FR / pillar | Effort | Status |
 |----|------|-------------|--------|--------|
-| W-316 | Hermetic Python wheelhouse offline CI (`check_hermetic_python_smoke.sh` + supply-chain) | C06 L54 · G-C06-03 · WBS-P1.14 | M | THIS PR |
-| W-317 | Portability smoke without FFmpeg/Blender (`check_portability_smoke.py`) | C07 L70 · G-C07-03 · WBS-P1.14 | S | THIS PR |
-| W-318 | Re-score SCORECARD (p1n → 97.5% A) | audit | S | THIS PR |
+| W-319 | GitHub Packages publish workflow (`publish-sdk-packages.yml` + `publish_sdk_packages.sh`) | C11 L109 · G-C11-06 · WBS-P3.1 | M | THIS PR |
+| W-320 | `publishConfig` + consume docs (`docs/sdk/README.md`, `docs/PACKAGING.md`) | C11 L116 · G-C11-06 | S | THIS PR |
+| W-321 | Commit signing contributor guide (`docs/COMMIT_SIGNING.md`) | C04 L34 · G-C04-01 | S | THIS PR |
+| W-322 | Re-score SCORECARD (p1o → 97.8% A) | audit | S | THIS PR |
 
 ## Completed
 
 | ID | Task | Status |
 |----|------|--------|
-| W-313 | Flaky quarantine machine gate (`check_flaky_quarantine.py` + docs-trace CI) | #153 |
+| W-316 | Hermetic Python wheelhouse offline CI (`check_hermetic_python_smoke.sh` + supply-chain) | #154 |
+| W-317 | Portability smoke without FFmpeg/Blender (`check_portability_smoke.py`) | #154 |
+| W-318 | Re-score SCORECARD (p1n → 97.5% A) | #154 |
 | W-314 | External profiler sidecar (`profile_bridge_sidecar.sh`/`.ps1`) | #153 |
 | W-315 | Re-score SCORECARD (p1m → 97.0% A) | #153 |
 | W-309 | SDK pack smoke CI (`npm pack` + tarball install + import) | #152 |

@@ -122,8 +122,9 @@ GHCR on `main` / `v*` tags (`ghcr.io/<owner>/melosviz-bridge`).
 
 ## SDK publishable-shape gate (C11 L116)
 
-MelosViz ships **private** npm stubs with publishable layout — not live registry
-packages (G-C11-06 / WBS-P3.1 remain open).
+MelosViz ships **publishable-shape** npm packages for GitHub Packages — not
+npmjs.com, PyPI, or crates.io (G-C11-06 **mitigated** via publish workflow;
+first successful Actions publish still pending).
 
 | Package | Path | Scope |
 |---------|------|-------|
@@ -139,18 +140,29 @@ CI (`.github/workflows/supply-chain.yml` → `sdk-pack-smoke`) runs
 ```
 
 Steps: `npm pack` each package → install tarballs in a temp dir → bun import smoke
-(`scripts/sdk_pack_smoke.mjs`). This is the honest evidence for audit L116 without
-claiming npm/GitHub Packages publish.
+(`scripts/sdk_pack_smoke.mjs`). This is the honest evidence for audit L116.
 
-### Future registry publish (WBS-P3.1 — not automated here)
+### GitHub Packages publish (WBS-P3.1 — npm path)
 
-1. Release owner removes `"private": true` and adds `publishConfig` per package.
-2. Publish `@melosviz/brand-tokens` before `@melosviz/ui` (dependency order).
-3. Use `npm publish` to npmjs.com **or** GitHub Packages with `NODE_AUTH_TOKEN`.
-4. Rust crates: `cargo publish` from workspace with version bump policy.
+Workflow: `.github/workflows/publish-sdk-packages.yml`
 
-See `docs/sdk/README.md` for the full checklist. Do not claim published until a
-registry version exists.
+| Trigger | Behavior |
+|---------|----------|
+| `workflow_dispatch` | Publish to `npm.pkg.github.com` (optional `dry_run`) |
+| Tag `sdk-v*` | Same publish job on tag push |
+
+Script: `scripts/publish_sdk_packages.sh` (order: brand-tokens → bridge-client → ui).
+
+**Consume** (after a publish run):
+
+```bash
+npm login --registry=https://npm.pkg.github.com
+# PAT with read:packages as password
+npm install @melosviz/brand-tokens @melosviz/bridge-client @melosviz/ui
+```
+
+See `docs/sdk/README.md` for full `~/.npmrc` examples. PyPI / crates.io publish
+remains open under G-C11-06 / WBS-P3.1.
 
 ## Desktop bridge auth (C04 L40)
 
