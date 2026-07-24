@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..analysis.models import RenderSpec
+from ..compose.web_spec import enrich_render_spec_for_web
 
 LOFI_PALETTE: list[str] = [
     "#1A1008",  # near-black warm brown
@@ -91,4 +92,5 @@ def apply(spec: RenderSpec) -> RenderSpec:
         {"time": 12.0, "type": "section", "data": {"name": "groove", "mood": "mellow"}},
         {"time": 28.0, "type": "section", "data": {"name": "outro", "mood": "wistful"}},
     ]
-    return spec
+    enriched = enrich_render_spec_for_web(spec, preset_name="lofi")
+    return RenderSpec.model_validate(enriched)

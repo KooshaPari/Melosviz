@@ -36,6 +36,24 @@ export interface Keyframe {
   color: KeyframeColor
   /** Name of the scene / shot label (e.g. "Establishing", "Anthem"). */
   scene?: string
+  /** R3F scene-template id (wire_orb, torus_flow, …). */
+  scene_template?: string
+  /** Crossfade duration in seconds before the next segment. */
+  transition_secs?: number
+  segment_index?: number
+  label?: string
+}
+
+export interface SceneSegment {
+  index: number
+  label: string
+  start: number
+  end: number
+  energy_mean?: number
+  brightness_mean?: number
+  scene?: string
+  scene_template?: string
+  dominant_stem?: string
 }
 
 export interface RenderSpec {
@@ -48,6 +66,14 @@ export interface RenderSpec {
   key?: string
   /** Beat onset times in seconds, sorted ascending. */
   beatTimes?: number[]
+  /** MIR-backed scene segments from analyze (v2). */
+  sceneSegments?: SceneSegment[]
+  /** Colour palette from backend / preset. */
+  palette?: string[]
+  /** Active preset id when remapped. */
+  preset?: string
+  /** Normalised crossfade window per segment boundary. */
+  transitionFraction?: number
 }
 
 // ---- Runtime types consumed by the R3F scene-graph ----------------------

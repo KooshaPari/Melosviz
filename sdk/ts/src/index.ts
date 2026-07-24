@@ -49,6 +49,7 @@ export const BRIDGE_PATHS = [
   '/health',
   '/ready',
   '/metrics',
+  '/upload',
   '/analyze',
   '/build',
   '/render',

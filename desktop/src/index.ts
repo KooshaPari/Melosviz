@@ -239,6 +239,7 @@ const rpc = defineElectrobunRPC<
       },
 
       async renderWithWgpu({ renderSpec, outDir }) {
+        fs.mkdirSync(outDir, { recursive: true });
         // Write RenderSpec to a temp JSON file
         const specPath = path.join(outDir, `.melosviz-spec-${Date.now()}.json`);
         await Bun.write(specPath, renderSpec);

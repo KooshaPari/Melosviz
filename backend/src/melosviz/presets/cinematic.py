@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..analysis.models import RenderSpec
+from ..compose.web_spec import enrich_render_spec_for_web
 
 CINEMATIC_PALETTE: list[str] = [
     "#0A0F1A",  # deep blue-black shadow
@@ -91,4 +92,5 @@ def apply(spec: RenderSpec) -> RenderSpec:
         {"time": 10.0, "type": "section", "data": {"name": "build", "mood": "tension"}},
         {"time": 26.0, "type": "section", "data": {"name": "climax", "mood": "impact"}},
     ]
-    return spec
+    enriched = enrich_render_spec_for_web(spec, preset_name="cinematic")
+    return RenderSpec.model_validate(enriched)

@@ -59,16 +59,21 @@ describe("renderBinary", () => {
 describe("resolveMelosvizRenderBinary", () => {
   let tmpDir: string;
   let prevEnv: string | undefined;
+  let prevCargoTarget: string | undefined;
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "melosviz-render-"));
     prevEnv = process.env.MELOSVIZ_RENDER_BIN;
+    prevCargoTarget = process.env.CARGO_TARGET_DIR;
     delete process.env.MELOSVIZ_RENDER_BIN;
+    delete process.env.CARGO_TARGET_DIR;
   });
 
   afterEach(() => {
     if (prevEnv === undefined) delete process.env.MELOSVIZ_RENDER_BIN;
     else process.env.MELOSVIZ_RENDER_BIN = prevEnv;
+    if (prevCargoTarget === undefined) delete process.env.CARGO_TARGET_DIR;
+    else process.env.CARGO_TARGET_DIR = prevCargoTarget;
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
@@ -77,6 +82,16 @@ describe("resolveMelosvizRenderBinary", () => {
     fs.writeFileSync(bin, "");
     process.env.MELOSVIZ_RENDER_BIN = bin;
     expect(resolveMelosvizRenderBinary({ searchFrom: tmpDir })).toBe(bin);
+  });
+
+  test("finds binary under CARGO_TARGET_DIR", () => {
+    const cargoTarget = path.join(tmpDir, "cargo-target");
+    const releaseDir = path.join(cargoTarget, "release");
+    fs.mkdirSync(releaseDir, { recursive: true });
+    const bin = path.join(releaseDir, melosvizRenderBinaryName());
+    fs.writeFileSync(bin, "");
+    process.env.CARGO_TARGET_DIR = cargoTarget;
+    expect(resolveMelosvizRenderBinary({ searchFrom: tmpDir, cwd: tmpDir })).toBe(bin);
   });
 
   test("finds binary in fake repo target/release", () => {

@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..analysis.models import RenderSpec
+from ..compose.web_spec import enrich_render_spec_for_web
 
 SYNTHWAVE_PALETTE: list[str] = [
     "#0D0221",  # deep night blue
@@ -102,4 +103,5 @@ def apply(spec: RenderSpec) -> RenderSpec:
             "data": {"name": "breakdown", "mood": "electric"},
         },
     ]
-    return spec
+    enriched = enrich_render_spec_for_web(spec, preset_name="synthwave")
+    return RenderSpec.model_validate(enriched)
