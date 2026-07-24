@@ -302,7 +302,8 @@ export function SceneView({
       <div
         className="h-full w-full"
         role="img"
-        aria-label={`Melosviz visualization: ${sceneLabel}`}
+        aria-label={sceneSummary.imgLabel}
+        aria-describedby={summaryDetailId}
       >
         <Canvas
           className="h-full w-full"
@@ -321,9 +322,10 @@ export function SceneView({
           <MelosScene stateRef={stateRef} />
         </Canvas>
       </div>
-      <span className="sr-only" aria-live="polite">
-        Scene: {sceneLabel}
-      </span>
+      <SceneSummaryAnnouncer
+        summary={sceneSummary}
+        detailId={summaryDetailId}
+      />
     </div>
   )
 }
