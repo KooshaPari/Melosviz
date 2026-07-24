@@ -16,6 +16,21 @@ import { KeyboardHelp } from './components/KeyboardHelp'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useTheme } from './theme/ThemeProvider'
 
+// -- Polish surfaces (feat.audit-melosviz-pillar-followups) --
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { CommandPalette } from './components/CommandPalette'
+import type { Command } from './components/CommandPalette'
+import { InspectabilityPanel } from './components/InspectabilityPanel'
+import { Confetti } from './components/Confetti'
+import { ProgressBar } from './components/ProgressBar'
+import { withAutosave } from './hooks/autosave'
+import { createHistory } from './hooks/undoRedo'
+import { useReducedMotion, useSpring } from './hooks/motion-hooks'
+import { ShortcutRegistry } from './shortcuts'
+
+const registry = new ShortcutRegistry()
+export { registry }
+
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
 // spec per uploaded track; workstreams A/B will populate spectral/beat fields.
@@ -99,18 +114,25 @@ export default function App() {
   const playlist = usePlaylist(analyzeFile)
 
   const handleSelectPlaylistItem = useCallback((item: PlaylistItem) => {
-    if (item.spec) setPlaylistViewSpec(item.spec)
-  }, [])
+    if (item.spec) {
+      setPlaylistViewSpec(item.spec)
+      specHistory.push(item.spec)
+    }
+  }, [specHistory])
 
   // Active spec priority: preset-applied > playlist-selected > analyzed > placeholder
   const activeSpec: RenderSpec = presetSpec ?? playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
+
+  // Confetti on render complete
+  useEffect(() => {
+    if (!analyzing && renderSpec) setConfettiTick((t) => t + 1)
+  }, [analyzing, renderSpec])
 
   // ---- Playback state ------------------------------------------------------
   const [playbackT, setPlaybackT] = useState(0)
   const [autoPlay, setAutoPlay] = useState(false)
 
   // Auto-play: advance playbackT at bpm-derived rate.
-  // Each beat = 1 / totalBeats progress; totalBeats = bpm * durationSecs / 60.
   const rafRef = useRef<number | null>(null)
   const lastTickRef = useRef<number>(performance.now())
   const playbackTRef = useRef(0)
@@ -125,7 +147,6 @@ export default function App() {
 
     const bpm = activeSpec.bpm ?? 120
     const totalBeats = (bpm * activeSpec.durationSecs) / 60
-    // Progress per millisecond = 1 / (durationSecs * 1000)
     const progressPerMs = 1 / (activeSpec.durationSecs * 1000)
 
     lastTickRef.current = performance.now()
@@ -133,8 +154,7 @@ export default function App() {
     const tick = (now: number) => {
       const dt = now - lastTickRef.current
       lastTickRef.current = now
-      // Clamp totalBeats usage to avoid drift; advance by elapsed fraction
-      void totalBeats // referenced for future beat-lock accuracy
+      void totalBeats
       setPlaybackT((prev) => {
         const next = prev + dt * progressPerMs
         if (next >= 1) {
@@ -153,14 +173,12 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoPlay, activeSpec.bpm, activeSpec.durationSecs])
 
-  // Reset playbackT to 0 when a new spec arrives
   useEffect(() => {
     setPlaybackT(0)
     setAutoPlay(false)
     setPresetSpec(null)
   }, [renderSpec])
 
-  // Dispose audio on unmount
   useEffect(() => {
     return () => {
       adapterRef.current?.dispose()
@@ -184,6 +202,17 @@ export default function App() {
     setIsPlaying(false)
   }
 
+  // ---- Command palette commands --------------------------------------------
+  const commands: Command[] = useMemo(() => [
+    { id: 'toggle-play', title: 'Toggle Playback', hint: 'Space', run: () => setAutoPlay((v) => !v) },
+    { id: 'undo-spec', title: 'Undo Spec', hint: 'Cmd+Z', run: () => { specHistory.undo(); setPlaylistViewSpec(specHistory.value) } },
+    { id: 'redo-spec', title: 'Redo Spec', hint: 'Cmd+Shift+Z', run: () => { specHistory.redo(); setPlaylistViewSpec(specHistory.value) } },
+    { id: 'toggle-help', title: 'Keyboard Shortcuts', hint: '?', run: () => setShowHelp((v) => !v) },
+    { id: 'toggle-fullscreen', title: 'Toggle Fullscreen', hint: 'F', run: () => setFullscreen((v) => !v) },
+    { id: 'reset-playback', title: 'Reset Playback', hint: 'Ctrl+R', run: () => { setAutoPlay(false); setPlaybackT(0) } },
+    { id: 'close', title: 'Close Panel', hint: 'Esc', run: () => setShowHelp(false) },
+  ], [specHistory])
+
   // ---- Keyboard shortcut actions -------------------------------------------
   const shortcutActions = useMemo(() => ({
     togglePlay: () => setAutoPlay((v) => !v),
@@ -199,7 +228,6 @@ export default function App() {
 
   useKeyboardShortcuts(shortcutActions)
 
-  // Scene jump: map button index → keyframe t
   const handleSceneJump = useCallback(
     (index: number) => {
       const kf = activeSpec.keyframes[index]
@@ -219,10 +247,11 @@ export default function App() {
     })()
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
-      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
-      <LoadingOverlay visible={analyzing} />
-      <KeyboardHelp open={showHelp} onOpenChange={setShowHelp} />
+    <ErrorBoundary>
+      <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
+        {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
+        <LoadingOverlay visible={analyzing} />
+        <KeyboardHelp open={showHelp} onOpenChange={setShowHelp} />
 
       {/* ---- R3F Canvas -------------------------------------------------- */}
       <SceneView
@@ -232,13 +261,12 @@ export default function App() {
         className={`absolute inset-0 w-full h-full${fullscreen ? ' z-40' : ''}`}
       />
 
-      {/* ---- Playlist sidebar (right of left panel) --------------------- */}
-      <div className="absolute top-4 left-72 z-10 flex flex-col gap-3">
-        <PlaylistPanel
-          playlist={playlist}
-          onSelectItem={handleSelectPlaylistItem}
+        {/* ---- R3F Canvas -------------------------------------------------- */}
+        <SceneView
+          spec={activeSpec}
+          playbackT={playbackT}
+          className={`absolute inset-0 w-full h-full${fullscreen ? ' z-40' : ''}`}
         />
-      </div>
 
       {/* ---- Left panel -------------------------------------------------- */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
@@ -302,98 +330,154 @@ export default function App() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-400 max-w-xs">{error}</p>}
-      </div>
-
-      {/* ---- Right panel: scene jumps ------------------------------------- */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-        <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
-          Scene
-        </label>
-        <div className="flex flex-col gap-1">
-          {activeSpec.keyframes.map((kf, i) => (
+        {/* ---- Left panel -------------------------------------------------- */}
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
             <button
-              key={kf.scene ?? i}
-              onClick={() => handleSceneJump(i)}
-              className={`px-3 py-1.5 rounded-md text-xs text-left transition-colors ${
-                currentSceneLabel === kf.scene
-                  ? 'bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/40'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
+              onClick={() => setShowHelp(true)}
+              title="Keyboard shortcuts (?)"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+              aria-label="Show keyboard shortcuts"
+            >
+              ?
+            </button>
+          </div>
+
+          {/* File picker + Analyze */}
+          <div className="flex flex-col gap-2 rounded-lg bg-black/40 border border-white/10 p-3">
+            <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
+              Audio File Path
+            </label>
+            <input
+              type="text"
+              value={audioPath}
+              onChange={(e) => { setAudioPath(e.target.value); autosave.update(e.target.value) }}
+              placeholder="/path/to/track.mp3"
+              className="px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
+            />
+            <button
+              onClick={() => { if (audioPath) void analyze(audioPath) }}
+              disabled={!audioPath || analyzing}
+              className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {analyzing ? 'Analyzing…' : 'Analyze'}
+            </button>
+            {analysisError && <p className="text-xs text-red-400">{analysisError}</p>}
+            {renderSpec && (
+              <div className="mt-2 space-y-2">
+                <SpecViewer spec={renderSpec} />
+                <ProgressBar
+                  progress={1}
+                  stage="complete"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Audio playback + preset editor */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={isPlaying ? handleStop : handleStart}
+              className="px-4 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-sm font-medium transition-colors border border-cyan-500/30"
+            >
+              {isPlaying ? 'Stop Audio' : 'Start Audio'}
+            </button>
+            <PresetEditor
+              spec={activeSpec}
+              onPreviewChange={(t) => { setAutoPlay(false); setPlaybackT(t) }}
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-400 max-w-xs">{error}</p>}
+        </div>
+
+        {/* ---- Right panel: scene jumps ------------------------------------- */}
+        <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+          <label className="text-xs text-white/50 font-medium uppercase tracking-wider">
+            Scene
+          </label>
+          <div className="flex flex-col gap-1">
+            {activeSpec.keyframes.map((kf, i) => (
+              <button
+                key={kf.scene ?? i}
+                onClick={() => handleSceneJump(i)}
+                className={`px-3 py-1.5 rounded-md text-xs text-left transition-colors ${
+                  currentSceneLabel === kf.scene
+                    ? 'bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/40'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
+                }`}
+              >
+                {kf.scene ?? `Beat ${i + 1}`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ---- Waveform display ---------------------------------------------- */}
+        {audioPath && (
+          <div className="absolute bottom-36 left-4 right-4 z-10">
+            <WaveformDisplay audioSrc={audioPath} playbackT={playbackT} />
+          </div>
+        )}
+
+        {/* ---- Bottom bar: playback controls -------------------------------- */}
+        <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
+          <div className="flex items-center gap-3 rounded-lg bg-black/40 border border-white/10 px-4 py-3">
+            <button
+              onClick={() => setAutoPlay((v) => !v)}
+              title={autoPlay ? 'Pause auto-play' : 'Start auto-play'}
+              className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border transition-colors text-sm ${
+                autoPlay
+                  ? 'bg-fuchsia-500/30 border-fuchsia-500/50 text-fuchsia-200'
+                  : 'bg-white/5 border-white/20 text-white/60 hover:bg-white/10'
               }`}
             >
-              {kf.scene ?? `Beat ${i + 1}`}
+              {autoPlay ? '⏸' : '▶'}
             </button>
-          ))}
-        </div>
-      </div>
 
-      {/* ---- Waveform display (visible when an audio path is set) ---------- */}
-      {audioPath && (
-        <div className="absolute bottom-36 left-4 right-4 z-10">
-          <WaveformDisplay audioSrc={audioPath} playbackT={playbackT} />
-        </div>
-      )}
+            <div className="flex-1 flex flex-col gap-1">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={0.1}
+                value={Math.round(playbackT * 1000) / 10}
+                onChange={(e) => {
+                  setAutoPlay(false)
+                  setPlaybackT(Number(e.target.value) / 100)
+                }}
+                className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-fuchsia-500 cursor-pointer"
+                style={{ transition: reduced ? 'none' : 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)' }}
+              />
+              <div className="flex justify-between text-[10px] text-white/30">
+                <span>{currentSceneLabel}</span>
+                <span>{Math.round(playbackT * 100)}%</span>
+              </div>
+            </div>
 
-      {/* ---- Bottom bar: playback controls -------------------------------- */}
-      <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
-        {/* Slider + auto-play */}
-        <div className="flex items-center gap-3 rounded-lg bg-black/40 border border-white/10 px-4 py-3">
-          {/* Auto-play toggle */}
-          <button
-            onClick={() => setAutoPlay((v) => !v)}
-            title={autoPlay ? 'Pause auto-play' : 'Start auto-play'}
-            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border transition-colors text-sm ${
-              autoPlay
-                ? 'bg-fuchsia-500/30 border-fuchsia-500/50 text-fuchsia-200'
-                : 'bg-white/5 border-white/20 text-white/60 hover:bg-white/10'
-            }`}
-          >
-            {autoPlay ? '⏸' : '▶'}
-          </button>
+            <button
+              onClick={() => { setAutoPlay(false); setPlaybackT(0) }}
+              title="Reset to start"
+              className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border border-white/20 bg-white/5 hover:bg-white/10 text-white/60 text-xs transition-colors"
+            >
+              ↺
+            </button>
+          </div>
 
-          {/* Playback position slider (0–100%) */}
-          <div className="flex-1 flex flex-col gap-1">
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={0.1}
-              value={Math.round(playbackT * 1000) / 10}
-              onChange={(e) => {
-                setAutoPlay(false)
-                setPlaybackT(Number(e.target.value) / 100)
-              }}
-              className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-fuchsia-500 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-white/30">
-              <span>{currentSceneLabel}</span>
-              <span>{Math.round(playbackT * 100)}%</span>
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-3">
+              <div className={`w-2 h-2 rounded-full ${autoPlay ? 'bg-fuchsia-400 animate-pulse' : isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-white/20'}`} />
+              <span className="text-xs text-white/40">
+                {autoPlay ? 'Playing' : isPlaying ? 'Listening' : 'Idle'}
+              </span>
+            </div>
+            <div className="text-xs text-white/30">
+              {activeSpec.bpm ?? 120} BPM · Three.js / R3F
             </div>
           </div>
-
-          {/* Reset button */}
-          <button
-            onClick={() => { setAutoPlay(false); setPlaybackT(0) }}
-            title="Reset to start"
-            className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border border-white/20 bg-white/5 hover:bg-white/10 text-white/60 text-xs transition-colors"
-          >
-            ↺
-          </button>
-        </div>
-
-        {/* Status row */}
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${autoPlay ? 'bg-fuchsia-400 animate-pulse' : isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-white/20'}`} />
-            <span className="text-xs text-white/40">
-              {autoPlay ? 'Playing' : isPlaying ? 'Listening' : 'Idle'}
-            </span>
-          </div>
-          <div className="text-xs text-white/30">
-            {activeSpec.bpm ?? 120} BPM · Three.js / R3F
-          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }

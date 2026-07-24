@@ -73,7 +73,7 @@
       width: 7px;
       border-radius: 3px;
       background: var(--mv-accent);
-      animation: barDance 0.8s ease-in-out infinite alternate;
+      animation: barDance 0.8s var(--ease-in-out) infinite alternate;
     }
 
     .loader-bar:nth-child(1) { animation-delay: 0.00s; }
@@ -93,7 +93,7 @@
       font-size: 14px;
       color: #9090b0;
       opacity: 0.8;
-      animation: fadeInOut 2s ease-in-out infinite;
+      animation: fadeInOut 2s var(--ease-in-out) infinite;
     }
 
     @keyframes fadeInOut {
@@ -105,7 +105,7 @@
 <body>
   <div class="splash-container">
     <div class="splash-logo">
-      <div class="splash-icon">♪</div>
+      <div class="splash-icon" role="img" aria-label="MelosViz logo">♪</div>
       <div class="splash-wordmark">MelosViz</div>
       <div class="splash-tagline">Festival Visualizer</div>
     </div>
@@ -120,7 +120,7 @@
       <div class="loader-bar"></div>
     </div>
 
-    <div class="splash-text">Initializing…</div>
+    <div class="splash-text" role="status" aria-live="polite">Initializing…</div>
   </div>
 
   <script>
