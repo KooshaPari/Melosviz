@@ -27,6 +27,77 @@ cd backend && python -m pytest tests/test_golden_corpus.py -q
 PR/issue (`claim W-2xx`), use branch `feat/w2xx-<slug>`, and reference the FR.
 See the Claim protocol section in that file.
 
+## Bridge sidecar (local dev)
+
+The HTTP bridge listens on **`127.0.0.1:8765`** by default (`python -m
+melosviz.bridge.server --port 8765`). Use the dev helper for a quick health probe
+or background start (sets `MELOSVIZ_BRIDGE_INSECURE_LOOPBACK=1` for open
+loopback — see `docs/ENV.md`):
+
+```bash
+pip install -e backend/
+./scripts/dev_bridge.sh health    # probe /health + endpoint tips
+./scripts/dev_bridge.sh start     # background sidecar on :8765
+./scripts/dev_bridge.sh stop
+```
+
+Windows (PowerShell):
+
+```powershell
+pip install -e backend\
+.\scripts\dev_bridge.ps1 health
+.\scripts\dev_bridge.ps1 start
+```
+
+Headless bridge e2e (CI parity): `./desktop/tests/run_bridge_e2e.sh` (uses port
+`18765` by default to avoid colliding with a dev sidecar on `8765`).
+
+**Desktop app:** when running the Electrobun shell, use the system-tray menu
+**Open Bridge Health** to open `http://127.0.0.1:<port>/health` in your browser
+(the port is logged at startup as `[MelosViz] bridge port`). Tray strings are
+localized via `desktop/locales/`.
+
+## Local studio checklist
+
+Short operator path for the **web studio** on loopback (the desktop shell runs
+the same pipeline; tray **Open Bridge Health** is covered in the bridge section
+above).
+
+| Step | Action | Notes |
+|------|--------|-------|
+| 1 | **Start bridge** | `./scripts/dev_bridge.sh start` or `.\scripts\dev_bridge.ps1 start` — listens on `127.0.0.1:8765` |
+| 2 | **Open web** | `cd web && npm install && npm run dev` — Vite serves `http://localhost:5173` by default |
+| 3 | **Load audio** | Enter a path, browse, drag-drop, or pick from **Recent** (name + size in localStorage); **Clear recent** empties the list |
+| 4 | **Analyze** | Click **Analyze** — posts to `/api/analyze` (dev proxy → bridge) |
+| 5 | **Cancel / progress** | **Cancel** or **Escape** while the loading overlay is open (`useAnalysis` AbortController); overlay shows simulated **progress %** with `role="progressbar"` + live region (W-361) |
+| 6 | **Locale / HC** | Header **EN/ES** toggle (persisted in localStorage); **HC** for high-contrast focus rings; **Aa** for light/dark theme — transport, errors, presets, and toasts follow locale |
+| 7 | **Playback transport** | After analyze: **Space** play/pause (blocked while typing or a range slider is focused), seek bar, **elapsed / total** time readout, **±5 s** hint chips (←/→), **volume/mute** + **M** shortcut (persisted), **speed 0.5×–1.5×** slider + **0.5× / 1× / 1.5×** preset chips (persisted, scene + audio `playbackRate`), **loop** toggle + **L** shortcut (persisted, restart at end), i18n aria-labels (W-358, W-360, W-363, W-366–367, W-369–370, W-372) |
+| 7b | **Scene jumps** | Right panel lists keyframe scenes — click to seek; panel label + jump aria-labels follow locale (W-374) |
+| 8 | **Presets** | **Quick-apply** dropdown applies built-in presets without opening the editor dialog (W-362); full editor still available beside it |
+| 9 | **Scene / fullscreen** | **Full** toggles scene fullscreen (`aria-pressed`, Escape or **f** exits); canvas has deterministic SR text mirror (`buildSceneSummary`) |
+| 10 | **SpecViewer export** | Summary line shows duration · BPM · keyframe count (W-359); **Download JSON** / **Copy JSON** — copy shows aria-live toast (W-357) |
+| 11 | **Errors** | Bridge-down / memory-cap hints under the alert; **Retry** re-runs analyze; **Dismiss** clears the banner (tab-order per `docs/a11y/FOCUS.md`) |
+
+**Offline / air-gap:** bundle deps per `docs/AIRGAP.md` (wheelhouse, frozen locks) —
+do not invent alternate package indexes. **SDK consumers** pulling `@melosviz/*`
+from GitHub Packages: `docs/sdk/README.md`. Keyboard/focus contract (skip link →
+`#main`): `docs/a11y/FOCUS.md`.
+
+## Recovery / publish (Shell blocked)
+
+When Cursor Shell or AMDRMPATH blocks `git push` / `gh pr create`, publish
+on-disk lanes via the API recovery scripts (no git/gh shell required):
+
+| Wave | Command | Publisher script |
+|------|---------|------------------|
+| **all (p1p → p1q)** | `RUN_ALL_RECOVERY.cmd` (repo root) | runs p1p then p1q sequentially |
+| p1p (7 lanes) | `RUN_P1P_RECOVERY.cmd` | `scripts/_recover_p1p_api_all.py` |
+| p1q (studio polish) | `RUN_P1Q_RECOVERY.cmd` | `scripts/_recover_p1q_api_all.py` |
+
+`RUN_ALL_RECOVERY.cmd` logs each sub-runner exit code. Pending-merge evidence
+and lane inventory: `../phenotype-org-audits-v38/audit-v38/output/MelosViz/WAVE_P1PQ_PENDING.md`.
+Last API report: `scripts/_recover_p1p_report.json` / `scripts/_recover_p1q_report.json`.
+
 ---
 
 ## Completion Stages

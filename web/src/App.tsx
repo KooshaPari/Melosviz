@@ -451,9 +451,9 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
             <button
               onClick={() => setShowHelp(true)}
-              title="Keyboard shortcuts (?)"
+              title={t('keyboard.show_shortcuts_title')}
               className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
-              aria-label="Show keyboard shortcuts"
+              aria-label={t('keyboard.show_shortcuts')}
             >
               ?
             </button>
