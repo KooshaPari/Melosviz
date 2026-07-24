@@ -18,7 +18,14 @@
 //! wgpu requires a real GPU adapter to build pipelines.  On headless CI or
 //! Docker without a GPU, `WgpuRenderer::new()` returns an error rather than
 //! panicking.  Tests that require a GPU adapter are marked `#[ignore]` and
-//! expected to run on the host workstation (Apple M1 Pro, Metal 4).
+//! expected to run on the host workstation with DX12, Vulkan, or Metal.
+//!
+//! # Backend selection
+//!
+//! wgpu is built with `vulkan-portability`, `dx12`, `metal`, and `wgsl` features (see `Cargo.toml`).
+//! By default the instance uses [`wgpu::Backends::PRIMARY`] (DX12 on Windows, Vulkan on
+//! Linux, Metal on macOS). Set `WGPU_BACKEND` to force one or more backends, e.g.
+//! `WGPU_BACKEND=dx12` or `WGPU_BACKEND=vulkan,metal`.
 
 use anyhow::{anyhow, Result};
 use bytemuck;
@@ -34,6 +41,11 @@ use crate::uniforms::FrameUniforms;
 /// `Rgba8Unorm` is the standard rawvideo input format accepted by ffmpeg.
 const HEADLESS_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 
+/// Backends for the wgpu instance: `WGPU_BACKEND` env when set, else platform primary.
+fn instance_backends() -> wgpu::Backends {
+    wgpu::Backends::from_env().unwrap_or(wgpu::Backends::PRIMARY)
+}
+
 /// Core wgpu renderer — owns the device, queue, and compiled pipelines.
 pub struct WgpuRenderer {
     device: wgpu::Device,
@@ -46,14 +58,18 @@ pub struct WgpuRenderer {
 impl WgpuRenderer {
     /// Create a `WgpuRenderer` for the given output dimensions.
     ///
-    /// Requests a high-performance GPU adapter (Metal on macOS, Vulkan on
-    /// Linux) and builds all four layer pipelines.
+    /// Requests a high-performance GPU adapter (DX12 on Windows, Metal on
+    /// macOS, Vulkan on Linux; GLES fallback when enabled) and builds all
+    /// layer pipelines. Honors `WGPU_BACKEND` when set.
     ///
     /// # Errors
     /// Returns an error if no GPU adapter is available (e.g. headless CI).
     pub async fn new(width: u32, height: u32) -> Result<Self> {
+        let backends = instance_backends();
+        log::info!("wgpu instance backends: {backends:?} (WGPU_BACKEND honored when set)");
+
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
+            backends,
             ..Default::default()
         });
 
@@ -64,7 +80,23 @@ impl WgpuRenderer {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or_else(|| anyhow!("No GPU adapter found — Metal/Vulkan required for rendering"))?;
+            .ok_or_else(|| {
+                anyhow!(
+                    "No GPU adapter found. melosviz-render-wgpu needs a native GPU backend \
+                     (DX12 on Windows, Vulkan on Linux, Metal on macOS). \
+                     Install or update your GPU drivers, then retry. \
+                     To force a backend, set WGPU_BACKEND (e.g. WGPU_BACKEND=dx12, \
+                     WGPU_BACKEND=vulkan, or WGPU_BACKEND=metal; comma-separated values allowed)."
+                )
+            })?;
+
+        let adapter_info = adapter.get_info();
+        log::info!(
+            "wgpu adapter selected: {} (backend {}, device {:?})",
+            adapter_info.name,
+            backend_label(adapter_info.backend),
+            adapter_info.device_type,
+        );
 
         let (device, queue) = adapter
             .request_device(
@@ -318,6 +350,18 @@ impl WgpuRenderer {
     }
 }
 
+/// Human-readable label for a wgpu [`Backend`] (for logging).
+fn backend_label(backend: wgpu::Backend) -> &'static str {
+    match backend {
+        wgpu::Backend::Vulkan => "Vulkan",
+        wgpu::Backend::Dx12 => "DX12",
+        wgpu::Backend::Metal => "Metal",
+        wgpu::Backend::Gl => "OpenGL/GLES",
+        wgpu::Backend::BrowserWebGpu => "WebGPU",
+        _ => "Unknown",
+    }
+}
+
 /// Parse one channel (0=R, 1=G, 2=B) from a `#rrggbb` hex string → [0,1].
 fn hex_channel(hex: &str, channel: usize) -> f32 {
     let clean = hex.trim().trim_start_matches('#');
@@ -411,9 +455,24 @@ mod tests {
         assert_eq!(hex_channel("bad", 1), 0.9);
     }
 
-    // GPU adapter test — only runs on hosts with Metal/Vulkan.
     #[test]
-    #[ignore = "requires GPU adapter (run on host with Metal/Vulkan)"]
+    fn test_instance_backends_uses_env_or_primary() {
+        let expected = wgpu::Backends::from_env().unwrap_or(wgpu::Backends::PRIMARY);
+        assert_eq!(instance_backends(), expected);
+    }
+
+    /// Cargo.toml must enable vulkan + dx12 + metal (not metal-only).
+    #[test]
+    fn test_wgpu_features_not_metal_only() {
+        let compiled = wgpu::Backends::VULKAN | wgpu::Backends::DX12 | wgpu::Backends::METAL;
+        assert!(compiled.contains(wgpu::Backends::VULKAN));
+        assert!(compiled.contains(wgpu::Backends::DX12));
+        assert!(compiled.contains(wgpu::Backends::METAL));
+    }
+
+    // GPU adapter test — only runs on hosts with DX12/Vulkan/Metal.
+    #[test]
+    #[ignore = "requires GPU adapter (run on host with DX12/Vulkan/Metal)"]
     fn test_renderer_new_succeeds_with_gpu() {
         pollster::block_on(async {
             let renderer = WgpuRenderer::new(64, 64)
@@ -425,7 +484,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires GPU adapter (run on host with Metal/Vulkan)"]
+    #[ignore = "requires GPU adapter (run on host with DX12/Vulkan/Metal)"]
     fn test_render_frame_to_bytes_returns_correct_size() {
         pollster::block_on(async {
             let renderer = WgpuRenderer::new(64, 48).await.unwrap();
@@ -436,7 +495,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires GPU adapter (run on host with Metal/Vulkan)"]
+    #[ignore = "requires GPU adapter (run on host with DX12/Vulkan/Metal)"]
     fn test_render_frame_not_all_black() {
         // The bg_gradient shader should produce non-black output even with zero energy.
         pollster::block_on(async {

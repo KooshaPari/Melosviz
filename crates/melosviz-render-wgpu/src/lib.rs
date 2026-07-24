@@ -2,7 +2,8 @@
 //!
 //! Consumes a [`RenderSpec`] v2 (dense keyframes, scene segments, stems,
 //! palette) and renders frames via WGSL compute/render shaders on the
-//! wgpu Metal backend (Apple Silicon) or Vulkan/DX12 on other platforms.
+//! wgpu backend auto-selected per OS (DX12 on Windows, Vulkan on Linux,
+//! Metal on macOS). Set `WGPU_BACKEND` to override (e.g. `WGPU_BACKEND=dx12`).
 //!
 //! # Architecture
 //!
