@@ -8,6 +8,8 @@ Tests cover:
 import json
 
 import pytest
+from pathlib import Path
+from unittest.mock import Mock, patch, MagicMock
 
 from melosviz.runtime.touchdesigner.generator import (
     REQUIRED_GROUP_NAMES,
