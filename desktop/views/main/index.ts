@@ -78,8 +78,21 @@ function setStatus(msg: string, state: "ready" | "busy" | "error" = "ready") {
   dot.classList.add(state);
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    return err.message || String(err);
+  }
+  return String(err);
+}
+
+function truncateStatus(msg: string, maxLen = 120): string {
+  const trimmed = msg.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  return `${trimmed.slice(0, maxLen - 1)}…`;
+}
+
 function showError(err: unknown) {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = errorMessage(err);
   qs("#error-box").textContent = msg;
   qs("#error-card").classList.remove("hidden");
   setStatus("Error", "error");
@@ -468,8 +481,15 @@ async function onRenderVideo() {
       setOverlayProgress(100, "wgpu render complete");
     } catch (wgpuErr) {
       // Fall back to Python conductor if wgpu binary not available
-      console.warn("[MelosViz] wgpu render failed, falling back to Python:", wgpuErr);
-      setOverlayProgress(15, "Falling back to Python conductor…");
+      const wgpuMsg = errorMessage(wgpuErr);
+      console.warn(
+        "[MelosViz] wgpu render failed, falling back to Python:",
+        wgpuMsg,
+        wgpuErr,
+      );
+      const wgpuHint = truncateStatus(wgpuMsg);
+      setStatus(`wgpu failed: ${wgpuHint}`, "error");
+      setOverlayProgress(15, `wgpu failed — ${wgpuHint}; falling back to Python…`);
       const result = await rpc.request.renderVideo({ wavPath, outDir });
       const mp4Match = result.match(/([^\n\r]+\.mp4)/);
       if (!mp4Match) throw new Error("Could not find MP4 path in render output");
