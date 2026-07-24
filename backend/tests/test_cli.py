@@ -75,3 +75,15 @@ class TestLocaleHelp:
         )
         assert result.returncode == 0
         assert "Analizar" in result.stdout
+
+    def test_es_locale_translates_wav_arg_help(self) -> None:
+        env = {**os.environ, "MELOSVIZ_LOCALE": "es", "PYTHONIOENCODING": "utf-8"}
+        result = subprocess.run(
+            [sys.executable, "-m", "melosviz.cli.main", "analyze", "--help"],
+            capture_output=True,
+            text=True,
+            env=env,
+            encoding="utf-8",
+        )
+        assert result.returncode == 0
+        assert "Ruta al archivo WAV" in result.stdout

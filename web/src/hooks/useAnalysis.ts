@@ -137,9 +137,87 @@ export async function analyzeAudioPath(
   return mapAnalysisToRenderSpec(raw)
 }
 
+export type AnalysisErrorKind = 'bridge' | 'server' | 'memory_cap' | 'unknown'
+
+export interface MemoryCapDetails {
+  tier: 'soft' | 'hard'
+  rssMb: number
+  capMb: number
+}
+
+/** Parse bridge MemoryCapExceeded detail strings from problem+json bodies. */
+export function parseMemoryCapDetail(detail: string): MemoryCapDetails | null {
+  const match = detail.match(
+    /memory cap exceeded \((soft|hard)\): rss=(\d+)MB > cap=(\d+)MB/i,
+  )
+  if (!match) return null
+  return {
+    tier: match[1] as 'soft' | 'hard',
+    rssMb: Number(match[2]),
+    capMb: Number(match[3]),
+  }
+}
+
+/** Extract a string detail from a FastAPI / problem+json error body. */
+export function problemDetailFromBody(body: unknown): string | undefined {
+  if (typeof body === 'string') return body
+  if (body && typeof body === 'object' && 'detail' in body) {
+    const detail = (body as { detail?: unknown }).detail
+    if (typeof detail === 'string') return detail
+  }
+  return undefined
+}
+
+/** Classify fetch / HTTP failures into user-facing bridge vs server messages. */
+export function formatAnalysisError(
+  err: unknown,
+  status?: number,
+  statusText = '',
+  detail?: string,
+): { message: string; kind: AnalysisErrorKind } {
+  if (status !== undefined) {
+    const memory = detail ? parseMemoryCapDetail(detail) : null
+    if (memory) {
+      const key =
+        memory.tier === 'soft' ? 'error.memory_cap_soft' : 'error.memory_cap_hard'
+      return {
+        message: tf(key, { rssMb: memory.rssMb, capMb: memory.capMb }),
+        kind: 'memory_cap',
+      }
+    }
+    if (status === 502 || status === 504) {
+      return { message: t('error.bridge_unreachable'), kind: 'bridge' }
+    }
+    return {
+      message: tf('error.analysis_server', { status, statusText }),
+      kind: 'server',
+    }
+  }
+
+  if (err instanceof TypeError) {
+    const msg = err.message.toLowerCase()
+    if (
+      msg.includes('fetch') ||
+      msg.includes('network') ||
+      msg.includes('load failed') ||
+      msg.includes('failed to fetch')
+    ) {
+      return { message: t('error.bridge_unreachable'), kind: 'bridge' }
+    }
+  }
+
+  if (err instanceof Error && err.message) {
+    return { message: err.message, kind: 'unknown' }
+  }
+
+  return { message: t('error.analysis_unknown'), kind: 'unknown' }
+}
+
 interface AnalysisState {
   data: RenderSpec | null
   loading: boolean
+  /** Simulated 0–100 progress while loading; null when idle. */
+  progress: number | null
   error: string | null
   /** 0–100 while uploading a blob URL; null otherwise. */
   uploadProgress: number | null
@@ -150,10 +228,33 @@ export function useAnalysis() {
   const [state, setState] = useState<AnalysisState>({
     data: null,
     loading: false,
+    progress: null,
     error: null,
     uploadProgress: null,
     statusHint: null,
   })
+  const abortRef = useRef<AbortController | null>(null)
+  const generationRef = useRef(0)
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progressStartRef = useRef(0)
+
+  const cancel = useCallback(() => {
+    abortRef.current?.abort()
+    abortRef.current = null
+    generationRef.current += 1
+    clearProgressTimer(progressTimerRef)
+    setState((prev) => ({
+      ...prev,
+      loading: false,
+      progress: null,
+      error: null,
+      errorKind: null,
+    }))
+  }, [])
+
+  const dismissError = useCallback(() => {
+    setState((prev) => ({ ...prev, error: null, errorKind: null }))
+  }, [])
 
   const analyze = useCallback(async (audioPath: string) => {
     setState({
@@ -190,10 +291,12 @@ export function useAnalysis() {
         uploadProgress: null,
         statusHint: null,
       })
+    } finally {
+      if (abortRef.current === controller) abortRef.current = null
     }
   }, [])
 
-  return { ...state, analyze }
+  return { ...state, analyze, cancel, dismissError }
 }
 
 export { LARGE_UPLOAD_BYTES, isBlobUrl }

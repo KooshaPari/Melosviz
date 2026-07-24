@@ -8,7 +8,7 @@
 import { Electroview } from "electrobun/view";
 import "@radix-ui/themes/styles.css";
 import type { BunRequests, WebviewRequests } from "../../src/rpc";
-import { applyShellChrome, t } from "./i18n";
+import { applyShellChrome, t, tf } from "./i18n";
 
 // ---------------------------------------------------------------------------
 // RPC bootstrap (webview side)
@@ -95,7 +95,7 @@ function showError(err: unknown) {
   const msg = errorMessage(err);
   qs("#error-box").textContent = msg;
   qs("#error-card").classList.remove("hidden");
-  setStatus("Error", "error");
+  setStatus(t("shell.status.error"), "error");
 }
 
 function errorMessage(err: unknown): string {
@@ -282,13 +282,16 @@ function renderTimeline(plan: Record<string, unknown>) {
   if (!scenes.length) {
     const empty = document.createElement("p");
     empty.style.cssText = "color:var(--mv-text-lo);font-size:11px;font-family:var(--mv-font-mono)";
-    empty.textContent = "No scene data found in plan.";
+    empty.textContent = t("shell.empty.no_scenes");
     rowsEl.appendChild(empty);
     qs("#scene-count").textContent = "";
     return;
   }
 
-  qs("#scene-count").textContent = `${scenes.length} scene${scenes.length !== 1 ? "s" : ""}`;
+  qs("#scene-count").textContent =
+    scenes.length === 1
+      ? tf("shell.empty.scenes_count", { count: scenes.length })
+      : tf("shell.empty.scenes_count_plural", { count: scenes.length });
 
   const maxDur = Math.max(...scenes.map((s) => Number(s.duration_beats ?? 4)));
 
@@ -383,7 +386,7 @@ async function copyJson(obj: unknown, btnId: string) {
   try {
     await navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
     const orig = btn.textContent ?? "";
-    btn.textContent = "Copied!";
+    btn.textContent = t("shell.copied");
     setTimeout(() => { btn.textContent = orig; }, 1800);
   } catch {
     // Clipboard unavailable in restricted webviews — fail silently
@@ -410,7 +413,7 @@ async function onPickWav() {
     showWavLoaded(name);
     renderSpec = null;
     renderPlan = null;
-    setStatus("WAV loaded — run Analyze", "ready");
+    setStatus(t("shell.status.wav_loaded"), "ready");
     syncButtons();
     clearError();
   } catch (err) {
@@ -432,16 +435,16 @@ async function onPickOut() {
 async function onAnalyze() {
   if (!wavPath) return;
   clearError();
-  setStatus("Analyzing…", "busy");
-  setProgress(10, "Analyzing WAV…");
+  setStatus(t("shell.status.analyzing"), "busy");
+  setProgress(10, t("shell.progress.analyzing_wav"));
   showPipelineView();
   try {
     const json = await rpc.request.analyzeWav({ wavPath });
     renderSpec = JSON.parse(json) as Record<string, unknown>;
     renderInspector("spec-tree", renderSpec);
     markTabHasData("spec");
-    setProgress(100, "Analysis complete");
-    setStatus("Analysis complete", "ready");
+    setProgress(100, t("shell.progress.analysis_complete"));
+    setStatus(t("shell.status.analysis_complete"), "ready");
     switchTab("spec");
     syncButtons();
   } catch (err) {
@@ -454,8 +457,8 @@ async function onAnalyze() {
 async function onBuildPlan() {
   if (!renderSpec) return;
   clearError();
-  setStatus("Building render plan…", "busy");
-  setProgress(20, "Building render plan…");
+  setStatus(t("shell.status.building_plan"), "busy");
+  setProgress(20, t("shell.progress.building_plan"));
   try {
     const json = await rpc.request.buildPlan({
       wavPath: wavPath!,
@@ -465,8 +468,8 @@ async function onBuildPlan() {
     renderInspector("plan-tree", renderPlan);
     markTabHasData("plan");
     renderTimeline(renderPlan);
-    setProgress(100, "Render plan built");
-    setStatus("Render plan ready", "ready");
+    setProgress(100, t("shell.progress.plan_built"));
+    setStatus(t("shell.status.plan_ready"), "ready");
     switchTab("timeline");
     syncButtons();
   } catch (err) {
@@ -479,19 +482,19 @@ async function onBuildPlan() {
 async function onRenderVideo() {
   if (!renderPlan || !wavPath || !renderSpec) return;
   clearError();
-  setStatus("Rendering video…", "busy");
-  setProgress(5, "Starting render pipeline…");
-  showRenderOverlay("Initializing renderer");
+  setStatus(t("shell.status.rendering"), "busy");
+  setProgress(5, t("shell.progress.starting_render"));
+  showRenderOverlay(t("shell.progress.init_renderer"));
   const outDir = outPath ?? `${document.location.hostname}/MelosViz-output`;
   try {
     let videoPath: string;
 
     // Try wgpu realtime renderer first (faster, GPU-accelerated)
     try {
-      setOverlayProgress(20, "Spawning wgpu renderer…");
+      setOverlayProgress(20, t("shell.progress.wgpu_spawn"));
       const specJson = JSON.stringify(renderSpec);
       videoPath = await rpc.request.renderWithWgpu({ renderSpec: specJson, outDir });
-      setOverlayProgress(100, "wgpu render complete");
+      setOverlayProgress(100, t("shell.progress.wgpu_complete"));
     } catch (wgpuErr) {
       // Fall back to Python conductor if wgpu binary not available
       const wgpuMsg = errorMessage(wgpuErr);
@@ -508,13 +511,13 @@ async function onRenderVideo() {
       );
       const result = await rpc.request.renderVideo({ wavPath, outDir });
       const mp4Match = result.match(/([^\n\r]+\.mp4)/);
-      if (!mp4Match) throw new Error("Could not find MP4 path in render output");
+      if (!mp4Match) throw new Error(t("shell.error.mp4_not_found"));
       videoPath = mp4Match[1].trim();
-      setOverlayProgress(100, "Python conductor complete");
+      setOverlayProgress(100, t("shell.progress.python_complete"));
     }
 
-    setProgress(100, "Render complete");
-    setStatus("Render complete", "ready");
+    setProgress(100, t("shell.progress.render_complete"));
+    setStatus(t("shell.status.render_complete"), "ready");
     hideRenderOverlay();
 
     lastVideoPath = videoPath;
@@ -558,7 +561,7 @@ function initDropzone() {
     if (!files?.length) return;
     const file = files[0];
     if (!file.name.toLowerCase().endsWith(".wav")) {
-      showError("Only WAV files are supported.");
+      showError(t("shell.error.only_wav"));
       return;
     }
     // Electron/Electrobun-style: file.path is available in webviews with file access
@@ -568,7 +571,7 @@ function initDropzone() {
       showWavLoaded(file.name);
       renderSpec = null;
       renderPlan = null;
-      setStatus("WAV loaded — run Analyze", "ready");
+      setStatus(t("shell.status.wav_loaded"), "ready");
       syncButtons();
     }
   });

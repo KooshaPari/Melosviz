@@ -1,5 +1,6 @@
-import * as Dialog from '@radix-ui/react-dialog'
-import { SHORTCUT_DEFS } from '../hooks/useKeyboardShortcuts'
+import { Dialog, DialogContent, DialogOverlay } from './Dialog'
+import { t } from '../i18n'
+import { SHORTCUT_DEFS, SHORTCUT_GROUPS } from '../hooks/useKeyboardShortcuts'
 
 interface KeyboardHelpProps {
   open: boolean
@@ -11,49 +12,62 @@ export function KeyboardHelp({ open, onOpenChange }: KeyboardHelpProps) {
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         {/* Backdrop */}
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogOverlay className="z-50" />
 
         {/* Panel */}
-        <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#0e0e0e]/95 p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        <DialogContent
+          className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-[#0e0e0e]/95 p-6 shadow-2xl"
           aria-describedby="keyboard-help-desc"
           onOpenAutoFocus={(e) => {
             // Land on the labeled close control (docs/a11y/FOCUS.md initial-focus).
             e.preventDefault()
             const close = e.currentTarget.querySelector<HTMLElement>(
-              '[aria-label="Close keyboard help"]',
+              '#keyboard-help-close',
             )
             close?.focus()
           }}
         >
           <Dialog.Title className="mb-1 text-base font-semibold text-white/90">
-            Keyboard Shortcuts
+            {t('keyboard.title')}
           </Dialog.Title>
           <Dialog.Description id="keyboard-help-desc" className="mb-4 text-xs text-white/40">
-            Press <Kbd>?</Kbd> or <Kbd>Esc</Kbd> to dismiss.
+            {t('keyboard.dismiss')}
           </Dialog.Description>
 
-          <div className="grid grid-cols-1 gap-1.5">
-            {SHORTCUT_DEFS.map((s) => (
-              <div
-                key={s.key}
-                className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-white/5 transition-colors"
-              >
-                <Kbd>{s.label}</Kbd>
-                <span className="text-sm text-white/70">{s.description}</span>
-              </div>
+          <div className="flex flex-col gap-4">
+            {SHORTCUT_GROUPS.map((group) => (
+              <section key={group} aria-labelledby={`keyboard-section-${group}`}>
+                <h3
+                  id={`keyboard-section-${group}`}
+                  className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/35"
+                >
+                  {t(`keyboard.section.${group}`)}
+                </h3>
+                <div className="grid grid-cols-1 gap-1">
+                  {SHORTCUT_DEFS.filter((s) => s.group === group).map((s) => (
+                    <div
+                      key={s.key}
+                      className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-white/5 transition-colors"
+                    >
+                      <Kbd>{t(s.labelKey)}</Kbd>
+                      <span className="text-sm text-white/70">{t(s.description)}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
 
           <Dialog.Close asChild>
             <button
+              id="keyboard-help-close"
               className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 text-xs transition-colors"
-              aria-label="Close keyboard help"
+              aria-label={t('keyboard.close')}
             >
               ✕
             </button>
           </Dialog.Close>
-        </Dialog.Content>
+        </DialogContent>
       </Dialog.Portal>
     </Dialog.Root>
   )
