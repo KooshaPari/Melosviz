@@ -70,3 +70,6 @@ eval/harbor/out/
 
 vite-err.log
 vite-out.log
+
+# TypeScript build info
+*.tsbuildinfo
