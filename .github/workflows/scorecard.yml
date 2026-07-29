@@ -1,53 +1,49 @@
-name: Scorecard supply-chain security
-on:
-  # For Branch-Protection check. Only the default branch is supported. See
-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
-  branch_protection_rule:
-  # To guarantee Maintained check is occasionally updated. See
-  # https://github.com/ossf/scorecard/blob/main/docs/checks.md#maintained
-  schedule:
-    - cron: '26 7 * * 0'
-  push:
-    branches: [ main ]
+# =============================================================================
+# OpenSSF Scorecard — Automated security best practices check
+# =============================================================================
+# Runs weekly + on main to track supply chain security posture
+# Free for public repos, adds security badge
+# =============================================================================
 
-# Declare default permissions as read only.
+name: OpenSSF Scorecard
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '25 4 * * 1'  # Weekly Monday 4:25 UTC
+  push:
+    branches: [main]
+
 permissions: read-all
 
 jobs:
   analysis:
     name: Scorecard analysis
-    runs-on: ubuntu-22.04
-    permissions:
-      # Needed to upload the results to code-scanning dashboard.
-      security-events: write
-      # Needed to query private dependencies.
-      packages: read
-      # Needed to publish results to the scorecard GitHub Action.
-      id-token: write
-      # Read for repo contents API.
-      contents: read
+    runs-on: ubuntu-latest
+    security:
+      permissions: read-all
+
     steps:
-      - name: "Checkout code"
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           persist-credentials: false
-      - name: "Run analysis"
-        uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46  # v2.4.0
         with:
           results_file: results.sarif
           results_format: sarif
-          # (Optional) "publish_results" will trigger a "SARIF file" to be
-          # uploaded to the "Code Scanning" tab of the repository.
           publish_results: true
-      # Upload the results as a SARIF file to the "Code Scanning" tab.
-      - name: "Upload artifact"
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@fca7ace96b7d713c7035881819e25a804e825323  # v3.28.18
+        with:
+          sarif_file: results.sarif
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
         with:
           name: SARIF file
           path: results.sarif
-          if-no-files-found: error
-      - name: "Upload to code-scanning"
-        if: github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@0daab03d71ff584ef619d027a3fd9146679c5d84
-        with:
-          sarif_file: results.sarif
+          retention-days: 5
