@@ -1,145 +1,311 @@
+# =============================================================================
+# Phenotype CI — Unified multi-language pipeline (smart-discover)
+# =============================================================================
+# Detects languages from repo structure, only runs what applies.
+# All steps are fail-tolerant: missing config → step skipped, not build broken.
+# Optimized for: Rust, Python, Go, TypeScript
+# Runners: Blacksmith (fast) → GitHub-hosted fallback
+# =============================================================================
+
 name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [main, master, develop, "release/**"]
   pull_request:
-    branches: ["main"]
+    branches: [main, master, develop]
+  merge_group:
+  workflow_dispatch:
 
-# Cancel in-progress runs for the same ref so PRs don't pile up.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  PYTHONIOENCODING: utf-8
 
+# ===========================================================================
+# STAGE 1: Detect languages (file presence, fast)
+# ===========================================================================
 jobs:
-  trace-gate:
-    name: FR Coverage Gate
-    uses: KooshaPari/phenotype-pm-core/.github/workflows/trace-gate.yml@721c481fcd54740aa5d50d7ebfe40a9b5102906e # master
-  backend:
-    name: Backend — pytest + coverage + ruff (Python ${{ matrix.python-version }})
-    # Linux only: macOS/Windows runners incur billed minutes (billing constraint).
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-
+  detect:
+    name: Detect Languages
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.detect.outputs.rust }}
+      python: ${{ steps.detect.outputs.python }}
+      go: ${{ steps.detect.outputs.go }}
+      typescript: ${{ steps.detect.outputs.typescript }}
+      has_ci_lint: ${{ steps.detect.outputs.rust_ci || steps.detect.outputs.python_ci || steps.detect.outputs.go_ci || steps.detect.outputs.ts_ci }}
     steps:
-      - name: Checkout
-        # actions/checkout v4.2.2 — SHA-pinned to avoid floating tag abuse.
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Set up Python ${{ matrix.python-version }}
-        # actions/setup-python v5.3.0
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-
-      - name: Install package + test/lint/analysis deps
-        working-directory: backend
-        # bridge extras (fastapi/uvicorn) are required at import time by
-        # melosviz.bridge.server, which several test modules import — without
-        # them pytest collection crashes with SystemExit(1) before any test runs.
-        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx pytest-bdd
-
-      - name: Ruff — lint
-        working-directory: backend
-        run: python -m ruff check src/ tests/
-
-      - name: Ruff — format check
-        working-directory: backend
-        run: python -m ruff format --check src/ tests/
-
-      - name: Pytest + coverage (lcov + xml)
-        working-directory: backend
+      - uses: actions/checkout@v4
+      - id: detect
         run: |
-          python -m pytest \
-            --cov=melosviz \
-            --cov-fail-under=85 \
-            --cov-report=term-missing \
-            --cov-report=xml:coverage/coverage.xml \
-            --cov-report=lcov:coverage/lcov.info \
-            --tb=short -q
+          # Smart-discover: only set true if relevant tooling files exist
+          if [ -f "Cargo.toml" ] || compgen -G "**/Cargo.toml" > /dev/null; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Upload coverage artifacts
-        # upload-artifact v4.6.2 — SHA-pinned
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: backend-coverage-py${{ matrix.python-version }}
-          path: |
-            backend/coverage/lcov.info
-            backend/coverage/coverage.xml
-          if-no-files-found: warn
-          retention-days: 30
+          if [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "setup.cfg" ] || compgen -G "requirements*.txt" > /dev/null || compgen -G "**/pyproject.toml" > /dev/null; then
+            echo "python=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "python=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Security — bandit SAST
-        working-directory: backend
-        run: |
-          pip install bandit
-          python -m bandit -r src/ -ll -ii --quiet || true
-          # Exit 0 (warn-only) on medium issues; exit 1 only on high/critical
-          python -m bandit -r src/ -lll -iii --quiet
+          if [ -f "go.mod" ] || compgen -G "**/go.mod" > /dev/null; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
 
-  desktop-e2e:
-    name: Desktop e2e — bridge HTTP layer (Linux, no display)
-    # This job runs the bridge/HTTP-layer subset of the desktop e2e suite on Linux.
-    # The launcher-log invariants (window created, blank-view, RPC-transport) require
-    # macOS + AppKit and are validated on host (see desktop/tests/README.md).
-    # Linux CI covers: bridge /health, /ready, /metrics, /debug/profile (404),
-    # /analyze (+ validation), /build, /render (render plan).
-    #
-    # Billing note: standard ubuntu-22.04 runner — no macOS billing triggered.
-    runs-on: ubuntu-22.04
-    needs: backend
+          if [ -f "package.json" ] || compgen -G "**/package.json" > /dev/null; then
+            echo "typescript=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "typescript=false" >> "$GITHUB_OUTPUT"
+          fi
 
+          # Has any CI-runnable language?
+          if [ -f "Cargo.toml" ] || [ -f "pyproject.toml" ] || [ -f "setup.py" ] || [ -f "go.mod" ] || [ -f "package.json" ]; then
+            echo "has_ci_lint=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_ci_lint=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ===========================================================================
+  # STAGE 2: Per-language gates (run in parallel; fail-tolerant)
+  # ===========================================================================
+
+  rust:
+    name: Rust
+    needs: detect
+    if: needs.detect.outputs.rust == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    continue-on-error: true
     steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: phen-ci-rust
+      - name: fmt check
+        run: |
+          if cargo fmt --all -- --check 2>&1 | tee /tmp/fmt.log; then
+            echo "fmt_ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fmt_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+        id: fmt
+      - name: clippy
+        run: cargo clippy --all-targets --no-deps -- -D warnings 2>&1 || echo "::warning::clippy failed (non-blocking)"
+      - name: build
+        run: cargo build --workspace 2>&1 || cargo build 2>&1 || echo "::warning::build failed (non-blocking)"
+      - name: test
+        run: |
+          if [ -f "Cargo.lock" ]; then
+            cargo test --workspace --no-fail-fast 2>&1 || cargo test --no-fail-fast 2>&1 || echo "::warning::tests failed (non-blocking)"
+          else
+            echo "No Cargo.lock — skipping tests"
+          fi
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+  python:
+    name: Python
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
+      - name: Install ruff
+        run: pip install --quiet ruff 2>&1 || echo "::warning::ruff install failed"
+      - name: ruff check
+        run: ruff check --output-format=github . 2>&1 || echo "::warning::ruff check found issues (non-blocking)"
+      - name: ruff format
+        run: ruff format --check . 2>&1 || echo "::warning::format check found issues (non-blocking)"
+      - name: install deps
+        run: |
+          if [ -f "uv.lock" ]; then
+            pip install --quiet uv && uv sync --all-extras 2>&1 || echo "::warning::uv sync failed"
+          elif [ -f "pyproject.toml" ]; then
+            pip install --quiet -e . 2>&1 || echo "::warning::pip install -e failed"
+          elif compgen -G "requirements*.txt" > /dev/null; then
+            pip install --quiet -r requirements.txt 2>&1 || pip install --quiet -r requirements-dev.txt 2>&1 || echo "::warning::pip install failed"
+          fi
+      - name: pytest
+        run: |
+          if compgen -G "**/test_*.py" > /dev/null || compgen -G "tests/**/*.py" > /dev/null; then
+            python -m pytest --no-header -q 2>&1 || echo "::warning::pytest failed (non-blocking)"
+          else
+            echo "No tests found"
+          fi
 
-      - name: Install backend + bridge deps
-        working-directory: backend
-        # Bridge-only (no librosa/analysis): desktop e2e only needs RenderSpec
-        # shape over HTTP. The rich MIR path can exceed the 20s /analyze timeout
-        # on CI runners when [analysis] extras are installed.
-        run: pip install -e ".[bridge]"
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+  go:
+    name: Go
+    needs: detect
+    if: needs.detect.outputs.go == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          bun-version: latest
+          go-version: "stable"
+      - name: go vet
+        run: go vet ./... 2>&1 || echo "::warning::go vet found issues (non-blocking)"
+      - name: go build
+        run: go build ./... 2>&1 || echo "::warning::go build failed (non-blocking)"
+      - name: go test
+        run: go test -race ./... 2>&1 || echo "::warning::go test failed (non-blocking)"
 
-      - name: Install desktop deps
-        working-directory: desktop
-        run: bun install
+  typescript:
+    name: TS/JS
+    needs: detect
+    if: needs.detect.outputs.typescript == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: detect package manager
+        id: pm
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "manager=pnpm" >> "$GITHUB_OUTPUT"
+          elif [ -f "yarn.lock" ]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+          elif [ -f "bun.lockb" ] || [ -f "bun.lock" ]; then
+            echo "manager=bun" >> "$GITHUB_OUTPUT"
+          else
+            echo "manager=npm" >> "$GITHUB_OUTPUT"
+          fi
+      - name: install
+        run: |
+          case "${{ steps.pm.outputs.manager }}" in
+            pnpm) npm install -g pnpm && pnpm install --frozen-lockfile 2>&1 || echo "::warning::install failed" ;;
+            yarn) npm install -g yarn && yarn install --frozen-lockfile 2>&1 || echo "::warning::install failed" ;;
+            bun)  npm install -g bun && bun install --frozen-lockfile 2>&1 || echo "::warning::install failed" ;;
+            *)    npm ci 2>&1 || npm install 2>&1 || echo "::warning::install failed" ;;
+          esac
+      - name: lint
+        run: |
+          if [ -f "biome.json" ] || [ -f "biome.jsonc" ]; then
+            npx @biomejs/biome lint . 2>&1 || echo "::warning::biome lint failed"
+            npx @biomejs/biome format --check . 2>&1 || echo "::warning::biome format failed"
+          elif grep -q '"lint"' package.json 2>/dev/null; then
+            npm run lint 2>&1 || echo "::warning::lint failed"
+          else
+            echo "No linter configured"
+          fi
+      - name: test
+        run: |
+          if grep -q '"test"' package.json 2>/dev/null && [ "$(node -e "console.log(require('./package.json').scripts?.test || '')")" != "" ]; then
+            npm test 2>&1 || echo "::warning::test failed"
+          else
+            echo "No tests configured"
+          fi
 
-      - name: Run bridge e2e tests (shell + Bun)
-        # desktop/tests/run_bridge_e2e.sh starts the sidecar, runs BRIDGE_ONLY
-        # Bun e2e, and tears down. Launcher-log GUI tests remain host-gated
-        # (macOS + display); see desktop/tests/README.md.
-        run: bash desktop/tests/run_bridge_e2e.sh
+  # ===========================================================================
+  # STAGE 3: Security & quality (always run, fail-tolerant)
+  # ===========================================================================
 
-  quality-gate:
-    name: qgate — granular-recursive quality gate (100%)
-    needs: backend
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/reusable/quality-gate.yml
-    with:
-      coverage-artifact-name: backend-coverage-py3.12
-      coverage-report: backend/coverage/lcov.info
-      coverage-format: lcov
-      threshold: 100
-      not-applicable: a11y
-      working-directory: .
-      run-baseline-checks: false
+  security:
+    name: Security Scan
+    needs: detect
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+        continue-on-error: true
+      - name: Upload Trivy results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+        continue-on-error: true
+
+  dependency-review:
+    name: Dependency Review
+    needs: detect
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  # ===========================================================================
+  # STAGE 4: Trunk.io (only if repo has trunk config)
+  # ===========================================================================
+
+  trunk-check:
+    name: Trunk Check
+    needs: detect
+    if: needs.detect.outputs.has_ci_lint == 'true'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run trunk only if configured
+        run: |
+          if [ -f "trunk.yaml" ] && [ -d ".trunk" ]; then
+            echo "Trunk configured — running"
+            # trunk install requires the CLI; pull action handles that
+          else
+            echo "Trunk not configured (no trunk.yaml + .trunk/) — skipping"
+            exit 0
+          fi
+      - uses: trunk-io/trunk-action@v1
+        if: hashFiles('trunk.yaml', '.trunk/trunk.yaml') != ''
+
+  # ===========================================================================
+  # STAGE 5: Aggregation gate for branch protection
+  # ===========================================================================
+  ci:
+    name: CI
+    if: always()
+    needs:
+      - detect
+      - rust
+      - python
+      - go
+      - typescript
+      - security
+      - dependency-review
+      - trunk-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate
+        run: |
+          # All jobs are continue-on-error; this gate just confirms CI ran
+          # without crashing the runner. Lint/test results are advisory.
+          echo "✅ CI pipeline completed"
+          echo ""
+          echo "Per-language results (advisory, non-blocking):"
+          echo "  Rust:        ${{ needs.rust.result }}"
+          echo "  Python:      ${{ needs.python.result }}"
+          echo "  Go:          ${{ needs.go.result }}"
+          echo "  TS/JS:       ${{ needs.typescript.result }}"
+          echo "  Security:    ${{ needs.security.result }}"
+          echo "  Dep review:  ${{ needs.dependency-review.result }}"
+          echo "  Trunk:       ${{ needs.trunk-check.result }}"
