@@ -35,6 +35,7 @@ with a clear message.  Tests that require a live GPU should check
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -209,7 +210,7 @@ def is_wgpu_available() -> bool:
 
 
 def render_frame_bytes(
-    spec: "RenderSpec | dict[str, Any]",
+    spec: RenderSpec | dict[str, Any],
     frame_index: int = 0,
     width: int | None = None,
     height: int | None = None,
@@ -325,10 +326,8 @@ def render_frame_bytes(
         return rgba_bytes
     finally:
         # Always clean up the temporary spec file.
-        try:
+        with contextlib.suppress(OSError):
             Path(spec_path).unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -336,7 +335,7 @@ def render_frame_bytes(
 # ---------------------------------------------------------------------------
 
 
-def _spec_to_json(spec: "RenderSpec | dict[str, Any]") -> str:
+def _spec_to_json(spec: RenderSpec | dict[str, Any]) -> str:
     """Serialise a RenderSpec (pydantic model or dict) to a JSON string."""
     if isinstance(spec, dict):
         return json.dumps(spec)

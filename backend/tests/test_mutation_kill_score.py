@@ -16,25 +16,14 @@ mutation operator it kills, so a survivor can be triaged by operator.
 
 from __future__ import annotations
 
-import json
 import math
 import wave
 from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import patch
-
-import pytest
 
 from melosviz.analysis.models import (
     DenseKeyframe,
-    MIRSummary,
-    MoodVector,
     RenderSpec,
-    SceneSegment,
-    StemFrame,
-    TimelineEvent,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers — minimal test assets with bit-level assertions.

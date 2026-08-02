@@ -42,9 +42,9 @@ import os
 import threading
 import time
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Deque, Iterable
 
 # ---------------------------------------------------------------------------
 # Constants (env-overridable)
@@ -144,7 +144,7 @@ def check_bearer(authorization: str | None) -> tuple[bool, str]:
 
 @dataclass
 class _Bucket:
-    window: Deque[float] = field(default_factory=deque)
+    window: deque[float] = field(default_factory=deque)
 
 
 class RateLimiter:

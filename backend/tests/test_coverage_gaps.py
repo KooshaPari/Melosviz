@@ -16,15 +16,15 @@ Targets the specific lines still uncovered after test_coverage_100.py:
 
 from __future__ import annotations
 
+import contextlib
 import io
 import math
 import struct
 import wave
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch, AsyncMock
-import pytest
+from unittest.mock import MagicMock, patch
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -55,8 +55,9 @@ def _make_wav(tmp_path: Path, duration: float = 0.05, channels: int = 1,
 
 class TestAudioAnalysisRemaining:
     def test_normalize_samples_empty(self):
-        from melosviz.analysis.audio import _normalize_samples
         from array import array
+
+        from melosviz.analysis.audio import _normalize_samples
         result = _normalize_samples(array("f"))
         assert result == [0.0]
 
@@ -115,8 +116,9 @@ class TestAudioAnalysisRemaining:
 
     def test_spectral_stem_fallback_direct(self):
         """Call _spectral_stem_fallback with mocked librosa."""
-        from melosviz.analysis.audio import _spectral_stem_fallback
         import numpy as np
+
+        from melosviz.analysis.audio import _spectral_stem_fallback
         try:
             import librosa
         except ImportError:
@@ -167,7 +169,10 @@ class TestAudioAnalysisRemaining:
 
 class TestVideoExporterRemaining:
     def test_is_ffmpeg_available_false(self):
-        from melosviz.render.video_exporter import is_ffmpeg_available, FFMpegNotFoundError
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            is_ffmpeg_available,
+        )
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary",
                    side_effect=FFMpegNotFoundError("no ffmpeg")):
             result = is_ffmpeg_available()
@@ -177,7 +182,8 @@ class TestVideoExporterRemaining:
         from melosviz.render.video_exporter import is_ffmpeg_available
         mock_result = MagicMock()
         mock_result.returncode = 0
-        import tempfile, os
+        import os
+        import tempfile
         with tempfile.NamedTemporaryFile(suffix="ffmpeg", delete=False) as f:
             f.write(b"stub")
             fname = f.name
@@ -292,9 +298,9 @@ class TestBlenderSceneRemaining:
 
     def test_is_on_beat_no_beat_times(self):
         """_is_on_beat with empty beat_times → False."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import ScannerSpec, SceneSpec
-        from melosviz.analysis.models import RenderSpec
         scanner = ScannerSpec(scanner_id="test")
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
         # No timeline events → beat_times will be empty → _is_on_beat returns False
@@ -315,16 +321,16 @@ class TestBlenderSceneRemaining:
 class TestScannerRemaining:
     def test_evaluate_pose_non_bpm_locked(self):
         """Non-bpm-locked scanner path."""
+        from melosviz.scene.models import ScannerRotation, ScannerSpec
         from melosviz.scene.scanner import evaluate_pose
-        from melosviz.scene.models import ScannerSpec, ScannerRotation
         scanner = ScannerSpec(scanner_id="test", rotation=ScannerRotation(bpm_locked=False))
         pose = evaluate_pose(scanner, t=0.5, bpm=120.0, beat_times=[0.0, 0.5, 1.0])
         assert pose.orbit_angle_rad >= 0.0
 
     def test_evaluate_scanner_dict_spec(self):
         """evaluate_scanner with dict render_spec."""
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.scene.models import ScannerSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = ScannerSpec(scanner_id="test")
         spec_dict = {
             "metadata": {"duration": 0.1, "fps": 10, "estimated_bpm": 120.0},
@@ -336,8 +342,8 @@ class TestScannerRemaining:
 
     def test_evaluate_scanner_non_standard_spec(self):
         """evaluate_scanner with non-standard object (else branches)."""
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.scene.models import ScannerSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = ScannerSpec(scanner_id="test")
         class Stub:
             pass
@@ -394,9 +400,9 @@ class TestGeneratorRemaining:
 class TestAdapterRemaining:
     def test_start_bridge_thread_stream_error_logged(self, tmp_path):
         """When bridge.stream_render_spec raises, the error is logged (non-fatal)."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.runtime.touchdesigner.adapter import TDAdapter
         from melosviz.runtime.touchdesigner.bridge import BridgeConfig
-        from melosviz.analysis.models import RenderSpec
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10})
 
         # Mock TDBridge to raise during stream_render_spec
@@ -467,8 +473,8 @@ class TestOverridesRemaining:
 
 class TestAEAdapterRemaining:
     def test_render_with_dense_keyframes_high_energy(self, tmp_path):
-        from melosviz.render.aftereffects_adapter import AEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import AEAdapter
         adapter = AEAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.5, "fps": 10},
@@ -484,8 +490,8 @@ class TestAEAdapterRemaining:
         assert result is not None
 
     def test_render_outputs_json(self, tmp_path):
-        from melosviz.render.aftereffects_adapter import AEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import AEAdapter
         adapter = AEAdapter()
         spec = RenderSpec(metadata={"duration": 0.2, "fps": 10})
         adapter.render(spec, output_path=tmp_path)
@@ -501,8 +507,8 @@ class TestAEAdapterRemaining:
 
 class TestFireflyAdapterRemaining:
     def test_render_with_scene_segments(self, tmp_path):
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.5, "fps": 10},
@@ -514,8 +520,8 @@ class TestFireflyAdapterRemaining:
         assert result is not None
 
     def test_render_with_mir(self, tmp_path):
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.2, "fps": 10},
@@ -532,8 +538,8 @@ class TestFireflyAdapterRemaining:
 
 class TestMEAdapterRemaining:
     def test_render_with_segment_paths_non_empty(self, tmp_path):
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         # Create dummy segment paths
@@ -543,8 +549,8 @@ class TestMEAdapterRemaining:
         assert result is not None
 
     def test_render_fallback_ffmpeg(self, tmp_path):
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         # Should use ffmpeg fallback when AME not available
@@ -564,14 +570,15 @@ class TestBridgeServerRemaining:
         with patch("uvicorn.run") as mock_run:
             with patch("sys.argv", ["bridge", "--port", "9999"]):
                 main()
-        call_kwargs = mock_run.call_args[1] if mock_run.call_args[1] else {}
-        call_args = mock_run.call_args[0] if mock_run.call_args[0] else ()
+        mock_run.call_args[1] if mock_run.call_args[1] else {}
+        mock_run.call_args[0] if mock_run.call_args[0] else ()
         # Just ensure uvicorn.run was called
         assert mock_run.called
 
     def test_health_endpoint(self):
         """Test the /health endpoint."""
         from fastapi.testclient import TestClient
+
         from melosviz.bridge.server import app
         client = TestClient(app)
         resp = client.get("/health")
@@ -587,16 +594,14 @@ class TestBridgeServerRemaining:
 class TestCLIRemaining:
     def test_cli_version_flag(self):
         from melosviz.cli.main import main
-        with pytest.raises(SystemExit) as exc_info:
-            with patch("sys.argv", ["viz", "--version"]):
-                main()
+        with pytest.raises(SystemExit), patch("sys.argv", ["viz", "--version"]):
+            main()
         # SystemExit from --version is fine
 
     def test_cli_no_subcommand_prints_help(self):
         from melosviz.cli.main import main
-        with pytest.raises(SystemExit):
-            with patch("sys.argv", ["viz"]):
-                main()
+        with pytest.raises(SystemExit), patch("sys.argv", ["viz"]):
+            main()
 
 
 # ---------------------------------------------------------------------------
@@ -631,8 +636,8 @@ class TestPresetsInitRemaining:
 class TestAssembleLine181:
     def test_timeline_coverage_gap_raises(self):
         """Line 181: AssemblyError when timeline doesn't cover full duration."""
-        from melosviz.compose.assemble import assemble_render_plan, AssemblyError
         from melosviz.analysis.models import RenderSpec
+        from melosviz.compose.assemble import AssemblyError, assemble_render_plan
         # Spec says duration=10.0 but we have segments covering only 0→1
         spec = RenderSpec(
             metadata={"duration_sec": 10.0},
@@ -685,17 +690,17 @@ class TestOverridesShortKey:
 class TestScannerCosine:
     def test_cosine_falloff(self):
         """scanner.py line 123-124: cosine falloff type."""
-        from melosviz.scene.scanner import _falloff
         from melosviz.scene.models import FalloffType
+        from melosviz.scene.scanner import _falloff
         result = _falloff(0.5, FalloffType.COSINE)
         expected = (1.0 - math.cos(0.5 * math.pi)) * 0.5
         assert result == pytest.approx(expected)
 
     def test_evaluate_scanner_no_dense_keyframes(self):
         """scanner.py line 223: cone_raw = 0.0 when no keyframe."""
-        from melosviz.scene.scanner import evaluate_scanner
-        from melosviz.scene.models import ScannerSpec
         from melosviz.analysis.models import RenderSpec
+        from melosviz.scene.models import ScannerSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = ScannerSpec(scanner_id="test")
         spec = RenderSpec(
             metadata={"duration": 0.2, "fps": 5, "estimated_bpm": 120.0},
@@ -709,9 +714,8 @@ class TestScannerCosine:
 class TestCLIDiffCommand:
     def test_diff_command_key_in_b_not_a(self, tmp_path):
         """cli/main.py lines 96, 98: diff command key only in b or only in a."""
-        import json
-        from melosviz.cli.main import main
         from melosviz.analysis.models import RenderSpec
+        from melosviz.cli.main import main
         spec_a = RenderSpec(metadata={"duration": 1.0})
         spec_b = RenderSpec(metadata={"duration": 2.0})
         a_path = tmp_path / "a.json"
@@ -719,10 +723,8 @@ class TestCLIDiffCommand:
         a_path.write_text(spec_a.model_dump_json())
         b_path.write_text(spec_b.model_dump_json())
         with patch("sys.argv", ["viz", "diff", str(a_path), str(b_path)]):
-            try:
+            with contextlib.suppress(SystemExit):
                 main()
-            except SystemExit:
-                pass
 
 
 class TestCLIMainGuard:
@@ -730,9 +732,8 @@ class TestCLIMainGuard:
         """cli/main.py line 195: if __name__ == '__main__' is pragma: no cover candidate."""
         # We can't easily invoke __main__ guard at test time; just verify main() runs
         from melosviz.cli.main import main
-        with pytest.raises(SystemExit):
-            with patch("sys.argv", ["viz"]):
-                main()
+        with pytest.raises(SystemExit), patch("sys.argv", ["viz"]):
+            main()
 
 
 class TestBlenderSceneDict:
@@ -758,9 +759,9 @@ class TestBlenderSceneDict:
 
     def test_hybrid_assembly_high_energy_drop(self):
         """Lines 303, 307-308: _is_drop check (energy > 0.8 in metadata)."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import ScannerSpec, SceneSpec
-        from melosviz.analysis.models import RenderSpec
 
         scanner = ScannerSpec(scanner_id="test")
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
@@ -794,9 +795,10 @@ class TestVideoExporterLine316:
 class TestPresetLine27:
     def test_presets_init_line_27(self):
         """presets/__init__.py line 27 — exercise via direct import call."""
-        import melosviz.presets as p
         # Read line 27 of presets/__init__.py to know what to call
         import importlib
+
+        import melosviz.presets as p
         importlib.reload(p)
         # Just check the module loads without error
         assert p is not None
@@ -810,7 +812,10 @@ class TestPresetLine27:
 class TestBlenderExporterRemainingLines:
     def test_resolve_blender_candidate_skip(self):
         """blender_exporter.py lines 149, 158, 162: skip candidates, raise."""
-        from melosviz.render.blender_exporter import _resolve_blender_binary, BlenderNotFoundError
+        from melosviz.render.blender_exporter import (
+            BlenderNotFoundError,
+            _resolve_blender_binary,
+        )
         # All candidates fail → raises BlenderNotFoundError (line 162)
         # Also mock Path.exists to return False so the hardcoded /Applications/Blender.app path is skipped
         with patch.dict("os.environ", {"MELOSVIZ_BLENDER_BIN": ""}, clear=False):
@@ -822,8 +827,13 @@ class TestBlenderExporterRemainingLines:
 
     def test_resolve_blender_oserror_skip(self):
         """blender_exporter.py line 157-158: OSError → continue."""
-        from melosviz.render.blender_exporter import _resolve_blender_binary, BlenderNotFoundError
-        import tempfile, os, stat
+        import os
+        import tempfile
+
+        from melosviz.render.blender_exporter import (
+            BlenderNotFoundError,
+            _resolve_blender_binary,
+        )
         with tempfile.NamedTemporaryFile(suffix="blender", delete=False) as f:
             fname = f.name
         os.chmod(fname, 0o755)
@@ -864,8 +874,8 @@ class TestBlenderExporterRemainingLines:
 
     def test_build_bpy_script_missing_valence(self, tmp_path):
         """blender_exporter.py line 375-376: valence/arousal defaults when mood is not a dict."""
-        from melosviz.render.blender_exporter import build_bpy_script
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.blender_exporter import build_bpy_script
         # mood as a string (not dict) → hits else branch (lines 375-376)
         spec = RenderSpec(
             metadata={"duration": 0.1, "fps": 10},
@@ -877,7 +887,10 @@ class TestBlenderExporterRemainingLines:
 
     def test_mux_sequence_oserror(self, tmp_path):
         """blender_exporter.py line 678-679: OSError → BlenderRenderError."""
-        from melosviz.render.blender_exporter import _mux_sequence_to_mp4, BlenderRenderError
+        from melosviz.render.blender_exporter import (
+            BlenderRenderError,
+            _mux_sequence_to_mp4,
+        )
         frames_dir = tmp_path / "frames"
         frames_dir.mkdir()
         out = tmp_path / "out.mp4"
@@ -888,7 +901,10 @@ class TestBlenderExporterRemainingLines:
 
     def test_mux_sequence_nonzero_rc(self, tmp_path):
         """blender_exporter.py line 682-683: non-zero rc → BlenderRenderError."""
-        from melosviz.render.blender_exporter import _mux_sequence_to_mp4, BlenderRenderError
+        from melosviz.render.blender_exporter import (
+            BlenderRenderError,
+            _mux_sequence_to_mp4,
+        )
         frames_dir = tmp_path / "frames"
         frames_dir.mkdir()
         out = tmp_path / "out.mp4"
@@ -902,7 +918,7 @@ class TestBlenderExporterRemainingLines:
 
     def test_export_blender_dict_spec(self, tmp_path):
         """blender_exporter.py lines 740-741: isinstance(spec, dict) branch is executed."""
-        from melosviz.render.blender_exporter import export_blender, BlenderRenderError
+        from melosviz.render.blender_exporter import BlenderRenderError, export_blender
         # Dict spec — must get past _resolve_blender_binary to hit line 740-741
         spec_dict = {"metadata": {"duration": 0.1, "fps": 10}}
         mock_result = MagicMock()
@@ -911,7 +927,7 @@ class TestBlenderExporterRemainingLines:
         with patch("melosviz.render.blender_exporter._resolve_blender_binary",
                    return_value="/fake/blender"):
             with patch("subprocess.run", return_value=mock_result):
-                with pytest.raises(Exception):
+                with pytest.raises(BlenderRenderError):
                     export_blender(spec_dict, str(tmp_path))
 
     def test_export_blender_non_spec(self, tmp_path):
@@ -920,34 +936,36 @@ class TestBlenderExporterRemainingLines:
         class Stub:
             pass
         with patch("melosviz.render.blender_exporter._resolve_blender_binary",
-                   side_effect=Exception("no blender")):
-            with pytest.raises(Exception):
-                export_blender(Stub(), str(tmp_path))
+                   side_effect=Exception("no blender")), pytest.raises(Exception):  # noqa: B017 -- side_effect deliberately raises a generic Exception to simulate an arbitrary resolver failure; the code under test doesn't wrap it
+            export_blender(Stub(), str(tmp_path))
 
     def test_export_blender_no_output_dir(self, tmp_path):
         """blender_exporter.py line 751: default output_dir when output_dir=None."""
-        from melosviz.render.blender_exporter import export_blender
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.blender_exporter import export_blender
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10})
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stderr = "fail"
+        from melosviz.render.blender_exporter import BlenderRenderError
         with patch("melosviz.render.blender_exporter._resolve_blender_binary",
                    return_value="/fake/blender"):
             with patch("subprocess.run", return_value=mock_result):
-                with pytest.raises(Exception):
+                with pytest.raises(BlenderRenderError):
                     export_blender(spec, output_dir=None)
 
     def test_render_blender_raises_on_nonzero(self, tmp_path):
         """blender_exporter.py line 819: BlenderRenderError on non-zero rc."""
-        from melosviz.render.blender_exporter import export_blender, BlenderRenderError, BlenderNotFoundError
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.blender_exporter import (
+            BlenderNotFoundError,
+            BlenderRenderError,
+            export_blender,
+        )
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10})
-        import tempfile
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stderr = "render error"
-        import tempfile as tmp_mod
         with patch("melosviz.render.blender_exporter._resolve_blender_binary",
                    return_value="/fake/blender"):
             with patch("melosviz.render.blender_exporter._resolve_ffmpeg_binary",
@@ -967,10 +985,11 @@ class TestAudioAnalysisLines:
 
     def test_mean_in_range_empty_array(self):
         """audio.py line 505: _mean_in_range returns 0.0 when arr is empty."""
-        from melosviz.analysis.audio import spec_from_wav_rich, analyze_wav_rich
         # We need to call _mean_in_range indirectly — it's a closure inside analyze_wav_rich
         # Test via analyze_wav_rich with a spec that has empty envelope
-        import io, wave, struct
+        import io
+        import struct
+        import wave
         buf = io.BytesIO()
         with wave.open(buf, "wb") as w:
             w.setnchannels(1)
@@ -980,15 +999,9 @@ class TestAudioAnalysisLines:
             w.writeframes(struct.pack(f"<{n}h", *([500] * n)))
         # The _mean_in_range closure is only reachable in analyze_wav_rich internals
         # Test directly by importing the function if possible
-        try:
-            # Access the internal _mean_in_range via module inspection
-            import melosviz.analysis.audio as audio_mod
-            import types
-            # find analyze_wav_rich closure
-            f = audio_mod.analyze_wav_rich
-            # Can't easily access closure; test _mean_in_range logic via surrogate
-        except Exception:
-            pass
+        # Access the internal _mean_in_range via module inspection
+        # find analyze_wav_rich closure
+        # Can't easily access closure; test _mean_in_range logic via surrogate
         # Verify line 505 via a simple integration: spec_from_wav with zero energy
         # The easiest coverage is via a test WAV with specific properties
         assert True  # placeholder — see next test
@@ -1023,13 +1036,12 @@ class TestAudioAnalysisLines:
 
     def test_audioop_empty_segment_continue(self, tmp_path):
         """audio.py line 125: continue when segment is empty."""
-        import io, wave, struct
         # Create a WAV where len(mono) is exactly divisible by segment_size
         # so that the last slice is empty
         # segment_size = max(sw, (raw_size // sw) * sw)
         # raw_size = len(mono) // bucket_count
         # With 120 buckets and sample_width=2: need len(mono) exactly divisible
-        from melosviz.analysis.audio import _read_wav_mono, _HAS_AUDIOOP, _audioop
+        from melosviz.analysis.audio import _HAS_AUDIOOP
         if not _HAS_AUDIOOP:
             pytest.skip("audioop not available")
         # 1200 bytes mono = 600 samples (2-byte)
@@ -1045,10 +1057,13 @@ class TestAudioAnalysisLines:
 
     def test_no_audioop_empty_chunk(self, tmp_path):
         """audio.py lines 141-142: empty chunk in no-audioop path."""
-        from melosviz.analysis.audio import analyze_wav
         # With audioop mocked out, we hit the else: branch
         # Need a WAV where a chunk is empty (n_samples < bucket_count)
-        import io, wave, struct
+        import io
+        import struct
+        import wave
+
+        from melosviz.analysis.audio import analyze_wav
         # Very short WAV: 1 sample, 120 buckets → bucket_size=1, some buckets will be empty
         buf = io.BytesIO()
         with wave.open(buf, "wb") as w:
@@ -1087,7 +1102,7 @@ class TestAEAdapterSpecific:
 
     def test_build_ae_spec_non_spec_object(self, tmp_path):
         """aftereffects_adapter.py line 376-377: else → spec_dict = {}."""
-        from melosviz.render.aftereffects_adapter import build_ae_job_spec, AESpecError
+        from melosviz.render.aftereffects_adapter import AESpecError, build_ae_job_spec
         class Stub:
             pass
         with pytest.raises(AESpecError):  # duration=0 raises
@@ -1110,7 +1125,7 @@ class TestAEAdapterSpecific:
 
     def test_build_ae_spec_zero_duration_raises(self):
         """aftereffects_adapter.py line 395: AESpecError on zero duration."""
-        from melosviz.render.aftereffects_adapter import build_ae_job_spec, AESpecError
+        from melosviz.render.aftereffects_adapter import AESpecError, build_ae_job_spec
         spec_dict = {"metadata": {"duration": 0.0, "fps": 24}}
         with pytest.raises(AESpecError, match="duration is missing or zero"):
             build_ae_job_spec(spec_dict)
@@ -1145,8 +1160,8 @@ class TestFireflyAdapterSpecific:
 
     def test_render_high_energy_segments(self, tmp_path):
         """firefly_adapter.py lines 192-193, 253-256, 289-290, 396."""
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.5, "fps": 10},
@@ -1193,8 +1208,8 @@ class TestMEAdapterSpecific:
 
     def test_build_media_encoder_preset_variants(self, tmp_path):
         """mediaencoder_adapter.py: different preset types."""
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter()
         for preset in ["h264", "hevc", "prores", "webm"]:
             spec = RenderSpec(metadata={"duration": 0.1, "fps": 10, "preset": preset})
@@ -1210,9 +1225,9 @@ class TestMEAdapterSpecific:
 class TestBlenderSceneSpecific:
     def test_assemble_bpm_derived_beat_times(self):
         """blender_scene.py lines 275/290: render_spec has no beat events → bpm-derived."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import ScannerSpec, SceneSpec
-        from melosviz.analysis.models import RenderSpec
         scanner = ScannerSpec(scanner_id="test")
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
         # No timeline_events with type='beat' → no beat_times list
@@ -1227,9 +1242,9 @@ class TestBlenderSceneSpecific:
 
     def test_assemble_with_drop_segment(self):
         """blender_scene.py lines 303, 307-308: _is_drop checks."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import ScannerSpec, SceneSpec
-        from melosviz.analysis.models import RenderSpec
         scanner = ScannerSpec(scanner_id="test")
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
         spec = RenderSpec(
@@ -1243,9 +1258,9 @@ class TestBlenderSceneSpecific:
 
     def test_assemble_scan_animation_path(self):
         """blender_scene.py lines 374, 396: _wrap_angle path."""
+        from melosviz.analysis.models import RenderSpec
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
         from melosviz.scene.models import ScannerSpec, SceneSpec
-        from melosviz.analysis.models import RenderSpec
         scanner = ScannerSpec(scanner_id="test")
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
         # Many dense keyframes to trigger angle wrapping (line 396)
@@ -1269,6 +1284,7 @@ class TestCLIDiffLines:
     def test_diff_spec_extra_key_in_b(self, tmp_path):
         """cli/main.py line 96: key only in b → lines.append(f'+ {sub}: {b[key]}')."""
         import json
+
         from melosviz.cli.main import main
         # Spec a has no mir; spec b has mir → key 'mir' only in b
         spec_a = {"metadata": {"duration": 1.0}, "scene_segments": []}
@@ -1285,10 +1301,8 @@ class TestCLIDiffLines:
         a_path.write_text(spec_a_obj.model_dump_json())
         b_path.write_text(spec_b_obj.model_dump_json())
         with patch("sys.argv", ["viz", "diff", str(a_path), str(b_path)]):
-            try:
+            with contextlib.suppress(SystemExit):
                 main()
-            except SystemExit:
-                pass
 
 
 # ---------------------------------------------------------------------------
@@ -1306,10 +1320,8 @@ class TestPresetsLine27:
             result = p.list_presets()
             assert isinstance(result, (list, dict))
         except AttributeError:
-            try:
-                result = p.PRESET_REGISTRY
-            except AttributeError:
-                pass  # line 27 may be covered by import already
+            with contextlib.suppress(AttributeError):
+                result = p.PRESET_REGISTRY  # noqa: F841 -- accessed only to prove the attribute exists (line 27 coverage); may be covered by import already
 
 
 # ---------------------------------------------------------------------------
@@ -1322,8 +1334,10 @@ class TestScannerLine223:
         """scene/scanner.py line 222-223: cone_half_rad<=0 is unreachable (validation enforces >0).
         Verifies that cone_angle_deg=0 raises ValidationError — the pragma is justified."""
         import pytest
+        from pydantic import ValidationError
+
         from melosviz.scene.models import ScannerSpec
-        with pytest.raises(Exception):  # pydantic ValidationError
+        with pytest.raises(ValidationError):
             ScannerSpec(scanner_id="test", cone_angle_deg=0.0)
 
 
@@ -1345,8 +1359,8 @@ class TestFireflyAdapterDescriptors:
 
     def test_kf_mood_not_dict(self, tmp_path):
         """firefly_adapter.py lines 192-193, 289-290: mood not dict in keyframe/segment."""
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.3, "fps": 10},
@@ -1361,8 +1375,8 @@ class TestFireflyAdapterDescriptors:
 
     def test_export_video_path(self, tmp_path):
         """firefly_adapter.py line 396: export_video call with output_path=None."""
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.2, "fps": 10},
@@ -1382,7 +1396,7 @@ class TestFireflyAdapterDescriptors:
 class TestAEAdapterLine395:
     def test_build_ae_spec_zero_fps_raises(self):
         """aftereffects_adapter.py line 395: AESpecError on fps=0."""
-        from melosviz.render.aftereffects_adapter import build_ae_job_spec, AESpecError
+        from melosviz.render.aftereffects_adapter import AESpecError, build_ae_job_spec
         spec_dict = {"metadata": {"duration": 1.0, "fps": 0}}
         with pytest.raises(AESpecError, match="invalid fps"):
             build_ae_job_spec(spec_dict)
@@ -1391,8 +1405,10 @@ class TestAEAdapterLine395:
 class TestMEAdapterSpecificLines:
     def test_resolve_ame_binary_env(self, tmp_path):
         """mediaencoder_adapter.py line 187: env override returns."""
+        import os
+        import tempfile
+
         from melosviz.render.mediaencoder_adapter import _resolve_ame_binary
-        import tempfile, os
         with tempfile.NamedTemporaryFile(suffix="ame", delete=False) as f:
             fname = f.name
         os.chmod(fname, 0o755)
@@ -1418,7 +1434,10 @@ class TestMEAdapterSpecificLines:
 
     def test_assemble_with_ffmpeg_no_ffmpeg(self, tmp_path):
         """mediaencoder_adapter.py line 245-246: FFMpegNotFoundError → MESpecError."""
-        from melosviz.render.mediaencoder_adapter import assemble_with_ffmpeg, MESpecError
+        from melosviz.render.mediaencoder_adapter import (
+            MESpecError,
+            assemble_with_ffmpeg,
+        )
         from melosviz.render.video_exporter import FFMpegNotFoundError
         seg = tmp_path / "seg1.mp4"
         seg.write_bytes(b"dummy")
@@ -1431,7 +1450,10 @@ class TestMEAdapterSpecificLines:
 
     def test_assemble_with_ffmpeg_empty_segments(self, tmp_path):
         """mediaencoder_adapter.py line 253: empty segments → MESpecError."""
-        from melosviz.render.mediaencoder_adapter import assemble_with_ffmpeg, MESpecError
+        from melosviz.render.mediaencoder_adapter import (
+            MESpecError,
+            assemble_with_ffmpeg,
+        )
         out = tmp_path / "out.mp4"
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary",
                    return_value="/fake/ffmpeg"):
@@ -1440,7 +1462,10 @@ class TestMEAdapterSpecificLines:
 
     def test_assemble_with_ffmpeg_no_output(self, tmp_path):
         """mediaencoder_adapter.py lines 306-312: success rc but no output file."""
-        from melosviz.render.mediaencoder_adapter import assemble_with_ffmpeg, MESpecError
+        from melosviz.render.mediaencoder_adapter import (
+            MESpecError,
+            assemble_with_ffmpeg,
+        )
         seg = tmp_path / "seg1.mp4"
         seg.write_bytes(b"dummy")
         out = tmp_path / "out_missing.mp4"  # doesn't exist after run
@@ -1454,16 +1479,16 @@ class TestMEAdapterSpecificLines:
 
     def test_build_ame_spec_zero_fps(self, tmp_path):
         """mediaencoder_adapter.py line 362: zero fps → MESpecError."""
-        from melosviz.render.mediaencoder_adapter import build_ame_job_spec, MESpecError
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MESpecError, build_ame_job_spec
         spec = RenderSpec(metadata={"duration": 1.0, "fps": 0})
         with pytest.raises(MESpecError, match="invalid fps"):
             build_ame_job_spec(spec, [])
 
     def test_render_with_ffmpeg_fallback(self, tmp_path):
         """mediaencoder_adapter.py lines 515-524: ffmpeg fallback when use_ame=False."""
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter(use_ame=False)  # explicit ffmpeg fallback
         spec = RenderSpec(metadata={"duration": 0.2, "fps": 10})
         seg1 = tmp_path / "seg1.mp4"
@@ -1504,13 +1529,11 @@ class TestVideoExporterLine616:
                           palette=[])
         mock_result = MagicMock()
         mock_result.returncode = 0
-        output = tmp_path / "out.mp4"
+        tmp_path / "out.mp4"
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary", return_value="/fake/ffmpeg"):
-            with patch("subprocess.run", return_value=mock_result):
-                try:
-                    export_video(spec, format="mp4", output_dir=tmp_path)
-                except Exception:
-                    pass  # May fail for other reasons; line 616 may be pragma'd
+            with patch("subprocess.run", return_value=mock_result), contextlib.suppress(Exception):
+                # May fail for other reasons; line 616 may be pragma'd
+                export_video(spec, format="mp4", output_dir=tmp_path)
 
 
 # ---------------------------------------------------------------------------
@@ -1520,9 +1543,15 @@ class TestVideoExporterLine616:
 class TestBlenderSceneOnBeat:
     def test_is_on_beat_no_beat_times(self):
         """blender_scene.py line 303: _is_on_beat returns False when no beat events."""
-        from melosviz.scene.blender_scene import assemble_multi_domain_scene
-        from melosviz.scene.models import ScannerSpec, SceneSpec, MaterialSpec, DomainMaterialLook, Domain
         from melosviz.analysis.models import RenderSpec
+        from melosviz.scene.blender_scene import assemble_multi_domain_scene
+        from melosviz.scene.models import (
+            Domain,
+            DomainMaterialLook,
+            MaterialSpec,
+            ScannerSpec,
+            SceneSpec,
+        )
         from melosviz.scene.scanner import ChannelMaskFrame
 
         scanner = ScannerSpec(scanner_id="test")
@@ -1547,7 +1576,13 @@ class TestBlenderSceneOnBeat:
     def test_is_on_beat_dict_spec_with_beats(self):
         """blender_scene.py lines 307-308: _is_on_beat with dict render_spec."""
         from melosviz.scene.blender_scene import assemble_multi_domain_scene
-        from melosviz.scene.models import ScannerSpec, SceneSpec, MaterialSpec, DomainMaterialLook, Domain
+        from melosviz.scene.models import (
+            Domain,
+            DomainMaterialLook,
+            MaterialSpec,
+            ScannerSpec,
+            SceneSpec,
+        )
         from melosviz.scene.scanner import ChannelMaskFrame
 
         scanner = ScannerSpec(scanner_id="test")

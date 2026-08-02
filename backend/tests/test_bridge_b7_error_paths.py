@@ -20,34 +20,38 @@ class TestAnalyzeWithMirOrPythonErrorPaths:
 
     def test_mir_binary_missing_fallback_to_python(self):
         """When MIR binary doesn't exist, Python analyzer is invoked."""
-        with patch.object(Path, "exists", return_value=False):
+        with (
+            patch.object(Path, "exists", return_value=False),
+            patch("melosviz.analysis.audio.spec_from_wav") as mock_spec,
+        ):
+            mock_spec.return_value = Mock(
+                model_dump=Mock(return_value={"frames": 100, "tempo": 120})
+            )
+
+            wav_path = Path("/tmp/test.wav")
+            result = _analyze_with_mir_or_python(wav_path)
+
+            assert result == {"frames": 100, "tempo": 120}
+            mock_spec.assert_called_once_with(wav_path)
+
+    def test_mir_subprocess_error_fallback_to_python(self):
+        """When MIR subprocess fails, Python fallback is triggered."""
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch("melosviz.bridge.server.subprocess.run") as mock_run,
+        ):
+            mock_run.side_effect = subprocess.CalledProcessError(1, "melosviz-mir")
+
             with patch("melosviz.analysis.audio.spec_from_wav") as mock_spec:
                 mock_spec.return_value = Mock(
-                    model_dump=Mock(return_value={"frames": 100, "tempo": 120})
+                    model_dump=Mock(return_value={"frames": 200, "tempo": 130})
                 )
 
                 wav_path = Path("/tmp/test.wav")
                 result = _analyze_with_mir_or_python(wav_path)
 
-                assert result == {"frames": 100, "tempo": 120}
+                assert result == {"frames": 200, "tempo": 130}
                 mock_spec.assert_called_once_with(wav_path)
-
-    def test_mir_subprocess_error_fallback_to_python(self):
-        """When MIR subprocess fails, Python fallback is triggered."""
-        with patch.object(Path, "exists", return_value=True):
-            with patch("melosviz.bridge.server.subprocess.run") as mock_run:
-                mock_run.side_effect = subprocess.CalledProcessError(1, "melosviz-mir")
-
-                with patch("melosviz.analysis.audio.spec_from_wav") as mock_spec:
-                    mock_spec.return_value = Mock(
-                        model_dump=Mock(return_value={"frames": 200, "tempo": 130})
-                    )
-
-                    wav_path = Path("/tmp/test.wav")
-                    result = _analyze_with_mir_or_python(wav_path)
-
-                    assert result == {"frames": 200, "tempo": 130}
-                    mock_spec.assert_called_once_with(wav_path)
 
     def test_mir_timeout_fallback_to_python(self):
         """When MIR subprocess times out, Python fallback is triggered."""

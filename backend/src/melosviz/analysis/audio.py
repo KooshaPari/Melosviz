@@ -39,6 +39,8 @@ except ImportError:  # pragma: no cover — audioop absent only on Python ≥3.1
     _audioop = None  # type: ignore[assignment]
     _HAS_AUDIOOP = False
 
+import contextlib
+
 from .models import (
     DenseKeyframe,
     HarmonicResult,
@@ -431,6 +433,7 @@ def _beat_track_worker(y_list: list[float], sr: int, result_path: str) -> None:
     via exitcode and uses the numpy fallback instead.
     """
     import json as _json
+
     import librosa  # type: ignore[import-not-found]
     import numpy as _np
 
@@ -578,10 +581,8 @@ def _safe_beat_track(y: Any, sr: int, librosa: Any) -> tuple[float, list[float]]
     except Exception:
         return _numpy_beat_fallback(y, sr)
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(result_path)
-        except OSError:
-            pass
 
 
 # ---------------------------------------------------------------------------

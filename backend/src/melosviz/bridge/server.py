@@ -37,7 +37,6 @@ import os
 import sys
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Attempt FastAPI import; if absent, print a helpful message and exit so the
 # Bun main process knows to use the CLI fallback instead.
@@ -59,9 +58,11 @@ except ImportError:  # pragma: no cover — only reachable without [bridge] extr
 
 # Local security primitives. Imported eagerly because the middleware is
 # registered at app-startup time and the security helpers are stdlib-only.
-from melosviz.bridge import security  # noqa: E402
+import contextlib
 import subprocess
 import tempfile
+
+from melosviz.bridge import security  # noqa: E402
 
 app = FastAPI(title="MelosViz bridge", version="0.1.0")
 
@@ -117,20 +118,18 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
                 ) as tmp:
                     tmp_spec_path = tmp.name
                 try:
-                    result = subprocess.run(
+                    subprocess.run(
                         [str(mir_binary), "--wav", str(wav_path), "--out", tmp_spec_path],
                         check=True,
                         capture_output=True,
                         timeout=120,
                     )
-                    with open(tmp_spec_path, "r") as f:
+                    with open(tmp_spec_path) as f:
                         spec_dict = json.load(f)
                     return spec_dict
                 finally:
-                    try:
+                    with contextlib.suppress(Exception):
                         Path(tmp_spec_path).unlink()
-                    except Exception:
-                        pass
             except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError, TimeoutError) as e:
                 # Log but continue to Python fallback
                 import logging

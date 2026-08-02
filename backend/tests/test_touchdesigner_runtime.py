@@ -6,25 +6,20 @@ Tests cover:
 """
 
 import json
+
 import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 from melosviz.runtime.touchdesigner.generator import (
-    OperatorNode,
-    OperatorGroup,
-    NetworkSpec,
-    GenerateResult,
-    generate_network,
-    render_spec_to_network,
     REQUIRED_GROUP_NAMES,
+    NetworkSpec,
+    OperatorGroup,
+    OperatorNode,
 )
 from melosviz.runtime.touchdesigner.live_scheduler import (
+    DEFAULT_LOOKAHEAD_MS,
     LiveScheduler,
     build_live_scheduler_spec,
-    DEFAULT_LOOKAHEAD_MS,
 )
-
 
 # =============================================================================
 # OperatorNode and OperatorGroup serialization tests

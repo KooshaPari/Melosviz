@@ -24,7 +24,6 @@ from __future__ import annotations
 import math
 import struct
 import wave
-from array import array
 from pathlib import Path
 from unittest import mock
 

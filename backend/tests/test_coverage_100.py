@@ -35,17 +35,11 @@ from __future__ import annotations
 
 import asyncio
 import io
-import math
-import socket
-import struct
-import tempfile
-import threading
-import zlib
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch, call
-import pytest
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -158,7 +152,7 @@ class TestRmsFallbackEnvelope:
 
 class TestZeroStemChannels:
     def test_returns_all_zeros(self):
-        from melosviz.analysis.audio import _zero_stem_channels, STEM_NAMES
+        from melosviz.analysis.audio import STEM_NAMES, _zero_stem_channels
         result = _zero_stem_channels(5)
         assert set(result.keys()) == set(STEM_NAMES)
         for ch in result.values():
@@ -188,7 +182,7 @@ class TestResampleList:
 
 class TestSpecFromWavRichAlias:
     def test_alias(self, tmp_path):
-        from melosviz.analysis.audio import spec_from_wav_rich, analyze_wav_rich
+        from melosviz.analysis.audio import spec_from_wav_rich
         wav = _wav_file(tmp_path, 0.05)
         spec = spec_from_wav_rich(wav)
         assert spec is not None
@@ -258,14 +252,20 @@ class TestHexToRgbBytes:
 
 class TestResolveFFmpegBinary:
     def test_raises_when_no_ffmpeg(self):
-        from melosviz.render.video_exporter import _resolve_ffmpeg_binary, FFMpegNotFoundError
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            _resolve_ffmpeg_binary,
+        )
         with patch("shutil.which", return_value=None):
             with patch("os.environ.get", return_value=None):
                 with pytest.raises(FFMpegNotFoundError):
                     _resolve_ffmpeg_binary()
 
     def test_skips_nonexistent_candidate(self, tmp_path):
-        from melosviz.render.video_exporter import _resolve_ffmpeg_binary, FFMpegNotFoundError
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            _resolve_ffmpeg_binary,
+        )
         # shutil.which returns a path but it doesn't exist
         fake = str(tmp_path / "fake_ffmpeg")
         with patch("shutil.which", return_value=fake):
@@ -273,22 +273,23 @@ class TestResolveFFmpegBinary:
                 _resolve_ffmpeg_binary()
 
     def test_skips_broken_binary(self, tmp_path):
-        from melosviz.render.video_exporter import _resolve_ffmpeg_binary, FFMpegNotFoundError
-        import subprocess
+
+        from melosviz.render.video_exporter import (
+            FFMpegNotFoundError,
+            _resolve_ffmpeg_binary,
+        )
         fake = tmp_path / "ffmpeg"
         fake.write_bytes(b"not a real binary")
         fake.chmod(0o755)
-        with patch("shutil.which", return_value=str(fake)):
-            with patch(
-                "subprocess.run",
-                side_effect=OSError("exec error"),
-            ):
-                with pytest.raises(FFMpegNotFoundError):
-                    _resolve_ffmpeg_binary()
+        with patch("shutil.which", return_value=str(fake)), patch(
+            "subprocess.run",
+            side_effect=OSError("exec error"),
+        ), pytest.raises(FFMpegNotFoundError):
+            _resolve_ffmpeg_binary()
 
     def test_env_var_candidate_working(self, tmp_path):
+
         from melosviz.render.video_exporter import _resolve_ffmpeg_binary
-        import subprocess
         fake = tmp_path / "ffmpeg"
         fake.write_bytes(b"stub")
         fake.chmod(0o755)
@@ -344,7 +345,7 @@ class TestSaveSolidPng:
             assert p.exists()
 
     def test_with_pillow_when_available(self, tmp_path):
-        from melosviz.render.video_exporter import _save_solid_png, _pillow_available
+        from melosviz.render.video_exporter import _pillow_available, _save_solid_png
         if not _pillow_available():
             pytest.skip("Pillow not installed")
         p = tmp_path / "out.png"
@@ -471,8 +472,8 @@ class TestExtractEnvelope:
 class TestRawVideoPipeErrors:
     def test_oserror_on_popen_raises_ffmpeg_not_found(self, tmp_path):
         from melosviz.render.video_exporter import (
-            _export_video_rawvideo_pipe,
             FFMpegNotFoundError,
+            _export_video_rawvideo_pipe,
         )
         with patch("subprocess.Popen", side_effect=OSError("no such file")):
             with pytest.raises(FFMpegNotFoundError):
@@ -482,8 +483,8 @@ class TestRawVideoPipeErrors:
 
     def test_communicate_exception_raises_render_export_error(self, tmp_path):
         from melosviz.render.video_exporter import (
-            _export_video_rawvideo_pipe,
             RenderExportError,
+            _export_video_rawvideo_pipe,
         )
         mock_proc = MagicMock()
         mock_proc.stdin = MagicMock()
@@ -500,8 +501,8 @@ class TestRawVideoPipeErrors:
 
     def test_nonzero_returncode_raises_render_export_error(self, tmp_path):
         from melosviz.render.video_exporter import (
-            _export_video_rawvideo_pipe,
             RenderExportError,
+            _export_video_rawvideo_pipe,
         )
         mock_proc = MagicMock()
         mock_proc.stdin = MagicMock()
@@ -517,8 +518,8 @@ class TestRawVideoPipeErrors:
 
     def test_empty_output_raises_render_export_error(self, tmp_path):
         from melosviz.render.video_exporter import (
-            _export_video_rawvideo_pipe,
             RenderExportError,
+            _export_video_rawvideo_pipe,
         )
         mock_proc = MagicMock()
         mock_proc.stdin = MagicMock()
@@ -540,14 +541,14 @@ class TestExportVideoErrors:
         return RenderSpec(metadata={"width": 4, "height": 4, "fps": 1, "duration": 0.1})
 
     def test_unsupported_format_raises(self, tmp_path):
-        from melosviz.render.video_exporter import export_video, RenderExportError
+        from melosviz.render.video_exporter import RenderExportError, export_video
         spec = self._make_spec()
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary", return_value="/fake/ffmpeg"):
             with pytest.raises(RenderExportError, match="Unsupported export format"):
                 export_video(spec, format="avi", output_dir=tmp_path)
 
     def test_png_path_oserror_raises_ffmpeg_not_found(self, tmp_path):
-        from melosviz.render.video_exporter import export_video, FFMpegNotFoundError
+        from melosviz.render.video_exporter import FFMpegNotFoundError, export_video
         spec = self._make_spec()
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary", return_value="/fake/ffmpeg"):
             with patch("subprocess.run", side_effect=OSError("no binary")):
@@ -555,7 +556,7 @@ class TestExportVideoErrors:
                     export_video(spec, format="mp4", output_dir=tmp_path)
 
     def test_png_path_nonzero_rc_raises_render_export_error(self, tmp_path):
-        from melosviz.render.video_exporter import export_video, RenderExportError
+        from melosviz.render.video_exporter import RenderExportError, export_video
         spec = self._make_spec()
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -566,7 +567,7 @@ class TestExportVideoErrors:
                     export_video(spec, format="mp4", output_dir=tmp_path)
 
     def test_png_path_empty_output_raises(self, tmp_path):
-        from melosviz.render.video_exporter import export_video, RenderExportError
+        from melosviz.render.video_exporter import RenderExportError, export_video
         spec = self._make_spec()
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -579,7 +580,7 @@ class TestExportVideoErrors:
     def test_duration_invalid_uses_default(self, tmp_path):
         """When duration cannot be cast to float, uses the default."""
         from melosviz.analysis.models import RenderSpec
-        from melosviz.render.video_exporter import export_video, _DEFAULT_DURATION_SEC
+        from melosviz.render.video_exporter import export_video
         spec = RenderSpec(metadata={"width": 2, "height": 2, "fps": 1, "duration": "bad"})
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -599,7 +600,7 @@ class TestExportVideoErrors:
         mock_result.stderr = ""
         with patch("melosviz.render.video_exporter._resolve_ffmpeg_binary", return_value="/fake/ffmpeg"):
             with patch("subprocess.run", return_value=mock_result):
-                with pytest.raises(Exception):
+                with pytest.raises(Exception):  # noqa: B017 -- exact failure mode (ffmpeg/pipe/validation) is intentionally unspecified for this zero-duration edge case
                     export_video(spec, format="mp4", output_dir=tmp_path)
 
     def test_webm_uses_png_path(self, tmp_path):
@@ -627,7 +628,7 @@ class TestExportVideoErrors:
                 # Mock the stat check
                 with patch.object(Path, "exists", return_value=True), \
                      patch.object(Path, "stat", return_value=MagicMock(st_size=100)):
-                    result = export_video(spec, format="mp4", output_dir=tmp_path)
+                    export_video(spec, format="mp4", output_dir=tmp_path)
         mock_pipe.assert_called_once()
 
     def test_output_dir_none_uses_tempdir(self, tmp_path):
@@ -787,27 +788,27 @@ class TestTDBridge:
         return spec
 
     def test_default_config_osc_only(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         with patch("socket.socket"):
             bridge = TDBridge(BridgeConfig(transport="osc"))
         assert bridge._osc is not None
         assert bridge._ws is None
 
     def test_ws_transport_created(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         bridge = TDBridge(BridgeConfig(transport="websocket"))
         assert bridge._ws is not None
         assert bridge._osc is None
 
     def test_both_transport(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         with patch("socket.socket"):
             bridge = TDBridge(BridgeConfig(transport="both"))
         assert bridge._osc is not None
         assert bridge._ws is not None
 
     def test_send_sync_osc_send_failure_logged(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         with patch("socket.socket") as mock_sock_cls:
             mock_sock = MagicMock()
             mock_sock.sendto.side_effect = OSError("network error")
@@ -817,11 +818,14 @@ class TestTDBridge:
             bridge._send_sync({"type": "beat", "t": 0.0})
 
     def test_send_sync_with_ws_transport(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig, _WsTransport
+        from melosviz.runtime.touchdesigner.bridge import (
+            BridgeConfig,
+            TDBridge,
+        )
         bridge = TDBridge(BridgeConfig(transport="websocket"))
-        mock_ws = MagicMock()
+        MagicMock()
         # Replace _ws transport's async send with sync mock via loop
-        with patch.object(bridge, "_ws") as mock_ws_transport:
+        with patch.object(bridge, "_ws"):
             mock_loop = MagicMock()
             mock_loop.run_until_complete = MagicMock()
             with patch("asyncio.get_event_loop", return_value=mock_loop):
@@ -829,7 +833,7 @@ class TestTDBridge:
         assert mock_loop.run_until_complete.called
 
     def test_send_sync_ws_runtime_error_uses_ensure_future(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         bridge = TDBridge(BridgeConfig(transport="websocket"))
         with patch("asyncio.get_event_loop") as mock_get_loop:
             mock_loop = MagicMock()
@@ -840,7 +844,7 @@ class TestTDBridge:
             assert mock_ef.called
 
     def test_stream_render_spec_batch_mode(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         bridge = TDBridge(BridgeConfig(transport="osc"))
         spec = self._make_spec()
         with patch.object(bridge, "_send_sync") as mock_send:
@@ -849,18 +853,17 @@ class TestTDBridge:
         assert mock_send.called
 
     def test_stream_render_spec_realtime_mode(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         bridge = TDBridge(BridgeConfig(transport="osc"))
         spec = MagicMock()
         spec.timeline_events = [{"type": "beat", "t": 0.0}, {"type": "beat", "t": 0.001}]
         spec.dense_keyframes = []
-        with patch.object(bridge, "_send_sync"):
-            with patch("time.sleep") as mock_sleep:
-                bridge.stream_render_spec(spec, realtime=True)
+        with patch.object(bridge, "_send_sync"), patch("time.sleep"):
+            bridge.stream_render_spec(spec, realtime=True)
         # sleep may be called 0+ times depending on timing
 
     def test_close_with_osc(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         with patch("socket.socket") as mock_sock_cls:
             mock_sock = MagicMock()
             mock_sock_cls.return_value = mock_sock
@@ -869,7 +872,7 @@ class TestTDBridge:
             assert mock_sock.close.called
 
     def test_close_without_osc(self):
-        from melosviz.runtime.touchdesigner.bridge import TDBridge, BridgeConfig
+        from melosviz.runtime.touchdesigner.bridge import BridgeConfig, TDBridge
         bridge = TDBridge(BridgeConfig(transport="websocket"))
         bridge.close()  # No osc → just no-op
 
@@ -885,8 +888,8 @@ class TestTDAdapter:
         return RenderSpec(metadata={"duration": 0.1, "fps": 10, "width": 2, "height": 2})
 
     def test_render_success_no_live_mode(self, tmp_path):
-        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRenderResult
         import melosviz.runtime.touchdesigner.generator as gen_mod
+        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRenderResult
         mock_result = MagicMock()
         mock_result.network_spec_path = tmp_path / "spec.json"
         mock_result.bootstrap_path = tmp_path / "boot.py"
@@ -904,21 +907,21 @@ class TestTDAdapter:
         assert result.live_mode is False
 
     def test_render_failure_raises_td_runtime_error(self, tmp_path):
-        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRuntimeError
         # Patch the lazy import inside render()
         import melosviz.runtime.touchdesigner.generator as gen_mod
+        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRuntimeError
         with patch.object(gen_mod, "generate_network", side_effect=RuntimeError("gen failed")):
             adapter = TDAdapter()
             # adapter.render does: from melosviz.runtime.touchdesigner.generator import generate_network
             # so we patch via sys.modules
             import sys
-            orig = sys.modules.get("melosviz.runtime.touchdesigner.generator")
+            sys.modules.get("melosviz.runtime.touchdesigner.generator")
             with patch.dict(sys.modules, {"melosviz.runtime.touchdesigner.generator": MagicMock(generate_network=MagicMock(side_effect=RuntimeError("gen failed")))}):
                 with pytest.raises(TDRuntimeError):
                     adapter.render(self._make_spec(), output_path=tmp_path)
 
     def test_live_mode_starts_bridge(self, tmp_path):
-        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRenderResult
+        from melosviz.runtime.touchdesigner.adapter import TDAdapter
         mock_result = MagicMock()
         mock_result.network_spec_path = None
         mock_result.bootstrap_path = None
@@ -934,7 +937,7 @@ class TestTDAdapter:
         assert result.live_mode is True
 
     def test_live_mode_bridge_failure_non_fatal(self, tmp_path):
-        from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRenderResult
+        from melosviz.runtime.touchdesigner.adapter import TDAdapter
         mock_result = MagicMock()
         mock_result.network_spec_path = None
         mock_result.bootstrap_path = None
@@ -1198,21 +1201,21 @@ class TestOrchestrator:
         return RenderSpec(metadata={"duration": 0.1})
 
     def test_no_adapter_raises_conductor_error(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator, ConductorError
+        from melosviz.conductor.orchestrator import ConductorError, Orchestrator
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         with pytest.raises(ConductorError, match="no adapter registered"):
             orch.render(self._spec(), scene_types=["nonexistent_type"])
 
     def test_assembly_encode_adapter_missing_raises(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator, ConductorError
+        from melosviz.conductor.orchestrator import ConductorError, Orchestrator
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
         with patch("melosviz.conductor.registry.ADAPTER_REGISTRY", {"video_export": MagicMock()}):
             with pytest.raises((ConductorError, Exception)):
                 orch.render(self._spec(), scene_types=["video_export"])
 
     def test_adapter_render_failure_raises(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator, ConductorError
         from melosviz.conductor import registry as reg_mod
+        from melosviz.conductor.orchestrator import ConductorError, Orchestrator
         mock_adapter_cls = MagicMock()
         mock_adapter = MagicMock()
         mock_adapter.render.side_effect = RuntimeError("adapter exploded")
@@ -1232,8 +1235,8 @@ class TestOrchestrator:
         assert result.per_scene_results == {}
 
     def test_assembly_step_failure_raises(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator, ConductorError
         from melosviz.conductor import registry as reg_mod
+        from melosviz.conductor.orchestrator import ConductorError, Orchestrator
         mock_me_cls = MagicMock()
         mock_me = MagicMock()
         mock_me.render.side_effect = RuntimeError("assembly failed")
@@ -1251,9 +1254,9 @@ class TestOrchestrator:
         assert result.assembly_result is None
 
     def test_spec_scene_types_from_spec(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator
-        from melosviz.conductor import registry as reg_mod
         from melosviz.analysis.models import RenderSpec
+        from melosviz.conductor import registry as reg_mod
+        from melosviz.conductor.orchestrator import Orchestrator
         spec = RenderSpec(
             metadata={"duration": 0.1},
             scene_segments=[{"scene_type": "video_export", "start": 0.0, "end": 0.1}],
@@ -1269,8 +1272,8 @@ class TestOrchestrator:
         assert "video_export" in result.per_scene_results
 
     def test_empty_scene_segments_falls_back_to_video_export(self, tmp_path):
-        from melosviz.conductor.orchestrator import Orchestrator
         from melosviz.conductor import registry as reg_mod
+        from melosviz.conductor.orchestrator import Orchestrator
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         mock_adapter_cls = MagicMock()
         mock_adapter = MagicMock()
@@ -1292,6 +1295,7 @@ class TestBridgeServer:
     def client(self):
         try:
             from fastapi.testclient import TestClient
+
             from melosviz.bridge.server import app
             return TestClient(app)
         except ImportError:
@@ -1338,9 +1342,8 @@ class TestBridgeServer:
 
     def test_main_function(self):
         from melosviz.bridge.server import main
-        with patch("uvicorn.run") as mock_run:
-            with patch("sys.argv", ["bridge"]):
-                main()
+        with patch("uvicorn.run") as mock_run, patch("sys.argv", ["bridge"]):
+            main()
         assert mock_run.called
 
 
@@ -1364,7 +1367,7 @@ class TestBlenderScene:
 
     def test_hybrid_domain_assembly_attributes(self):
         from melosviz.scene.blender_scene import HybridDomainAssembly
-        from melosviz.scene.models import Domain, DomainMaterialLook
+        from melosviz.scene.models import Domain
         asm = HybridDomainAssembly(
             t=0.5,
             opacities={Domain.PHOTO: 1.0},
@@ -1436,24 +1439,24 @@ class TestEvaluateScannerFallback:
         )
 
     def test_no_dense_kf_falls_back_to_fps_grid(self):
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.analysis.models import RenderSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = self._make_scanner()
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10, "estimated_bpm": 120.0})
         frames = evaluate_scanner(scanner, spec)
         assert len(frames) > 0
 
     def test_zero_duration_returns_empty(self):
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.analysis.models import RenderSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = self._make_scanner()
         spec = RenderSpec(metadata={"duration": 0.0, "fps": 10})
         frames = evaluate_scanner(scanner, spec)
         assert frames == []
 
     def test_extra_write_channels_emitted(self):
-        from melosviz.scene.scanner import evaluate_scanner
         from melosviz.analysis.models import RenderSpec
+        from melosviz.scene.scanner import evaluate_scanner
         scanner = self._make_scanner(
             write_channels=["reveal_splat", "boost_wireframe", "edge_emission", "custom_channel"]
         )
@@ -1512,8 +1515,8 @@ class TestCameraArchetype:
 
 class TestAssembleEdgeCases:
     def test_assemble_with_scene_segments(self):
-        from melosviz.compose.assemble import assemble_render_plan
         from melosviz.analysis.models import RenderSpec
+        from melosviz.compose.assemble import assemble_render_plan
         spec = RenderSpec(
             metadata={"duration": 2.0},
             scene_segments=[
@@ -1527,8 +1530,8 @@ class TestAssembleEdgeCases:
 
     def test_assemble_coverage_line_181(self):
         """Exercise the covered < total_duration * 0.99 check via a spec whose segments fully cover."""
-        from melosviz.compose.assemble import assemble_render_plan
         from melosviz.analysis.models import RenderSpec
+        from melosviz.compose.assemble import assemble_render_plan
         spec = RenderSpec(
             metadata={"duration": 1.0},
             scene_segments=[
@@ -1583,8 +1586,9 @@ class TestNarratorEdgeCases:
 
     def test_pick_varied_fallback(self):
         """_pick_varied fallback branch (prev_pair forces iteration)."""
-        from melosviz.compose.narrator import NarrativeComposer
         import random
+
+        from melosviz.compose.narrator import NarrativeComposer
         composer = NarrativeComposer(seed=0)
         rng = random.Random(0)
         # With 1 scene and 1 material and a forced prev_pair, it hits the fallback
@@ -1619,8 +1623,8 @@ class TestBlenderExporterCoverage:
         assert result == []
 
     def test_build_bpy_script_basic(self, tmp_path):
-        from melosviz.render.blender_exporter import build_bpy_script
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.blender_exporter import build_bpy_script
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10})
         script = build_bpy_script(spec, tmp_path)
         assert isinstance(script, str)
@@ -1631,8 +1635,12 @@ class TestBlenderExporterCoverage:
         assert isinstance(is_blender_available(), bool)
 
     def test_export_blender_missing_binary(self, tmp_path):
-        from melosviz.render.blender_exporter import export_blender, BlenderNotFoundError, BlenderRenderError
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.blender_exporter import (
+            BlenderNotFoundError,
+            BlenderRenderError,
+            export_blender,
+        )
         spec = RenderSpec(metadata={"duration": 0.1})
         with patch("shutil.which", return_value=None):
             with patch("os.environ.get", return_value=None):
@@ -1647,16 +1655,16 @@ class TestBlenderExporterCoverage:
 
 class TestAfterEffectsAdapterCoverage:
     def test_render_basic(self, tmp_path):
-        from melosviz.render.aftereffects_adapter import AEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import AEAdapter
         adapter = AEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         result = adapter.render(spec, output_path=tmp_path)
         assert result is not None
 
     def test_render_with_timeline_events(self, tmp_path):
-        from melosviz.render.aftereffects_adapter import AEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.aftereffects_adapter import AEAdapter
         adapter = AEAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.5},
@@ -1673,16 +1681,16 @@ class TestAfterEffectsAdapterCoverage:
 
 class TestFireflyAdapterCoverage:
     def test_render_basic(self, tmp_path):
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         result = adapter.render(spec, output_path=tmp_path)
         assert result is not None
 
     def test_render_with_dense_keyframes(self, tmp_path):
-        from melosviz.render.firefly_adapter import FireflyAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.firefly_adapter import FireflyAdapter
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.5},
@@ -1699,16 +1707,16 @@ class TestFireflyAdapterCoverage:
 
 class TestMediaEncoderAdapterCoverage:
     def test_render_basic(self, tmp_path):
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         result = adapter.render(spec, output_path=tmp_path)
         assert result is not None
 
     def test_render_with_segment_paths(self, tmp_path):
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from melosviz.analysis.models import RenderSpec
+        from melosviz.render.mediaencoder_adapter import MEAdapter
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         result = adapter.render(spec, output_path=tmp_path, segment_paths=[])
@@ -1722,15 +1730,15 @@ class TestMediaEncoderAdapterCoverage:
 
 class TestGeneratorCoverage:
     def test_generate_with_empty_spec(self, tmp_path):
-        from melosviz.runtime.touchdesigner.generator import generate_network
         from melosviz.analysis.models import RenderSpec
+        from melosviz.runtime.touchdesigner.generator import generate_network
         spec = RenderSpec(metadata={"duration": 0.1, "fps": 10, "estimated_bpm": 120.0})
         result = generate_network(spec, output_dir=tmp_path)
         assert result is not None
 
     def test_generate_with_dense_keyframes(self, tmp_path):
-        from melosviz.runtime.touchdesigner.generator import generate_network
         from melosviz.analysis.models import RenderSpec
+        from melosviz.runtime.touchdesigner.generator import generate_network
         spec = RenderSpec(
             metadata={"duration": 0.5, "fps": 10, "estimated_bpm": 120.0},
             dense_keyframes=[{"t": 0.0, "energy": 0.8}],

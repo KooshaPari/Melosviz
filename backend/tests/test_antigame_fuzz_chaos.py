@@ -18,8 +18,6 @@ required.
 
 from __future__ import annotations
 
-import asyncio
-import io
 import json
 import math
 import os
@@ -29,7 +27,6 @@ import threading
 import time
 import wave
 from pathlib import Path
-from typing import Any, Callable
 from unittest.mock import patch
 
 import pytest
@@ -39,7 +36,8 @@ import pytest
 # If hypothesis isn't installed we still run the structural fuzz tests below.
 # ---------------------------------------------------------------------------
 try:
-    from hypothesis import HealthCheck, given, settings, strategies as st  # type: ignore
+    from hypothesis import HealthCheck, given, settings  # type: ignore
+    from hypothesis import strategies as st
 
     HAVE_HYPOTHESIS = True
 except ImportError:  # pragma: no cover — handled below
@@ -216,6 +214,7 @@ class TestBridgeHttpFuzz:
     def client(self):
         try:
             from fastapi.testclient import TestClient
+
             from melosviz.bridge.server import app
         except ImportError:  # pragma: no cover — only when [bridge] extras not installed
             pytest.skip("fastapi/uvicorn not installed")
@@ -255,8 +254,8 @@ class TestBridgeHttpFuzz:
 
     def test_health_is_idempotent(self, client) -> None:
         # Install an unlimited rate limiter so 50 rapid pings don't 429.
-        from melosviz.bridge.security import RateLimiter, _LIVE_LIMITERS
         from melosviz.bridge import server as bridge_server
+        from melosviz.bridge.security import _LIVE_LIMITERS, RateLimiter
         _LIVE_LIMITERS[id(bridge_server.app)] = RateLimiter(max_requests=0)
 
         # Hit it 50 times — must not leak state.
@@ -346,8 +345,10 @@ class TestChaosResilience:
                 errors.append(e)
 
         threads = [threading.Thread(target=worker) for _ in range(8)]
-        for t_ in threads: t_.start()
-        for t_ in threads: t_.join(timeout=30)
+        for t_ in threads:
+            t_.start()
+        for t_ in threads:
+            t_.join(timeout=30)
         assert not errors, f"concurrent failures: {errors}"
         # All results must agree on duration (the only stable field).
         durations = {r.metadata.get("duration") for r in results}

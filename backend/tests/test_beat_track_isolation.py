@@ -16,9 +16,6 @@ the fix survives a broken numba.
 from __future__ import annotations
 
 import json
-import math
-import struct
-import wave
 from pathlib import Path
 from unittest import mock
 
@@ -38,7 +35,7 @@ def _make_click_track(
     sample_rate: int = 44100,
     amplitude: float = 0.8,
     tmp_path: Path | None = None,
-) -> "tuple[Any, int]":  # noqa: F821
+) -> tuple[Any, int]:  # noqa: F821
     """Return (y_np, sr) numpy float32 array with a metronome click-track.
 
     Each beat is represented by a single-sample impulse at the correct
@@ -88,6 +85,7 @@ class TestNumpyBeatFallback:
     def test_output_bpm_clamped_to_range(self) -> None:
         """BPM output must always fall in [40, 240]."""
         import numpy as np
+
         from melosviz.analysis.audio import _numpy_beat_fallback
 
         # DC signal — no beats, forces the fallback branch
@@ -109,11 +107,12 @@ class TestNumpyBeatFallback:
 
         y, sr = _make_click_track(bpm=120.0, duration_sec=8.0)
         _, beat_times = _numpy_beat_fallback(y, sr)
-        for a, b in zip(beat_times, beat_times[1:]):
+        for a, b in zip(beat_times, beat_times[1:], strict=False):
             assert b > a, f"non-monotonic: {a} then {b}"
 
     def test_silence_does_not_crash(self) -> None:
         import numpy as np
+
         from melosviz.analysis.audio import _numpy_beat_fallback
 
         y = np.zeros(44100, dtype=np.float32)
@@ -123,6 +122,7 @@ class TestNumpyBeatFallback:
     def test_very_short_signal(self) -> None:
         """Short signals (< 1 hop) must not crash."""
         import numpy as np
+
         from melosviz.analysis.audio import _numpy_beat_fallback
 
         y = np.array([0.1, -0.1, 0.2], dtype=np.float32)
@@ -132,8 +132,8 @@ class TestNumpyBeatFallback:
     def test_never_imports_numba(self) -> None:
         """The fallback must not trigger numba — block the import and confirm."""
         import sys
+
         from melosviz.analysis.audio import _numpy_beat_fallback
-        import numpy as np
 
         y, sr = _make_click_track(bpm=120.0, duration_sec=4.0)
 
@@ -150,8 +150,7 @@ class TestNumpyBeatFallback:
 class TestSafeBeatTrack:
     """Tests for _safe_beat_track — the subprocess-isolation wrapper."""
 
-    def _get_y_sr(self) -> "tuple[Any, int]":  # noqa: F821
-        import numpy as np
+    def _get_y_sr(self) -> tuple[Any, int]:  # noqa: F821
         return _make_click_track(bpm=120.0, duration_sec=6.0)
 
     def _get_librosa(self) -> object:
@@ -174,8 +173,7 @@ class TestSafeBeatTrack:
 
     def test_crash_falls_back_to_numpy(self) -> None:
         """Simulate child crash (exitcode != 0) → parent must use numpy fallback."""
-        import numpy as np
-        from melosviz.analysis.audio import _safe_beat_track, _numpy_beat_fallback
+        from melosviz.analysis.audio import _numpy_beat_fallback, _safe_beat_track
 
         y, sr = self._get_y_sr()
         librosa = self._get_librosa()
@@ -193,7 +191,6 @@ class TestSafeBeatTrack:
 
             exitcode = -11  # SIGSEGV
 
-        import multiprocessing
         with mock.patch("multiprocessing.get_context") as mock_ctx:
             mock_ctx.return_value.Process = _CrashingProcess
             tempo, beats = _safe_beat_track(y, sr, librosa)
@@ -204,8 +201,7 @@ class TestSafeBeatTrack:
 
     def test_timeout_falls_back_to_numpy(self) -> None:
         """Simulate child timeout (None exitcode) → fall back to numpy."""
-        import numpy as np
-        from melosviz.analysis.audio import _safe_beat_track, _numpy_beat_fallback
+        from melosviz.analysis.audio import _numpy_beat_fallback, _safe_beat_track
 
         y, sr = self._get_y_sr()
         librosa = self._get_librosa()
@@ -222,7 +218,6 @@ class TestSafeBeatTrack:
 
             exitcode = None  # timed out
 
-        import multiprocessing
         with mock.patch("multiprocessing.get_context") as mock_ctx:
             mock_ctx.return_value.Process = _TimedOutProcess
             tempo, beats = _safe_beat_track(y, sr, librosa)
@@ -232,7 +227,6 @@ class TestSafeBeatTrack:
 
     def test_exception_in_wrapper_falls_back(self) -> None:
         """An exception inside _safe_beat_track itself must not propagate."""
-        import numpy as np
         from melosviz.analysis.audio import _safe_beat_track
 
         y, sr = self._get_y_sr()
@@ -299,6 +293,7 @@ class TestCmdBuildIntegration:
     def test_cmd_build_returns_0(self, tmp_path: Path) -> None:
         """_cmd_build must return exit code 0 for k.wav."""
         import argparse
+
         from melosviz.cli.main import _cmd_build
 
         args = argparse.Namespace(wav=str(K_WAV), out=str(tmp_path), real=False)
@@ -309,6 +304,7 @@ class TestCmdBuildIntegration:
     def test_cmd_build_emits_valid_json(self, tmp_path: Path) -> None:
         """_cmd_build must write a parseable render_plan.json."""
         import argparse
+
         from melosviz.cli.main import _cmd_build
 
         args = argparse.Namespace(wav=str(K_WAV), out=str(tmp_path), real=False)

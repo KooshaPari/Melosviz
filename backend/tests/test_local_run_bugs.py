@@ -11,6 +11,7 @@ Bug 3: Flat amplitude_envelope (all 0.5) without librosa — stdlib fallback mus
 from __future__ import annotations
 
 import array
+import contextlib
 import math
 import struct
 import wave
@@ -18,7 +19,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -130,11 +130,8 @@ class TestAudioopFrameAlignment:
     def test_analyze_wav_with_audioop_does_not_crash(self, tmp_path: Path) -> None:
         """analyze_wav must succeed when audioop is available (no alignment error)."""
         # Import the real audioop-lts if present, else skip (test proves the fix)
-        try:
+        with contextlib.suppress(ImportError):
             import audioop as _ao  # noqa: F401
-            has_audioop = True
-        except ImportError:
-            has_audioop = False
 
         from melosviz.analysis.audio import analyze_wav
 

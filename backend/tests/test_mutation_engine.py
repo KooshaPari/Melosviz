@@ -26,10 +26,8 @@ import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Callable
 
 import pytest
-
 
 REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src"

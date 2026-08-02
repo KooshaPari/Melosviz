@@ -8,14 +8,14 @@ Tests cover:
 """
 
 import json
-import pytest
-import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
+from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 from melosviz.bridge import server
-from melosviz.bridge.server import app, AnalyzeRequest, BuildRequest, RenderRequest
+from melosviz.bridge.server import app
 
 
 @pytest.fixture
