@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload DMG artifact
         # actions/upload-artifact v4.6.2 — SHA-pinned
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-macOS
           path: MelosViz-*-macos.dmg
@@ -89,7 +89,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Electrobun update manifests (macOS)
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-macOS-Updates
           path: desktop/artifacts/*
@@ -132,7 +132,7 @@ jobs:
           ls -lh "MelosViz-${{ github.ref_name }}-linux-x86_64.tar.gz"
 
       - name: Upload Linux artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-Linux
           path: MelosViz-*-linux-*.tar.gz
@@ -173,7 +173,7 @@ jobs:
           Get-Item "MelosViz-${{ github.ref_name }}-windows-x86_64.zip" | Format-List Name,Length
 
       - name: Upload Windows CLI artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-Windows-CLI
           path: MelosViz-*-windows-*.zip
@@ -246,7 +246,7 @@ jobs:
 
       - name: Upload Windows desktop artifact
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-Windows-Desktop
           path: win-desktop-out/*
@@ -255,7 +255,7 @@ jobs:
 
       - name: Upload Electrobun update manifests (Windows)
         continue-on-error: true
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-Windows-Updates
           path: desktop/artifacts/*
@@ -279,7 +279,7 @@ jobs:
           (cd backend && pip install -e . && cyclonedx-py environment -o ../sbom-python.cdx.json)
           cargo install cargo-cyclonedx --locked
           cargo cyclonedx -f json --all --output-file sbom-cargo.cdx.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-SBOM
           path: |
