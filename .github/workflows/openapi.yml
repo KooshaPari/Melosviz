@@ -41,7 +41,7 @@ jobs:
           git diff --ignore-cr-at-eol --exit-code -- docs/api/openapi.json \
             || (echo "::error::OpenAPI drift — run scripts/export_openapi.py and commit" && exit 1)
       - name: Upload OpenAPI artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: melosviz-openapi
           path: docs/api/openapi.json
