@@ -278,7 +278,7 @@ jobs:
           pip install cyclonedx-bom
           (cd backend && pip install -e . && cyclonedx-py environment -o ../sbom-python.cdx.json)
           cargo install cargo-cyclonedx --locked
-          cargo cyclonedx -f json --all --output-file sbom-cargo.cdx.json
+          cargo cyclonedx --format json --all --override-filename sbom-cargo.cdx.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: MelosViz-SBOM
