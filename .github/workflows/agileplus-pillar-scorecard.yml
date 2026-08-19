@@ -1,0 +1,66 @@
+name: AgilePlus Pillar Scorecard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: agileplus-pillar-scorecard
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish scorecard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - name: Render scorecard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          scorecard="agileplus/pillars/31-pillar-scorecard.json"
+          
+          if [[ ! -f "$scorecard" ]]; then
+            echo "::error::Scorecard JSON not found at $scorecard"
+            exit 1
+          fi
+
+          # Generate markdown summary
+          jq -r '
+            ["# AgilePlus Pillar Scorecard", "", ("**Assessment:** " + .assessmentDate), ("**Average:** " + (.summary.average|tostring) + " / 10 (" + .summary.grade + ")"), ("**Target:** " + (.grading.target|tostring)), ("**Pillars:** " + (.summary.pillarCount|tostring)), "", "| Pillar | Score | Target |", "| --- | ---: | ---: |", (.pillars | to_entries[] | "| " + .value.name + " | " + (.value.score|tostring) + " | " + (.value.target|tostring) + " |") ] | .[]
+          ' "$scorecard" > scorecard.md
+
+          # Post to GitHub Issue (if not a PR)
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            issue_number="${AGILEPLUS_SCORE_CARD_ISSUE:-}"
+            if [[ -z "$issue_number" ]]; then
+              issue_number="$(gh issue list --state all --search '"AgilePlus Pillar Scorecard" in:title' --limit 1 --json number --jq '.[0].number // empty')"
+            fi
+            if [[ -z "$issue_number" ]]; then
+              issue_number="$(gh issue create --title 'AgilePlus Pillar Scorecard' --body 'Automated AgilePlus scorecard updates are posted here.' --json number --jq '.number')"
+            fi
+            
+            gh issue comment "$issue_number" --body-file scorecard.md
+            echo "Posted scorecard to issue #$issue_number" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Output results to Step Summary
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat scorecard.md >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check JSON shape
+        run: |
+          jq -e '
+            .summary.pillarCount == (.pillars | length) and
+            .summary.pillarCount == 31 and
+            ([.pillars[].score] | add) > 0
+          ' agileplus/pillars/31-pillar-scorecard.json >/dev/null
