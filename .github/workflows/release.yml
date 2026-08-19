@@ -323,7 +323,7 @@ jobs:
 
       - name: Install cosign
         # sigstore/cosign-installer v3.8.2 — SHA-pinned
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
         with:
           cosign-release: v2.4.3
 
