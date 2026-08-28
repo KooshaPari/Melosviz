@@ -49,6 +49,6 @@
     "typescript": "^5.4.5",
     "vite": "^8.2.1",
     "vitest": "^3.2.4",
-    "web-vitals": "^6.1.0"
+    "web-vitals": "^6.2.0"
   }
 }
