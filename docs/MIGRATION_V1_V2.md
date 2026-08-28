@@ -11,15 +11,15 @@ desktop Director's Console for review.
 
 ## What changed
 
-| v1 | v2 |
-|---|---|
-| In-browser Three.js + R3F | Python orchestrator + ComfyUI / C4D / UE / AE / Resolve |
-| Browser-side `visualizer.ts` | `melosviz.cli.main storyboard → generate → assemble → master → ship` |
-| `viz:visualize` desktop tab | `viz storyboard` + `viz generate` + per-scene workflow JSONs |
-| Loop-based shader-driven clips | Lyric-aligned, beat-synced, multi-scene timeline |
-| Browser preview only | ProRes / MP4 / WAV / SRT / stems / manifest `final.zip` |
-| No AI text-to-video | ComfyUI + Wan 2.1 / SDXL pipelines |
-| No audio mastering | LUFS-targeted ffmpeg `loudnorm` 2-pass + dither + AI stem split |
+| v1                             | v2                                                                   |
+| ------------------------------ | -------------------------------------------------------------------- |
+| In-browser Three.js + R3F      | Python orchestrator + ComfyUI / C4D / UE / AE / Resolve              |
+| Browser-side `visualizer.ts`   | `melosviz.cli.main storyboard → generate → assemble → master → ship` |
+| `viz:visualize` desktop tab    | `viz storyboard` + `viz generate` + per-scene workflow JSONs         |
+| Loop-based shader-driven clips | Lyric-aligned, beat-synced, multi-scene timeline                     |
+| Browser preview only           | ProRes / MP4 / WAV / SRT / stems / manifest `final.zip`              |
+| No AI text-to-video            | ComfyUI + Wan 2.1 / SDXL pipelines                                   |
+| No audio mastering             | LUFS-targeted ffmpeg `loudnorm` 2-pass + dither + AI stem split      |
 
 ## What kept
 
@@ -33,12 +33,14 @@ desktop Director's Console for review.
 ## API surface (what to port if you have v1 plugins)
 
 v1's plugin points:
+
 - `RenderPlan.visualizer_extensions` → v2's `viz storyboard --concept`
 - `Bridges.subscribeRender` → v2's `/api/render/events?job_id=...` SSE
 - `Bridge.preview(plan)` → v2's `viz assemble` + `viz master`
 - `Bridges.exportMp4` → v2's `viz ship` (final.zip)
 
 v1's removed APIs:
+
 - `Bridges.r3fScene` (browser R3F preview is gone in product paths)
 - `plan.captureLoop()` (no longer loop-based)
 

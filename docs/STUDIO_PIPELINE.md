@@ -1,7 +1,7 @@
 # MelosViz — Music Video Production Guide
 
 Goal: ship a **digitally created, multi-scene, 3-5 minute music video**
-that holds up on a festival/club screen *and* on YouTube. Beat-synced,
+that holds up on a festival/club screen _and_ on YouTube. Beat-synced,
 visually varied, and telling a story no matter how abstract.
 
 This guide walks you from "I have a WAV file" to "I have a master MP4 +
@@ -11,15 +11,15 @@ festival ProRes + audio stems" using the MelosViz studio pipeline.
 
 ## 0. Tools you need
 
-| Tool | Why | Where |
-|---|---|---|
-| **ComfyUI** | Primary generative renderer (images + video). Local, free. | `https://github.com/comfyanonymous/ComfyUI` — `python main.py` |
-| **Cinema 4D** *(optional)* | High-end 3D scenes | `https://www.maxon.net/cinema-4d/` — install + put `Commandline.exe` on `$PATH` |
-| **Unreal Engine 5** *(optional)* | Real-time cinematic / Nanite / Lumen / MetaHuman | `https://www.unrealengine.com/` — build a project with Movie Render Queue enabled |
-| **DaVinci Resolve** *(optional)* | Final color + audio mix + master encode | `https://www.blackmagicdesign.com/products/davinciresolve` — Resolve 18+ |
-| **After Effects** *(optional)* | Per-scene motion graphics, beat-synced MOGRTs | Adobe Creative Cloud |
-| **Adobe Media Encoder** *(optional)* | Concat per-scene clips into master timeline | Adobe Creative Cloud |
-| **ffmpeg** | Universal fallback for assemble / master / ship | `brew install ffmpeg` |
+| Tool                                 | Why                                                        | Where                                                                             |
+| ------------------------------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **ComfyUI**                          | Primary generative renderer (images + video). Local, free. | `https://github.com/comfyanonymous/ComfyUI` — `python main.py`                    |
+| **Cinema 4D** _(optional)_           | High-end 3D scenes                                         | `https://www.maxon.net/cinema-4d/` — install + put `Commandline.exe` on `$PATH`   |
+| **Unreal Engine 5** _(optional)_     | Real-time cinematic / Nanite / Lumen / MetaHuman           | `https://www.unrealengine.com/` — build a project with Movie Render Queue enabled |
+| **DaVinci Resolve** _(optional)_     | Final color + audio mix + master encode                    | `https://www.blackmagicdesign.com/products/davinciresolve` — Resolve 18+          |
+| **After Effects** _(optional)_       | Per-scene motion graphics, beat-synced MOGRTs              | Adobe Creative Cloud                                                              |
+| **Adobe Media Encoder** _(optional)_ | Concat per-scene clips into master timeline                | Adobe Creative Cloud                                                              |
+| **ffmpeg**                           | Universal fallback for assemble / master / ship            | `brew install ffmpeg`                                                             |
 
 Any missing tool degrades gracefully — MelosViz emits a structured
 job-spec JSON instead of crashing (see `SPEC.md §11.4`).
@@ -103,7 +103,7 @@ Output: a shot list with **5-8 scenes**, each carrying:
 - `seed` — deterministic seed for reproducible renders
 - `continuity.reference_image` — path to the IP-Adapter / style
   reference image (v2, WBS-2). Inherited from the storyboard-level
-  `--reference-image` flag when supplied; ``None`` when omitted.
+  `--reference-image` flag when supplied; `None` when omitted.
 
 ### Director LLM (optional)
 
@@ -164,11 +164,11 @@ Two audio-conditioned diffusion workflows ship out of the box for music
 videos where the audio track should drive motion (rather than the usual
 "image → optional ambient audio" pipeline):
 
-| Scene archetype | Workflow template           | Adapter scene type               |
-|-----------------|-----------------------------|----------------------------------|
-| `drop`          | `wan_s2v_audio.json`        | `comfyui_audio_video_wan`        |
-| `chorus` (+ character anchor) | `seedance_a2v.json` | `comfyui_audio_video_seedance`   |
-| `chorus` (no character)       | `wan_s2v_audio.json` | `comfyui_audio_video_wan`        |
+| Scene archetype               | Workflow template    | Adapter scene type             |
+| ----------------------------- | -------------------- | ------------------------------ |
+| `drop`                        | `wan_s2v_audio.json` | `comfyui_audio_video_wan`      |
+| `chorus` (+ character anchor) | `seedance_a2v.json`  | `comfyui_audio_video_seedance` |
+| `chorus` (no character)       | `wan_s2v_audio.json` | `comfyui_audio_video_wan`      |
 
 The Director routes automatically (see `melosviz/llm/director.py`
 `_ARCHETYPE_DEFAULTS`). To force audio-conditioned video on every
@@ -266,34 +266,34 @@ hand `festival_master.mov` to the VJ for the club show.
 
 ## 9. Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `ComfyUI not reachable at http://127.0.0.1:8188` | ComfyUI isn't running | `cd ComfyUI && python main.py` then re-run `viz generate` |
-| `c4d: Cinema 4D binary not found` | C4D not on `$PATH` | Install C4D or set `MELOSVIZ_C4D_BIN=/Applications/MAXON Cinema 4D/Commandline.app/Contents/MacOS/Commandline` |
-| `unreal_cinematic: UnrealEditor-Cmd not found` | UE5 not on `$PATH` | Set `MELOSVIZ_UE_BIN=/Users/you/UnrealEngine/Engine/Binaries/Mac/UnrealEditor-Cmd` |
-| Output looks boring / repetitive | Template fallback is too rigid | Set `MELOSVIZ_DIRECTOR_LLM` + `MELOSVIZ_DIRECTOR_API_KEY` to use the LLM director |
-| Render flashes too much (epilepsy concern) | Palette is too saturated | Lower `--cfg` in the ComfyUI workflow, or pick a `cool`/`monochrome` palette hint |
-| Final video is desynced | Audio analysis used a wrong tempo | Pass `--bpm 124` explicitly to `viz storyboard` |
+| Symptom                                          | Cause                             | Fix                                                                                                            |
+| ------------------------------------------------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ComfyUI not reachable at http://127.0.0.1:8188` | ComfyUI isn't running             | `cd ComfyUI && python main.py` then re-run `viz generate`                                                      |
+| `c4d: Cinema 4D binary not found`                | C4D not on `$PATH`                | Install C4D or set `MELOSVIZ_C4D_BIN=/Applications/MAXON Cinema 4D/Commandline.app/Contents/MacOS/Commandline` |
+| `unreal_cinematic: UnrealEditor-Cmd not found`   | UE5 not on `$PATH`                | Set `MELOSVIZ_UE_BIN=/Users/you/UnrealEngine/Engine/Binaries/Mac/UnrealEditor-Cmd`                             |
+| Output looks boring / repetitive                 | Template fallback is too rigid    | Set `MELOSVIZ_DIRECTOR_LLM` + `MELOSVIZ_DIRECTOR_API_KEY` to use the LLM director                              |
+| Render flashes too much (epilepsy concern)       | Palette is too saturated          | Lower `--cfg` in the ComfyUI workflow, or pick a `cool`/`monochrome` palette hint                              |
+| Final video is desynced                          | Audio analysis used a wrong tempo | Pass `--bpm 124` explicitly to `viz storyboard`                                                                |
 
 ---
 
 ## 10. Where the real work happens
 
 The hard part isn't the pipeline — it's the **art direction**. Here's
-what makes a 3-5 minute music video *feel* like a story instead of a
+what makes a 3-5 minute music video _feel_ like a story instead of a
 loop:
 
 1. **Pick a concept** that matches the song's mood. A ballad wants slow
    motion + monochrome; a banger wants fast cuts + neon. The director
    agent picks the right scene types per segment, but it can't pick the
-   *concept* for you.
+   _concept_ for you.
 
 2. **Vary the scenes.** No two adjacent scenes should use the same
    camera move. The director agent enforces this. If you see two
    `orbit` scenes next to each other in `storyboard.json`, edit it.
 
 3. **Sync the cuts to the beats.** The default scene boundaries are
-   structural (intro/verse/chorus) — but the *cuts* inside a scene
+   structural (intro/verse/chorus) — but the _cuts_ inside a scene
    should land on downbeats. Pass `--bpm` so the director can align
    them.
 

@@ -1,7 +1,7 @@
 # MelosViz — Music Video Production Guide
 
 > **Goal:** ship a digitally created, multi-scene, **3-5 minute music
-> video** that holds up on a festival/club screen *and* on YouTube.
+> video** that holds up on a festival/club screen _and_ on YouTube.
 > Beat-synced, visually varied, and telling a story no matter how
 > abstract.
 
@@ -77,31 +77,31 @@ python -m melosviz.cli.main ship ./master --out ./final.zip
 
 `final.zip` contains:
 
-| Deliverable | Format | Audience |
-|---|---|---|
-| `final_1080p.mp4` | H.264 / AAC | YouTube (≤ 1080p), social |
-| `final_4k.mp4` | H.265 / AAC | YouTube (4K), Vimeo |
-| `final_prores_4444.mov` | ProRes 4444 (with alpha) | Festival VJ rigs |
-| `stems/` | 24-bit/96 kHz WAVs | Bandcamp, vinyl, live shows |
-| `captions.srt` | SRT | YouTube auto-sync, festivals |
-| `storyboard.json` | JSON | Re-render, audit, handoff |
-| `manifest.json` | JSON + SHA256 | Provenance, cosign-verifiable |
+| Deliverable             | Format                   | Audience                      |
+| ----------------------- | ------------------------ | ----------------------------- |
+| `final_1080p.mp4`       | H.264 / AAC              | YouTube (≤ 1080p), social     |
+| `final_4k.mp4`          | H.265 / AAC              | YouTube (4K), Vimeo           |
+| `final_prores_4444.mov` | ProRes 4444 (with alpha) | Festival VJ rigs              |
+| `stems/`                | 24-bit/96 kHz WAVs       | Bandcamp, vinyl, live shows   |
+| `captions.srt`          | SRT                      | YouTube auto-sync, festivals  |
+| `storyboard.json`       | JSON                     | Re-render, audit, handoff     |
+| `manifest.json`         | JSON + SHA256            | Provenance, cosign-verifiable |
 
 ---
 
 ## 4. The toolchain at a glance
 
-| Stage | Tool | Adapter | Fallback |
-|---|---|---|---|
-| Analyze | Rust MIR / Python librosa | `crates/melosviz-mir`, `melosviz.analysis.audio` | always |
-| Storyboard | LLM (OpenAI-compatible) or template | `melosviz.llm.director.DirectorAgent` | template always |
-| Generate images | **ComfyUI** (SDXL / Flux / Wan 2.1) | `render/comfyui_adapter.py` | offline → `workflow.json` per scene |
-| Generate 3D | **Cinema 4D** (`Commandline.exe` / `c4dpy`) | `render/cinema4d_adapter.py` | offline → `c4d_render_plan.json` |
-| Real-time cinematic | **Unreal Engine 5** (`UnrealEditor-Cmd`) | `render/unreal_adapter.py` | offline → `ue_render_plan.json` |
-| Motion graphics | **After Effects** (`aerender`) | `render/aftereffects_adapter.py` | `nexrender` server fallback |
-| Assemble | **Adobe Media Encoder** (`ame`) or **ffmpeg** | `render/mediaencoder_adapter.py` | ffmpeg always |
-| Master | **DaVinci Resolve** (`resolve-script`) | `render/davinci_adapter.py` | ffmpeg → 3 deliverables |
-| Ship | ffmpeg + sha256 + cosign | `viz ship` | always |
+| Stage               | Tool                                          | Adapter                                          | Fallback                            |
+| ------------------- | --------------------------------------------- | ------------------------------------------------ | ----------------------------------- |
+| Analyze             | Rust MIR / Python librosa                     | `crates/melosviz-mir`, `melosviz.analysis.audio` | always                              |
+| Storyboard          | LLM (OpenAI-compatible) or template           | `melosviz.llm.director.DirectorAgent`            | template always                     |
+| Generate images     | **ComfyUI** (SDXL / Flux / Wan 2.1)           | `render/comfyui_adapter.py`                      | offline → `workflow.json` per scene |
+| Generate 3D         | **Cinema 4D** (`Commandline.exe` / `c4dpy`)   | `render/cinema4d_adapter.py`                     | offline → `c4d_render_plan.json`    |
+| Real-time cinematic | **Unreal Engine 5** (`UnrealEditor-Cmd`)      | `render/unreal_adapter.py`                       | offline → `ue_render_plan.json`     |
+| Motion graphics     | **After Effects** (`aerender`)                | `render/aftereffects_adapter.py`                 | `nexrender` server fallback         |
+| Assemble            | **Adobe Media Encoder** (`ame`) or **ffmpeg** | `render/mediaencoder_adapter.py`                 | ffmpeg always                       |
+| Master              | **DaVinci Resolve** (`resolve-script`)        | `render/davinci_adapter.py`                      | ffmpeg → 3 deliverables             |
+| Ship                | ffmpeg + sha256 + cosign                      | `viz ship`                                       | always                              |
 
 ---
 
@@ -112,7 +112,7 @@ A 3-5 minute, multi-scene music video where:
 - **Beats drive cuts.** Every scene boundary snaps to a beat (within
   ±120 ms tolerance, configurable per BPM).
 - **Two adjacent scenes are never identical** (camera motion + palette
-  + scene type all vary).
+  - scene type all vary).
 - **The story is told** — even abstract pieces have an intro / build /
   tension / release / resolution arc driven by MIR section detection
   and the director's narrative beat tagging.
@@ -128,22 +128,22 @@ A 3-5 minute, multi-scene music video where:
 
 ## 6. Where to look first
 
-| If you want to… | Read this |
-|---|---|
-| Understand the architecture | [`SPEC.md`](SPEC.md) §11 |
-| Make your first 3-minute video | [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md) |
-| See the full roadmap | [`WBS.md`](WBS.md) |
-| Add a new adapter | `SPEC.md §3.2` |
-| Add a new CLI subcommand | [`backend/src/melosviz/cli/main.py`](backend/src/melosviz/cli/main.py) |
-| Tune the Director LLM | [`backend/src/melosviz/llm/director.py`](backend/src/melosviz/llm/director.py) |
-| Operate the Director's Console | [`desktop/views/main/index.html`](desktop/views/main/index.html) |
+| If you want to…                | Read this                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| Understand the architecture    | [`SPEC.md`](SPEC.md) §11                                                       |
+| Make your first 3-minute video | [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md)                           |
+| See the full roadmap           | [`WBS.md`](WBS.md)                                                             |
+| Add a new adapter              | `SPEC.md §3.2`                                                                 |
+| Add a new CLI subcommand       | [`backend/src/melosviz/cli/main.py`](backend/src/melosviz/cli/main.py)         |
+| Tune the Director LLM          | [`backend/src/melosviz/llm/director.py`](backend/src/melosviz/llm/director.py) |
+| Operate the Director's Console | [`desktop/views/main/index.html`](desktop/views/main/index.html)               |
 
 ---
 
 ## 7. The promise
 
-> *A single WAV file should be enough to ship a 3-5 minute music
-> video — beat-synced, story-driven, festival-ready.*
+> _A single WAV file should be enough to ship a 3-5 minute music
+> video — beat-synced, story-driven, festival-ready._
 
 That's the bar. Every commit on `feat/comfyui-studio-pivot` is moving
 toward it.

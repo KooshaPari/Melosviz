@@ -33,7 +33,7 @@ artist can review cuts in DaVinci).
 `backend/src/melosviz/conductor/render_cache.py`:
 
 - `scene_cache_key(scene)` -> `sha256` of `(prompt, scene_type, width,
-  height, fps, model, seed)`
+height, fps, model, seed)`
 - `RenderCache(out_root).lookup(scene)` -> cached artifact path or `None`
 - `RenderCache(out_root).store(scene, artifact_path)` -> persist
 
@@ -59,21 +59,21 @@ Every rendered scene ships a sidecar JSON describing:
 
 12 validators across `ERROR` (blocks ship) / `WARNING` / `INFO`:
 
-| Code | Severity | What it checks |
-|---|---|---|
-| `palette-too-small` | ERROR | scene has < 3 colors |
-| `palette-too-wide` | WARNING | scene has > 8 colors |
-| `aspect-ratio-mismatch` | ERROR | scene width/height vs preset |
-| `scene-overlap` | ERROR | scenes overlap in time |
-| `scene-gap` | WARNING | scenes have gaps |
-| `camera-not-diverse` | WARNING | < 3 distinct camera motions |
-| `seed-collision` | WARNING | two scenes share a seed |
-| `continuity-character-missing` | WARNING | no subject anchor |
-| `continuity-environment-missing` | WARNING | no world anchor |
-| `duration-out-of-range` | WARNING | scene duration < 2s or > 30s |
-| `beat-alignment-density` | INFO | cuts per minute outside 4-32 |
-| `lyric-coverage-low` | WARNING | < 60% of lyrics linked |
-| `concept-too-vague` | INFO | concept prompt < 8 words |
+| Code                             | Severity | What it checks               |
+| -------------------------------- | -------- | ---------------------------- |
+| `palette-too-small`              | ERROR    | scene has < 3 colors         |
+| `palette-too-wide`               | WARNING  | scene has > 8 colors         |
+| `aspect-ratio-mismatch`          | ERROR    | scene width/height vs preset |
+| `scene-overlap`                  | ERROR    | scenes overlap in time       |
+| `scene-gap`                      | WARNING  | scenes have gaps             |
+| `camera-not-diverse`             | WARNING  | < 3 distinct camera motions  |
+| `seed-collision`                 | WARNING  | two scenes share a seed      |
+| `continuity-character-missing`   | WARNING  | no subject anchor            |
+| `continuity-environment-missing` | WARNING  | no world anchor              |
+| `duration-out-of-range`          | WARNING  | scene duration < 2s or > 30s |
+| `beat-alignment-density`         | INFO     | cuts per minute outside 4-32 |
+| `lyric-coverage-low`             | WARNING  | < 60% of lyrics linked       |
+| `concept-too-vague`              | INFO     | concept prompt < 8 words     |
 
 Run via CLI: `viz validate storyboard.json --severity warning`.
 Run via bridge: `POST /api/studio/validate {"storyboard_path": ...}`.

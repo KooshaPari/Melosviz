@@ -51,9 +51,9 @@ services:
       # Match the melosviz backend default
       - MELOSVIZ_COMFYUI_URL=http://comfyui:8188
     volumes:
-      - ../backend/workflows:/workspace/workflows:ro   # share our templates
-      - comfyui-models:/workspace/models               # cached model downloads
-      - comfyui-output:/workspace/output               # rendered scenes land here
+      - ../backend/workflows:/workspace/workflows:ro # share our templates
+      - comfyui-models:/workspace/models # cached model downloads
+      - comfyui-output:/workspace/output # rendered scenes land here
     ports:
       - "8188:8188"
     healthcheck:
@@ -61,7 +61,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s   # first launch downloads models
+      start_period: 120s # first launch downloads models
     restart: unless-stopped
 
   # ─────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ services:
   # ─────────────────────────────────────────────────────────────────
   c4d-stub:
     build:
-      context: ./comfyui   # re-uses the python:3.11-slim base from c4d stub
+      context: ./comfyui # re-uses the python:3.11-slim base from c4d stub
       dockerfile_inline: |
         FROM python:3.11-slim
         RUN pip install --no-cache-dir fastapi==0.110 uvicorn[standard]==0.29 pydantic==2.6
@@ -136,7 +136,7 @@ services:
       - MELOSVIZ_BRIDGE_TOKEN=dev-token-change-me
       - MELOSVIZ_COMFYUI_URL=http://comfyui:8188
       - MELOSVIZ_C4D_URL=http://c4d-stub:8189
-      - MELOSVIZ_COMFYUI_OFFLINE=0   # disable fallback so real backends run
+      - MELOSVIZ_COMFYUI_OFFLINE=0 # disable fallback so real backends run
       - PYTHONPATH=/app/src
       - PYTHONUNBUFFERED=1
     ports:
@@ -145,10 +145,20 @@ services:
       - ../backend:/app/backend:ro
       - ../backend/src:/app/src:ro
       - ../backend/workflows:/app/workflows:ro
-      - bridge-renders:/renders   # shared with host so `viz ship` can package
-    command: ["python", "-m", "uvicorn", "melosviz.bridge.server:app",
-              "--host", "0.0.0.0", "--port", "8787",
-              "--log-level", "info"]
+      - bridge-renders:/renders # shared with host so `viz ship` can package
+    command:
+      [
+        "python",
+        "-m",
+        "uvicorn",
+        "melosviz.bridge.server:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8787",
+        "--log-level",
+        "info",
+      ]
     depends_on:
       comfyui:
         condition: service_healthy
@@ -160,7 +170,13 @@ services:
         condition: service_started
         required: false
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8787/health').status==200 else 1)"]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8787/health').status==200 else 1)",
+        ]
       interval: 15s
       timeout: 5s
       retries: 5

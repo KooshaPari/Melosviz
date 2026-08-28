@@ -106,16 +106,16 @@ substitute a default — raise at construction if a required var is
 missing. The full list lives at `SPEC.md §3.4` and `SPEC.md §11.3`.
 Key new ones:
 
-| Var | Default | Effect |
-|---|---|---|
-| `MELOSVIZ_COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI server URL |
-| `MELOSVIZ_COMFYUI_OFFLINE` | unset | When `1`, never touch network; emit per-scene `workflow.json` |
-| `MELOSVIZ_C4D_BIN` | `Commandline.exe` / `cinema4d` | Cinema 4D binary path |
-| `MELOSVIZ_UE_BIN` | `UnrealEditor-Cmd` | UE binary |
-| `MELOSVIZ_RESOLVE_BIN` | `Resolve` | DaVinci binary |
-| `MELOSVIZ_DIRECTOR_LLM` | unset | OpenAI-compatible LLM endpoint for the director |
-| `MELOSVIZ_DIRECTOR_API_KEY` | unset | API key for the LLM endpoint |
-| `MELOSVIZ_DIRECTOR_MODEL` | `gpt-4o-mini` | LLM model name |
+| Var                         | Default                        | Effect                                                        |
+| --------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| `MELOSVIZ_COMFYUI_URL`      | `http://127.0.0.1:8188`        | ComfyUI server URL                                            |
+| `MELOSVIZ_COMFYUI_OFFLINE`  | unset                          | When `1`, never touch network; emit per-scene `workflow.json` |
+| `MELOSVIZ_C4D_BIN`          | `Commandline.exe` / `cinema4d` | Cinema 4D binary path                                         |
+| `MELOSVIZ_UE_BIN`           | `UnrealEditor-Cmd`             | UE binary                                                     |
+| `MELOSVIZ_RESOLVE_BIN`      | `Resolve`                      | DaVinci binary                                                |
+| `MELOSVIZ_DIRECTOR_LLM`     | unset                          | OpenAI-compatible LLM endpoint for the director               |
+| `MELOSVIZ_DIRECTOR_API_KEY` | unset                          | API key for the LLM endpoint                                  |
+| `MELOSVIZ_DIRECTOR_MODEL`   | `gpt-4o-mini`                  | LLM model name                                                |
 
 ---
 
@@ -142,8 +142,8 @@ Key new ones:
 
 - ComfyUI workflows are JSON in `backend/workflows/` — every scene
   interpolates `(prompt, negative, seed, steps, cfg, sampler, scheduler,
-  width, height, frames, fps, model, lora, ip_adapter_image,
-  controlnet_image)` into the template. The resulting `workflow.json`
+width, height, frames, fps, model, lora, ip_adapter_image,
+controlnet_image)` into the template. The resulting `workflow.json`
   is what gets queued.
 - Cinema 4D render plans are JSON in `--out/c4d_render_plan.json` —
   contains scene graph, camera, renderer settings.
@@ -200,7 +200,7 @@ burning GPU time, and reproducible from `git checkout` alone.**
   so a crash doesn't lose hours of work.
 - ComfyUI renders can take **minutes per scene** — always emit a
   `job_spec.json` manifest so the run is resumable from `viz generate
-  --resume state.json`.
+--resume state.json`.
 
 ---
 
@@ -218,18 +218,18 @@ burning GPU time, and reproducible from `git checkout` alone.**
 
 ## 13. Where to look first
 
-| Question | File |
-|---|---|
-| What's the product? | [`SPEC.md`](SPEC.md) §1 + §11 |
-| How do I make a 3-5 min video end-to-end? | [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md) |
-| What's the WBS / roadmap? | [`WBS.md`](WBS.md) |
-| How do I add a new adapter? | `SPEC.md §3.2` + [`backend/src/melosviz/conductor/registry.py`](backend/src/melosviz/conductor/registry.py) |
-| How do I add a new CLI subcommand? | [`backend/src/melosviz/cli/main.py`](backend/src/melosviz/cli/main.py) |
-| What env vars does each adapter read? | `SPEC.md §11.3` |
-| What tests must pass before push? | [`SPEC.md §8`](SPEC.md) |
-| Where is the Director's Console? | [`desktop/views/main/index.html`](desktop/views/main/index.html) |
-| How does the Director LLM work? | [`backend/src/melosviz/llm/director.py`](backend/src/melosviz/llm/director.py) |
-| How do I run an offline smoke test? | `MELOSVIZ_COMFYUI_OFFLINE=1 python -m melosviz.cli.main ship ./out` |
+| Question                                  | File                                                                                                        |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| What's the product?                       | [`SPEC.md`](SPEC.md) §1 + §11                                                                               |
+| How do I make a 3-5 min video end-to-end? | [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md)                                                        |
+| What's the WBS / roadmap?                 | [`WBS.md`](WBS.md)                                                                                          |
+| How do I add a new adapter?               | `SPEC.md §3.2` + [`backend/src/melosviz/conductor/registry.py`](backend/src/melosviz/conductor/registry.py) |
+| How do I add a new CLI subcommand?        | [`backend/src/melosviz/cli/main.py`](backend/src/melosviz/cli/main.py)                                      |
+| What env vars does each adapter read?     | `SPEC.md §11.3`                                                                                             |
+| What tests must pass before push?         | [`SPEC.md §8`](SPEC.md)                                                                                     |
+| Where is the Director's Console?          | [`desktop/views/main/index.html`](desktop/views/main/index.html)                                            |
+| How does the Director LLM work?           | [`backend/src/melosviz/llm/director.py`](backend/src/melosviz/llm/director.py)                              |
+| How do I run an offline smoke test?       | `MELOSVIZ_COMFYUI_OFFLINE=1 python -m melosviz.cli.main ship ./out`                                         |
 
 ---
 

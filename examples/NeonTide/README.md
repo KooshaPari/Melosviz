@@ -13,15 +13,15 @@ A complete, CC-licensed reference example for the MelosViz studio pipeline.
 
 A festival / club / YouTube-grade deliverable for "Neon Tide":
 
-| Format             | Target                      | Why                                  |
-|--------------------|-----------------------------|--------------------------------------|
-| ProRes 422 HQ MP4  | Festival screens            | 10-bit 4:2:2, colorist-friendly      |
-| H.264 1080p MP4    | YouTube + Vimeo + IG feed   | max-compat                            |
-| H.264 1080×1920 MP4| Club PA screens (9:16)     | vertical, fits VJ walls               |
-| Master WAV         | Festival sound mix          | stems already split by `audio_finishing` |
-| SRT captions       | YouTube + accessibility    | driven by `song.lrc`                  |
-| Storyboard.json    | Re-render / art-director    | keeps every edit + provenance          |
-| Per-clip JSON      | Provenance / license        | clip-by-clip provenance JSONs         |
+| Format              | Target                    | Why                                      |
+| ------------------- | ------------------------- | ---------------------------------------- |
+| ProRes 422 HQ MP4   | Festival screens          | 10-bit 4:2:2, colorist-friendly          |
+| H.264 1080p MP4     | YouTube + Vimeo + IG feed | max-compat                               |
+| H.264 1080×1920 MP4 | Club PA screens (9:16)    | vertical, fits VJ walls                  |
+| Master WAV          | Festival sound mix        | stems already split by `audio_finishing` |
+| SRT captions        | YouTube + accessibility   | driven by `song.lrc`                     |
+| Storyboard.json     | Re-render / art-director  | keeps every edit + provenance            |
+| Per-clip JSON       | Provenance / license      | clip-by-clip provenance JSONs            |
 
 ## How to run
 

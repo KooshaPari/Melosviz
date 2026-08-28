@@ -37,15 +37,15 @@ canonical artifact: the `RenderSpec v2`.
 
 ### 1.1 Surfaces (verified layout, not aspirational)
 
-| Surface | Path | Purpose | Build status |
-|---|---|---|---|
-| **Python backend library** | `backend/src/melosviz/` | Core DSP, MIR, adapter orchestration, CLI | Shipped (CI: `backend` job) |
-| **Electrobun desktop shell** | `desktop/` (entry `src/index.ts` + `views/main/index.html`) | Native macOS/Windows app — bundles the Python backend as a sidecar | Shipped (CI: `release.yml::macos-desktop`) |
-| **React/R3F web surface** | `web/` (build artifacts only in repo; sources tracked in worktrees) | Browser preview / R3F playground | Planned — see § 8.3 (gap honestly documented) |
-| **Rust MIR analyzer** | `crates/melosviz-mir/src/` (`lib.rs`, `mir.rs`, `spec.rs`, `wav.rs`, `dsp.rs`) | Fast MIR pre-pass (≈0.82s for 180s WAV) called by the bridge before the Python fallback | Shipped (compiled into `linux-cli` tarball) |
-| **Rust wgpu renderer** | `crates/melosviz-render-wgpu/src/` (`renderer.rs`, `pipeline.rs`, `scene_runner.rs`, `shaders/`) | GPU-side frame encoder; ships as `melosviz-render` binary | Shipped (compiled into `linux-cli` tarball) |
-| **Python SDK stub** | `sdk/python/` | Type-stub-only SDK for external Python consumers | Stub (no PyPI publish) |
-| **Rust SDK stub** | `sdk/rust/` | Crate-shell SDK for external Rust consumers | Stub (no crates.io publish) |
+| Surface                      | Path                                                                                             | Purpose                                                                                 | Build status                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Python backend library**   | `backend/src/melosviz/`                                                                          | Core DSP, MIR, adapter orchestration, CLI                                               | Shipped (CI: `backend` job)                   |
+| **Electrobun desktop shell** | `desktop/` (entry `src/index.ts` + `views/main/index.html`)                                      | Native macOS/Windows app — bundles the Python backend as a sidecar                      | Shipped (CI: `release.yml::macos-desktop`)    |
+| **React/R3F web surface**    | `web/` (build artifacts only in repo; sources tracked in worktrees)                              | Browser preview / R3F playground                                                        | Planned — see § 8.3 (gap honestly documented) |
+| **Rust MIR analyzer**        | `crates/melosviz-mir/src/` (`lib.rs`, `mir.rs`, `spec.rs`, `wav.rs`, `dsp.rs`)                   | Fast MIR pre-pass (≈0.82s for 180s WAV) called by the bridge before the Python fallback | Shipped (compiled into `linux-cli` tarball)   |
+| **Rust wgpu renderer**       | `crates/melosviz-render-wgpu/src/` (`renderer.rs`, `pipeline.rs`, `scene_runner.rs`, `shaders/`) | GPU-side frame encoder; ships as `melosviz-render` binary                               | Shipped (compiled into `linux-cli` tarball)   |
+| **Python SDK stub**          | `sdk/python/`                                                                                    | Type-stub-only SDK for external Python consumers                                        | Stub (no PyPI publish)                        |
+| **Rust SDK stub**            | `sdk/rust/`                                                                                      | Crate-shell SDK for external Rust consumers                                             | Stub (no crates.io publish)                   |
 
 The repo root is the workspace for the Rust crates
 (`Cargo.toml:3-6` lists both members); Python is configured as a `setuptools`
@@ -157,25 +157,25 @@ structural analysis in `backend/src/melosviz/analysis/audio.py`; consumed by
 
 ### 2.3 Scene sub-models (in `backend/src/melosviz/scene/models.py`)
 
-| Class | Line | Purpose |
-|---|---|---|
-| `SplatAssetSpec` | `scene/models.py:33` | Gaussian-splat asset descriptor (ply/splat, sh_degree, opacity_threshold) |
-| `ScannerSpec` | `scene/models.py:206` | Geometric scanner (cone/sphere/spline, rotation, noise, occlusion) |
-| `SceneSpec` | `scene/models.py:291` | Container for one scene's assets + scanners + transitions |
-| `MaterialSpec` | `scene/models.py:358` | Per-domain material with 31 look presets (`DomainMaterialLook` enum) |
-| `TransitionSpec` | `scene/models.py:416` | Cross-domain opacity rules driven by scanner channels |
-| `Domain` enum | `scene/models.py:152` | `photo / mesh / splat / performer / fx` — the 5 representation domains |
-| `SemanticScannerSpec` | `scene/models.py:119` | Audio-condition rule-based scanner (P8 feature) |
+| Class                 | Line                  | Purpose                                                                   |
+| --------------------- | --------------------- | ------------------------------------------------------------------------- |
+| `SplatAssetSpec`      | `scene/models.py:33`  | Gaussian-splat asset descriptor (ply/splat, sh_degree, opacity_threshold) |
+| `ScannerSpec`         | `scene/models.py:206` | Geometric scanner (cone/sphere/spline, rotation, noise, occlusion)        |
+| `SceneSpec`           | `scene/models.py:291` | Container for one scene's assets + scanners + transitions                 |
+| `MaterialSpec`        | `scene/models.py:358` | Per-domain material with 31 look presets (`DomainMaterialLook` enum)      |
+| `TransitionSpec`      | `scene/models.py:416` | Cross-domain opacity rules driven by scanner channels                     |
+| `Domain` enum         | `scene/models.py:152` | `photo / mesh / splat / performer / fx` — the 5 representation domains    |
+| `SemanticScannerSpec` | `scene/models.py:119` | Audio-condition rule-based scanner (P8 feature)                           |
 
 ### 2.4 MIR sub-models
 
-| Class | Line | Purpose |
-|---|---|---|
-| `MIRSummary` | `analysis/models.py:266` | Top-level MIR: BPM, key, mode, mood, chord_sequence, sections |
-| `DenseKeyframe` | `analysis/models.py:178` | One frame at 10 Hz with stems, spectrum, easing hint |
-| `TimelineEvent` | `analysis/models.py:222` | Beat/downbeat/onset events with timestamps |
-| `StemFrame` | `analysis/models.py:169` | Per-frame stem energies (drums/bass/vocals/other) |
-| `MoodVector` | `analysis/models.py:238` | Per-second mood trajectory |
+| Class           | Line                     | Purpose                                                       |
+| --------------- | ------------------------ | ------------------------------------------------------------- |
+| `MIRSummary`    | `analysis/models.py:266` | Top-level MIR: BPM, key, mode, mood, chord_sequence, sections |
+| `DenseKeyframe` | `analysis/models.py:178` | One frame at 10 Hz with stems, spectrum, easing hint          |
+| `TimelineEvent` | `analysis/models.py:222` | Beat/downbeat/onset events with timestamps                    |
+| `StemFrame`     | `analysis/models.py:169` | Per-frame stem energies (drums/bass/vocals/other)             |
+| `MoodVector`    | `analysis/models.py:238` | Per-second mood trajectory                                    |
 
 ### 2.5 Adapter contract overview
 
@@ -242,12 +242,12 @@ verbatim to the caller. See `MV-NFR-003` ("No silent failures") in
 
 Recognized exception classes:
 
-| Exception | Module | Triggered by |
-|---|---|---|
-| `BlenderNotFoundError` | `melosviz.render.blender_exporter` | `bpy` driver missing or not on `$PATH` |
-| `RenderExportError` | `melosviz.render.video_exporter` | FFmpeg non-zero exit, missing/empty output file |
-| `FFMpegNotFoundError` | `melosviz.render.video_exporter` | `_resolve_ffmpeg_binary` could not locate ffmpeg |
-| `NotImplementedError` | `melosviz.conductor.registry` | Unknown `scene_type` (e.g. `unreal_ndisplay`) |
+| Exception              | Module                             | Triggered by                                     |
+| ---------------------- | ---------------------------------- | ------------------------------------------------ |
+| `BlenderNotFoundError` | `melosviz.render.blender_exporter` | `bpy` driver missing or not on `$PATH`           |
+| `RenderExportError`    | `melosviz.render.video_exporter`   | FFmpeg non-zero exit, missing/empty output file  |
+| `FFMpegNotFoundError`  | `melosviz.render.video_exporter`   | `_resolve_ffmpeg_binary` could not locate ffmpeg |
+| `NotImplementedError`  | `melosviz.conductor.registry`      | Unknown `scene_type` (e.g. `unreal_ndisplay`)    |
 
 ### 3.4 Configuration schema (environment variables)
 
@@ -255,16 +255,16 @@ Adapters and bridge endpoints read configuration from these environment
 variables (verified by reading `backend/src/melosviz/bridge/server.py`,
 `backend/src/melosviz/render/video_exporter.py`, `backend/src/melosviz/bridge/security.py`):
 
-| Env var | Default | Used by | Effect |
-|---|---|---|---|
-| `MELOSVIZ_BRIDGE_ALLOW_PUBLIC` | `0` | bridge | Allow binding non-loopback interfaces |
-| `MELOSVIZ_BRIDGE_REQUIRE_AUTH` | `0` | bridge | Require bearer token |
-| `MELOSVIZ_BRIDGE_TOKEN` | (none) | bridge | Expected bearer token |
-| `MELOSVIZ_BRIDGE_ALLOWED_DIR` | (none) | bridge | Restrict `wav_path`/`out_dir` to this dir |
-| `MELOSVIZ_FFMPEG_BIN` | (none) | video exporter | Override ffmpeg binary path |
-| `FLASH_SAFETY_MAX_HZ` | `3.0` | render | Reject renders exceeding flash rate |
-| `MELOSVIZ_DATA_DIR` | `~/.melosviz` | bridge | Audit log directory |
-| `BRIDGE_PORT` | (none) | CI only | Fixed port for the bridge sidecar |
+| Env var                        | Default       | Used by        | Effect                                    |
+| ------------------------------ | ------------- | -------------- | ----------------------------------------- |
+| `MELOSVIZ_BRIDGE_ALLOW_PUBLIC` | `0`           | bridge         | Allow binding non-loopback interfaces     |
+| `MELOSVIZ_BRIDGE_REQUIRE_AUTH` | `0`           | bridge         | Require bearer token                      |
+| `MELOSVIZ_BRIDGE_TOKEN`        | (none)        | bridge         | Expected bearer token                     |
+| `MELOSVIZ_BRIDGE_ALLOWED_DIR`  | (none)        | bridge         | Restrict `wav_path`/`out_dir` to this dir |
+| `MELOSVIZ_FFMPEG_BIN`          | (none)        | video exporter | Override ffmpeg binary path               |
+| `FLASH_SAFETY_MAX_HZ`          | `3.0`         | render         | Reject renders exceeding flash rate       |
+| `MELOSVIZ_DATA_DIR`            | `~/.melosviz` | bridge         | Audit log directory                       |
+| `BRIDGE_PORT`                  | (none)        | CI only        | Fixed port for the bridge sidecar         |
 
 Adapters that fail to read a required env var must raise at construction
 time, not silently substitute a default.
@@ -300,16 +300,16 @@ JSON-serializable via Pydantic `model_dump()`.
 
 ### 4.2 Required vs optional fields
 
-| Field | Required | Default |
-|---|---|---|
-| `version` | yes | `"v2"` |
-| `metadata` | no | `{}` |
-| `palette` | no | `[]` |
-| `layers` | no | `[]` |
-| `keyframes` | no | `[]` |
-| `timeline` | no | `[]` |
-| `mir` | no | `None` (filled by analyzer) |
-| `presets` | no | `{}` |
+| Field       | Required | Default                     |
+| ----------- | -------- | --------------------------- |
+| `version`   | yes      | `"v2"`                      |
+| `metadata`  | no       | `{}`                        |
+| `palette`   | no       | `[]`                        |
+| `layers`    | no       | `[]`                        |
+| `keyframes` | no       | `[]`                        |
+| `timeline`  | no       | `[]`                        |
+| `mir`       | no       | `None` (filled by analyzer) |
+| `presets`   | no       | `{}`                        |
 
 ### 4.3 Round-trip stability
 
@@ -348,7 +348,7 @@ The desktop UI exposes the first three as buttons ("Analyze", "Build Plan",
 - **Output:** `RenderSpec v2` extended with `layers`, `palette`, `timeline`
   assignments per `SceneSegment`
 - **Code:** `backend/src/melosviz/compose/narrator.py::NarrativeComposer.compose()`
-  + `backend/src/melosviz/compose/assemble.py::assemble_renderspec()`
+  - `backend/src/melosviz/compose/assemble.py::assemble_renderspec()`
 - **Invariants:** no adjacent scene-type repeat (EMA novelty constraint);
   seedable RNG for reproducibility (see MV-NFR-002 in
   `docs/TRACEABILITY.md:134`)
@@ -453,7 +453,7 @@ minimum).
 - **Response:** Bridge returns HTTP 401; audit log records the failed
   attempt at WARNING.
 - **Recover:** Caller must supply `Authorization: Bearer
-  $MELOSVIZ_BRIDGE_TOKEN`. Desktop shell reads the token from the user-set
+$MELOSVIZ_BRIDGE_TOKEN`. Desktop shell reads the token from the user-set
   keychain entry.
 
 ### 6.7 FM-07: Out-of-tree output path
@@ -482,7 +482,7 @@ minimum).
 - **Trigger:** Desktop shell's Bun main process cannot reach
   `http://127.0.0.1:$BRIDGE_PORT/health`.
 - **Response:** Desktop shell falls back to spawning `python -m
-  melosviz.cli.main` as a subprocess per request (slower, but functional).
+melosviz.cli.main` as a subprocess per request (slower, but functional).
 - **Recover:** Restart the bridge (`python -m melosviz.bridge.server`) or
   reinstall `melosviz[bridge]` so the FastAPI/uvicorn deps are present.
 
@@ -653,13 +653,13 @@ container image is driven by `.github/workflows/ghcr-bridge.yml`.
 
 ### 9.1 Channels shipped today
 
-| Channel | Artifact | Build job | Trigger |
-|---|---|---|---|
-| **macOS desktop DMG** | `MelosViz-<tag>-macos.dmg` | `release.yml::macos-desktop` | Push of `v*` tag |
-| **Linux CLI tarball** | `MelosViz-<tag>-linux-x86_64.tar.gz` containing `melosviz-render` and `melosviz-mir` binaries + `LICENSE` | `release.yml::linux-cli` | Push of `v*` tag |
-| **Windows CLI zip** | `MelosViz-<tag>-windows-x86_64.zip` containing `melosviz-render.exe` and `melosviz-mir.exe` + `LICENSE` | `release.yml::windows-cli` | Push of `v*` tag |
-| **Windows desktop** (best-effort) | Electrobun package under `win-desktop-out/` | `release.yml::windows-desktop` (`continue-on-error`) | Push of `v*` tag |
-| **GHCR bridge image** | `ghcr.io/<owner>/melosviz-bridge` | `ghcr-bridge.yml` | Push to `main` / `v*` (build-only on PRs) |
+| Channel                           | Artifact                                                                                                  | Build job                                            | Trigger                                   |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| **macOS desktop DMG**             | `MelosViz-<tag>-macos.dmg`                                                                                | `release.yml::macos-desktop`                         | Push of `v*` tag                          |
+| **Linux CLI tarball**             | `MelosViz-<tag>-linux-x86_64.tar.gz` containing `melosviz-render` and `melosviz-mir` binaries + `LICENSE` | `release.yml::linux-cli`                             | Push of `v*` tag                          |
+| **Windows CLI zip**               | `MelosViz-<tag>-windows-x86_64.zip` containing `melosviz-render.exe` and `melosviz-mir.exe` + `LICENSE`   | `release.yml::windows-cli`                           | Push of `v*` tag                          |
+| **Windows desktop** (best-effort) | Electrobun package under `win-desktop-out/`                                                               | `release.yml::windows-desktop` (`continue-on-error`) | Push of `v*` tag                          |
+| **GHCR bridge image**             | `ghcr.io/<owner>/melosviz-bridge`                                                                         | `ghcr-bridge.yml`                                    | Push to `main` / `v*` (build-only on PRs) |
 
 Release artifacts are uploaded as GitHub Actions artifacts and collated into a
 single GitHub Release by the `release` job (with CycloneDX SBOM + attestations).
@@ -735,14 +735,14 @@ tracking rubric.
 
 ### 9.5 Future channels (aspirational — explicitly NOT shipped)
 
-| Channel | Effort | Blocker |
-|---|---|---|
-| PyPI publish | Low | Requires `twine` setup + maintainer PyPI token |
-| crates.io publish | Low | Requires maintainer crates.io token |
-| Homebrew tap | Medium | Requires a tap repo and formula review |
-| OCI / GHCR bridge image | Done | `.github/workflows/ghcr-bridge.yml` + root `Dockerfile` |
-| Homebrew tap | Medium | Requires a tap repo and formula review |
-| Linux installers (deb/rpm/AppImage) | High | Requires per-distro packaging logic |
+| Channel                             | Effort | Blocker                                                 |
+| ----------------------------------- | ------ | ------------------------------------------------------- |
+| PyPI publish                        | Low    | Requires `twine` setup + maintainer PyPI token          |
+| crates.io publish                   | Low    | Requires maintainer crates.io token                     |
+| Homebrew tap                        | Medium | Requires a tap repo and formula review                  |
+| OCI / GHCR bridge image             | Done   | `.github/workflows/ghcr-bridge.yml` + root `Dockerfile` |
+| Homebrew tap                        | Medium | Requires a tap repo and formula review                  |
+| Linux installers (deb/rpm/AppImage) | High   | Requires per-distro packaging logic                     |
 
 These are tracked in `docs/COMPLETENESS.md` (Docker present but not
 primary; Quality-of-Life 90%) and are out of scope for MV-FR-54.
@@ -751,10 +751,10 @@ primary; Quality-of-Life 90%) and are out of scope for MV-FR-54.
 
 ## 10. Revision History
 
-| Rev | Date | Author | Change |
-|---|---|---|---|
-| 1 | 2026-07-03 | kooshapari (via MV-FR-54 xDD chain) | Baseline top-level product spec. Authored from `docs/COMPLETENESS.md`, ADR 0003, `docs/TRACEABILITY.md`, and `docs/specs/SPEC.md`. Distribution grounded in `release.yml`; test strategy grounded in `ci.yml` + actual filesystem scan. |
-| 2 | 2026-08-25 | kooshapari (feat/comfyui-studio-pivot) | Studio pipeline pivot — ComfyUI becomes the primary generative renderer; new Cinema 4D, Unreal Engine, and DaVinci Resolve adapters wired into the conductor registry. New `viz storyboard / generate / assemble / master / ship` CLI subcommands. Director LLM (`melosviz.llm.director`) with deterministic template fallback. See § 11 and `docs/STUDIO_PIPELINE.md`. |
+| Rev | Date       | Author                                 | Change                                                                                                                                                                                                                                                                                                                                                                  |
+| --- | ---------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | 2026-07-03 | kooshapari (via MV-FR-54 xDD chain)    | Baseline top-level product spec. Authored from `docs/COMPLETENESS.md`, ADR 0003, `docs/TRACEABILITY.md`, and `docs/specs/SPEC.md`. Distribution grounded in `release.yml`; test strategy grounded in `ci.yml` + actual filesystem scan.                                                                                                                                 |
+| 2   | 2026-08-25 | kooshapari (feat/comfyui-studio-pivot) | Studio pipeline pivot — ComfyUI becomes the primary generative renderer; new Cinema 4D, Unreal Engine, and DaVinci Resolve adapters wired into the conductor registry. New `viz storyboard / generate / assemble / master / ship` CLI subcommands. Director LLM (`melosviz.llm.director`) with deterministic template fallback. See § 11 and `docs/STUDIO_PIPELINE.md`. |
 
 Future revisions will be appended below this row, never replacing prior
 entries. Each revision MUST update the `version` field at the top of this
@@ -773,47 +773,47 @@ varied, and telling a story no matter how abstract.
 
 ### 11.1 What runs where
 
-| Stage | Tool / Adapter | Code | Notes |
-|---|---|---|---|
-| Analyze audio (MIR + beat grid) | Rust MIR (fast) / Python librosa (rich) | `crates/melosviz-mir`, `melosviz.analysis.audio` | Output: `RenderSpec v2` with `scene_segments`, `dense_keyframes`, `timeline_events` |
-| Storyboard (LLM or template) | `melosviz.llm.director.DirectorAgent` | `backend/src/melosviz/llm/director.py` | Optional LLM; deterministic template fallback (intro/verse/chorus/bridge/outro) |
-| Generate images (GOLD tier) | **ComfyUI** (SDXL / Flux / Wan 2.1 / Hunyuan) | `backend/src/melosviz/render/comfyui_adapter.py` + `backend/workflows/` | Local, OSS, free. Workflow JSON = reproducible. |
-| Generate 3-D scenes (GOLD tier) | **Cinema 4D** (c4dpy or CommandLine) | `backend/src/melosviz/render/cinema4d_adapter.py` | High-end 3D scenes, motion graphics |
-| Real-time cinematic (GOLD tier) | **Unreal Engine 5** (Movie Render Queue / Sequencer) | `backend/src/melosviz/render/unreal_adapter.py` + `backend/scripts/ue_render.py` | Nanite / Lumen / MetaHuman |
-| Motion graphics + beat sync (GOLD tier) | **After Effects** (aerender + nexrender fallback) | `backend/src/melosviz/render/aftereffects_adapter.py` | Per-segment MOGRT templates, beat-synced opacity |
-| Edit + color + master (GOLD tier) | **DaVinci Resolve** (Python scripting or ffmpeg fallback) | `backend/src/melosviz/render/davinci_adapter.py` | 3 deliverables: festival ProRes / club H.264 / YouTube H.264 |
-| Assemble (SILVER tier) | **Adobe Media Encoder** (`ame`) or ffmpeg | `backend/src/melosviz/render/mediaencoder_adapter.py` | Always-available fallback |
-| Package (SILVER tier) | ffmpeg + our own shipper | `viz ship <job-dir>` | MP4 + ProRes + audio stems + SRT captions |
+| Stage                                   | Tool / Adapter                                            | Code                                                                             | Notes                                                                               |
+| --------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Analyze audio (MIR + beat grid)         | Rust MIR (fast) / Python librosa (rich)                   | `crates/melosviz-mir`, `melosviz.analysis.audio`                                 | Output: `RenderSpec v2` with `scene_segments`, `dense_keyframes`, `timeline_events` |
+| Storyboard (LLM or template)            | `melosviz.llm.director.DirectorAgent`                     | `backend/src/melosviz/llm/director.py`                                           | Optional LLM; deterministic template fallback (intro/verse/chorus/bridge/outro)     |
+| Generate images (GOLD tier)             | **ComfyUI** (SDXL / Flux / Wan 2.1 / Hunyuan)             | `backend/src/melosviz/render/comfyui_adapter.py` + `backend/workflows/`          | Local, OSS, free. Workflow JSON = reproducible.                                     |
+| Generate 3-D scenes (GOLD tier)         | **Cinema 4D** (c4dpy or CommandLine)                      | `backend/src/melosviz/render/cinema4d_adapter.py`                                | High-end 3D scenes, motion graphics                                                 |
+| Real-time cinematic (GOLD tier)         | **Unreal Engine 5** (Movie Render Queue / Sequencer)      | `backend/src/melosviz/render/unreal_adapter.py` + `backend/scripts/ue_render.py` | Nanite / Lumen / MetaHuman                                                          |
+| Motion graphics + beat sync (GOLD tier) | **After Effects** (aerender + nexrender fallback)         | `backend/src/melosviz/render/aftereffects_adapter.py`                            | Per-segment MOGRT templates, beat-synced opacity                                    |
+| Edit + color + master (GOLD tier)       | **DaVinci Resolve** (Python scripting or ffmpeg fallback) | `backend/src/melosviz/render/davinci_adapter.py`                                 | 3 deliverables: festival ProRes / club H.264 / YouTube H.264                        |
+| Assemble (SILVER tier)                  | **Adobe Media Encoder** (`ame`) or ffmpeg                 | `backend/src/melosviz/render/mediaencoder_adapter.py`                            | Always-available fallback                                                           |
+| Package (SILVER tier)                   | ffmpeg + our own shipper                                  | `viz ship <job-dir>`                                                             | MP4 + ProRes + audio stems + SRT captions                                           |
 
 ### 11.2 New CLI subcommands
 
-| Subcommand | Purpose | Code |
-|---|---|---|
-| `viz storyboard <wav> --concept "..." --bpm B` | Generate a beat-synced storyboard JSON (LLM or template). v2 (WBS-2): accepts `--reference-image PATH` to pin an IP-Adapter / style reference. | `_cmd_storyboard` in `cli/main.py` |
-| `viz generate <wav> --storyboard sb.json --out DIR` | Run ComfyUI / C4D / Unreal / AE per scene; emit job-spec JSON if no backend reachable. v2: accepts `--reference-image` to override the storyboard-level continuity reference. | `_cmd_generate` |
-| `viz direct <sb.json> --scene-index N` | Art-director edit: replace prompt / camera / name on a single scene, optionally re-render in place. v2: accepts `--reference-image` to stamp the path onto the storyboard-level continuity block. | `_cmd_direct` |
-| `viz assemble <out-dir>` | Concat per-scene clips into a master timeline via AME / ffmpeg. | `_cmd_assemble` |
-| `viz master <edit> --out DIR` | DaVinci Resolve color + audio mix + master encode (3 deliverables). | `_cmd_master` |
-| `viz ship <job-dir>` | Package final deliverables (MP4, ProRes, audio stems, captions). | `_cmd_ship` |
+| Subcommand                                          | Purpose                                                                                                                                                                                           | Code                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `viz storyboard <wav> --concept "..." --bpm B`      | Generate a beat-synced storyboard JSON (LLM or template). v2 (WBS-2): accepts `--reference-image PATH` to pin an IP-Adapter / style reference.                                                    | `_cmd_storyboard` in `cli/main.py` |
+| `viz generate <wav> --storyboard sb.json --out DIR` | Run ComfyUI / C4D / Unreal / AE per scene; emit job-spec JSON if no backend reachable. v2: accepts `--reference-image` to override the storyboard-level continuity reference.                     | `_cmd_generate`                    |
+| `viz direct <sb.json> --scene-index N`              | Art-director edit: replace prompt / camera / name on a single scene, optionally re-render in place. v2: accepts `--reference-image` to stamp the path onto the storyboard-level continuity block. | `_cmd_direct`                      |
+| `viz assemble <out-dir>`                            | Concat per-scene clips into a master timeline via AME / ffmpeg.                                                                                                                                   | `_cmd_assemble`                    |
+| `viz master <edit> --out DIR`                       | DaVinci Resolve color + audio mix + master encode (3 deliverables).                                                                                                                               | `_cmd_master`                      |
+| `viz ship <job-dir>`                                | Package final deliverables (MP4, ProRes, audio stems, captions).                                                                                                                                  | `_cmd_ship`                        |
 
 ### 11.3 Environment variables (new)
 
-| Env var | Default | Effect |
-|---|---|---|
-| `MELOSVIZ_COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI server URL |
-| `MELOSVIZ_COMFYUI_TIMEOUT` | `900` | Per-workflow timeout (s) |
-| `MELOSVIZ_COMFYUI_WORKFLOWS_DIR` | `backend/workflows` | Where `sdxl_image.json`, `wan_video.json`, etc. live |
-| `MELOSVIZ_COMFYUI_MODEL` | `""` | Override the checkpoint node id |
-| `MELOSVIZ_COMFYUI_OFFLINE` | unset | When `1`, never touch the network — emit per-scene job-spec JSON instead |
-| `MELOSVIZ_C4D_BIN` | `Commandline.exe` / `cinema4d` | Cinema 4D binary path |
-| `MELOSVIZ_C4D_PYTHON` | `""` | Optional c4dpy executable |
-| `MELOSVIZ_UE_BIN` | `UnrealEditor-Cmd` | Unreal binary |
-| `MELOSVIZ_UE_PROJECT` | unset | `.uproject` path |
-| `MELOSVIZ_UE_DRIVER_SCRIPT` | `backend/scripts/ue_render.py` | UE Python driver |
-| `MELOSVIZ_RESOLVE_BIN` | `Resolve` | DaVinci Resolve binary (optional) |
-| `MELOSVIZ_DIRECTOR_LLM` | unset | Optional LLM endpoint (OpenAI-compatible) |
-| `MELOSVIZ_DIRECTOR_API_KEY` | unset | API key for the LLM endpoint |
-| `MELOSVIZ_DIRECTOR_MODEL` | `gpt-4o-mini` | LLM model name |
+| Env var                          | Default                        | Effect                                                                   |
+| -------------------------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| `MELOSVIZ_COMFYUI_URL`           | `http://127.0.0.1:8188`        | ComfyUI server URL                                                       |
+| `MELOSVIZ_COMFYUI_TIMEOUT`       | `900`                          | Per-workflow timeout (s)                                                 |
+| `MELOSVIZ_COMFYUI_WORKFLOWS_DIR` | `backend/workflows`            | Where `sdxl_image.json`, `wan_video.json`, etc. live                     |
+| `MELOSVIZ_COMFYUI_MODEL`         | `""`                           | Override the checkpoint node id                                          |
+| `MELOSVIZ_COMFYUI_OFFLINE`       | unset                          | When `1`, never touch the network — emit per-scene job-spec JSON instead |
+| `MELOSVIZ_C4D_BIN`               | `Commandline.exe` / `cinema4d` | Cinema 4D binary path                                                    |
+| `MELOSVIZ_C4D_PYTHON`            | `""`                           | Optional c4dpy executable                                                |
+| `MELOSVIZ_UE_BIN`                | `UnrealEditor-Cmd`             | Unreal binary                                                            |
+| `MELOSVIZ_UE_PROJECT`            | unset                          | `.uproject` path                                                         |
+| `MELOSVIZ_UE_DRIVER_SCRIPT`      | `backend/scripts/ue_render.py` | UE Python driver                                                         |
+| `MELOSVIZ_RESOLVE_BIN`           | `Resolve`                      | DaVinci Resolve binary (optional)                                        |
+| `MELOSVIZ_DIRECTOR_LLM`          | unset                          | Optional LLM endpoint (OpenAI-compatible)                                |
+| `MELOSVIZ_DIRECTOR_API_KEY`      | unset                          | API key for the LLM endpoint                                             |
+| `MELOSVIZ_DIRECTOR_MODEL`        | `gpt-4o-mini`                  | LLM model name                                                           |
 
 ### 11.4 Offline-first behaviour
 
@@ -889,13 +889,13 @@ See `docs/STUDIO_PIPELINE.md` for the full step-by-step guide to making a
 
 ## Appendix B — Surface Quick Reference
 
-| Surface | Where to start | Primary language |
-|---|---|---|
-| Backend | `backend/src/melosviz/analysis/models.py` | Python 3.10+ |
-| Desktop | `desktop/src/index.ts` + `desktop/views/main/index.html` | TypeScript / Bun |
-| Web | (planned; sources in worktrees) | TypeScript / Vite / React 18 / R3F |
-| Rust MIR | `crates/melosviz-mir/src/lib.rs` | Rust (stable) |
-| Rust wgpu | `crates/melosviz-render-wgpu/src/lib.rs` | Rust (stable) |
-| Bridge | `backend/src/melosviz/bridge/server.py` | Python (FastAPI/uvicorn) |
+| Surface   | Where to start                                           | Primary language                   |
+| --------- | -------------------------------------------------------- | ---------------------------------- |
+| Backend   | `backend/src/melosviz/analysis/models.py`                | Python 3.10+                       |
+| Desktop   | `desktop/src/index.ts` + `desktop/views/main/index.html` | TypeScript / Bun                   |
+| Web       | (planned; sources in worktrees)                          | TypeScript / Vite / React 18 / R3F |
+| Rust MIR  | `crates/melosviz-mir/src/lib.rs`                         | Rust (stable)                      |
+| Rust wgpu | `crates/melosviz-render-wgpu/src/lib.rs`                 | Rust (stable)                      |
+| Bridge    | `backend/src/melosviz/bridge/server.py`                  | Python (FastAPI/uvicorn)           |
 
 End of spec.

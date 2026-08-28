@@ -22,12 +22,12 @@ make dev:stack-down
 
 ## Services
 
-| Service     | Port | URL                          | What it does                                                                                                              |
-| ----------- | ---- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `comfyui`   | 8188 | `http://localhost:8188`      | Real ComfyUI worker (SDXL + Wan 2.1 nodes) — auto-loads the SDXL + Wan workflows from `backend/workflows/`. GPU required; runs in CPU mode on host machines without an NVIDIA GPU. |
-| `c4d-stub`  | 8787 | `http://localhost:8787`      | A FastAPI stub that pretends to drive Cinema 4D headless. Accepts the same `c4d_render_plan.json` the real C4D adapter emits and writes a stub `.exr` + `.json` manifest. Replace with the real `c4dpy` listener when you have a C4D licence + machine. |
-| `bridge`    | 8788 | `http://localhost:8788`      | The MelosViz Python orchestrator + FastAPI bridge (`melosviz.cli.main bridge` or `uvicorn melosviz.bridge.server:app`). Front-door for the web + desktop Director's Console. |
-| `web`       | 5173 | `http://localhost:5173`      | The Vite dev server hosting `web/`. The Director's Console is the default view (mode toggle switches to the in-browser preview). |
+| Service    | Port | URL                     | What it does                                                                                                                                                                                                                                            |
+| ---------- | ---- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `comfyui`  | 8188 | `http://localhost:8188` | Real ComfyUI worker (SDXL + Wan 2.1 nodes) — auto-loads the SDXL + Wan workflows from `backend/workflows/`. GPU required; runs in CPU mode on host machines without an NVIDIA GPU.                                                                      |
+| `c4d-stub` | 8787 | `http://localhost:8787` | A FastAPI stub that pretends to drive Cinema 4D headless. Accepts the same `c4d_render_plan.json` the real C4D adapter emits and writes a stub `.exr` + `.json` manifest. Replace with the real `c4dpy` listener when you have a C4D licence + machine. |
+| `bridge`   | 8788 | `http://localhost:8788` | The MelosViz Python orchestrator + FastAPI bridge (`melosviz.cli.main bridge` or `uvicorn melosviz.bridge.server:app`). Front-door for the web + desktop Director's Console.                                                                            |
+| `web`      | 5173 | `http://localhost:5173` | The Vite dev server hosting `web/`. The Director's Console is the default view (mode toggle switches to the in-browser preview).                                                                                                                        |
 
 ## Architecture
 
@@ -69,16 +69,16 @@ cd web && bun install && bun dev
 
 The pipeline reads these at every step:
 
-| Variable                         | Used by        | What it does                                              |
-| ------------------------------- | -------------- | --------------------------------------------------------- |
-| `MELOSVIZ_COMFYUI_URL`          | generate       | ComfyUI HTTP endpoint. Defaults to `http://localhost:8188`. |
-| `MELOSVIZ_C4D_URL`              | generate       | C4D adapter endpoint (stub or real). Defaults to `http://localhost:8787`. |
-| `MELOSVIZ_BRIDGE_URL`           | web, desktop   | Bridge HTTP endpoint. Defaults to `http://localhost:8788`. |
-| `MELOSVIZ_C4D_OUTPUT_DIR`       | c4d-stub       | Where the stub writes `.exr` / `.json` per render.         |
-| `MELOSVIZ_COMFYUI_OFFLINE`      | generate       | `1` = don't hit ComfyUI, just emit `workflow.json` per scene. |
-| `MELOSVIZ_UE_BIN` / `_UE_PROJECT` | unreal adapter | UnrealEditor binary + project path.                        |
-| `MELOSVIZ_BRIDGE_TOKEN`         | bridge         | Required bearer token on `/api/*` calls (when set).       |
-| `MELOSVIZ_DIRECTOR_*`           | llm director   | Optional LLM credentials (provider, model, key). Falls back to deterministic templates when unset. |
+| Variable                          | Used by        | What it does                                                                                       |
+| --------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| `MELOSVIZ_COMFYUI_URL`            | generate       | ComfyUI HTTP endpoint. Defaults to `http://localhost:8188`.                                        |
+| `MELOSVIZ_C4D_URL`                | generate       | C4D adapter endpoint (stub or real). Defaults to `http://localhost:8787`.                          |
+| `MELOSVIZ_BRIDGE_URL`             | web, desktop   | Bridge HTTP endpoint. Defaults to `http://localhost:8788`.                                         |
+| `MELOSVIZ_C4D_OUTPUT_DIR`         | c4d-stub       | Where the stub writes `.exr` / `.json` per render.                                                 |
+| `MELOSVIZ_COMFYUI_OFFLINE`        | generate       | `1` = don't hit ComfyUI, just emit `workflow.json` per scene.                                      |
+| `MELOSVIZ_UE_BIN` / `_UE_PROJECT` | unreal adapter | UnrealEditor binary + project path.                                                                |
+| `MELOSVIZ_BRIDGE_TOKEN`           | bridge         | Required bearer token on `/api/*` calls (when set).                                                |
+| `MELOSVIZ_DIRECTOR_*`             | llm director   | Optional LLM credentials (provider, model, key). Falls back to deterministic templates when unset. |
 
 ## Tests
 

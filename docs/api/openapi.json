@@ -37,9 +37,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "file"
-        ],
+        "required": ["file"],
         "title": "Body_upload_audio_upload_post",
         "type": "object"
       },
@@ -61,9 +59,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path"
-        ],
+        "required": ["wav_path"],
         "title": "BuildRequest",
         "type": "object"
       },
@@ -91,10 +87,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path",
-          "out_dir"
-        ],
+        "required": ["wav_path", "out_dir"],
         "title": "RenderRequest",
         "type": "object"
       },
@@ -186,10 +179,7 @@
             "title": "Wav Path"
           }
         },
-        "required": [
-          "storyboard_path",
-          "scene_index"
-        ],
+        "required": ["storyboard_path", "scene_index"],
         "title": "StudioDirectRequest",
         "type": "object"
       },
@@ -224,11 +214,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path",
-          "storyboard_path",
-          "out_dir"
-        ],
+        "required": ["wav_path", "storyboard_path", "out_dir"],
         "title": "StudioGenerateRequest",
         "type": "object"
       },
@@ -275,10 +261,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "edit_path",
-          "out_dir"
-        ],
+        "required": ["edit_path", "out_dir"],
         "title": "StudioMasterRequest",
         "type": "object"
       },
@@ -294,9 +277,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "master_dir"
-        ],
+        "required": ["master_dir"],
         "title": "StudioShipRequest",
         "type": "object"
       },
@@ -388,10 +369,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path",
-          "out_dir"
-        ],
+        "required": ["wav_path", "out_dir"],
         "title": "StudioStoryboardRequest",
         "type": "object"
       },
@@ -413,9 +391,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "storyboard_path"
-        ],
+        "required": ["storyboard_path"],
         "title": "StudioValidateRequest",
         "type": "object"
       },
@@ -451,11 +427,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       }

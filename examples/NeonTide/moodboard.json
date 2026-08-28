@@ -19,11 +19,31 @@
     "2:00-3:00": "outro — ambient, lights fading, slow track back"
   },
   "reference_images": [
-    {"role": "subject",  "path": "./refs/subject_silver_hair.png",  "license": "self"},
-    {"role": "subject",  "path": "./refs/subject_trenchcoat.png",   "license": "self"},
-    {"role": "subject",  "path": "./refs/subject_mirror_tattoo.png","license": "self"},
-    {"role": "environment", "path": "./refs/env_coral_arches.png", "license": "CC0"},
-    {"role": "environment", "path": "./refs/env_neon_reflect.png", "license": "CC0"}
+    {
+      "role": "subject",
+      "path": "./refs/subject_silver_hair.png",
+      "license": "self"
+    },
+    {
+      "role": "subject",
+      "path": "./refs/subject_trenchcoat.png",
+      "license": "self"
+    },
+    {
+      "role": "subject",
+      "path": "./refs/subject_mirror_tattoo.png",
+      "license": "self"
+    },
+    {
+      "role": "environment",
+      "path": "./refs/env_coral_arches.png",
+      "license": "CC0"
+    },
+    {
+      "role": "environment",
+      "path": "./refs/env_neon_reflect.png",
+      "license": "CC0"
+    }
   ],
   "licenses": {
     "subject": "CC-BY 4.0 (Koosha Pari, self-portrait photography)",

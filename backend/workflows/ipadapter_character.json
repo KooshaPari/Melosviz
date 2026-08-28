@@ -4,11 +4,25 @@
     "engine": "ipadapter",
     "scene_type": "ipadapter_character",
     "template_slots": [
-      "prompt", "negative", "seed", "steps", "cfg", "sampler", "scheduler",
-      "width", "height", "model", "lora",
-      "character_front", "character_three_quarter", "character_profile",
-      "character_full_body", "character_style_ref",
-      "character_face_weight", "character_style_weight", "character_engine"
+      "prompt",
+      "negative",
+      "seed",
+      "steps",
+      "cfg",
+      "sampler",
+      "scheduler",
+      "width",
+      "height",
+      "model",
+      "lora",
+      "character_front",
+      "character_three_quarter",
+      "character_profile",
+      "character_full_body",
+      "character_style_ref",
+      "character_face_weight",
+      "character_style_weight",
+      "character_engine"
     ]
   },
   "3": {
