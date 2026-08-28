@@ -5,56 +5,56 @@
 //   subscribeDecisions(fn)                     — listen for new decisions
 //   InspectabilityPanel                        — React component
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ---- Types -----------------------------------------------------------------
 
-export type DecisionKind = 'why' | 'how' | 'trace'
+export type DecisionKind = "why" | "how" | "trace";
 
 export interface DecisionRecord {
-  kind: DecisionKind
-  summary: string
-  detail?: string
-  timestamp: number
+  kind: DecisionKind;
+  summary: string;
+  detail?: string;
+  timestamp: number;
 }
 
-export type DecisionSubscriber = (record: DecisionRecord) => void
+export type DecisionSubscriber = (record: DecisionRecord) => void;
 
 // ---- Event bus (module-level singleton) ------------------------------------
 // Decoupled from React: can be called from any context (effects, callbacks,
 // worker messages, console helpers) without triggering renders directly.
 // The React component subscribes via subscribeDecisions.
 
-type Listener = (record: DecisionRecord) => void
+type Listener = (record: DecisionRecord) => void;
 
-const listeners = new Set<Listener>()
-const history: DecisionRecord[] = []
-const MAX_HISTORY = 50
+const listeners = new Set<Listener>();
+const history: DecisionRecord[] = [];
+const MAX_HISTORY = 50;
 
 /**
  * Push a new decision record to the shared event bus.
  * Safe to call from any context — never throws.
  */
 export function recordDecision(input: {
-  kind: DecisionKind
-  summary: string
-  detail?: string
+  kind: DecisionKind;
+  summary: string;
+  detail?: string;
 }): void {
   const record: DecisionRecord = {
     kind: input.kind,
     summary: input.summary,
     detail: input.detail,
     timestamp: Date.now(),
-  }
+  };
 
-  history.push(record)
+  history.push(record);
   if (history.length > MAX_HISTORY) {
-    history.shift()
+    history.shift();
   }
 
   for (const fn of listeners) {
     try {
-      fn(record)
+      fn(record);
     } catch {
       // Swallow subscriber errors — never break the bus
     }
@@ -65,63 +65,65 @@ export function recordDecision(input: {
  * Subscribe to new decision records. Returns an unsubscribe function.
  */
 export function subscribeDecisions(fn: DecisionSubscriber): () => void {
-  listeners.add(fn)
+  listeners.add(fn);
   return () => {
-    listeners.delete(fn)
-  }
+    listeners.delete(fn);
+  };
 }
 
 // ---- Colour map ------------------------------------------------------------
 
 const BADGE_COLORS: Record<DecisionKind, string> = {
-  why: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  how: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30',
-  trace: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-}
+  why: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  how: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  trace: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+};
 
 // ---- Component -------------------------------------------------------------
 
 interface InspectabilityPanelProps {
   /** Maximum visible records (default 50). */
-  maxVisible?: number
+  maxVisible?: number;
 }
 
-export function InspectabilityPanel({ maxVisible = 50 }: InspectabilityPanelProps) {
-  const [records, setRecords] = useState<DecisionRecord[]>(() => [...history])
-  const [collapsed, setCollapsed] = useState(false)
-  const listRef = useRef<HTMLDivElement>(null)
+export function InspectabilityPanel({
+  maxVisible = 50,
+}: InspectabilityPanelProps) {
+  const [records, setRecords] = useState<DecisionRecord[]>(() => [...history]);
+  const [collapsed, setCollapsed] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Subscribe to the event bus — append new records as they arrive
   useEffect(() => {
     const unsub = subscribeDecisions((record) => {
       setRecords((prev) => {
-        const next = [...prev, record]
+        const next = [...prev, record];
         return next.length > maxVisible
           ? next.slice(next.length - maxVisible)
-          : next
-      })
-    })
-    return unsub
-  }, [maxVisible])
+          : next;
+      });
+    });
+    return unsub;
+  }, [maxVisible]);
 
   // Auto-scroll to the latest record
   useEffect(() => {
     if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight
+      listRef.current.scrollTop = listRef.current.scrollHeight;
     }
-  }, [records])
+  }, [records]);
 
   // Per-kind counts for the header summary
   const kindCounts = useCallback(() => {
-    const counts = { why: 0, how: 0, trace: 0 }
-    for (const r of records) counts[r.kind]++
-    return counts
-  }, [records])
+    const counts = { why: 0, how: 0, trace: 0 };
+    for (const r of records) counts[r.kind]++;
+    return counts;
+  }, [records]);
 
   // ---- Collapsed state (badge button) -------------------------------------
 
   if (collapsed) {
-    const counts = kindCounts()
+    const counts = kindCounts();
     return (
       <button
         onClick={() => setCollapsed(false)}
@@ -130,24 +132,33 @@ export function InspectabilityPanel({ maxVisible = 50 }: InspectabilityPanelProp
       >
         {/* Dot legend */}
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400" title="why" />
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400"
+            title="why"
+          />
           <span className="text-cyan-400/70">{counts.why}</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-fuchsia-400" title="how" />
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full bg-fuchsia-400"
+            title="how"
+          />
           <span className="text-fuchsia-400/70">{counts.how}</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" title="trace" />
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400"
+            title="trace"
+          />
           <span className="text-amber-400/70">{counts.trace}</span>
         </span>
       </button>
-    )
+    );
   }
 
   // ---- Expanded panel ------------------------------------------------------
 
-  const counts = kindCounts()
+  const counts = kindCounts();
 
   return (
     <div className="fixed top-4 right-4 z-50 w-72 max-h-[75vh] rounded-lg bg-black/60 border border-white/10 shadow-2xl backdrop-blur-sm flex flex-col overflow-hidden">
@@ -159,9 +170,15 @@ export function InspectabilityPanel({ maxVisible = 50 }: InspectabilityPanelProp
 
         <div className="flex items-center gap-2">
           {/* Kind counters */}
-          <span className="text-[10px] text-cyan-400/70 font-medium">{counts.why}w</span>
-          <span className="text-[10px] text-fuchsia-400/70 font-medium">{counts.how}h</span>
-          <span className="text-[10px] text-amber-400/70 font-medium">{counts.trace}t</span>
+          <span className="text-[10px] text-cyan-400/70 font-medium">
+            {counts.why}w
+          </span>
+          <span className="text-[10px] text-fuchsia-400/70 font-medium">
+            {counts.how}h
+          </span>
+          <span className="text-[10px] text-amber-400/70 font-medium">
+            {counts.trace}t
+          </span>
 
           {/* Collapse */}
           <button
@@ -221,7 +238,7 @@ export function InspectabilityPanel({ maxVisible = 50 }: InspectabilityPanelProp
       {/* ── Footer ──────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-3 py-1.5 border-t border-white/10">
         <span className="text-[10px] text-white/30">
-          {records.length} record{records.length !== 1 ? 's' : ''}
+          {records.length} record{records.length !== 1 ? "s" : ""}
         </span>
         <button
           onClick={() => setRecords([])}
@@ -232,5 +249,5 @@ export function InspectabilityPanel({ maxVisible = 50 }: InspectabilityPanelProp
         </button>
       </div>
     </div>
-  )
+  );
 }

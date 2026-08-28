@@ -1,30 +1,30 @@
-import { useEffect, useState } from 'react'
-import { t } from '../i18n'
+import { useEffect, useState } from "react";
+import { t } from "../i18n";
 
 interface SplashScreenProps {
-  onDone: () => void
+  onDone: () => void;
 }
 
 export function SplashScreen({ onDone }: SplashScreenProps) {
-  const [fading, setFading] = useState(false)
+  const [fading, setFading] = useState(false);
 
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setFading(true), 1600)
-    const doneTimer = setTimeout(() => onDone(), 2200)
+    const fadeTimer = setTimeout(() => setFading(true), 1600);
+    const doneTimer = setTimeout(() => onDone(), 2200);
     return () => {
-      clearTimeout(fadeTimer)
-      clearTimeout(doneTimer)
-    }
-  }, [onDone])
+      clearTimeout(fadeTimer);
+      clearTimeout(doneTimer);
+    };
+  }, [onDone]);
 
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center"
       style={{
-        background: 'var(--mv-bg)',
-        transition: 'opacity 0.6s ease-out',
+        background: "var(--mv-bg)",
+        transition: "opacity 0.6s ease-out",
         opacity: fading ? 0 : 1,
-        pointerEvents: fading ? 'none' : 'all',
+        pointerEvents: fading ? "none" : "all",
       }}
     >
       <style>{`
@@ -70,17 +70,22 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
               height: `${h * 100}%`,
               background: `linear-gradient(to top, var(--mv-primary), var(--mv-secondary))`,
               // @ts-expect-error CSS custom property
-              '--delay': `${0.2 + i * 0.08}s`,
+              "--delay": `${0.2 + i * 0.08}s`,
               animationDelay: `${i * 0.07}s`,
             }}
           />
         ))}
       </div>
 
-      <h1 className="mv-title text-5xl font-black tracking-tight mb-2">{t("app.name")}</h1>
-      <p className="text-sm font-medium tracking-[0.3em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
+      <h1 className="mv-title text-5xl font-black tracking-tight mb-2">
+        {t("app.name")}
+      </h1>
+      <p
+        className="text-sm font-medium tracking-[0.3em] uppercase"
+        style={{ color: "rgba(255,255,255,0.4)" }}
+      >
         {t("app.tagline")}
       </p>
     </div>
-  )
+  );
 }

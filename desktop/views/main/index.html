@@ -565,6 +565,198 @@
     .tab-panel.active { display: block; }
 
     /* ------------------------------------------------------------------ */
+    /* Director's Console (studio pipeline)                                 */
+    /* ------------------------------------------------------------------ */
+    .studio-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px;
+      background: var(--mv-bg-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-md);
+      margin-bottom: 16px;
+    }
+    .studio-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--mv-text-mid);
+    }
+    .studio-field span {
+      font-family: var(--mv-font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .studio-field input {
+      background: var(--mv-bg-base);
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-sm);
+      color: var(--mv-text-hi);
+      padding: 8px 10px;
+      font-family: var(--mv-font-mono);
+      font-size: 12px;
+    }
+    .studio-field input:focus {
+      outline: none;
+      border-color: var(--mv-accent);
+    }
+    .studio-row {
+      display: flex;
+      gap: 12px;
+    }
+    .studio-field-grow { flex: 1; }
+    .studio-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .studio-summary {
+      background: var(--mv-bg-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-md);
+      padding: 16px;
+      font-size: 13px;
+      color: var(--mv-text-mid);
+    }
+    .studio-scene-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .studio-scene-item {
+      padding: 12px;
+      background: var(--mv-bg-base);
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-sm);
+    }
+    .studio-scene-title {
+      font-family: var(--mv-font-mono);
+      font-weight: 700;
+      color: var(--mv-accent);
+      font-size: 12px;
+    }
+    .studio-scene-meta {
+      font-family: var(--mv-font-mono);
+      font-size: 11px;
+      color: var(--mv-text-mid);
+      margin-top: 4px;
+    }
+    .studio-scene-prompt {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--mv-text-hi);
+      line-height: 1.5;
+    }
+    .studio-inspector {
+      margin-top: 16px;
+      background: var(--mv-bg-surface);
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-md);
+      padding: 12px 16px;
+    }
+.studio-inspector summary {
+      cursor: pointer;
+      font-family: var(--mv-font-mono);
+      font-size: 11px;
+      color: var(--mv-text-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .inspector-tree-wrap {
+      margin-top: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Render queue (per-scene progress inside Director's Console)          */
+    /* ------------------------------------------------------------------ */
+    .studio-queue {
+      border: 1px solid var(--mv-border);
+      border-radius: var(--r-md);
+      background: var(--mv-bg-surface);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .studio-queue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--mv-border);
+      font-family: var(--mv-font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .studio-queue-title { color: var(--mv-text-mid); }
+    .studio-queue-status {
+      color: var(--mv-text-lo);
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      font-weight: 700;
+    }
+    .studio-queue-status[data-state="running"] { color: var(--mv-accent); background: rgba(255,43,214,0.10); }
+    .studio-queue-status[data-state="done"]    { color: #34d399; background: rgba(52,211,153,0.10); }
+    .studio-queue-status[data-state="error"]   { color: #f87171; background: rgba(248,113,113,0.10); }
+    .studio-queue-list { list-style: none; margin: 0; padding: 0; }
+    .studio-queue-list li.studio-queue-empty {
+      padding: 14px; color: var(--mv-text-lo); font-style: italic;
+      font-size: 11px; font-family: var(--mv-font-mono);
+    }
+    .studio-queue-item {
+      display: grid;
+      grid-template-columns: 28px 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+      border-top: 1px solid var(--mv-border);
+      font-size: 12px;
+    }
+    .studio-queue-item:first-child { border-top: none; }
+    .studio-queue-num {
+      font-family: var(--mv-font-mono); font-size: 10px;
+      color: var(--mv-text-lo); text-align: center;
+    }
+    .studio-queue-name {
+      font-weight: 600; color: var(--mv-text-mid);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .studio-queue-meta {
+      font-family: var(--mv-font-mono); font-size: 10px; color: var(--mv-text-lo);
+    }
+    .studio-queue-badge {
+      font-family: var(--mv-font-mono); font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 999px; text-transform: uppercase;
+      letter-spacing: 0.05em; min-width: 78px; text-align: center;
+    }
+    .studio-queue-badge[data-state="queued"]    { color: var(--mv-text-lo);   background: rgba(255,255,255,0.04); }
+    .studio-queue-badge[data-state="rendering"] { color: var(--mv-accent);    background: rgba(255,43,214,0.10); }
+    .studio-queue-badge[data-state="done"]      { color: #34d399;             background: rgba(52,211,153,0.12); }
+    .studio-queue-badge[data-state="error"]     { color: #f87171;             background: rgba(248,113,113,0.12); }
+    .studio-queue-progress {
+      grid-column: 1 / -1;
+      height: 3px;
+      background: rgba(255,255,255,0.05);
+      overflow: hidden;
+    }
+    .studio-queue-progress > span {
+      display: block; height: 100%; background: var(--mv-accent); width: 0%;
+      transition: width 250ms ease;
+    }
+    .studio-queue-footer {
+      padding: 8px 14px; border-top: 1px solid var(--mv-border);
+      font-family: var(--mv-font-mono); font-size: 10px; color: var(--mv-text-lo);
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Inspector (RenderSpec / Render Plan viewer)                          */
     /* ------------------------------------------------------------------ */
     .inspector {
@@ -624,19 +816,6 @@
       font-size: 12px;
       font-family: var(--mv-font-sans);
       text-align: center;
-    }
-
-    /* ------------------------------------------------------------------ */
-    /* Scene timeline gallery                                               */
-    /* ------------------------------------------------------------------ */
-    #timeline-container { display: flex; flex-direction: column; gap: 10px; }
-
-    .timeline-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--mv-border-subtle);
     }
 
     .timeline-title {
@@ -1150,6 +1329,10 @@
             <span class="tab-pip"></span>
             Video
           </button>
+          <button class="tab-btn" data-tab="storyboard">
+            <span class="tab-pip"></span>
+            Director's Console
+          </button>
         </div>
 
         <!-- RenderSpec inspector -->
@@ -1222,6 +1405,105 @@
               <button id="btn-re-render" class="btn btn-ghost">Re-render</button>
             </div>
           </div>
+        </div>
+
+        <!-- Director's Console: ComfyUI + C4D + UE + AE + DaVinci pipeline.
+             Replaces the legacy browser-renderer flow with a multi-tool
+             studio pipeline. See docs/STUDIO_PIPELINE.md. -->
+        <div id="tab-storyboard" class="tab-panel">
+          <div class="studio-controls">
+            <label class="studio-field">
+              <span>Concept prompt</span>
+              <input id="studio-concept" type="text" placeholder="abstract underwater city, bioluminescent, 35mm film" />
+            </label>
+            <div class="studio-row">
+              <label class="studio-field">
+                <span>BPM (optional)</span>
+                <input id="studio-bpm" type="number" min="40" max="220" placeholder="auto-detect" />
+              </label>
+              <label class="studio-field studio-field-grow">
+                <span>Palette (hex, space-separated)</span>
+                <input id="studio-palette" type="text" placeholder="#0d0d10 #ff2bd6 #22d3ee" />
+              </label>
+              <label class="studio-field">
+                <span>Aspect ratio</span>
+                <select id="studio-aspect-ratio">
+                  <option value="">auto (youtube 1080p)</option>
+                  <option value="festival_16x9_4k">Festival · 16:9 4K</option>
+                  <option value="youtube_16x9_1080p">YouTube · 16:9 1080p</option>
+                  <option value="club_9x16">Club · 9:16</option>
+                  <option value="ig_9x16">IG / Shorts · 9:16</option>
+                  <option value="instagram_1x1">Instagram · 1:1</option>
+                  <option value="cinema_21x9">Cinema · 21:9</option>
+                  <option value="vertical_4x5">Vertical · 4:5</option>
+                </select>
+              </label>
+            </div>
+            <div class="studio-row">
+              <label class="studio-field studio-field-grow">
+                <span>Lyrics (LRC path)</span>
+                <input id="studio-lyrics" type="text" placeholder="/path/to/song.lrc" />
+              </label>
+              <label class="studio-field studio-field-grow">
+                <span>Mood-board (comma-separated image paths)</span>
+                <input id="studio-moodboard" type="text" placeholder="/path/ref1.png, /path/ref2.jpg" />
+              </label>
+            </div>
+            <div class="studio-row">
+              <label class="studio-field studio-field-grow">
+                <span>Continuity · character</span>
+                <input id="studio-character" type="text" placeholder="young woman with short silver hair, neon trenchcoat" />
+              </label>
+              <label class="studio-field studio-field-grow">
+                <span>Continuity · environment</span>
+                <input id="studio-environment" type="text" placeholder="bioluminescent underwater city of glass and coral" />
+              </label>
+            </div>
+            <div class="studio-row">
+              <label class="studio-field">
+                <span>Master LUFS target</span>
+                <select id="studio-lufs">
+                  <option value="">default (-14)</option>
+                  <option value="-14">Streaming (-14 LUFS)</option>
+                  <option value="-23">Broadcast / EBU R128 (-23 LUFS)</option>
+                  <option value="-9">Club PA (-9 LUFS)</option>
+                  <option value="-18">YouTube playback (-18 LUFS)</option>
+                </select>
+              </label>
+              <label class="studio-toggle">
+                <input id="studio-stems" type="checkbox" />
+                <span>Export audio stems (for VJ remixing)</span>
+              </label>
+            </div>
+            <div class="studio-actions">
+              <button id="btn-studio-storyboard" class="btn btn-primary">Storyboard</button>
+              <button id="btn-studio-generate" class="btn btn-secondary" disabled>Generate scenes</button>
+              <button id="btn-studio-master" class="btn btn-secondary" disabled>Master</button>
+              <button id="btn-studio-ship" class="btn btn-ghost" disabled>Ship package</button>
+            </div>
+          </div>
+
+          <div id="storyboard-summary" class="studio-summary">
+            Drop a WAV, set a concept, then hit <strong>Storyboard</strong>.
+          </div>
+
+          <section class="studio-queue" aria-label="Render queue">
+            <div class="studio-queue-header">
+              <span class="studio-queue-title">Render queue</span>
+              <span id="queue-status" class="studio-queue-status">idle</span>
+            </div>
+            <ol id="render-queue" class="studio-queue-list">
+              <li class="studio-queue-empty">No scenes queued. Run Storyboard to populate the render queue.</li>
+            </ol>
+            <div class="studio-queue-footer">
+              <span id="queue-progress-summary"></span>
+            </div>
+          </section>
+
+          <details class="studio-inspector">
+            <summary>Storyboard JSON</summary>
+            <div id="storyboard-tree" class="inspector-tree-wrap"></div>
+          </details>
         </div>
       </div>
 

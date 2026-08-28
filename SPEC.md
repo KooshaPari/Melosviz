@@ -754,10 +754,123 @@ primary; Quality-of-Life 90%) and are out of scope for MV-FR-54.
 | Rev | Date | Author | Change |
 |---|---|---|---|
 | 1 | 2026-07-03 | kooshapari (via MV-FR-54 xDD chain) | Baseline top-level product spec. Authored from `docs/COMPLETENESS.md`, ADR 0003, `docs/TRACEABILITY.md`, and `docs/specs/SPEC.md`. Distribution grounded in `release.yml`; test strategy grounded in `ci.yml` + actual filesystem scan. |
+| 2 | 2026-08-25 | kooshapari (feat/comfyui-studio-pivot) | Studio pipeline pivot — ComfyUI becomes the primary generative renderer; new Cinema 4D, Unreal Engine, and DaVinci Resolve adapters wired into the conductor registry. New `viz storyboard / generate / assemble / master / ship` CLI subcommands. Director LLM (`melosviz.llm.director`) with deterministic template fallback. See § 11 and `docs/STUDIO_PIPELINE.md`. |
 
 Future revisions will be appended below this row, never replacing prior
 entries. Each revision MUST update the `version` field at the top of this
 document and add a new row here.
+
+---
+
+## 11. Studio Pipeline (ComfyUI-centric)
+
+The product's center of gravity shifted in Rev 2: MelosViz is now a
+**production-studio conductor** that drives real industry tools rather
+than re-implementing their rendering in-browser. The goal is a
+**digitally created, multi-scene, 3-5 minute music video** that can be
+shown on festival/club screens or uploaded to YouTube — beat-synced,
+varied, and telling a story no matter how abstract.
+
+### 11.1 What runs where
+
+| Stage | Tool / Adapter | Code | Notes |
+|---|---|---|---|
+| Analyze audio (MIR + beat grid) | Rust MIR (fast) / Python librosa (rich) | `crates/melosviz-mir`, `melosviz.analysis.audio` | Output: `RenderSpec v2` with `scene_segments`, `dense_keyframes`, `timeline_events` |
+| Storyboard (LLM or template) | `melosviz.llm.director.DirectorAgent` | `backend/src/melosviz/llm/director.py` | Optional LLM; deterministic template fallback (intro/verse/chorus/bridge/outro) |
+| Generate images (GOLD tier) | **ComfyUI** (SDXL / Flux / Wan 2.1 / Hunyuan) | `backend/src/melosviz/render/comfyui_adapter.py` + `backend/workflows/` | Local, OSS, free. Workflow JSON = reproducible. |
+| Generate 3-D scenes (GOLD tier) | **Cinema 4D** (c4dpy or CommandLine) | `backend/src/melosviz/render/cinema4d_adapter.py` | High-end 3D scenes, motion graphics |
+| Real-time cinematic (GOLD tier) | **Unreal Engine 5** (Movie Render Queue / Sequencer) | `backend/src/melosviz/render/unreal_adapter.py` + `backend/scripts/ue_render.py` | Nanite / Lumen / MetaHuman |
+| Motion graphics + beat sync (GOLD tier) | **After Effects** (aerender + nexrender fallback) | `backend/src/melosviz/render/aftereffects_adapter.py` | Per-segment MOGRT templates, beat-synced opacity |
+| Edit + color + master (GOLD tier) | **DaVinci Resolve** (Python scripting or ffmpeg fallback) | `backend/src/melosviz/render/davinci_adapter.py` | 3 deliverables: festival ProRes / club H.264 / YouTube H.264 |
+| Assemble (SILVER tier) | **Adobe Media Encoder** (`ame`) or ffmpeg | `backend/src/melosviz/render/mediaencoder_adapter.py` | Always-available fallback |
+| Package (SILVER tier) | ffmpeg + our own shipper | `viz ship <job-dir>` | MP4 + ProRes + audio stems + SRT captions |
+
+### 11.2 New CLI subcommands
+
+| Subcommand | Purpose | Code |
+|---|---|---|
+| `viz storyboard <wav> --concept "..." --bpm B` | Generate a beat-synced storyboard JSON (LLM or template). v2 (WBS-2): accepts `--reference-image PATH` to pin an IP-Adapter / style reference. | `_cmd_storyboard` in `cli/main.py` |
+| `viz generate <wav> --storyboard sb.json --out DIR` | Run ComfyUI / C4D / Unreal / AE per scene; emit job-spec JSON if no backend reachable. v2: accepts `--reference-image` to override the storyboard-level continuity reference. | `_cmd_generate` |
+| `viz direct <sb.json> --scene-index N` | Art-director edit: replace prompt / camera / name on a single scene, optionally re-render in place. v2: accepts `--reference-image` to stamp the path onto the storyboard-level continuity block. | `_cmd_direct` |
+| `viz assemble <out-dir>` | Concat per-scene clips into a master timeline via AME / ffmpeg. | `_cmd_assemble` |
+| `viz master <edit> --out DIR` | DaVinci Resolve color + audio mix + master encode (3 deliverables). | `_cmd_master` |
+| `viz ship <job-dir>` | Package final deliverables (MP4, ProRes, audio stems, captions). | `_cmd_ship` |
+
+### 11.3 Environment variables (new)
+
+| Env var | Default | Effect |
+|---|---|---|
+| `MELOSVIZ_COMFYUI_URL` | `http://127.0.0.1:8188` | ComfyUI server URL |
+| `MELOSVIZ_COMFYUI_TIMEOUT` | `900` | Per-workflow timeout (s) |
+| `MELOSVIZ_COMFYUI_WORKFLOWS_DIR` | `backend/workflows` | Where `sdxl_image.json`, `wan_video.json`, etc. live |
+| `MELOSVIZ_COMFYUI_MODEL` | `""` | Override the checkpoint node id |
+| `MELOSVIZ_COMFYUI_OFFLINE` | unset | When `1`, never touch the network — emit per-scene job-spec JSON instead |
+| `MELOSVIZ_C4D_BIN` | `Commandline.exe` / `cinema4d` | Cinema 4D binary path |
+| `MELOSVIZ_C4D_PYTHON` | `""` | Optional c4dpy executable |
+| `MELOSVIZ_UE_BIN` | `UnrealEditor-Cmd` | Unreal binary |
+| `MELOSVIZ_UE_PROJECT` | unset | `.uproject` path |
+| `MELOSVIZ_UE_DRIVER_SCRIPT` | `backend/scripts/ue_render.py` | UE Python driver |
+| `MELOSVIZ_RESOLVE_BIN` | `Resolve` | DaVinci Resolve binary (optional) |
+| `MELOSVIZ_DIRECTOR_LLM` | unset | Optional LLM endpoint (OpenAI-compatible) |
+| `MELOSVIZ_DIRECTOR_API_KEY` | unset | API key for the LLM endpoint |
+| `MELOSVIZ_DIRECTOR_MODEL` | `gpt-4o-mini` | LLM model name |
+
+### 11.4 Offline-first behaviour
+
+Every adapter has an offline fallback that emits a structured job-spec
+JSON instead of crashing when its backend tool is missing:
+
+- **ComfyUI** (`MELOSVIZ_COMFYUI_OFFLINE=1`) — writes `job_spec.json`
+  plus per-scene `workflow.json`.
+- **Cinema 4D** (missing binary) — writes `c4d_render_plan.json` with the
+  scene graph, camera, and renderer settings; operator can drive
+  Cinema 4D manually.
+- **Unreal** (missing binary) — writes `ue_render_plan.json`; operator
+  can drive UE Sequencer manually.
+- **DaVinci** (missing binary) — falls back to ffmpeg and still produces
+  the 3 deliverables (festival / club / YouTube).
+
+The `Orchestrator` auto-enables `MELOSVIZ_COMFYUI_OFFLINE=1` if no
+ComfyUI server is reachable, so a clean clone can run end-to-end on a
+laptop without any of the studio tools installed.
+
+### 11.5 Workflow-as-JSON determinism
+
+ComfyUI workflows are JSON; we ship the following reference templates
+in `backend/workflows/`:
+
+- `sdxl_image.json` — SDXL text-to-image (1920×1080, euler_ancestral)
+- `wan_video.json` — Wan 2.1 5B text-to-video (720×1280, 48 frames, 24fps)
+- `wan_s2v_audio.json` — Wan 2.1 S2V audio-conditioned video (WBS-107)
+- `seedance_a2v.json` — Seedance A2V audio-conditioned video (WBS-107)
+
+The two audio-conditioned templates substitute `{audio_path}` (an
+absolute WAV path supplied by the orchestrator), and the adapter
+threads `motion_strength` + `audio_influence` defaults from
+`melosviz/llm/director.py` (`_ARCHETYPE_DEFAULTS`). Scene types:
+`comfyui_audio_video_wan` → `wan_s2v_audio.json`,
+`comfyui_audio_video_seedance` → `seedance_a2v.json`.
+
+Both are valid ComfyUI prompt graphs that can be opened in the
+ComfyUI GUI, edited, and re-saved. Our adapter interpolates per-scene
+prompt, negative, seed, steps, cfg, sampler, scheduler, width, height,
+frames, fps, model, lora, ip_adapter_image, controlnet_image into the
+template.
+
+The `ip_adapter_image` placeholder is the v2 ContinuityAnchor
+`reference_image` (WBS-2, 2026-08): when `viz storyboard` /
+`viz generate` / `viz direct` is invoked with `--reference-image PATH`,
+the orchestrator stamps the validated path onto every scene and the
+adapter feeds it to whichever IP-Adapter / Wan / ControlNet node the
+workflow exposes. Templates that do not reference `ip_adapter_image`
+simply skip the placeholder — so the same template set works for both
+pinned-look and freeform renders.
+
+This means: **every render is reproducible, diff-able in PRs, and
+reviewable before burning GPU time.**
+
+See `docs/STUDIO_PIPELINE.md` for the full step-by-step guide to making a
+3-5 minute video with the pipeline.
 
 ---
 

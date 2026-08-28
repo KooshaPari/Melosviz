@@ -19,35 +19,35 @@
  *     already, so callers can await adapter.ready to gate on permission.
  */
 export class AudioAdapter {
-  readonly context: AudioContext
-  readonly analyser: AnalyserNode
+  readonly context: AudioContext;
+  readonly analyser: AnalyserNode;
 
   /** Resolves when the mic stream is connected; rejects on permission deny. */
-  readonly ready: Promise<void>
+  readonly ready: Promise<void>;
 
-  private source: MediaStreamAudioSourceNode | null = null
-  private stream: MediaStream | null = null
+  private source: MediaStreamAudioSourceNode | null = null;
+  private stream: MediaStream | null = null;
 
   constructor() {
-    this.context = new AudioContext()
+    this.context = new AudioContext();
 
-    this.analyser = this.context.createAnalyser()
-    this.analyser.fftSize = 2048
-    this.analyser.smoothingTimeConstant = 0.8
-    this.analyser.connect(this.context.destination)
+    this.analyser = this.context.createAnalyser();
+    this.analyser.fftSize = 2048;
+    this.analyser.smoothingTimeConstant = 0.8;
+    this.analyser.connect(this.context.destination);
 
-    this.ready = this._init()
+    this.ready = this._init();
   }
 
   private async _init(): Promise<void> {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    this.stream = stream
-    this.source = this.context.createMediaStreamSource(stream)
-    this.source.connect(this.analyser)
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.stream = stream;
+    this.source = this.context.createMediaStreamSource(stream);
+    this.source.connect(this.analyser);
 
     // Resume in case the context started suspended (autoplay policy).
-    if (this.context.state === 'suspended') {
-      await this.context.resume()
+    if (this.context.state === "suspended") {
+      await this.context.resume();
     }
   }
 
@@ -56,7 +56,7 @@ export class AudioAdapter {
    * Useful for Workstream B (beat energy) once it hooks in.
    */
   getWaveform(out: Float32Array<ArrayBuffer>): void {
-    this.analyser.getFloatTimeDomainData(out)
+    this.analyser.getFloatTimeDomainData(out);
   }
 
   /**
@@ -64,23 +64,23 @@ export class AudioAdapter {
    * Useful for Workstream A (spectral FFT visualiser).
    */
   getFrequencyData(out: Float32Array<ArrayBuffer>): void {
-    this.analyser.getFloatFrequencyData(out)
+    this.analyser.getFloatFrequencyData(out);
   }
 
   /** Suspend the AudioContext and stop the mic stream tracks. */
   stop(): void {
     this.context.suspend().catch(() => {
       // suspension failure is non-fatal; log and continue
-      console.warn('[AudioAdapter] context.suspend() failed')
-    })
-    this.stream?.getTracks().forEach((t) => t.stop())
+      console.warn("[AudioAdapter] context.suspend() failed");
+    });
+    this.stream?.getTracks().forEach((t) => t.stop());
   }
 
   /** Close the AudioContext and release all resources. */
   dispose(): void {
-    this.stop()
+    this.stop();
     this.context.close().catch(() => {
-      console.warn('[AudioAdapter] context.close() failed')
-    })
+      console.warn("[AudioAdapter] context.close() failed");
+    });
   }
 }

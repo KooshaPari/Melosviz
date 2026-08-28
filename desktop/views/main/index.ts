@@ -61,6 +61,29 @@ let renderSpec: Record<string, unknown> | null = null;
 let renderPlan: Record<string, unknown> | null = null;
 let lastVideoPath: string | null = null;
 
+// Studio-pipeline state (ComfyUI + C4D + UE + AE + DaVinci). See
+// docs/STUDIO_PIPELINE.md. Distinct from the legacy renderSpec/renderPlan
+// path so the existing flow remains untouched while the new pipeline
+// surfaces as a separate director's console.
+let storyboard: Record<string, unknown> | null = null;
+let storyboardPath: string | null = null;
+let lastMasterDir: string | null = null;
+let lastFinalZip: string | null = null;
+
+// Render queue state — one entry per scene, indexed by scene number.
+// Status lifecycle: queued → rendering → done | error.
+type QueueStatus = "queued" | "rendering" | "done" | "error";
+interface QueueEntry {
+  index: number;
+  sceneName: string;
+  sceneType: string;
+  status: QueueStatus;
+  progressPct: number; // 0-100
+  message?: string;
+  outputPath?: string;
+}
+let renderQueue: QueueEntry[] = [];
+
 // ---------------------------------------------------------------------------
 // DOM helpers
 // ---------------------------------------------------------------------------
@@ -96,19 +119,6 @@ function showError(err: unknown) {
   qs("#error-box").textContent = msg;
   qs("#error-card").classList.remove("hidden");
   setStatus(t("shell.status.error"), "error");
-}
-
-function errorMessage(err: unknown): string {
-  if (err instanceof Error) {
-    return err.message || String(err);
-  }
-  return String(err);
-}
-
-function truncateStatus(msg: string, maxLen = 120): string {
-  const trimmed = msg.trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  return `${trimmed.slice(0, maxLen - 1)}…`;
 }
 
 function clearError() {
@@ -352,6 +362,125 @@ function renderTimeline(plan: Record<string, unknown>) {
 }
 
 // ---------------------------------------------------------------------------
+// Render queue (per-scene progress inside Director's Console)
+// ---------------------------------------------------------------------------
+
+/** Reset the queue to one entry per scene from a storyboard JSON. */
+function initRenderQueue(storyboardJson: Record<string, unknown>) {
+  const scenes =
+    (storyboardJson.scenes as Array<Record<string, unknown>> | undefined) ?? [];
+  renderQueue = scenes.map((s, i) => ({
+    index: i + 1,
+    sceneName:
+      (s.name as string | undefined) ||
+      (s.description as string | undefined) ||
+      `Scene ${i + 1}`,
+    sceneType:
+      (s.scene_type as string | undefined) ||
+      (s.type as string | undefined) ||
+      "unknown",
+    status: "queued" as QueueStatus,
+    progressPct: 0,
+  }));
+  renderRenderQueue();
+  setQueueHeaderState("queued");
+}
+
+/** Repaint the queue list from current state. */
+function renderRenderQueue() {
+  const listEl = qs<HTMLOListElement>("#render-queue");
+  listEl.innerHTML = "";
+  if (!renderQueue.length) {
+    const empty = document.createElement("li");
+    empty.className = "studio-queue-empty";
+    empty.textContent = t("shell.queue.empty");
+    listEl.appendChild(empty);
+    qs("#queue-progress-summary").textContent = "";
+    return;
+  }
+  for (const entry of renderQueue) {
+    const li = document.createElement("li");
+    li.className = "studio-queue-item";
+    li.dataset["scene"] = String(entry.index);
+
+    const num = document.createElement("span");
+    num.className = "studio-queue-num";
+    num.textContent = String(entry.index).padStart(2, "0");
+
+    const name = document.createElement("span");
+    name.className = "studio-queue-name";
+    name.title = entry.sceneName;
+    name.textContent = entry.sceneName;
+
+    const meta = document.createElement("span");
+    meta.className = "studio-queue-meta";
+    meta.textContent = entry.sceneType;
+
+    const badge = document.createElement("span");
+    badge.className = "studio-queue-badge";
+    badge.dataset["state"] = entry.status;
+    badge.textContent = entry.status;
+
+    const bar = document.createElement("div");
+    bar.className = "studio-queue-progress";
+    const fill = document.createElement("span");
+    fill.style.width = `${Math.max(0, Math.min(100, entry.progressPct))}%`;
+    bar.appendChild(fill);
+
+    li.appendChild(num);
+    li.appendChild(name);
+    li.appendChild(meta);
+    li.appendChild(badge);
+    li.appendChild(bar);
+    listEl.appendChild(li);
+  }
+  // Footer summary
+  const done = renderQueue.filter((e) => e.status === "done").length;
+  const total = renderQueue.length;
+  qs("#queue-progress-summary").textContent = `${done}/${total} scenes complete`;
+}
+
+/** Update one scene's status + progress + (optional) message. */
+function updateQueueEntry(
+  sceneIndex: number,
+  patch: Partial<Omit<QueueEntry, "index">>
+) {
+  const entry = renderQueue.find((e) => e.index === sceneIndex);
+  if (!entry) return;
+  Object.assign(entry, patch);
+  // Re-render only the row to avoid a full repaint flicker.
+  const li = qs<HTMLOListElement>("#render-queue").querySelector<HTMLLIElement>(
+    `li[data-scene="${sceneIndex}"]`
+  );
+  if (li) {
+    const badge = li.querySelector<HTMLSpanElement>(".studio-queue-badge");
+    if (badge && patch.status) {
+      badge.dataset["state"] = patch.status;
+      badge.textContent = patch.status;
+    }
+    const fill = li.querySelector<HTMLDivElement>(".studio-queue-progress > span");
+    if (fill && patch.progressPct !== undefined) {
+      fill.style.width = `${Math.max(0, Math.min(100, patch.progressPct))}%`;
+    }
+    if (patch.message) {
+      li.title = patch.message;
+    }
+  } else {
+    renderRenderQueue();
+  }
+  // Footer counter
+  const done = renderQueue.filter((e) => e.status === "done").length;
+  qs("#queue-progress-summary").textContent = `${done}/${renderQueue.length} scenes complete`;
+}
+
+/** Set the queue header status pill. */
+function setQueueHeaderState(state: "idle" | "queued" | "running" | "done" | "error") {
+  const el = qs<HTMLElement>("#queue-status");
+  (el as HTMLElement).dataset["state"] = state === "idle" ? "" : state;
+  el.textContent = state;
+}
+
+// ---------------------------------------------------------------------------
 // Button enable/disable
 // ---------------------------------------------------------------------------
 
@@ -539,6 +668,255 @@ async function onRenderVideo() {
 }
 
 // ---------------------------------------------------------------------------
+// Studio pipeline actions (storyboard → generate → assemble → master → ship)
+//
+// Each handler maps 1:1 to a backend CLI subcommand. They share state
+// through module-scope `storyboard`, `storyboardPath`, `lastMasterDir`,
+// `lastFinalZip` so the user can step through the pipeline without
+// re-loading the WAV.
+// ---------------------------------------------------------------------------
+
+async function onStudioStoryboard() {
+  if (!wavPath) return;
+  clearError();
+  setStatus(t("shell.status.studio_storyboarding"), "busy");
+  setProgress(15, t("shell.progress.studio_storyboarding"));
+  try {
+    const concept =
+      (qs<HTMLInputElement>("#studio-concept").value || "").trim() ||
+      "abstract cinematic, varied scenes, beat-synced, emotionally resonant";
+    const bpmRaw = (qs<HTMLInputElement>("#studio-bpm").value || "").trim();
+    const paletteRaw = (qs<HTMLInputElement>("#studio-palette").value || "").trim();
+    const lyricsPathRaw = (qs<HTMLInputElement>("#studio-lyrics").value || "").trim();
+    const moodBoardRaw = (qs<HTMLInputElement>("#studio-moodboard").value || "").trim();
+    const charRaw = (qs<HTMLInputElement>("#studio-character").value || "").trim();
+    const envRaw = (qs<HTMLInputElement>("#studio-environment").value || "").trim();
+    const aspectRaw = (qs<HTMLSelectElement | HTMLInputElement>("#studio-aspect-ratio")?.value || "").trim();
+    const args = {
+      wavPath,
+      outDir: outPath ?? undefined,
+      concept,
+      bpm: bpmRaw ? Number(bpmRaw) : undefined,
+      palette: paletteRaw || undefined,
+      lyricsPath: lyricsPathRaw || undefined,
+      moodBoardPaths: moodBoardRaw
+        ? moodBoardRaw
+            .split(",")
+            .map((p) => p.trim())
+            .filter(Boolean)
+        : undefined,
+      continuityCharacter: charRaw || undefined,
+      continuityEnvironment: envRaw || undefined,
+      aspectRatio: aspectRaw || undefined,
+    };
+    const json = await rpc.request.runStoryboard(args);
+    storyboard = JSON.parse(json) as Record<string, unknown>;
+    const scenes = Array.isArray((storyboard as any).scenes)
+      ? (storyboard as any).scenes.length
+      : 0;
+    // Persist the storyboard so the next step can reference it.
+    storyboardPath = pathJoinSafe(
+      outPath ?? wavPath.replace(/[^/]+$/, ""),
+      "storyboard.json"
+    );
+    renderStoryboardInspector("storyboard-tree", storyboard);
+    renderStoryboardSummary(storyboard);
+    initRenderQueue(storyboard);
+    markTabHasData("storyboard");
+    markTabHasData("storyboard-queue");
+    setProgress(100, tf("shell.progress.studio_storyboard_done", { scenes }));
+    setStatus(tf("shell.status.studio_storyboard_ready", { scenes }), "ready");
+    switchTab("storyboard");
+    syncStudioButtons();
+  } catch (err) {
+    showError(err);
+  } finally {
+    setTimeout(clearProgress, 2000);
+  }
+}
+
+async function onStudioGenerate() {
+  if (!storyboard || !wavPath || !storyboardPath) {
+    showError(new Error(t("shell.error.no_storyboard")));
+    return;
+  }
+  clearError();
+  setStatus(t("shell.status.studio_generating"), "busy");
+  setProgress(10, t("shell.progress.studio_generating"));
+  setQueueHeaderState("running");
+  // Pre-mark every queued scene as rendering before the orchestrator starts.
+  const totalScenes = renderQueue.length;
+  for (const entry of renderQueue) {
+    updateQueueEntry(entry.index, { status: "rendering", progressPct: 0 });
+  }
+  try {
+    const out = await rpc.request.runOrchestratedRender({
+      wavPath,
+      storyboardPath,
+      outDir: outPath ?? undefined,
+    });
+    // After the orchestrator returns, mark every scene done with the
+    // orchestrator output as the per-scene message.
+    const trimmed = (out ?? "").trim().split("\n")[0] || "";
+    for (const entry of renderQueue) {
+      updateQueueEntry(entry.index, {
+        status: "done",
+        progressPct: 100,
+        message: trimmed,
+      });
+    }
+    setQueueHeaderState("done");
+    setProgress(100, t("shell.progress.studio_generate_done"));
+    setStatus(t("shell.status.studio_generate_done"), "ready");
+    lastMasterDir = pathJoinSafe(
+      outPath ?? wavPath.replace(/[^/]+$/, ""),
+      "master"
+    );
+    syncStudioButtons();
+    // Reveal the output directory for the user.
+    if (trimmed.length > 0) {
+      await rpc.request.revealInFinder({ filePath: trimmed });
+    }
+  } catch (err) {
+    setQueueHeaderState("error");
+    // Mark any scene still rendering as errored.
+    for (const entry of renderQueue) {
+      if (entry.status === "rendering") {
+        updateQueueEntry(entry.index, {
+          status: "error",
+          message: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    showError(err);
+  } finally {
+    setTimeout(clearProgress, 2000);
+  }
+}
+async function onStudioMaster() {
+  if (!lastVideoPath) {
+    showError(new Error(t("shell.error.no_video")));
+    return
+  }
+  clearError();
+  setStatus(t("shell.status.studio_mastering"), "busy");
+  setProgress(20, t("shell.progress.studio_mastering"));
+  try {
+    const lufsRaw = (qs<HTMLSelectElement | HTMLInputElement>("#studio-lufs")?.value || "").trim();
+    const stemsChecked = qs<HTMLInputElement>("#studio-stems")?.checked ?? false;
+    // Map legacy raw -N LUFS values to the named preset table so the
+    // backend resolves a coherent delivery target with true-peak + dither.
+    let lufsName: string | undefined
+    if (lufsRaw === "-23") lufsName = "broadcast_ebu_r128"
+    else if (lufsRaw === "-9") lufsName = "club_pa"
+    else if (lufsRaw === "-18") lufsName = "youtube"
+    else if (lufsRaw === "-14") lufsName = "youtube"
+    else if (lufsRaw) lufsName = lufsRaw
+    await rpc.request.runMaster({
+      inputPath: lastVideoPath,
+      outDir: outPath ?? undefined,
+      lufsTarget: lufsName,
+      exportStems: stemsChecked || undefined,
+      audioWavPath: wavPath || undefined,
+    });
+    lastMasterDir = pathJoinSafe(
+      outPath ?? lastVideoPath.replace(/[^/]+$/, ""),
+      "master"
+    );
+    setProgress(100, t("shell.progress.studio_master_done"));
+    setStatus(t("shell.status.studio_master_done"), "ready");
+    syncStudioButtons();
+  } catch (err) {
+    showError(err);
+  } finally {
+    setTimeout(clearProgress, 2000);
+  }
+}
+
+async function onStudioShip() {
+  if (!lastMasterDir) {
+    showError(new Error(t("shell.error.no_master")));
+    return;
+  }
+  clearError();
+  setStatus(t("shell.status.studio_shipping"), "busy");
+  setProgress(30, t("shell.progress.studio_shipping"));
+  try {
+    const zip = await rpc.request.runShip({
+      masterDir: lastMasterDir,
+      outPath: outPath ?? undefined,
+    });
+    lastFinalZip = zip.trim();
+    setProgress(100, t("shell.progress.studio_ship_done"));
+    setStatus(t("shell.status.studio_ship_done"), "ready");
+    syncStudioButtons();
+  } catch (err) {
+    showError(err);
+  } finally {
+    setTimeout(clearProgress, 2000);
+  }
+}
+
+/** Tiny path joiner that mirrors path.join's semantics without importing node:path in the webview. */
+function pathJoinSafe(dir: string, file: string): string {
+  if (dir.endsWith("/")) return dir + file;
+  return `${dir}/${file}`;
+}
+
+function renderStoryboardInspector(targetId: string, obj: unknown) {
+  const root = qs<HTMLElement>(`#${targetId}`);
+  if (!root) return;
+  root.innerHTML = "";
+  const pre = document.createElement("pre");
+  pre.className = "inspector-tree";
+  pre.textContent = JSON.stringify(obj, null, 2);
+  root.appendChild(pre);
+}
+
+function renderStoryboardSummary(sb: Record<string, unknown>) {
+  const summary = qs<HTMLElement>("#storyboard-summary");
+  if (!summary) return;
+  summary.innerHTML = "";
+  const scenes = (sb as any).scenes ?? [];
+  if (!Array.isArray(scenes) || scenes.length === 0) {
+    summary.textContent = t("studio.summary_empty");
+    return;
+  }
+  const list = document.createElement("ol");
+  list.className = "studio-scene-list";
+  for (const scene of scenes) {
+    const li = document.createElement("li");
+    li.className = "studio-scene-item";
+    const title = document.createElement("div");
+    title.className = "studio-scene-title";
+    title.textContent = `${scene.scene_id ?? scene.id ?? "scene"} · ${scene.scene_type ?? "?"} · ${(scene.duration_s ?? 0).toFixed(1)}s`;
+    const meta = document.createElement("div");
+    meta.className = "studio-scene-meta";
+    const beats = Array.isArray(scene.beats) ? `${scene.beats.length} beats` : "";
+    const camera = scene.camera ?? "";
+    const palette = scene.palette_hint ?? "";
+    meta.textContent = [camera, palette, beats].filter(Boolean).join(" · ");
+    const prompt = document.createElement("div");
+    prompt.className = "studio-scene-prompt";
+    prompt.textContent = scene.prompt ?? "";
+    li.append(title, meta, prompt);
+    list.appendChild(li);
+  }
+  summary.appendChild(list);
+}
+
+function syncStudioButtons() {
+  const storyboardBtn = qs<HTMLButtonElement>("#btn-studio-storyboard");
+  const generateBtn = qs<HTMLButtonElement>("#btn-studio-generate");
+  const masterBtn = qs<HTMLButtonElement>("#btn-studio-master");
+  const shipBtn = qs<HTMLButtonElement>("#btn-studio-ship");
+  if (storyboardBtn) storyboardBtn.disabled = !wavPath;
+  if (generateBtn) generateBtn.disabled = !storyboard;
+  if (masterBtn) masterBtn.disabled = !lastVideoPath;
+  if (shipBtn) shipBtn.disabled = !lastMasterDir;
+}
+
+// ---------------------------------------------------------------------------
 // Drag-and-drop
 // ---------------------------------------------------------------------------
 
@@ -614,6 +992,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   qs("#btn-re-render").addEventListener("click", onRenderVideo);
 
+  // Studio pipeline (ComfyUI + C4D + UE + AE + DaVinci) — see
+  // docs/STUDIO_PIPELINE.md. Non-destructive: keeps the legacy render
+  // buttons working for users who only have the wgpu binary.
+  qs("#btn-studio-storyboard").addEventListener("click", onStudioStoryboard);
+  qs("#btn-studio-generate").addEventListener("click", onStudioGenerate);
+  qs("#btn-studio-master").addEventListener("click", onStudioMaster);
+  qs("#btn-studio-ship").addEventListener("click", onStudioShip);
+
   setStatus(t("shell.status.ready"), "ready");
   syncButtons();
+  syncStudioButtons();
 });

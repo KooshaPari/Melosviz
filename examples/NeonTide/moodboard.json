@@ -1,0 +1,32 @@
+{
+  "schema_version": "mood-board-1.0",
+  "title": "Neon Tide — visual reference",
+  "concept": "neon noir: bioluminescent underwater city at dusk, dancer becoming the light",
+  "subject": {
+    "type": "protagonist",
+    "description": "young woman with short silver hair, neon trenchcoat, hand-mirror tattoo on left forearm",
+    "palette_seeds": ["#0d0d10", "#f0f0f8", "#c084fc"]
+  },
+  "environment": {
+    "type": "world",
+    "description": "bioluminescent underwater city of glass and coral, neon sign reflections on water, ambient particulate matter in the air",
+    "palette_seeds": ["#0d0d10", "#ff2bd6", "#22d3ee"]
+  },
+  "mood_arc": {
+    "0:00-0:30": "intro — bright, dawn light through coral arches, slow dolly in",
+    "0:30-1:15": "verse — dark, deep water, dancer silhouette, slow pull back",
+    "1:15-2:00": "drop — bright, sun shafts, whip pan burst on every snare",
+    "2:00-3:00": "outro — ambient, lights fading, slow track back"
+  },
+  "reference_images": [
+    {"role": "subject",  "path": "./refs/subject_silver_hair.png",  "license": "self"},
+    {"role": "subject",  "path": "./refs/subject_trenchcoat.png",   "license": "self"},
+    {"role": "subject",  "path": "./refs/subject_mirror_tattoo.png","license": "self"},
+    {"role": "environment", "path": "./refs/env_coral_arches.png", "license": "CC0"},
+    {"role": "environment", "path": "./refs/env_neon_reflect.png", "license": "CC0"}
+  ],
+  "licenses": {
+    "subject": "CC-BY 4.0 (Koosha Pari, self-portrait photography)",
+    "environment": "CC0 (public-domain photographs)"
+  }
+}

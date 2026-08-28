@@ -58,13 +58,10 @@ function relativeLuminance(hex: string): number {
 
 /** Format RGB channels [0, 1] to #rrggbb. */
 function toHex(r: number, g: number, b: number): string {
-  const clamp = (n: number) =>
-    Math.max(0, Math.min(255, Math.round(n * 255)));
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n * 255)));
   return (
     "#" +
-    [r, g, b]
-      .map((ch) => clamp(ch).toString(16).padStart(2, "0"))
-      .join("")
+    [r, g, b].map((ch) => clamp(ch).toString(16).padStart(2, "0")).join("")
   );
 }
 
@@ -72,7 +69,11 @@ function toHex(r: number, g: number, b: number): string {
  * Blend two parsed colours by factor `t`.
  * t=0 → a, t=1 → b.
  */
-function blend(a: Rgba, b: Rgba, t: number): { r: number; g: number; b: number } {
+function blend(
+  a: Rgba,
+  b: Rgba,
+  t: number,
+): { r: number; g: number; b: number } {
   return {
     r: a.r + (b.r - a.r) * t,
     g: a.g + (b.g - a.g) * t,

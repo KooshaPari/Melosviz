@@ -6,7 +6,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getLocale, setLocale as setLocaleInternal, type Locale } from "./index";
+import {
+  getLocale,
+  setLocale as setLocaleInternal,
+  type Locale,
+} from "./index";
 
 interface LocaleContextValue {
   locale: Locale;

@@ -1,25 +1,26 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { t } from './i18n'
-import { SceneView } from './r3fRenderer'
-import { AudioAdapter } from './audioAdapter'
-import { mapAnalysisToRenderSpec, applyPresetToSpec } from './mapAnalysisSpec'
-import type { RenderSpec } from './renderSpec'
-import { SpecViewer } from './components/SpecViewer'
-import { useAnalysis, analyzeAudioPath } from './hooks/useAnalysis'
-import { usePlaylist } from './hooks/usePlaylist'
-import type { PlaylistItem } from './hooks/usePlaylist'
-import { PlaylistPanel } from './components/PlaylistPanel'
-import { SplashScreen } from './components/SplashScreen'
-import { LoadingOverlay } from './components/LoadingOverlay'
-import { WaveformDisplay } from './components/WaveformDisplay'
-import { PresetEditor } from './components/PresetEditor'
-import { PresetQuickApply } from './components/PresetQuickApply'
-import { KeyboardHelp } from './components/KeyboardHelp'
-import { LocaleSwitcher } from './components/LocaleSwitcher'
-import { AudioDropzone } from './components/AudioDropzone'
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useTheme } from './theme/ThemeProvider'
-import { ErrorBoundary } from './components/ErrorBoundary'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { t } from "./i18n";
+import { SceneView } from "./r3fRenderer";
+import { AudioAdapter } from "./audioAdapter";
+import { mapAnalysisToRenderSpec, applyPresetToSpec } from "./mapAnalysisSpec";
+import type { RenderSpec } from "./renderSpec";
+import { SpecViewer } from "./components/SpecViewer";
+import { useAnalysis, analyzeAudioPath } from "./hooks/useAnalysis";
+import { usePlaylist } from "./hooks/usePlaylist";
+import type { PlaylistItem } from "./hooks/usePlaylist";
+import { PlaylistPanel } from "./components/PlaylistPanel";
+import { SplashScreen } from "./components/SplashScreen";
+import { LoadingOverlay } from "./components/LoadingOverlay";
+import { WaveformDisplay } from "./components/WaveformDisplay";
+import { PresetEditor } from "./components/PresetEditor";
+import { PresetQuickApply } from "./components/PresetQuickApply";
+import { KeyboardHelp } from "./components/KeyboardHelp";
+import { LocaleSwitcher } from "./components/LocaleSwitcher";
+import { AudioDropzone } from "./components/AudioDropzone";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useTheme } from "./theme/ThemeProvider";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { StudioConsole } from "./components/StudioConsole";
 
 // Placeholder spec — drives the scene from the first frame.
 // Workstream C (semantic multi-scene) will replace this with a server-fetched
@@ -31,197 +32,220 @@ const PLACEHOLDER_SPEC: RenderSpec = {
   keyframes: [
     {
       t: 0,
-      scene: 'Establishing',
-      scene_template: 'wire_orb',
+      scene: "Establishing",
+      scene_template: "wire_orb",
       camera: { distance: 8, azimuth: 0, elevation: 0.15 },
-      color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.7 },
+      color: { primary: "#7c6af7", secondary: "#22d3ee", brightness: 0.7 },
     },
     {
       t: 0.18,
-      scene: 'Performance',
-      scene_template: 'torus_flow',
+      scene: "Performance",
+      scene_template: "torus_flow",
       camera: { distance: 5, azimuth: 0.4, elevation: 0.1 },
-      color: { primary: '#ec4899', secondary: '#f59e0b', brightness: 0.9 },
+      color: { primary: "#ec4899", secondary: "#f59e0b", brightness: 0.9 },
     },
     {
       t: 0.45,
-      scene: 'Anthem',
-      scene_template: 'crystal_burst',
+      scene: "Anthem",
+      scene_template: "crystal_burst",
       camera: { distance: 4, azimuth: -0.3, elevation: 0.3 },
-      color: { primary: '#f97316', secondary: '#a3e635', brightness: 1.0 },
+      color: { primary: "#f97316", secondary: "#a3e635", brightness: 1.0 },
     },
     {
       t: 0.72,
-      scene: 'Interlude',
-      scene_template: 'ring_drift',
+      scene: "Interlude",
+      scene_template: "ring_drift",
       camera: { distance: 7, azimuth: 0, elevation: 0.05 },
-      color: { primary: '#0ea5e9', secondary: '#818cf8', brightness: 0.6 },
+      color: { primary: "#0ea5e9", secondary: "#818cf8", brightness: 0.6 },
     },
     {
       t: 0.88,
-      scene: 'Outro',
-      scene_template: 'wire_orb',
+      scene: "Outro",
+      scene_template: "wire_orb",
       camera: { distance: 10, azimuth: 0.2, elevation: 0.2 },
-      color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 },
+      color: { primary: "#6366f1", secondary: "#22d3ee", brightness: 0.5 },
     },
     {
       t: 1,
-      scene: 'Outro',
-      scene_template: 'wire_orb',
+      scene: "Outro",
+      scene_template: "wire_orb",
       camera: { distance: 10, azimuth: 0.2, elevation: 0.2 },
-      color: { primary: '#6366f1', secondary: '#22d3ee', brightness: 0.5 },
+      color: { primary: "#6366f1", secondary: "#22d3ee", brightness: 0.5 },
     },
   ],
-}
+};
 
 export default function App() {
-  const adapterRef = useRef<AudioAdapter | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [audioPath, setAudioPath] = useState('')
-  const [showSplash, setShowSplash] = useState(true)
-  const [showHelp, setShowHelp] = useState(false)
-  const [fullscreen, setFullscreen] = useState(false)
-  const { theme, toggle: toggleTheme } = useTheme()
-  const [presetSpec, setPresetSpec] = useState<RenderSpec | null>(null)
-  const { data: renderSpec, loading: analyzing, error: analysisError, analyze } = useAnalysis()
-  const [playlistViewSpec, setPlaylistViewSpec] = useState<RenderSpec | null>(null)
+  const adapterRef = useRef<AudioAdapter | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [audioPath, setAudioPath] = useState("");
+  const [showSplash, setShowSplash] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [mode, setMode] = useState<"preview" | "studio">("studio");
+  const [studioOpenSignal, setStudioOpenSignal] = useState(0);
+  const { theme, toggle: toggleTheme } = useTheme();
+  const [presetSpec, setPresetSpec] = useState<RenderSpec | null>(null);
+  const {
+    data: renderSpec,
+    loading: analyzing,
+    error: analysisError,
+    analyze,
+  } = useAnalysis();
+  const [playlistViewSpec, setPlaylistViewSpec] = useState<RenderSpec | null>(
+    null,
+  );
 
   const handleApplyPreset = useCallback(
     (preset: { id: string }) => {
-      const base = playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
-      setPresetSpec(applyPresetToSpec(base, preset.id))
+      const base = playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC;
+      setPresetSpec(applyPresetToSpec(base, preset.id));
     },
     [playlistViewSpec, renderSpec],
-  )
+  );
 
   // Playlist: upload blob: URLs then analyze (single /api path — no double-fetch)
   const analyzeFile = useCallback(
     (objectUrl: string) => analyzeAudioPath(objectUrl),
     [],
-  )
+  );
 
-  const playlist = usePlaylist(analyzeFile)
+  const playlist = usePlaylist(analyzeFile);
 
   const handleSelectPlaylistItem = useCallback((item: PlaylistItem) => {
-    if (item.spec) setPlaylistViewSpec(item.spec)
-  }, [])
+    if (item.spec) setPlaylistViewSpec(item.spec);
+  }, []);
 
   // Active spec priority: preset-applied > playlist-selected > analyzed > placeholder
-  const activeSpec: RenderSpec = presetSpec ?? playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC
+  const activeSpec: RenderSpec =
+    presetSpec ?? playlistViewSpec ?? renderSpec ?? PLACEHOLDER_SPEC;
 
   // ---- Playback state ------------------------------------------------------
-  const [playbackT, setPlaybackT] = useState(0)
-  const [autoPlay, setAutoPlay] = useState(false)
+  const [playbackT, setPlaybackT] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   // Auto-play: advance playbackT at bpm-derived rate.
   // Each beat = 1 / totalBeats progress; totalBeats = bpm * durationSecs / 60.
-  const rafRef = useRef<number | null>(null)
-  const lastTickRef = useRef<number>(performance.now())
-  const playbackTRef = useRef(0)
-  playbackTRef.current = playbackT
+  const rafRef = useRef<number | null>(null);
+  const lastTickRef = useRef<number>(performance.now());
+  const playbackTRef = useRef(0);
+  playbackTRef.current = playbackT;
 
   useEffect(() => {
     if (!autoPlay) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      rafRef.current = null
-      return
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      return;
     }
 
-    const bpm = activeSpec.bpm ?? 120
-    const totalBeats = (bpm * activeSpec.durationSecs) / 60
+    const bpm = activeSpec.bpm ?? 120;
+    const totalBeats = (bpm * activeSpec.durationSecs) / 60;
     // Progress per millisecond = 1 / (durationSecs * 1000)
-    const progressPerMs = 1 / (activeSpec.durationSecs * 1000)
+    const progressPerMs = 1 / (activeSpec.durationSecs * 1000);
 
-    lastTickRef.current = performance.now()
+    lastTickRef.current = performance.now();
 
     const tick = (now: number) => {
-      const dt = now - lastTickRef.current
-      lastTickRef.current = now
+      const dt = now - lastTickRef.current;
+      lastTickRef.current = now;
       // Clamp totalBeats usage to avoid drift; advance by elapsed fraction
-      void totalBeats // referenced for future beat-lock accuracy
+      void totalBeats; // referenced for future beat-lock accuracy
       setPlaybackT((prev) => {
-        const next = prev + dt * progressPerMs
+        const next = prev + dt * progressPerMs;
         if (next >= 1) {
-          setAutoPlay(false)
-          return 1
+          setAutoPlay(false);
+          return 1;
         }
-        return next
-      })
-      rafRef.current = requestAnimationFrame(tick)
-    }
+        return next;
+      });
+      rafRef.current = requestAnimationFrame(tick);
+    };
 
-    rafRef.current = requestAnimationFrame(tick)
+    rafRef.current = requestAnimationFrame(tick);
     return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-    }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPlay, activeSpec.bpm, activeSpec.durationSecs])
+  }, [autoPlay, activeSpec.bpm, activeSpec.durationSecs]);
 
   // Reset playbackT to 0 when a new spec arrives
   useEffect(() => {
-    setPlaybackT(0)
-    setAutoPlay(false)
-    setPresetSpec(null)
-  }, [renderSpec])
+    setPlaybackT(0);
+    setAutoPlay(false);
+    setPresetSpec(null);
+  }, [renderSpec]);
 
   // Dispose audio on unmount
   useEffect(() => {
     return () => {
-      adapterRef.current?.dispose()
-    }
-  }, [])
+      adapterRef.current?.dispose();
+    };
+  }, []);
 
   const handleStart = async () => {
     try {
-      setError(null)
+      setError(null);
       if (!adapterRef.current) {
-        adapterRef.current = new AudioAdapter()
+        adapterRef.current = new AudioAdapter();
       }
-      setIsPlaying(true)
+      setIsPlaying(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start audio')
+      setError(err instanceof Error ? err.message : "Failed to start audio");
     }
-  }
+  };
 
   const handleStop = () => {
-    adapterRef.current?.stop()
-    setIsPlaying(false)
-  }
+    adapterRef.current?.stop();
+    setIsPlaying(false);
+  };
 
   // ---- Keyboard shortcut actions -------------------------------------------
-  const shortcutActions = useMemo(() => ({
-    togglePlay: () => setAutoPlay((v) => !v),
-    seekBackward: () => setPlaybackT((t) => Math.max(0, t - 5 / (activeSpec.durationSecs || 240))),
-    seekForward: () => setPlaybackT((t) => Math.min(1, t + 5 / (activeSpec.durationSecs || 240))),
-    toggleHelp: () => setShowHelp((v) => !v),
-    closeModal: () => setShowHelp(false),
-    openPresetEditor: () => { /* preset editor triggered externally */ },
-    toggleFullscreen: () => setFullscreen((v) => !v),
-    restartPlayback: () => { setAutoPlay(false); setPlaybackT(0) },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [activeSpec.durationSecs])
+  const shortcutActions = useMemo(
+    () => ({
+      togglePlay: () => setAutoPlay((v) => !v),
+      seekBackward: () =>
+        setPlaybackT((t) =>
+          Math.max(0, t - 5 / (activeSpec.durationSecs || 240)),
+        ),
+      seekForward: () =>
+        setPlaybackT((t) =>
+          Math.min(1, t + 5 / (activeSpec.durationSecs || 240)),
+        ),
+      toggleHelp: () => setShowHelp((v) => !v),
+      closeModal: () => setShowHelp(false),
+      openPresetEditor: () => {
+        /* preset editor triggered externally */
+      },
+      toggleFullscreen: () => setFullscreen((v) => !v),
+      restartPlayback: () => {
+        setAutoPlay(false);
+        setPlaybackT(0);
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }),
+    [activeSpec.durationSecs],
+  );
 
-  useKeyboardShortcuts(shortcutActions)
+  useKeyboardShortcuts(shortcutActions);
 
   // Scene jump: map button index → keyframe t
   const handleSceneJump = useCallback(
     (index: number) => {
-      const kf = activeSpec.keyframes[index]
-      if (kf) setPlaybackT(kf.t)
+      const kf = activeSpec.keyframes[index];
+      if (kf) setPlaybackT(kf.t);
     },
     [activeSpec.keyframes],
-  )
+  );
 
-  const currentSceneLabel =
-    (() => {
-      const sorted = [...activeSpec.keyframes].sort((a, b) => a.t - b.t)
-      let label = sorted[0]?.scene ?? 'Start'
-      for (const kf of sorted) {
-        if (playbackT >= kf.t) label = kf.scene ?? label
-      }
-      return label
-    })()
+  const currentSceneLabel = (() => {
+    const sorted = [...activeSpec.keyframes].sort((a, b) => a.t - b.t);
+    let label = sorted[0]?.scene ?? "Start";
+    for (const kf of sorted) {
+      if (playbackT >= kf.t) label = kf.scene ?? label;
+    }
+    return label;
+  })();
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
@@ -229,13 +253,29 @@ export default function App() {
       <LoadingOverlay visible={analyzing} />
       <KeyboardHelp open={showHelp} onOpenChange={setShowHelp} />
 
-      {/* ---- R3F Canvas -------------------------------------------------- */}
-      <SceneView
-        spec={activeSpec}
-        playbackT={playbackT}
-        currentSceneLabel={currentSceneLabel}
-        className={`absolute inset-0 w-full h-full${fullscreen ? ' z-40' : ''}`}
-      />
+      {mode === "studio" ? (
+        <main
+          id="main"
+          className="absolute inset-0 z-0 overflow-y-auto bg-[#080808]"
+        >
+          <ErrorBoundary>
+            <StudioConsole
+              initialWavPath={audioPath}
+              autoOpenSignal={studioOpenSignal}
+            />
+          </ErrorBoundary>
+        </main>
+      ) : (
+        <>
+          {/* ---- R3F Canvas -------------------------------------------------- */}
+          <SceneView
+            spec={activeSpec}
+            playbackT={playbackT}
+            currentSceneLabel={currentSceneLabel}
+            className={`absolute inset-0 w-full h-full${fullscreen ? " z-40" : ""}`}
+          />
+        </>
+      )}
 
       {/* ---- Playlist sidebar (right of left panel) --------------------- */}
       <div className="absolute top-4 left-72 z-10 flex flex-col gap-3">
@@ -248,8 +288,30 @@ export default function App() {
       {/* ---- Left panel -------------------------------------------------- */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-3 w-64">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-white/90">Melosviz</h1>
+          <h1 className="text-xl font-bold tracking-tight text-white/90">
+            Melosviz
+          </h1>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                setMode((prev) => (prev === "studio" ? "preview" : "studio"));
+                setStudioOpenSignal((n) => n + 1);
+              }}
+              title={
+                mode === "studio"
+                  ? "Switch to 3D preview"
+                  : "Switch to Director's Console"
+              }
+              className="flex h-6 items-center justify-center rounded-full border border-white/20 bg-white/5 px-2 text-[10px] text-white/50 hover:bg-white/10 hover:text-white/80 transition-colors"
+              aria-label={
+                mode === "studio"
+                  ? "Switch to 3D preview"
+                  : "Switch to Director's Console"
+              }
+              data-testid="mode-toggle"
+            >
+              {mode === "studio" ? "Preview" : "Studio"}
+            </button>
             <button
               onClick={toggleTheme}
               title="Toggle light/dark theme"
@@ -282,13 +344,17 @@ export default function App() {
             className="px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white/80 placeholder:text-white/30 focus:outline-none focus:border-cyan-500/50"
           />
           <button
-            onClick={() => { if (audioPath) void analyze(audioPath) }}
+            onClick={() => {
+              if (audioPath) void analyze(audioPath);
+            }}
             disabled={!audioPath || analyzing}
             className="px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-colors border border-cyan-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {analyzing ? 'Analyzing…' : 'Analyze'}
+            {analyzing ? "Analyzing…" : "Analyze"}
           </button>
-          {analysisError && <p className="text-xs text-red-400">{analysisError}</p>}
+          {analysisError && (
+            <p className="text-xs text-red-400">{analysisError}</p>
+          )}
           {renderSpec && <SpecViewer spec={renderSpec} />}
         </div>
 
@@ -298,11 +364,14 @@ export default function App() {
             onClick={isPlaying ? handleStop : handleStart}
             className="px-4 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-sm font-medium transition-colors border border-cyan-500/30"
           >
-            {isPlaying ? 'Stop Audio' : 'Start Audio'}
+            {isPlaying ? "Stop Audio" : "Start Audio"}
           </button>
           <PresetEditor
             spec={activeSpec}
-            onPreviewChange={(t) => { setAutoPlay(false); setPlaybackT(t) }}
+            onPreviewChange={(t) => {
+              setAutoPlay(false);
+              setPlaybackT(t);
+            }}
             onApplyPreset={handleApplyPreset}
           />
         </div>
@@ -322,8 +391,8 @@ export default function App() {
               onClick={() => handleSceneJump(i)}
               className={`px-3 py-1.5 rounded-md text-xs text-left transition-colors ${
                 currentSceneLabel === kf.scene
-                  ? 'bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/40'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10 border border-white/10'
+                  ? "bg-fuchsia-500/25 text-fuchsia-300 border border-fuchsia-500/40"
+                  : "bg-white/5 text-white/60 hover:bg-white/10 border border-white/10"
               }`}
             >
               {kf.scene ?? `Beat ${i + 1}`}
@@ -346,14 +415,14 @@ export default function App() {
           {/* Auto-play toggle */}
           <button
             onClick={() => setAutoPlay((v) => !v)}
-            title={autoPlay ? 'Pause auto-play' : 'Start auto-play'}
+            title={autoPlay ? "Pause auto-play" : "Start auto-play"}
             className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border transition-colors text-sm ${
               autoPlay
-                ? 'bg-fuchsia-500/30 border-fuchsia-500/50 text-fuchsia-200'
-                : 'bg-white/5 border-white/20 text-white/60 hover:bg-white/10'
+                ? "bg-fuchsia-500/30 border-fuchsia-500/50 text-fuchsia-200"
+                : "bg-white/5 border-white/20 text-white/60 hover:bg-white/10"
             }`}
           >
-            {autoPlay ? '⏸' : '▶'}
+            {autoPlay ? "⏸" : "▶"}
           </button>
 
           {/* Playback position slider (0–100%) */}
@@ -365,8 +434,8 @@ export default function App() {
               step={0.1}
               value={Math.round(playbackT * 1000) / 10}
               onChange={(e) => {
-                setAutoPlay(false)
-                setPlaybackT(Number(e.target.value) / 100)
+                setAutoPlay(false);
+                setPlaybackT(Number(e.target.value) / 100);
               }}
               className="w-full h-1.5 rounded-full appearance-none bg-white/10 accent-fuchsia-500 cursor-pointer"
             />
@@ -378,7 +447,10 @@ export default function App() {
 
           {/* Reset button */}
           <button
-            onClick={() => { setAutoPlay(false); setPlaybackT(0) }}
+            onClick={() => {
+              setAutoPlay(false);
+              setPlaybackT(0);
+            }}
             title="Reset to start"
             className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border border-white/20 bg-white/5 hover:bg-white/10 text-white/60 text-xs transition-colors"
           >
@@ -389,9 +461,11 @@ export default function App() {
         {/* Status row */}
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${autoPlay ? 'bg-fuchsia-400 animate-pulse' : isPlaying ? 'bg-cyan-400 animate-pulse' : 'bg-white/20'}`} />
+            <div
+              className={`w-2 h-2 rounded-full ${autoPlay ? "bg-fuchsia-400 animate-pulse" : isPlaying ? "bg-cyan-400 animate-pulse" : "bg-white/20"}`}
+            />
             <span className="text-xs text-white/40">
-              {autoPlay ? 'Playing' : isPlaying ? 'Listening' : 'Idle'}
+              {autoPlay ? "Playing" : isPlaying ? "Listening" : "Idle"}
             </span>
           </div>
           <div className="text-xs text-white/30">
@@ -400,5 +474,5 @@ export default function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }

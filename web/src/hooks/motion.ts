@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -6,30 +6,30 @@ import { useEffect, useState } from 'react'
 
 /** A single cubic-bezier curve with a recommended CSS transition duration. */
 export interface EasingCurve {
-  x1: number
-  y1: number
-  x2: number
-  y2: number
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
   /** Recommended duration in milliseconds for CSS transitions. */
-  durationMs: number
+  durationMs: number;
 }
 
 /** Resolved state from the spring solver at a point in time. */
 export interface SpringState {
   /** Current position (1 = fully resolved). */
-  x: number
+  x: number;
   /** Current velocity (units/ms). */
-  dx: number
+  dx: number;
 }
 
 /** Tuning parameters for the critically-damped spring solver. */
 export interface SpringConfig {
   /** Spring stiffness. Higher = snappier. Default 300. */
-  stiffness: number
+  stiffness: number;
   /** Damping coefficient. Defaults to critical damping when omitted. */
-  damping: number
+  damping: number;
   /** Attached mass. Higher = heavier feel. Default 1. */
-  mass: number
+  mass: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ export const standard: EasingCurve = {
   x2: 0.0,
   y2: 1.0,
   durationMs: 200,
-}
+};
 
 export const emphasized: EasingCurve = {
   x1: 0.2,
@@ -50,7 +50,7 @@ export const emphasized: EasingCurve = {
   x2: 0.0,
   y2: 1.0,
   durationMs: 320,
-}
+};
 
 export const quick: EasingCurve = {
   x1: 0.4,
@@ -58,7 +58,7 @@ export const quick: EasingCurve = {
   x2: 0.6,
   y2: 1.0,
   durationMs: 120,
-}
+};
 
 export const deliberate: EasingCurve = {
   x1: 0.0,
@@ -66,15 +66,15 @@ export const deliberate: EasingCurve = {
   x2: 0.0,
   y2: 1.0,
   durationMs: 500,
-}
+};
 
 // ---------------------------------------------------------------------------
 // motionTokens — CSS `transition` shorthand values
 // ---------------------------------------------------------------------------
 
 function toTransitionValue(ease: EasingCurve): string {
-  const bezier = `cubic-bezier(${ease.x1},${ease.y1},${ease.x2},${ease.y2})`
-  return `all ${ease.durationMs}ms ${bezier}`
+  const bezier = `cubic-bezier(${ease.x1},${ease.y1},${ease.x2},${ease.y2})`;
+  return `all ${ease.durationMs}ms ${bezier}`;
 }
 
 /** CSS `transition` shorthand strings for every easing curve. */
@@ -83,7 +83,7 @@ export const motionTokens: Record<string, string> = {
   emphasized: toTransitionValue(emphasized),
   quick: toTransitionValue(quick),
   deliberate: toTransitionValue(deliberate),
-}
+};
 
 // ---------------------------------------------------------------------------
 // Spring solver — critically-damped
@@ -108,54 +108,54 @@ export const motionTokens: Record<string, string> = {
  * ```
  */
 export function withSpring(config?: Partial<SpringConfig>) {
-  const { stiffness = 300, damping: userDamping, mass = 1 } = config ?? {}
+  const { stiffness = 300, damping: userDamping, mass = 1 } = config ?? {};
 
   // Convert ms → s internally so ω₀ carries the right dimension
-  const msToSec = 1 / 1000
-  const omega0 = Math.sqrt(stiffness / mass) * msToSec // rad/ms → rad/s
-  const damping = userDamping ?? 2 * Math.sqrt(stiffness * mass) * msToSec
-  const zeta = damping / (2 * omega0 * mass)
+  const msToSec = 1 / 1000;
+  const omega0 = Math.sqrt(stiffness / mass) * msToSec; // rad/ms → rad/s
+  const damping = userDamping ?? 2 * Math.sqrt(stiffness * mass) * msToSec;
+  const zeta = damping / (2 * omega0 * mass);
 
   return (tMs: number, x0: number = 1, v0: number = 0): SpringState => {
-    const t = tMs * msToSec // ms → sec
+    const t = tMs * msToSec; // ms → sec
 
     if (Math.abs(zeta - 1) < 1e-6) {
       // Critically-damped: x(t) = (A + B·t) · e^(−ω₀·t)
-      const A = x0
-      const B = v0 + omega0 * x0
-      const exp = Math.exp(-omega0 * t)
+      const A = x0;
+      const B = v0 + omega0 * x0;
+      const exp = Math.exp(-omega0 * t);
       return {
         x: (A + B * t) * exp,
         dx: (B - omega0 * (A + B * t)) * exp,
-      }
+      };
     }
 
     if (zeta > 1) {
       // Over-damped
-      const r1 = -omega0 * (zeta - Math.sqrt(zeta * zeta - 1))
-      const r2 = -omega0 * (zeta + Math.sqrt(zeta * zeta - 1))
-      const c2 = (v0 - r1 * x0) / (r2 - r1)
-      const c1 = x0 - c2
+      const r1 = -omega0 * (zeta - Math.sqrt(zeta * zeta - 1));
+      const r2 = -omega0 * (zeta + Math.sqrt(zeta * zeta - 1));
+      const c2 = (v0 - r1 * x0) / (r2 - r1);
+      const c1 = x0 - c2;
       return {
         x: c1 * Math.exp(r1 * t) + c2 * Math.exp(r2 * t),
         dx: c1 * r1 * Math.exp(r1 * t) + c2 * r2 * Math.exp(r2 * t),
-      }
+      };
     }
 
     // Under-damped
-    const omegaD = omega0 * Math.sqrt(1 - zeta * zeta)
-    const A = x0
-    const B = (v0 + zeta * omega0 * x0) / omegaD
-    const decay = Math.exp(-zeta * omega0 * t)
-    const cos = Math.cos(omegaD * t)
-    const sin = Math.sin(omegaD * t)
+    const omegaD = omega0 * Math.sqrt(1 - zeta * zeta);
+    const A = x0;
+    const B = (v0 + zeta * omega0 * x0) / omegaD;
+    const decay = Math.exp(-zeta * omega0 * t);
+    const cos = Math.cos(omegaD * t);
+    const sin = Math.sin(omegaD * t);
     return {
       x: decay * (A * cos + B * sin),
       dx:
         -zeta * omega0 * decay * (A * cos + B * sin) +
         decay * (-A * omegaD * sin + B * omegaD * cos),
-    }
-  }
+    };
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -186,16 +186,16 @@ export function withSpring(config?: Partial<SpringConfig>) {
  * ```
  */
 export function usePrefersReducedMotion(): boolean {
-  const [prefersReduced, setPrefersReduced] = useState(false)
+  const [prefersReduced, setPrefersReduced] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setPrefersReduced(mq.matches)
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReduced(mq.matches);
 
-    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
+    const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
-  return prefersReduced
+  return prefersReduced;
 }

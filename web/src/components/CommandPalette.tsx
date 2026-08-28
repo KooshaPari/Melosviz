@@ -1,19 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import * as Dialog from '@radix-ui/react-dialog'
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 
 // ---- Types ------------------------------------------------------------------
 
 export interface Command {
-  id: string
-  title: string
+  id: string;
+  title: string;
   /** Optional keyboard-hint label (e.g. "⌘S") shown on the right side. */
-  hint?: string
+  hint?: string;
   /** Called when the command is selected. */
-  run: () => void
+  run: () => void;
 }
 
 interface CommandPaletteProps {
-  commands: Command[]
+  commands: Command[];
 }
 
 // ---- Fuzzy scorer -----------------------------------------------------------
@@ -23,129 +23,132 @@ interface CommandPaletteProps {
 // Levenshtein — so it stays fast for < 200-item lists.
 
 function fuzzyScore(query: string, target: string): number {
-  if (!query) return 1
-  const q = query.toLowerCase()
-  const t = target.toLowerCase()
+  if (!query) return 1;
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
 
-  let qi = 0
-  let score = 0
-  let prevMatch = -2
+  let qi = 0;
+  let score = 0;
+  let prevMatch = -2;
 
   for (let ti = 0; ti < t.length && qi < q.length; ti++) {
     if (t[ti] === q[qi]) {
       // Consecutive match bonus
-      if (ti === prevMatch + 1) score += 3
-      else score += 1
+      if (ti === prevMatch + 1) score += 3;
+      else score += 1;
       // Word-boundary bonus
-      if (ti === 0 || t[ti - 1] === ' ' || t[ti - 1] === '-' || t[ti - 1] === '_') {
-        score += 2
+      if (
+        ti === 0 ||
+        t[ti - 1] === " " ||
+        t[ti - 1] === "-" ||
+        t[ti - 1] === "_"
+      ) {
+        score += 2;
       }
-      prevMatch = ti
-      qi++
+      prevMatch = ti;
+      qi++;
     }
   }
 
   // Not every query character was found
-  if (qi < q.length) return 0
+  if (qi < q.length) return 0;
 
   // Normalise so longer targets don't automatically win
-  return Math.min(1, score / (t.length * 2.5))
+  return Math.min(1, score / (t.length * 2.5));
 }
 
 // ---- Component --------------------------------------------------------------
 
 export function CommandPalette({ commands }: CommandPaletteProps) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const listRef = useRef<HTMLDivElement>(null)
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Filtered + ranked results
   const filtered = useMemo(() => {
     if (!query.trim()) {
-      return commands.map((c, i) => ({ command: c, score: 0, index: i }))
+      return commands.map((c, i) => ({ command: c, score: 0, index: i }));
     }
 
     return commands
       .map((c, i) => {
-        const titleScore = fuzzyScore(query, c.title)
-        const hintScore = c.hint ? fuzzyScore(query, c.hint) * 0.4 : 0
-        const score = titleScore + hintScore
-        return { command: c, score, index: i }
+        const titleScore = fuzzyScore(query, c.title);
+        const hintScore = c.hint ? fuzzyScore(query, c.hint) * 0.4 : 0;
+        const score = titleScore + hintScore;
+        return { command: c, score, index: i };
       })
       .filter((item) => item.score > 0)
       .sort((a, b) => {
         // Higher score first; ties broken by original order
-        return b.score - a.score || a.index - b.index
-      })
-  }, [commands, query])
+        return b.score - a.score || a.index - b.index;
+      });
+  }, [commands, query]);
 
   // Auto-select first item whenever results change
   useEffect(() => {
-    setSelectedIndex(0)
-  }, [filtered.length])
+    setSelectedIndex(0);
+  }, [filtered.length]);
 
   // Focus the input when the dialog opens; clear query when it closes
   useEffect(() => {
     if (open) {
-      requestAnimationFrame(() => inputRef.current?.focus())
+      requestAnimationFrame(() => inputRef.current?.focus());
     } else {
-      setQuery('')
+      setQuery("");
     }
-  }, [open])
+  }, [open]);
 
   // Keep the active item visible during keyboard navigation
   useEffect(() => {
-    const el = listRef.current?.children[selectedIndex] as HTMLElement | undefined
-    el?.scrollIntoView({ block: 'nearest' })
-  }, [selectedIndex])
+    const el = listRef.current?.children[selectedIndex] as
+      HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
 
-  const execute = useCallback(
-    (item: Command) => {
-      setOpen(false)
-      // Defer execution so the dialog close animation isn't blocked
-      requestAnimationFrame(() => item.run())
-    },
-    [],
-  )
+  const execute = useCallback((item: Command) => {
+    setOpen(false);
+    // Defer execution so the dialog close animation isn't blocked
+    requestAnimationFrame(() => item.run());
+  }, []);
 
   const executeSelected = useCallback(() => {
-    const item = filtered[selectedIndex]
-    if (item) execute(item.command)
-  }, [filtered, selectedIndex, execute])
+    const item = filtered[selectedIndex];
+    if (item) execute(item.command);
+  }, [filtered, selectedIndex, execute]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault()
-          setSelectedIndex((prev) => Math.min(prev + 1, filtered.length - 1))
-          break
-        case 'ArrowUp':
-          e.preventDefault()
-          setSelectedIndex((prev) => Math.max(prev - 1, 0))
-          break
-        case 'Enter':
-          e.preventDefault()
-          executeSelected()
-          break
+        case "ArrowDown":
+          e.preventDefault();
+          setSelectedIndex((prev) => Math.min(prev + 1, filtered.length - 1));
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setSelectedIndex((prev) => Math.max(prev - 1, 0));
+          break;
+        case "Enter":
+          e.preventDefault();
+          executeSelected();
+          break;
       }
     },
     [filtered.length, executeSelected],
-  )
+  );
 
   // Global keyboard shortcut: Cmd+K / Ctrl+K to toggle
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setOpen((prev) => !prev)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((prev) => !prev);
       }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -180,8 +183,8 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
               ref={inputRef}
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value)
-                setSelectedIndex(0)
+                setQuery(e.target.value);
+                setSelectedIndex(0);
               }}
               placeholder="Type a command…"
               className="flex-1 bg-transparent py-3.5 text-sm text-white/80 placeholder:text-white/30 focus:outline-none"
@@ -198,11 +201,17 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
             className="max-h-[280px] overflow-y-auto py-1"
             role="listbox"
             aria-label="Command results"
-            aria-activedescendant={filtered[selectedIndex] ? `cmd-${filtered[selectedIndex].command.id}` : undefined}
+            aria-activedescendant={
+              filtered[selectedIndex]
+                ? `cmd-${filtered[selectedIndex].command.id}`
+                : undefined
+            }
           >
             {filtered.length === 0 ? (
               <div className="px-4 py-6 text-center text-xs text-white/30">
-                {query.trim() ? 'No matching commands' : 'No commands available'}
+                {query.trim()
+                  ? "No matching commands"
+                  : "No commands available"}
               </div>
             ) : (
               filtered.map((item, i) => (
@@ -214,13 +223,13 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
                   onMouseEnter={() => setSelectedIndex(i)}
                   onMouseDown={(e) => {
                     // Use onMouseDown so it fires before the input blur
-                    e.preventDefault()
-                    execute(item.command)
+                    e.preventDefault();
+                    execute(item.command);
                   }}
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                     i === selectedIndex
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                      ? "bg-white/10 text-white"
+                      : "text-white/60 hover:bg-white/5 hover:text-white/80"
                   }`}
                 >
                   <span className="flex-1 truncate">{item.command.title}</span>
@@ -249,7 +258,7 @@ export function CommandPalette({ commands }: CommandPaletteProps) {
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  )
+  );
 }
 
 // ---- Sub-components ---------------------------------------------------------
@@ -260,5 +269,5 @@ function KbdSm({ children }: { children: React.ReactNode }) {
     <kbd className="inline-flex min-w-[1.2rem] items-center justify-center rounded border border-white/10 bg-white/5 px-1 font-mono text-[9px] text-white/30">
       {children}
     </kbd>
-  )
+  );
 }

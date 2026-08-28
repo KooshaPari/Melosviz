@@ -1,0 +1,125 @@
+{
+  "_meta": {
+    "purpose": "IP-Adapter-FaceID character-consistent SDXL image workflow (WBS-101..103). Mirrors sdxl_image.json but adds IPAdapter Unified Loader + FaceID Apply + IP-Adapter Encoder nodes that consume the character reference paths stamped onto the scene by the orchestrator.",
+    "engine": "ipadapter",
+    "scene_type": "ipadapter_character",
+    "template_slots": [
+      "prompt", "negative", "seed", "steps", "cfg", "sampler", "scheduler",
+      "width", "height", "model", "lora",
+      "character_front", "character_three_quarter", "character_profile",
+      "character_full_body", "character_style_ref",
+      "character_face_weight", "character_style_weight", "character_engine"
+    ]
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 0,
+      "steps": 28,
+      "cfg": 5.5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "model": ["4", 0],
+      "positive": ["20", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1280,
+      "height": 720,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{prompt}",
+      "clip": ["4", 1]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{negative}",
+      "clip": ["4", 1]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "melosviz_char",
+      "images": ["8", 0]
+    }
+  },
+  "21": {
+    "class_type": "IPAdapterUnifiedLoader",
+    "inputs": {
+      "model": ["4", 0],
+      "preset": "FACEID_PORTRAIT_V2"
+    }
+  },
+  "22": {
+    "class_type": "IPAdapterFaceID",
+    "inputs": {
+      "weight": 0.8,
+      "weight_faceidv2": 0.8,
+      "start_at": 0.0,
+      "end_at": 1.0,
+      "face_weight_v2": 0.0,
+      "ipadapter": ["21", 0],
+      "image": ["23", 0]
+    }
+  },
+  "23": {
+    "class_type": "IPAdapterEncoder",
+    "inputs": {
+      "image": "{character_front}",
+      "weight": 0.0,
+      "noise": 0.0,
+      "weight_type": "linear",
+      "ipadapter": ["21", 0]
+    }
+  },
+  "24": {
+    "class_type": "IPAdapterStyleApply",
+    "inputs": {
+      "weight": 0.5,
+      "style_weight": 0.5,
+      "style_image": ["25", 0],
+      "ipadapter": ["22", 0]
+    }
+  },
+  "25": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{character_style_ref}"
+    }
+  },
+  "20": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "{prompt}",
+      "clip": ["24", 0]
+    }
+  },
+  "_faceid_weight_source": {
+    "_note": "The orchestrator stamps {character_face_weight} and {character_style_weight} into the scene before this template is rendered; consumers that want to honor them replace the hard-coded weight values in nodes 22 and 24 with the same {character_face_weight} / {character_style_weight} placeholder syntax. We keep them inline so the workflow is runnable as-shipped for first-time setup."
+  }
+}

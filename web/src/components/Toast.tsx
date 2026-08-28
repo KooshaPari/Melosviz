@@ -1,11 +1,11 @@
 interface ToastProps {
-  message: string
-  visible: boolean
+  message: string;
+  visible: boolean;
 }
 
 /** Brief, polite status toast for copy/save confirmations (visible + screen-reader). */
 export function Toast({ message, visible }: ToastProps) {
-  if (!visible) return null
+  if (!visible) return null;
 
   return (
     <div
@@ -17,5 +17,5 @@ export function Toast({ message, visible }: ToastProps) {
     >
       {message}
     </div>
-  )
+  );
 }

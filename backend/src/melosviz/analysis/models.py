@@ -324,6 +324,16 @@ class RenderSpec(BaseModel):
     # Use MIRSummary.model_validate(spec.mir) to get a typed view.
     mir: dict[str, Any] = Field(default_factory=dict)
 
+    # ---- v2 continuity (WBS-2, 2026-08) ------------------------------------
+    # Storyboard-level :class:`~melosviz.llm.director.ContinuityAnchor`
+    # payload. Stored as a dict (``subject_token``, ``env_token``,
+    # ``palette_token``, ``reference_image``, ``_version``) so the spec
+    # stays JSON-round-trippable without importing the LLM module. The
+    # orchestrator reads ``continuity.reference_image`` (validated Path
+    # from the v2 dataclass) and stamps it onto every scene as
+    # ``ip_adapter_image`` before dispatching to ComfyUI / C4D / UE.
+    continuity: dict[str, Any] = Field(default_factory=dict)
+
     model_config = {
         "extra": "ignore",
         "frozen": False,

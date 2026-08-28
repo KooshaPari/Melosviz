@@ -712,6 +712,14 @@ def export_blender(
     When Blender is absent, raises :class:`BlenderNotFoundError` — the caller
     should fall back to :func:`~melosviz.render.video_exporter.export_video`.
 
+    Offline mode
+    ------------
+    When the environment variable ``MELOSVIZ_COMFYUI_OFFLINE=1`` is set
+    (the universal "no live tools" switch used by the orchestrator), this
+    function does not invoke Blender. Instead it writes a structured
+    ``blender_render_plan.json`` + per-scene job-spec under ``output_dir``
+    so the operator can drive Blender manually or in CI.
+
     Pipeline:
 
     1. Resolve the Blender binary (fail loudly if absent).
@@ -733,13 +741,59 @@ def export_blender(
             or 1080).
 
     Returns:
-        Absolute path to the produced MP4 file.
+        Absolute path to the produced MP4 file, or a ``.json`` file when
+        running in offline mode.
 
     Raises:
         BlenderNotFoundError: When no Blender binary is found.
         BlenderRenderError: When Blender or ffmpeg fails, or produces no
             output.
     """
+    # ---- Resolve output directory -------------------------------------------
+    if output_dir is None:
+        output_dir = Path(tempfile.gettempdir()) / "melosviz-blender-exports"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # ---- Offline mode: write job-spec JSON, do NOT invoke Blender ----------
+    if os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == "1":
+        plan_path = output_dir / "blender_render_plan.json"
+        spec_dict: dict[str, Any] = (
+            spec.model_dump() if hasattr(spec, "model_dump") else (spec if isinstance(spec, dict) else {})
+        )
+        plan = {
+            "renderer": "blender",
+            "mode": "offline",
+            "reason": "MELOSVIZ_COMFYUI_OFFLINE=1 — blender not invoked",
+            "output_dir": str(output_dir),
+            "spec_summary": {
+                "duration_s": (spec_dict.get("metadata") or {}).get("duration"),
+                "n_segments": len(spec_dict.get("scene_segments") or []),
+                "n_keyframes": len(spec_dict.get("dense_keyframes") or []),
+                "palette": spec_dict.get("palette", []),
+            },
+            "render_params": {
+                "fps": fps if fps is not None else 30,
+                "width": width if width is not None else 1920,
+                "height": height if height is not None else 1080,
+            },
+            "driver_script": build_bpy_script(
+                spec,
+                output_path="//frame_",
+                fps=fps if fps is not None else 30,
+                width=width if width is not None else 1920,
+                height=height if height is not None else 1080,
+            ),
+            "next_steps": [
+                "Install Blender (>= 3.6 LTS) and ensure bpy is bundled.",
+                "Re-run with MELOSVIZ_COMFYUI_OFFLINE unset (or =0).",
+                "Or: blender -b --python <driver_script> for manual render.",
+            ],
+        }
+        plan_path.write_text(json.dumps(plan, indent=2, default=str))
+        logger.info("export_blender: offline mode → wrote %s", plan_path)
+        return plan_path
+
     blender = _resolve_blender_binary()  # raises BlenderNotFoundError if absent
 
     # ---- Pull render parameters from spec -----------------------------------
@@ -754,11 +808,7 @@ def export_blender(
     _width = width if width is not None else int(metadata.get("width", 1920))
     _height = height if height is not None else int(metadata.get("height", 1080))
 
-    # ---- Resolve output directory -------------------------------------------
-    if output_dir is None:
-        output_dir = Path(tempfile.gettempdir()) / "melosviz-blender-exports"
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # (output_dir already created above)
 
     output_mp4 = output_dir / "melosviz-blender-render.mp4"
 

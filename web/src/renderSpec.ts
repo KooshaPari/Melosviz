@@ -13,81 +13,81 @@
 
 export interface KeyframeCamera {
   /** Camera Z distance from origin (depth / zoom). */
-  distance: number
+  distance: number;
   /** Camera azimuth in radians. */
-  azimuth: number
+  azimuth: number;
   /** Camera elevation in radians. */
-  elevation: number
+  elevation: number;
 }
 
 export interface KeyframeColor {
   /** Hex string, e.g. "#7c6af7". */
-  primary: string
+  primary: string;
   /** Hex string for secondary accent. */
-  secondary: string
+  secondary: string;
   /** Overall scene brightness [0, 1]. */
-  brightness: number
+  brightness: number;
 }
 
 export interface Keyframe {
   /** Normalised position in [0, 1] representing time within the track. */
-  t: number
-  camera: KeyframeCamera
-  color: KeyframeColor
+  t: number;
+  camera: KeyframeCamera;
+  color: KeyframeColor;
   /** Name of the scene / shot label (e.g. "Establishing", "Anthem"). */
-  scene?: string
+  scene?: string;
   /** R3F scene-template id (wire_orb, torus_flow, …). */
-  scene_template?: string
+  scene_template?: string;
   /** Crossfade duration in seconds before the next segment. */
-  transition_secs?: number
-  segment_index?: number
-  label?: string
+  transition_secs?: number;
+  segment_index?: number;
+  label?: string;
 }
 
 export interface SceneSegment {
-  index: number
-  label: string
-  start: number
-  end: number
-  energy_mean?: number
-  brightness_mean?: number
-  scene?: string
-  scene_template?: string
-  dominant_stem?: string
+  index: number;
+  label: string;
+  start: number;
+  end: number;
+  energy_mean?: number;
+  brightness_mean?: number;
+  scene?: string;
+  scene_template?: string;
+  dominant_stem?: string;
 }
 
 export interface RenderSpec {
   /** Track duration in seconds (used to map absolute time → t). */
-  durationSecs: number
-  keyframes: Keyframe[]
+  durationSecs: number;
+  keyframes: Keyframe[];
   /** BPM detected by librosa beat tracker (or stdlib heuristic fallback). */
-  bpm?: number
+  bpm?: number;
   /** Musical key and scale, e.g. "C major" or "A minor". */
-  key?: string
+  key?: string;
   /** Beat onset times in seconds, sorted ascending. */
-  beatTimes?: number[]
+  beatTimes?: number[];
   /** MIR-backed scene segments from analyze (v2). */
-  sceneSegments?: SceneSegment[]
+  sceneSegments?: SceneSegment[];
   /** Colour palette from backend / preset. */
-  palette?: string[]
+  palette?: string[];
   /** Active preset id when remapped. */
-  preset?: string
+  preset?: string;
   /** Normalised crossfade window per segment boundary. */
-  transitionFraction?: number
+  transitionFraction?: number;
 }
 
 // ---- Runtime types consumed by the R3F scene-graph ----------------------
 
 /** SceneParams is the per-frame data contract between spec and renderer. */
 export interface SceneParams {
-  camera: KeyframeCamera
-  color: KeyframeColor
+  camera: KeyframeCamera;
+  color: KeyframeColor;
   /** Normalised playhead position [0, 1]. */
-  t: number
+  t: number;
   /** Beat energy [0, 1] — 0 until workstream B wires in beat events. */
-  beatEnergy: number
+  beatEnergy: number;
   /** Spectral data placeholder — null until workstream A wires in FFT. */
-  spectral: Float32Array | null
+  spectral: Float32Array | null;
 }
 
 // ---- Helpers -------------------------------------------------------------
@@ -97,7 +97,7 @@ export interface SceneParams {
  * Workstream D will replace this with Catmull-Rom / easing curves.
  */
 function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t
+  return a + (b - a) * t;
 }
 
 /**
@@ -105,58 +105,62 @@ function lerp(a: number, b: number, t: number): number {
  * Handles 3- and 6-digit forms.
  */
 export function hexToRgb(hex: string): [number, number, number] {
-  const clean = hex.replace('#', '')
+  const clean = hex.replace("#", "");
   const expanded =
     clean.length === 3
       ? clean
-          .split('')
+          .split("")
           .map((c) => c + c)
-          .join('')
-      : clean
-  const n = parseInt(expanded, 16)
-  return [
-    ((n >> 16) & 0xff) / 255,
-    ((n >> 8) & 0xff) / 255,
-    (n & 0xff) / 255,
-  ]
+          .join("")
+      : clean;
+  const n = parseInt(expanded, 16);
+  return [((n >> 16) & 0xff) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 
 /**
  * Interpolate between two adjacent keyframes, returning a merged
  * KeyframeCamera and KeyframeColor.
  */
-function interpKeyframes(a: Keyframe, b: Keyframe, alpha: number): Omit<SceneParams, 't' | 'beatEnergy' | 'spectral'> {
+function interpKeyframes(
+  a: Keyframe,
+  b: Keyframe,
+  alpha: number,
+): Omit<SceneParams, "t" | "beatEnergy" | "spectral"> {
   const camera: KeyframeCamera = {
     distance: lerp(a.camera.distance, b.camera.distance, alpha),
     azimuth: lerp(a.camera.azimuth, b.camera.azimuth, alpha),
     elevation: lerp(a.camera.elevation, b.camera.elevation, alpha),
-  }
+  };
 
   // Interpolate each RGB channel independently
-  const [ar, ag, ab] = hexToRgb(a.color.primary)
-  const [br, bg, bb] = hexToRgb(b.color.primary)
-  const [ar2, ag2, ab2] = hexToRgb(a.color.secondary)
-  const [br2, bg2, bb2] = hexToRgb(b.color.secondary)
+  const [ar, ag, ab] = hexToRgb(a.color.primary);
+  const [br, bg, bb] = hexToRgb(b.color.primary);
+  const [ar2, ag2, ab2] = hexToRgb(a.color.secondary);
+  const [br2, bg2, bb2] = hexToRgb(b.color.secondary);
 
   const toHex = (r: number, g: number, bl: number): string => {
     const byte = (v: number) =>
       Math.round(Math.min(1, Math.max(0, v)) * 255)
         .toString(16)
-        .padStart(2, '0')
-    return `#${byte(r)}${byte(g)}${byte(bl)}`
-  }
+        .padStart(2, "0");
+    return `#${byte(r)}${byte(g)}${byte(bl)}`;
+  };
 
   const color: KeyframeColor = {
-    primary: toHex(lerp(ar, br, alpha), lerp(ag, bg, alpha), lerp(ab, bb, alpha)),
+    primary: toHex(
+      lerp(ar, br, alpha),
+      lerp(ag, bg, alpha),
+      lerp(ab, bb, alpha),
+    ),
     secondary: toHex(
       lerp(ar2, br2, alpha),
       lerp(ag2, bg2, alpha),
       lerp(ab2, bb2, alpha),
     ),
     brightness: lerp(a.color.brightness, b.color.brightness, alpha),
-  }
+  };
 
-  return { camera, color }
+  return { camera, color };
 }
 
 /**
@@ -172,8 +176,11 @@ export function specToSceneParams(
   beatEnergy = 0,
   spectral: Float32Array | null = null,
 ): SceneParams {
-  const { keyframes, durationSecs } = spec
-  const t = Math.min(1, Math.max(0, currentTimeSecs / Math.max(durationSecs, 0.001)))
+  const { keyframes, durationSecs } = spec;
+  const t = Math.min(
+    1,
+    Math.max(0, currentTimeSecs / Math.max(durationSecs, 0.001)),
+  );
 
   if (keyframes.length === 0) {
     return {
@@ -181,31 +188,36 @@ export function specToSceneParams(
       beatEnergy,
       spectral,
       camera: { distance: 5, azimuth: 0, elevation: 0 },
-      color: { primary: '#7c6af7', secondary: '#22d3ee', brightness: 0.8 },
-    }
+      color: { primary: "#7c6af7", secondary: "#22d3ee", brightness: 0.8 },
+    };
   }
 
   // Find the surrounding pair
-  const sorted = [...keyframes].sort((a, b) => a.t - b.t)
-  const last = sorted[sorted.length - 1]!
+  const sorted = [...keyframes].sort((a, b) => a.t - b.t);
+  const last = sorted[sorted.length - 1]!;
 
   if (t <= sorted[0]!.t) {
-    return { t, beatEnergy, spectral, ...interpKeyframes(sorted[0]!, sorted[0]!, 0) }
+    return {
+      t,
+      beatEnergy,
+      spectral,
+      ...interpKeyframes(sorted[0]!, sorted[0]!, 0),
+    };
   }
   if (t >= last.t) {
-    return { t, beatEnergy, spectral, ...interpKeyframes(last, last, 0) }
+    return { t, beatEnergy, spectral, ...interpKeyframes(last, last, 0) };
   }
 
   for (let i = 0; i < sorted.length - 1; i++) {
-    const a = sorted[i]!
-    const b = sorted[i + 1]!
+    const a = sorted[i]!;
+    const b = sorted[i + 1]!;
     if (t >= a.t && t <= b.t) {
-      const span = b.t - a.t
-      const alpha = span < 1e-9 ? 0 : (t - a.t) / span
-      return { t, beatEnergy, spectral, ...interpKeyframes(a, b, alpha) }
+      const span = b.t - a.t;
+      const alpha = span < 1e-9 ? 0 : (t - a.t) / span;
+      return { t, beatEnergy, spectral, ...interpKeyframes(a, b, alpha) };
     }
   }
 
   // Fallback — should not reach here
-  return { t, beatEnergy, spectral, ...interpKeyframes(last, last, 0) }
+  return { t, beatEnergy, spectral, ...interpKeyframes(last, last, 0) };
 }
