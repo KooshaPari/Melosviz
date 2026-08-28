@@ -1,0 +1,363 @@
+openapi: 3.1.0
+info:
+  title: MelosViz Studio Pipeline API
+  version: "0.2.0"
+  description: |
+    HTTP bridge for the MelosViz music-video studio pipeline. All endpoints
+    are designed to be driven from a thin Director's Console UI (web or
+    desktop) over a single websocket / SSE channel, with the actual heavy
+    lifting done by the Python orchestrator on the server side.
+
+    The full CLI pipeline is `storyboard → generate → assemble → master → ship`,
+    with `direct` (art-director edit) and `validate` (storyboard sanity check)
+    available as side-band operations.
+  contact:
+    name: MelosViz Studio
+    url: https://github.com/KooshaPari/Melosviz
+servers:
+  - url: http://localhost:8765
+    description: Local dev bridge (default port)
+  - url: http://localhost:20128
+    description: OmniRoute / Studio dispatch endpoint
+tags:
+  - name: studio
+    description: 5-step music-video pipeline (storyboard → ship)
+  - name: render
+    description: Live render event stream (SSE + recent-poll fallback)
+  - name: edit
+    description: Art-director scene edit (viz direct)
+  - name: validate
+    description: Storyboard sanity check
+paths:
+  /api/studio/storyboard:
+    post:
+      tags: [studio]
+      summary: Storyboard — analyze audio + write storyboard.json
+      description: |
+        Runs the MIR + LRC lyric parser + mood-board palette analyzer
+        and emits a storyboard.json describing N scenes with beat-aligned
+        boundaries, per-scene camera motions, palette, and prompts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioStoryboardRequest"
+      responses:
+        "200":
+          description: Storyboard written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoryboardSummary"
+        "400":
+          description: Missing wav_path or other validation error
+  /api/studio/generate:
+    post:
+      tags: [studio]
+      summary: Generate — dispatch per-scene renders through the conductor registry
+      description: |
+        Runs `viz generate` against the supplied storyboard.json, dispatching
+        each scene to the appropriate backend (ComfyUI / C4D / UE / AE / Blender)
+        based on scene_type. Emits per-scene `queued / rendering / done / error`
+        events to the orchestrator event bus; subscribe via /api/render/events.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioGenerateRequest"
+      responses:
+        "200":
+          description: Generate finished (per-scene results embedded)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateSummary"
+  /api/studio/master:
+    post:
+      tags: [studio]
+      summary: Master — LUFS-targeted master + dither + stems
+      description: |
+        Runs `viz master` against an assembly_plan.json (or generates one
+        if `--auto` is set). Targets a delivery preset (youtube / spotify /
+        broadcast_ebu_r128 / club_pa / cinema / custom LUFS) and optionally
+        exports 3-band frequency-split stems (drums / bass / synths).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioMasterRequest"
+      responses:
+        "200":
+          description: Master plan + deliverables written
+  /api/studio/ship:
+    post:
+      tags: [studio]
+      summary: Ship — bundle the master into a festival/club/YouTube package
+      description: |
+        Bundles master video + audio stems + storyboard.json + SRT captions
+        into final.zip for delivery.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioShipRequest"
+      responses:
+        "200":
+          description: final.zip written
+  /api/studio/direct:
+    post:
+      tags: [edit]
+      summary: Direct — art-director edit a single scene's prompt/camera/name
+      description: |
+        Runs `viz direct storyboard.json --scene-index N [--replace-prompt TEXT] ...`
+        and returns the edit summary. Optionally invokes `viz generate --re-render`
+        against just the edited scene + neighbors.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioDirectRequest"
+      responses:
+        "200":
+          description: Edit applied, summary returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectSummary"
+        "400":
+          description: scene_index out of range or missing storyboard
+  /api/studio/validate:
+    post:
+      tags: [validate]
+      summary: Validate — storyboard sanity check + severity report
+      description: |
+        Runs StoryboardValidator (12 checks: palette coherence, scene contiguity,
+        camera diversity, seed uniqueness, continuity anchors, beat alignment,
+        lyric coverage, etc.) and returns the full report.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudioValidateRequest"
+      responses:
+        "200":
+          description: Validation report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateSummary"
+  /api/render/events:
+    get:
+      tags: [render]
+      summary: SSE — live render event stream
+      description: |
+        Server-Sent Events stream of `RenderEvent`s (queued / rendering /
+        done / error) emitted by the orchestrator during a pipeline run.
+        Sends a 15s keep-alive ping to prevent proxy timeouts.
+        Polling fallback at /api/render/events/recent.
+      parameters:
+        - in: query
+          name: job_id
+          required: false
+          schema: { type: string }
+          description: filter to a single pipeline run
+      responses:
+        "200":
+          description: SSE stream (text/event-stream)
+          content:
+            text/event-stream: {}
+  /api/render/events/recent:
+    get:
+      tags: [render]
+      summary: Recent render events (polling fallback)
+      parameters:
+        - in: query
+          name: job_id
+          required: false
+          schema: { type: string }
+        - in: query
+          name: since_ms
+          required: false
+          schema: { type: integer }
+          description: only return events emitted after this epoch-ms
+      responses:
+        "200":
+          description: list of RenderEvent
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RenderEvent" }
+components:
+  schemas:
+    StudioStoryboardRequest:
+      type: object
+      required: [wav_path, out_dir]
+      properties:
+        wav_path: { type: string }
+        concept: { type: string }
+        bpm: { type: number, nullable: true }
+        palette:
+          type: array
+          items: { type: string }
+        lyrics_path: { type: string, nullable: true }
+        mood_board_paths:
+          type: array
+          items: { type: string }
+        continuity_character: { type: string, nullable: true }
+        continuity_environment: { type: string, nullable: true }
+        aspect_ratio:
+          type: string
+          enum:
+            - festival_16x9_4k
+            - youtube_16x9_1080p
+            - club_9x16
+            - ig_9x16
+            - instagram_1x1
+            - cinema_21x9
+            - vertical_4x5
+        out_dir: { type: string }
+        offline: { type: boolean, default: true }
+        llm_director: { type: boolean, default: true }
+    StudioGenerateRequest:
+      type: object
+      required: [wav_path, storyboard_path, out_dir]
+      properties:
+        wav_path: { type: string }
+        storyboard_path: { type: string }
+        out_dir: { type: string }
+        offline: { type: boolean, default: true }
+        only_scenes:
+          type: array
+          items: { type: integer }
+          description: optional subset of scene indexes to render
+        job_id: { type: string, nullable: true }
+    StudioMasterRequest:
+      type: object
+      required: [edit_path, out_dir]
+      properties:
+        edit_path: { type: string }
+        out_dir: { type: string }
+        lufs_target:
+          type: string
+          enum: [youtube, spotify, broadcast_ebu_r128, club_pa, cinema, custom]
+        lufs_lufs: { type: number, nullable: true }
+        lufs_tp: { type: number, nullable: true }
+        export_stems: { type: boolean, default: false }
+        audio_wav_path: { type: string, nullable: true }
+    StudioShipRequest:
+      type: object
+      required: [master_dir]
+      properties:
+        master_dir: { type: string }
+        out_zip: { type: string, nullable: true }
+    StudioDirectRequest:
+      type: object
+      required: [storyboard_path, scene_index]
+      properties:
+        storyboard_path: { type: string }
+        scene_index: { type: integer, minimum: 0 }
+        replace_prompt: { type: string, nullable: true }
+        replace_camera: { type: string, nullable: true }
+        replace_name: { type: string, nullable: true }
+        out: { type: string, nullable: true }
+        re_render: { type: boolean, default: false }
+        wav: { type: string, nullable: true }
+        render_out: { type: string, nullable: true }
+        render_offline: { type: boolean, default: true }
+    StudioValidateRequest:
+      type: object
+      required: [storyboard_path]
+      properties:
+        storyboard_path: { type: string }
+    StoryboardSummary:
+      type: object
+      properties:
+        storyboard_path: { type: string }
+        scene_count: { type: integer }
+        scenes:
+          type: array
+          items: { $ref: "#/components/schemas/SceneSummary" }
+    SceneSummary:
+      type: object
+      properties:
+        index: { type: integer }
+        name: { type: string }
+        start: { type: number }
+        end: { type: number }
+        camera: { type: string }
+        palette:
+          type: array
+          items: { type: string }
+        scene_type: { type: string }
+        prompt: { type: string }
+    GenerateSummary:
+      type: object
+      properties:
+        out_dir: { type: string }
+        scenes:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              scene_type: { type: string }
+              job_spec_path: { type: string }
+    DirectSummary:
+      type: object
+      properties:
+        edit_count: { type: integer }
+        edits:
+          type: array
+          items: { type: string }
+        last_edit:
+          type: object
+          properties:
+            scene_index: { type: integer }
+            edits:
+              type: array
+              items: { type: string }
+            timestamp: { type: string, format: date-time }
+    ValidateSummary:
+      type: object
+      properties:
+        valid: { type: boolean }
+        issue_count: { type: integer }
+        severity_breakdown:
+          type: object
+          properties:
+            error: { type: integer }
+            warning: { type: integer }
+            info: { type: integer }
+        issues:
+          type: array
+          items:
+            type: object
+            properties:
+              severity: { type: string }
+              code: { type: string }
+              message: { type: string }
+              scene_index: { type: integer, nullable: true }
+    RenderEvent:
+      type: object
+      properties:
+        job_id: { type: string }
+        scene_index: { type: integer }
+        scene_type: { type: string }
+        state:
+          type: string
+          enum: [queued, rendering, done, error]
+        backend: { type: string, nullable: true }
+        started_at_ms: { type: integer }
+        finished_at_ms: { type: integer, nullable: true }
+        error_class: { type: string, nullable: true }
+        error_message: { type: string, nullable: true }
+        artifacts:
+          type: array
+          items: { type: string }

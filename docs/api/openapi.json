@@ -3,15 +3,42 @@
     "schemas": {
       "AnalyzeRequest": {
         "properties": {
+          "audio_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Path"
+          },
           "wav_path": {
-            "title": "Wav Path",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wav Path"
+          }
+        },
+        "title": "AnalyzeRequest",
+        "type": "object"
+      },
+      "Body_upload_audio_upload_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
             "type": "string"
           }
         },
-        "required": [
-          "wav_path"
-        ],
-        "title": "AnalyzeRequest",
+        "required": ["file"],
+        "title": "Body_upload_audio_upload_post",
         "type": "object"
       },
       "BuildRequest": {
@@ -32,9 +59,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path"
-        ],
+        "required": ["wav_path"],
         "title": "BuildRequest",
         "type": "object"
       },
@@ -62,11 +87,312 @@
             "type": "string"
           }
         },
-        "required": [
-          "wav_path",
-          "out_dir"
-        ],
+        "required": ["wav_path", "out_dir"],
         "title": "RenderRequest",
+        "type": "object"
+      },
+      "StudioDirectRequest": {
+        "description": "Art-director edit + optional single-scene re-render.\n\nMirrors the `viz direct` CLI subcommand (backend/src/melosviz/cli/main.py).",
+        "properties": {
+          "out_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Out Path"
+          },
+          "re_render": {
+            "default": false,
+            "title": "Re Render",
+            "type": "boolean"
+          },
+          "render_offline": {
+            "default": true,
+            "title": "Render Offline",
+            "type": "boolean"
+          },
+          "render_out": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Render Out"
+          },
+          "replace_camera": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replace Camera"
+          },
+          "replace_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replace Name"
+          },
+          "replace_prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replace Prompt"
+          },
+          "scene_index": {
+            "title": "Scene Index",
+            "type": "integer"
+          },
+          "storyboard_path": {
+            "title": "Storyboard Path",
+            "type": "string"
+          },
+          "wav_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wav Path"
+          }
+        },
+        "required": ["storyboard_path", "scene_index"],
+        "title": "StudioDirectRequest",
+        "type": "object"
+      },
+      "StudioGenerateRequest": {
+        "properties": {
+          "job_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          },
+          "offline": {
+            "default": true,
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "out_dir": {
+            "title": "Out Dir",
+            "type": "string"
+          },
+          "storyboard_path": {
+            "title": "Storyboard Path",
+            "type": "string"
+          },
+          "wav_path": {
+            "title": "Wav Path",
+            "type": "string"
+          }
+        },
+        "required": ["wav_path", "storyboard_path", "out_dir"],
+        "title": "StudioGenerateRequest",
+        "type": "object"
+      },
+      "StudioMasterRequest": {
+        "properties": {
+          "audio_wav_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Wav Path"
+          },
+          "edit_path": {
+            "title": "Edit Path",
+            "type": "string"
+          },
+          "export_stems": {
+            "default": false,
+            "title": "Export Stems",
+            "type": "boolean"
+          },
+          "lufs_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lufs Target"
+          },
+          "offline": {
+            "default": true,
+            "title": "Offline",
+            "type": "boolean"
+          },
+          "out_dir": {
+            "title": "Out Dir",
+            "type": "string"
+          }
+        },
+        "required": ["edit_path", "out_dir"],
+        "title": "StudioMasterRequest",
+        "type": "object"
+      },
+      "StudioShipRequest": {
+        "properties": {
+          "master_dir": {
+            "title": "Master Dir",
+            "type": "string"
+          },
+          "offline": {
+            "default": true,
+            "title": "Offline",
+            "type": "boolean"
+          }
+        },
+        "required": ["master_dir"],
+        "title": "StudioShipRequest",
+        "type": "object"
+      },
+      "StudioStoryboardRequest": {
+        "properties": {
+          "aspect_ratio": {
+            "default": "youtube_16x9_1080p",
+            "title": "Aspect Ratio",
+            "type": "string"
+          },
+          "bpm": {
+            "default": 120.0,
+            "title": "Bpm",
+            "type": "number"
+          },
+          "concept": {
+            "default": "abstract narrative, digital medium-format film, 35mm grain",
+            "title": "Concept",
+            "type": "string"
+          },
+          "continuity_character": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Continuity Character"
+          },
+          "continuity_environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Continuity Environment"
+          },
+          "lyrics_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lyrics Path"
+          },
+          "mood_board_paths": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mood Board Paths"
+          },
+          "out_dir": {
+            "title": "Out Dir",
+            "type": "string"
+          },
+          "palette": {
+            "default": "#0d0d10 #ff2bd6 #22d3ee #c084fc #f0f0f8",
+            "title": "Palette",
+            "type": "string"
+          },
+          "target_scenes": {
+            "default": 4,
+            "title": "Target Scenes",
+            "type": "integer"
+          },
+          "use_llm_director": {
+            "default": true,
+            "title": "Use Llm Director",
+            "type": "boolean"
+          },
+          "wav_path": {
+            "title": "Wav Path",
+            "type": "string"
+          }
+        },
+        "required": ["wav_path", "out_dir"],
+        "title": "StudioStoryboardRequest",
+        "type": "object"
+      },
+      "StudioValidateRequest": {
+        "description": "Storyboard validation request \u2014 runs the conductor's StoryboardValidator.",
+        "properties": {
+          "max_scene_seconds": {
+            "default": 30.0,
+            "title": "Max Scene Seconds",
+            "type": "number"
+          },
+          "require_continuity": {
+            "default": false,
+            "title": "Require Continuity",
+            "type": "boolean"
+          },
+          "storyboard_path": {
+            "title": "Storyboard Path",
+            "type": "string"
+          }
+        },
+        "required": ["storyboard_path"],
+        "title": "StudioValidateRequest",
         "type": "object"
       },
       "ValidationError": {
@@ -101,11 +427,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       }
@@ -154,6 +476,356 @@
           }
         },
         "summary": "Analyze"
+      }
+    },
+    "/api/render/events": {
+      "get": {
+        "description": "Server-Sent Events stream of orchestrator render progress.\n\nClients (web StudioConsole, desktop Director's Console) open an\n``EventSource('/api/render/events?job_id=...')`` and receive one\n``data: <json>\\n\\n`` SSE frame per RenderEvent. Frames are flushed\nevery 250ms while the connection is open and the bus has new events.\n\nQuery params:\n    job_id  \u2014 only emit events for this job (None = all jobs)\n    since_ms \u2014 replay buffered events newer than this timestamp\n              (useful when a client reconnects mid-render)",
+        "operationId": "render_events_api_render_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since_ms",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Since Ms",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Render Events Api Render Events Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Render Events"
+      }
+    },
+    "/api/render/events/recent": {
+      "get": {
+        "description": "JSON snapshot of buffered events for clients that don't want SSE.\n\nReturns the same shape the SSE stream emits, in a single response. Useful\nfor polling clients (e.g. older desktop builds) and for tests.",
+        "operationId": "render_events_recent_api_render_events_recent_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "job_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Job Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "since_ms",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Since Ms",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Render Events Recent Api Render Events Recent Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Render Events Recent"
+      }
+    },
+    "/api/studio/direct": {
+      "post": {
+        "description": "Edit one scene's prompt / camera / name and (optionally) re-render.\n\nBody:\n    storyboard_path: str       \u2014 path to storyboard.json\n    scene_index: int           \u2014 0-based scene index to edit\n    replace_prompt:  str | None\n    replace_camera:  str | None\n    replace_name:    str | None\n    out:             str | None  \u2014 if set, writes a separate file\n    re_render:       bool         \u2014 also invoke ``viz generate`` for\n                                   that scene + neighbors\n    wav:             str | None   \u2014 required when re_render=true\n    render_out:      str | None   \u2014 required when re_render=true\n    render_offline:  bool",
+        "operationId": "studio_direct_api_studio_direct_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioDirectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Direct"
+      }
+    },
+    "/api/studio/generate": {
+      "post": {
+        "description": "Dispatch the conductor pipeline across all storyboard scenes.\n\nEmits ``<out_dir>/{comfyui_image,comfyui_video,generative_asset,...}/scene_*`` folders,\neach with a ``workflow.json`` ready for ComfyUI (or an ``ffmpeg``/``blender`` command\nfor non-ComfyUI scenes). Returns a JSON manifest listing every emitted scene.",
+        "operationId": "studio_generate_api_studio_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioGenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Generate"
+      }
+    },
+    "/api/studio/master": {
+      "post": {
+        "description": "Run color + audio mix + master encode via DaVinci / ffmpeg fallback.\n\nEmits ``<out_dir>/{festival.mov, club.mp4, youtube.mp4, mix.wav, captions.srt}``\nplus ``master_plan.json`` describing each deliverable.",
+        "operationId": "studio_master_api_studio_master_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioMasterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Master"
+      }
+    },
+    "/api/studio/ship": {
+      "post": {
+        "description": "Package master deliverables into a single distributable bundle.\n\nEmits ``<master_dir>/final.zip`` + ``<master_dir>/manifest.json``.",
+        "operationId": "studio_ship_api_studio_ship_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioShipRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Ship"
+      }
+    },
+    "/api/studio/storyboard": {
+      "post": {
+        "description": "Generate a storyboard JSON for a WAV using the LLM-driven director.\n\nEmits ``<out_dir>/storyboard.json`` and returns its contents.",
+        "operationId": "studio_storyboard_api_studio_storyboard_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioStoryboardRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Storyboard"
+      }
+    },
+    "/api/studio/validate": {
+      "post": {
+        "description": "Validate a storyboard.json and return a structured severity report.\n\nReturns ``StoryboardValidationReport`` JSON:\n    {\n      \"storyboard\": \"<path>\",\n      \"issues\": [ {severity, code, scene_index, message}, ... ],\n      \"errors\":   <int>,\n      \"warnings\": <int>,\n      \"info\":     <int>,\n      \"ok\":       <bool>\n    }",
+        "operationId": "studio_validate_api_studio_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Studio Validate"
       }
     },
     "/build": {
@@ -315,6 +987,49 @@
           }
         },
         "summary": "Render"
+      }
+    },
+    "/upload": {
+      "post": {
+        "description": "Stream a browser-uploaded audio file into the allowed data directory.\n\nReturns ``{\"wav_path\": \"<absolute path>\"}`` for use with ``POST /analyze``.",
+        "operationId": "upload_audio_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_audio_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Upload Audio Upload Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Audio"
       }
     }
   }

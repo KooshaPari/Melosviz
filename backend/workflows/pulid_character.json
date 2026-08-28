@@ -1,0 +1,143 @@
+{
+  "_meta": {
+    "purpose": "PuLID-Flux character-consistent Wan video workflow (WBS-104..106). Mirrors wan_video.json but adds Apply PuLID Flux + PulidFluxModelLoader + LoadImage nodes that consume the character reference paths stamped onto the scene by the orchestrator. PuLID is the preferred engine when the style slot is not a single image (multi-frame consistency).",
+    "engine": "pulid",
+    "scene_type": "pulid_character",
+    "template_slots": [
+      "prompt",
+      "negative",
+      "seed",
+      "steps",
+      "cfg",
+      "sampler",
+      "scheduler",
+      "width",
+      "height",
+      "frames",
+      "fps",
+      "model",
+      "lora",
+      "character_front",
+      "character_three_quarter",
+      "character_profile",
+      "character_full_body",
+      "character_style_ref",
+      "character_face_weight",
+      "character_style_weight",
+      "character_engine"
+    ]
+  },
+  "10": {
+    "class_type": "WanVideoSampler",
+    "inputs": {
+      "seed": 0,
+      "steps": 20,
+      "cfg": 6.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "width": 1280,
+      "height": 720,
+      "num_frames": 48,
+      "model": ["11", 0],
+      "positive": ["22", 0],
+      "negative": ["13", 0],
+      "latent_image": ["14", 0]
+    }
+  },
+  "11": {
+    "class_type": "WanVideoModelLoader",
+    "inputs": {
+      "model_name": "wan2.1_t2v_5B_bf16.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "WanVideoTextEncode",
+    "inputs": {
+      "text": "{prompt}",
+      "model": ["11", 0]
+    }
+  },
+  "13": {
+    "class_type": "WanVideoTextEncode",
+    "inputs": {
+      "text": "{negative}",
+      "model": ["11", 0]
+    }
+  },
+  "14": {
+    "class_type": "WanVideoEmptyLatent",
+    "inputs": {
+      "width": 1280,
+      "height": 720,
+      "num_frames": 48
+    }
+  },
+  "15": {
+    "class_type": "WanVideoDecode",
+    "inputs": {
+      "samples": ["10", 0],
+      "model": ["11", 0]
+    }
+  },
+  "16": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "melosviz_pulid",
+      "format": "video/h264-mp4",
+      "save_output": true,
+      "pingpong": false,
+      "images": ["15", 0]
+    }
+  },
+  "30": {
+    "class_type": "PulidFluxModelLoader",
+    "inputs": {
+      "pulid_file": "pulid_flux_v0.9.1.safetensors"
+    }
+  },
+  "31": {
+    "class_type": "ApplyPulidFlux",
+    "inputs": {
+      "weight": 0.85,
+      "start_at": 0.0,
+      "end_at": 1.0,
+      "attn_mask": true,
+      "pulid_flux": ["30", 0],
+      "image": ["32", 0]
+    }
+  },
+  "32": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{character_front}"
+    }
+  },
+  "33": {
+    "class_type": "ApplyPulidFluxStyle",
+    "inputs": {
+      "weight": 0.5,
+      "pulid_flux": ["31", 0],
+      "image": ["34", 0]
+    }
+  },
+  "34": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "{character_style_ref}"
+    }
+  },
+  "22": {
+    "class_type": "WanVideoApplyPulidConditioning",
+    "inputs": {
+      "strength": 1.0,
+      "pulid_output": ["33", 0],
+      "text_embedding": ["12", 0]
+    }
+  },
+  "_pulid_weight_source": {
+    "_note": "The orchestrator stamps {character_face_weight} and {character_style_weight} into the scene before this template is rendered; consumers that want to honor them replace the hard-coded weight values in nodes 31 and 33 with the same {character_face_weight} / {character_style_weight} placeholder syntax. We keep them inline so the workflow is runnable as-shipped for first-time setup."
+  }
+}

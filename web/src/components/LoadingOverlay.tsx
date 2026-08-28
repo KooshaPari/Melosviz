@@ -1,30 +1,36 @@
-import { Dialog, DialogContent, DialogOverlay } from './Dialog'
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
-import { t, tf } from '../i18n'
-import { SkeletonBlock } from './Skeleton'
+import { Dialog, DialogContent, DialogOverlay } from "./Dialog";
+import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
+import { t, tf } from "../i18n";
+import { SkeletonBlock } from "./Skeleton";
 
 interface LoadingOverlayProps {
-  visible: boolean
-  onCancel?: () => void
+  visible: boolean;
+  onCancel?: () => void;
   /** 0–100 while analysis is in flight; omit for indeterminate-only copy. */
-  progressPct?: number | null
+  progressPct?: number | null;
 }
 
-const BAR_HEIGHTS = [0.5, 0.8, 1.0, 0.7, 0.9, 0.6, 1.0, 0.8, 0.5]
+const BAR_HEIGHTS = [0.5, 0.8, 1.0, 0.7, 0.9, 0.6, 1.0, 0.8, 0.5];
 
-export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverlayProps) {
-  const reducedMotion = usePrefersReducedMotion()
+export function LoadingOverlay({
+  visible,
+  onCancel,
+  progressPct,
+}: LoadingOverlayProps) {
+  const reducedMotion = usePrefersReducedMotion();
 
-  if (!visible) return null
+  if (!visible) return null;
 
-  const hasProgress = progressPct != null && Number.isFinite(progressPct)
-  const roundedPct = hasProgress ? Math.max(0, Math.min(100, Math.round(progressPct))) : null
+  const hasProgress = progressPct != null && Number.isFinite(progressPct);
+  const roundedPct = hasProgress
+    ? Math.max(0, Math.min(100, Math.round(progressPct)))
+    : null;
   const liveMessage = hasProgress
-    ? tf('a11y.analysis_progress_pct', { pct: roundedPct! })
-    : t('status.analyzing')
+    ? tf("a11y.analysis_progress_pct", { pct: roundedPct! })
+    : t("status.analyzing");
   const description = hasProgress
-    ? tf('a11y.analysis_progress_pct_hint', { pct: roundedPct! })
-    : t('a11y.analysis_progress')
+    ? tf("a11y.analysis_progress_pct_hint", { pct: roundedPct! })
+    : t("a11y.analysis_progress");
 
   return (
     <Dialog.Root open={visible} modal>
@@ -32,8 +38,8 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
         <DialogOverlay
           className="z-40 flex flex-col items-center justify-center gap-6"
           style={{
-            background: 'rgba(15,15,26,0.85)',
-            backdropFilter: reducedMotion ? 'none' : 'blur(4px)',
+            background: "rgba(15,15,26,0.85)",
+            backdropFilter: reducedMotion ? "none" : "blur(4px)",
           }}
         />
         <DialogContent
@@ -43,19 +49,23 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => {
             if (onCancel) {
-              e.preventDefault()
-              onCancel()
+              e.preventDefault();
+              onCancel();
             } else {
-              e.preventDefault()
+              e.preventDefault();
             }
           }}
           onOpenAutoFocus={(e) => {
-            if (!onCancel) return
-            e.preventDefault()
-            e.currentTarget.querySelector<HTMLElement>('#loading-overlay-cancel')?.focus()
+            if (!onCancel) return;
+            e.preventDefault();
+            e.currentTarget
+              .querySelector<HTMLElement>("#loading-overlay-cancel")
+              ?.focus();
           }}
         >
-          <Dialog.Title className="sr-only">{t('status.analyzing')}</Dialog.Title>
+          <Dialog.Title className="sr-only">
+            {t("status.analyzing")}
+          </Dialog.Title>
           <Dialog.Description id="loading-overlay-desc" className="sr-only">
             {description}
           </Dialog.Description>
@@ -80,15 +90,22 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
             {BAR_HEIGHTS.map((scale, i) => (
               <div
                 key={i}
-                className={reducedMotion ? 'w-1.5 rounded-sm' : 'mv-freq-bar w-1.5 rounded-sm'}
+                className={
+                  reducedMotion
+                    ? "w-1.5 rounded-sm"
+                    : "mv-freq-bar w-1.5 rounded-sm"
+                }
                 style={{
-                  height: '100%',
+                  height: "100%",
                   background: `linear-gradient(to top, var(--mv-primary), var(--mv-secondary))`,
                   ...(reducedMotion
-                    ? { transform: `scaleY(${scale})`, transformOrigin: 'bottom' }
+                    ? {
+                        transform: `scaleY(${scale})`,
+                        transformOrigin: "bottom",
+                      }
                     : {
                         // @ts-expect-error CSS custom property
-                        '--dur': `${0.4 + i * 0.07}s`,
+                        "--dur": `${0.4 + i * 0.07}s`,
                         animationDelay: `${i * 0.06}s`,
                       }),
                 }}
@@ -98,12 +115,12 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
 
           <p
             className="text-sm font-medium tracking-widest uppercase"
-            style={{ color: 'rgba(255,255,255,0.6)' }}
+            style={{ color: "rgba(255,255,255,0.6)" }}
             aria-hidden="true"
           >
             {hasProgress
-              ? tf('status.analyzing_pct', { pct: roundedPct! })
-              : t('status.analyzing')}
+              ? tf("status.analyzing_pct", { pct: roundedPct! })
+              : t("status.analyzing")}
           </p>
           {hasProgress && (
             <div
@@ -112,7 +129,9 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={roundedPct!}
-              aria-label={tf('a11y.analysis_progress_pct', { pct: roundedPct! })}
+              aria-label={tf("a11y.analysis_progress_pct", {
+                pct: roundedPct!,
+              })}
             >
               <div
                 className="h-full rounded-full bg-gradient-to-r from-[var(--mv-primary)] to-[var(--mv-secondary)] transition-[width] duration-300"
@@ -127,12 +146,12 @@ export function LoadingOverlay({ visible, onCancel, progressPct }: LoadingOverla
               onClick={onCancel}
               className="text-xs font-medium text-white/50 hover:text-white/80 underline underline-offset-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mv-border-focus,#22d3ee)] focus-visible:ring-offset-2 focus-visible:ring-offset-black/80"
             >
-              {t('action.cancel')}
+              {t("action.cancel")}
             </button>
           )}
           <SkeletonBlock />
         </DialogContent>
       </Dialog.Portal>
     </Dialog.Root>
-  )
+  );
 }

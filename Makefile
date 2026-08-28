@@ -1,7 +1,7 @@
 # MelosViz — top-level Makefile
 # Companion self-check surface for MV-FR-50.
 
-.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke hermetic-python-smoke portability-smoke sdk-pack-smoke flaky-quarantine sdk-publish-dry-run
+.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke hermetic-python-smoke portability-smoke sdk-pack-smoke flaky-quarantine sdk-publish-dry-run dev-up dev-down dev-pipeline dev-logs
 
 diagnose:
 	python3 scripts/diagnose.py
@@ -56,4 +56,31 @@ flaky-quarantine:
 
 trace: wbs gap-matrix journeys flaky-quarantine
 	python3 backend/scripts/check/check_traceability.py
+
+# --- Dev environment (ComfyUI worker + C4D stub + bridge) ----------------
+
+dev-up:
+	docker compose -f deploy/docker-compose.dev.yml up -d --build
+
+dev-down:
+	docker compose -f deploy/docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f deploy/docker-compose.dev.yml logs -f --tail=200
+
+# Run the C4D stub server on its own (without docker compose). Useful for
+# local dev when you want to point the orchestrator at a C4D endpoint but
+# don't have a real Cinema 4D install + listener.
+dev-c4d-stub:
+	@mkdir -p ./out/c4d_stub_renders
+	MELOSVIZ_C4D_OUTPUT_DIR=./out/c4d_stub_renders \
+	  python3 -m uvicorn deploy.scripts.c4d_stub_server:app \
+	    --host 127.0.0.1 --port 8787
+
+# Test the C4D stub server (health + render + jobs).
+dev-c4d-stub-test:
+	python3 deploy/scripts/test_c4d_stub_server.py
+
+dev-pipeline:
+	@bash deploy/scripts/run_pipeline_dev.sh
 

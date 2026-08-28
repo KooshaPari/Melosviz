@@ -35,7 +35,70 @@ is always triggered last, after all per-segment renders complete.
 
 from __future__ import annotations
 
+from .events import (
+    ALL_STATES,
+    RenderEvent,
+    RenderEventBus,
+    STATE_DONE,
+    STATE_ERROR,
+    STATE_QUEUED,
+    STATE_RENDERING,
+    STATE_SKIPPED,
+    get_bus,
+    reset_bus,
+)
 from .orchestrator import Orchestrator
+from .provenance import (
+    PROVENANCE_SCHEMA_VERSION,
+    ClipProvenance,
+    collect_manifest_from_dir,
+    provenance_path_for,
+    write_provenance,
+)
+from .render_cache import (
+    CACHE_ROOT_DIRNAME,
+    RenderCache,
+    SceneCacheKey,
+)
 from .registry import ADAPTER_REGISTRY
+from .validate import (
+    ALLOWED_CAMERAS,
+    ALLOWED_SCENE_TYPES,
+    Issue,
+    SUPPORTED_SCHEMA_VERSIONS,
+    ValidationReport,
+    validate_storyboard,
+    validate_storyboard_file,
+    write_report,
+)
 
-__all__ = ["ADAPTER_REGISTRY", "Orchestrator"]
+__all__ = [
+    "ADAPTER_REGISTRY",
+    "ALLOWED_CAMERAS",
+    "ALLOWED_SCENE_TYPES",
+    "ALL_STATES",
+    "CACHE_ROOT_DIRNAME",
+    "ClipProvenance",
+    "Issue",
+    "Orchestrator",
+    "PROVENANCE_SCHEMA_VERSION",
+    "RenderCache",
+    "RenderEvent",
+    "RenderEventBus",
+    "SceneCacheKey",
+    "STATE_DONE",
+    "STATE_ERROR",
+    "STATE_QUEUED",
+    "STATE_RENDERING",
+    "STATE_SKIPPED",
+    "SUPPORTED_SCHEMA_VERSIONS",
+    "ValidationReport",
+    "collect_manifest_from_dir",
+    "get_bus",
+    "provenance_path_for",
+    "reset_bus",
+    "validate_storyboard",
+    "validate_storyboard_file",
+    "write_provenance",
+    "write_report",
+]

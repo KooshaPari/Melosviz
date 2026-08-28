@@ -29,6 +29,7 @@ melosviz = "melosviz.cli.main:main"
 [project.optional-dependencies]
 test = [
     "pytest>=7.0",
+    "pytest-timeout>=2.3",
     "httpx>=0.27",
     "fastapi>=0.111",
     "uvicorn[standard]>=0.29",
@@ -115,6 +116,7 @@ disable_error_code = ["method-assign"]
 pythonpath = ["src"]
 markers = [
     "flaky: quarantined / known-flaky; exclude with -m 'not flaky'",
+    "slow: full pipeline integration tests (3-min track end-to-end)",
 ]
 
 [tool.coverage.report]

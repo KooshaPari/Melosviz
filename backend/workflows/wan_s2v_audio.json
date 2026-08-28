@@ -1,0 +1,71 @@
+{
+  "10": {
+    "class_type": "WanVideoSampler",
+    "inputs": {
+      "seed": 0,
+      "steps": 20,
+      "cfg": 6.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1.0,
+      "width": 1280,
+      "height": 720,
+      "num_frames": 48,
+      "motion_strength": 1.0,
+      "model": ["11", 0],
+      "positive": ["12", 0],
+      "negative": ["13", 0],
+      "latent_image": ["14", 0]
+    }
+  },
+  "11": {
+    "class_type": "WanVideoModelLoader",
+    "inputs": {
+      "model_name": "wan2.1_t2v_5B_bf16.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "WanVideoTextEncode",
+    "inputs": {
+      "text": "{prompt}",
+      "model": ["11", 0]
+    }
+  },
+  "13": {
+    "class_type": "WanVideoTextEncode",
+    "inputs": {
+      "text": "{negative}",
+      "model": ["11", 0]
+    }
+  },
+  "14": {
+    "class_type": "WanVideoAudioConditionedLatent",
+    "inputs": {
+      "width": 1280,
+      "height": 720,
+      "num_frames": 48,
+      "frame_rate": 24,
+      "audio_path": "{audio_path}",
+      "audio_influence": 1.0
+    }
+  },
+  "15": {
+    "class_type": "WanVideoDecode",
+    "inputs": {
+      "samples": ["10", 0],
+      "model": ["11", 0]
+    }
+  },
+  "16": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "melosviz_clip",
+      "format": "video/h264-mp4",
+      "save_output": true,
+      "pingpong": false,
+      "images": ["15", 0]
+    }
+  }
+}

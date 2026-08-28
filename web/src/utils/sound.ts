@@ -8,8 +8,8 @@
 
 // ---- Internal state ---------------------------------------------------------
 
-let ctx: AudioContext | null = null
-let enabled = true
+let ctx: AudioContext | null = null;
+let enabled = true;
 
 // ---- Private helpers --------------------------------------------------------
 
@@ -19,12 +19,12 @@ let enabled = true
  */
 function getCtx(): AudioContext {
   if (!ctx) {
-    ctx = new AudioContext()
+    ctx = new AudioContext();
   }
-  if (ctx.state === 'suspended') {
-    void ctx.resume()
+  if (ctx.state === "suspended") {
+    void ctx.resume();
   }
-  return ctx
+  return ctx;
 }
 
 /**
@@ -43,21 +43,21 @@ function tone(
   dur: number,
   volume = 0.18,
 ): void {
-  const osc = c.createOscillator()
-  const gain = c.createGain()
+  const osc = c.createOscillator();
+  const gain = c.createGain();
 
-  osc.type = 'sine'
-  osc.frequency.setValueAtTime(freq, start)
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(freq, start);
 
-  gain.gain.setValueAtTime(0, start)
-  gain.gain.linearRampToValueAtTime(volume, start + 0.008)
-  gain.gain.exponentialRampToValueAtTime(0.001, start + dur)
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(volume, start + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, start + dur);
 
-  osc.connect(gain)
-  gain.connect(c.destination)
+  osc.connect(gain);
+  gain.connect(c.destination);
 
-  osc.start(start)
-  osc.stop(start + dur + 0.05)
+  osc.start(start);
+  osc.stop(start + dur + 0.05);
 }
 
 /** Tone sequences keyed by chime type. */
@@ -81,7 +81,7 @@ const SEQUENCES: Record<
 
   /** Short single blip (C5). */
   stage: [{ freq: 523.25, dur: 0.08, delay: 0.0 }],
-}
+};
 
 // ---- Public API -------------------------------------------------------------
 
@@ -94,17 +94,17 @@ const SEQUENCES: Record<
  * browser has suspended it.  This makes it safe to call from event handlers
  * triggered by a user gesture (click, keydown, etc.).
  */
-export function playChime(type: 'complete' | 'error' | 'stage'): void {
-  if (!enabled) return
+export function playChime(type: "complete" | "error" | "stage"): void {
+  if (!enabled) return;
 
-  const seq = SEQUENCES[type]
-  if (!seq) return
+  const seq = SEQUENCES[type];
+  if (!seq) return;
 
-  const c = getCtx()
-  const now = c.currentTime
+  const c = getCtx();
+  const now = c.currentTime;
 
   for (const note of seq) {
-    tone(c, note.freq, now + note.delay, note.dur)
+    tone(c, note.freq, now + note.delay, note.dur);
   }
 }
 
@@ -115,5 +115,5 @@ export function playChime(type: 'complete' | 'error' | 'stage'): void {
  * close the underlying AudioContext — toggling back to `true` is instant.
  */
 export function setEnabled(on: boolean): void {
-  enabled = on
+  enabled = on;
 }

@@ -15,13 +15,20 @@ let current: Locale = detectLocale();
 
 function detectLocale(): Locale {
   if (typeof window !== "undefined") {
-    const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored === "en" || stored === "es") return stored;
+    try {
+      const stored = window.localStorage?.getItem(LOCALE_STORAGE_KEY);
+      if (stored === "en" || stored === "es") return stored;
+    } catch {
+      /* localStorage may throw under sandboxed test runners — fall through */
+    }
   }
   if (typeof process !== "undefined" && process.env?.MELOSVIZ_LOCALE === "es") {
     return "es";
   }
-  if (typeof navigator !== "undefined" && navigator.language?.startsWith("es")) {
+  if (
+    typeof navigator !== "undefined" &&
+    navigator.language?.startsWith("es")
+  ) {
     return "es";
   }
   return "en";
@@ -30,7 +37,11 @@ function detectLocale(): Locale {
 export function setLocale(locale: Locale): void {
   current = locale;
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    try {
+      window.localStorage?.setItem(LOCALE_STORAGE_KEY, locale);
+    } catch {
+      /* sandboxed environments: ignore */
+    }
   }
 }
 
@@ -43,7 +54,11 @@ export function t(key: string, fallback?: string): string {
 }
 
 /** Interpolate `{name}` placeholders in a catalog string. */
-export function tf(key: string, vars: Record<string, string | number>, fallback?: string): string {
+export function tf(
+  key: string,
+  vars: Record<string, string | number>,
+  fallback?: string,
+): string {
   let text = t(key, fallback);
   for (const [name, value] of Object.entries(vars)) {
     text = text.replaceAll(`{${name}}`, String(value));

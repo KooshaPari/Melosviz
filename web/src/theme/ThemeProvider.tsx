@@ -78,7 +78,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       toggle,
       toggleHighContrast,
     }),
-    [theme, highContrast, setTheme, setHighContrast, toggle, toggleHighContrast],
+    [
+      theme,
+      highContrast,
+      setTheme,
+      setHighContrast,
+      toggle,
+      toggleHighContrast,
+    ],
   );
 
   return (

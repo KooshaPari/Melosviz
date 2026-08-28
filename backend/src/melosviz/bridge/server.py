@@ -161,6 +161,81 @@ class RenderRequest(BaseModel):
     out_dir: str
 
 
+class StudioStoryboardRequest(BaseModel):
+    wav_path: str
+    concept: str = "abstract narrative, digital medium-format film, 35mm grain"
+    bpm: float = 120.0
+    palette: str = "#0d0d10 #ff2bd6 #22d3ee #c084fc #f0f0f8"
+    out_dir: str
+    target_scenes: int = 4
+    use_llm_director: bool = True
+    # v2 — narrative inputs
+    lyrics_path: str | None = None
+    mood_board_paths: list[str] | None = None
+    continuity_character: str | None = None
+    continuity_environment: str | None = None
+    aspect_ratio: str = "youtube_16x9_1080p"
+
+
+class StudioGenerateRequest(BaseModel):
+    wav_path: str
+    storyboard_path: str
+    out_dir: str
+    offline: bool = True
+    # Optional correlation ID forwarded to the render event bus so the
+    # Director's Console SSE stream can subscribe to per-scene events.
+    job_id: str | None = None
+
+
+class StudioMasterRequest(BaseModel):
+    edit_path: str
+    out_dir: str
+    offline: bool = True
+    # v3 — audio finishing
+    lufs_target: str | None = None  # club_pa / youtube / broadcast_ebu_r128 / cinema_pulse
+    export_stems: bool = False
+    audio_wav_path: str | None = None
+
+
+class StudioShipRequest(BaseModel):
+    master_dir: str
+    offline: bool = True
+
+
+class StudioDirectRequest(BaseModel):
+    """Art-director edit + optional single-scene re-render.
+
+    Mirrors the `viz direct` CLI subcommand (backend/src/melosviz/cli/main.py).
+    """
+
+    storyboard_path: str
+    scene_index: int
+    replace_prompt: str | None = None
+    replace_camera: str | None = None
+    replace_name: str | None = None
+    out_path: str | None = None
+    re_render: bool = False
+    wav_path: str | None = None
+    render_out: str | None = None
+    render_offline: bool = True
+
+
+class StudioValidateRequest(BaseModel):
+    """Storyboard validation request — runs the conductor's StoryboardValidator."""
+
+    storyboard_path: str
+    # Optional hard-rule overrides (kept conservative by default).
+    max_scene_seconds: float = 30.0
+    require_continuity: bool = False
+
+
+class StudioPipelineStatus(BaseModel):
+    storyboard: dict[str, object] | None = None
+    generate: dict[str, object] | None = None
+    master: dict[str, object] | None = None
+    ship: dict[str, object] | None = None
+
+
 # ---------------------------------------------------------------------------
 # Analyzer selection (Rust MIR first, Python fallback)
 # ---------------------------------------------------------------------------
@@ -547,6 +622,425 @@ async def render(req: RenderRequest, request: Request) -> str:
     plan_path.write_text(json.dumps(plan, indent=2, default=str))
 
     return str(out)
+
+
+# ---------------------------------------------------------------------------
+# Studio pipeline endpoints (ComfyUI-centric music-video production)
+# ---------------------------------------------------------------------------
+#
+# These endpoints wrap the ``python -m melosviz.cli.main`` subcommands
+# (storyboard / generate / master / ship) so a thin web/desktop UI can
+# drive the orchestrator without bundling Python internals.
+#
+# Each endpoint:
+# - Validates input paths under the security-allowed data directory
+# - Enforces the global memory cap
+# - Runs the corresponding CLI subcommand as a subprocess with a timeout
+# - Returns the emitted artifact JSON / plan / zip path as JSON text
+
+_STUDIO_CMD_TIMEOUT_SEC = 60 * 10  # 10 minutes per stage
+
+
+def _run_studio_subprocess(args: list[str], *, cwd: str | None = None) -> dict[str, object]:
+    """Execute a ``python -m melosviz.cli.main`` subcommand and return its result.
+
+    Mirrors how the desktop shell invokes the CLI via ``runVizCli`` in
+    ``desktop/src/index.ts``. The subprocess runs with ``MELOSVIZ_COMFYUI_OFFLINE``
+    already exported by the caller when offline mode is requested.
+    """
+    env = os.environ.copy()
+    env.setdefault("PYTHONPATH", "src")
+    env.setdefault("PYTHONUNBUFFERED", "1")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "melosviz.cli.main", *args],
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=_STUDIO_CMD_TIMEOUT_SEC,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(
+            status_code=504,
+            detail=f"studio subcommand timed out after {_STUDIO_CMD_TIMEOUT_SEC}s",
+        ) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    if proc.returncode != 0:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"studio subcommand failed (exit {proc.returncode}): "
+                f"{proc.stderr.strip().splitlines()[-1] if proc.stderr else 'no stderr'}"
+            ),
+        )
+
+    return {
+        "returncode": proc.returncode,
+        "stdout_tail": proc.stdout.splitlines()[-5:],
+        "stderr_tail": proc.stderr.splitlines()[-5:] if proc.stderr else [],
+    }
+
+
+@app.post("/api/studio/storyboard", response_class=PlainTextResponse)
+async def studio_storyboard(req: StudioStoryboardRequest, request: Request) -> str:
+    """Generate a storyboard JSON for a WAV using the LLM-driven director.
+
+    Emits ``<out_dir>/storyboard.json`` and returns its contents.
+    """
+    _enforce_memory_cap(request)
+    wav = _check_inside(req.wav_path)
+    out = _check_inside(req.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    if not wav.exists():
+        raise HTTPException(status_code=400, detail=f"File not found: {wav}")
+
+    if not req.use_llm_director:
+        os.environ["MELOSVIZ_DIRECTOR_DISABLE"] = "1"
+
+    cmd: list[str] = [
+        "storyboard", str(wav),
+        "--concept", req.concept,
+        "--bpm", str(req.bpm),
+        "--palette", req.palette,
+        "--out", str(out),
+    ]
+    if req.aspect_ratio:
+        cmd += ["--aspect-ratio", req.aspect_ratio]
+    if req.lyrics_path:
+        cmd += ["--lyrics", req.lyrics_path]
+    if req.mood_board_paths:
+        for mb in req.mood_board_paths:
+            if mb:
+                cmd += ["--mood-board", mb]
+    if req.continuity_character:
+        cmd += ["--continuity-character", req.continuity_character]
+    if req.continuity_environment:
+        cmd += ["--continuity-environment", req.continuity_environment]
+
+    try:
+        _run_studio_subprocess(cmd)
+    finally:
+        os.environ.pop("MELOSVIZ_DIRECTOR_DISABLE", None)
+
+    sb_path = out / "storyboard.json"
+    if not sb_path.exists():
+        raise HTTPException(status_code=500, detail="storyboard.json was not emitted")
+    return sb_path.read_text()
+
+
+@app.post("/api/studio/generate", response_class=PlainTextResponse)
+async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
+    """Dispatch the conductor pipeline across all storyboard scenes.
+
+    Emits ``<out_dir>/{comfyui_image,comfyui_video,generative_asset,...}/scene_*`` folders,
+    each with a ``workflow.json`` ready for ComfyUI (or an ``ffmpeg``/``blender`` command
+    for non-ComfyUI scenes). Returns a JSON manifest listing every emitted scene.
+    """
+    _enforce_memory_cap(request)
+    wav = _check_inside(req.wav_path)
+    sb = _check_inside(req.storyboard_path)
+    out = _check_inside(req.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    if not wav.exists():
+        raise HTTPException(status_code=400, detail=f"File not found: {wav}")
+    if not sb.exists():
+        raise HTTPException(status_code=400, detail=f"Storyboard not found: {sb}")
+
+    env_overlay: dict[str, str] = {}
+    if req.offline:
+        env_overlay["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
+    # When the caller supplies a correlation ID, forward it to the CLI subprocess
+    # so every per-scene event the orchestrator emits lands under that job_id and
+    # the Director's Console SSE stream can subscribe to per-pipeline progress.
+    cli_args: list[str] = [
+        "generate", str(wav),
+        "--storyboard", str(sb),
+        "--out", str(out),
+    ]
+    if req.job_id:
+        cli_args += ["--job-id", req.job_id]
+    prior = {k: os.environ.get(k) for k in env_overlay}
+    os.environ.update(env_overlay)
+    try:
+        _run_studio_subprocess(cli_args)
+    finally:
+        for k, v in prior.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    # Return a manifest of everything emitted (scoped by scene_type subfolders,
+    # e.g. comfyui_image/scene_*, comfyui_video/scene_*, plus any flat scene_* dirs).
+    scenes: list[dict[str, object]] = []
+    for scene_dir in sorted(out.glob("scene_*")):
+        if not scene_dir.is_dir():
+            continue
+        scene_meta: dict[str, object] = {"scene_dir": str(scene_dir), "name": scene_dir.name}
+        wf = scene_dir / "workflow.json"
+        js = scene_dir / "job_spec.json"
+        plan = scene_dir / "plan.json"
+        if wf.exists():
+            scene_meta["workflow_json"] = str(wf)
+        if js.exists():
+            scene_meta["job_spec_json"] = str(js)
+        if plan.exists():
+            scene_meta["plan_json"] = str(plan)
+        scenes.append(scene_meta)
+
+    return json.dumps({"out_dir": str(out), "scenes": scenes}, indent=2)
+
+
+@app.post("/api/studio/master", response_class=PlainTextResponse)
+async def studio_master(req: StudioMasterRequest, request: Request) -> str:
+    """Run color + audio mix + master encode via DaVinci / ffmpeg fallback.
+
+    Emits ``<out_dir>/{festival.mov, club.mp4, youtube.mp4, mix.wav, captions.srt}``
+    plus ``master_plan.json`` describing each deliverable.
+    """
+    _enforce_memory_cap(request)
+    edit = _check_inside(req.edit_path)
+    out = _check_inside(req.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    if not edit.exists():
+        raise HTTPException(status_code=400, detail=f"Edit/plan not found: {edit}")
+
+    env_overlay: dict[str, str] = {}
+    if req.offline:
+        env_overlay["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
+    prior = {k: os.environ.get(k) for k in env_overlay}
+    os.environ.update(env_overlay)
+    try:
+        cmd = ["master", str(edit), "--out", str(out)]
+        if req.lufs_target:
+            cmd += ["--lufs-target", req.lufs_target]
+        if req.export_stems:
+            cmd += ["--export-stems"]
+        if req.audio_wav_path:
+            audio_wav = _check_inside(req.audio_wav_path)
+            if audio_wav.exists():
+                cmd += ["--audio", str(audio_wav)]
+        _run_studio_subprocess(cmd)
+    finally:
+        for k, v in prior.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    master_plan = out / "master_plan.json"
+    if master_plan.exists():
+        return master_plan.read_text()
+    # Fallback: emit a tiny summary so the UI always has something to show
+    files = sorted(p.name for p in out.iterdir() if p.is_file())
+    return json.dumps({"out_dir": str(out), "files": files}, indent=2)
+
+
+@app.post("/api/studio/ship", response_class=PlainTextResponse)
+async def studio_ship(req: StudioShipRequest, request: Request) -> str:
+    """Package master deliverables into a single distributable bundle.
+
+    Emits ``<master_dir>/final.zip`` + ``<master_dir>/manifest.json``.
+    """
+    _enforce_memory_cap(request)
+    master_dir = _check_inside(req.master_dir)
+    if not master_dir.exists():
+        raise HTTPException(status_code=400, detail=f"Master dir not found: {master_dir}")
+
+    env_overlay: dict[str, str] = {}
+    if req.offline:
+        env_overlay["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
+    prior = {k: os.environ.get(k) for k in env_overlay}
+    os.environ.update(env_overlay)
+    try:
+        _run_studio_subprocess(["ship", str(master_dir)])
+    finally:
+        for k, v in prior.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    final_zip = master_dir / "final.zip"
+    manifest = master_dir / "manifest.json"
+    out: dict[str, object] = {"master_dir": str(master_dir)}
+    if final_zip.exists():
+        out["final_zip"] = str(final_zip)
+        out["final_zip_bytes"] = final_zip.stat().st_size
+    if manifest.exists():
+        out["manifest"] = json.loads(manifest.read_text())
+    return json.dumps(out, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Art-director edit (single-scene mutation + optional re-render)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/studio/direct", response_class=PlainTextResponse)
+async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
+    """Edit one scene's prompt / camera / name and (optionally) re-render.
+
+    Body:
+        storyboard_path: str       — path to storyboard.json
+        scene_index: int           — 0-based scene index to edit
+        replace_prompt:  str | None
+        replace_camera:  str | None
+        replace_name:    str | None
+        out:             str | None  — if set, writes a separate file
+        re_render:       bool         — also invoke ``viz generate`` for
+                                       that scene + neighbors
+        wav:             str | None   — required when re_render=true
+        render_out:      str | None   — required when re_render=true
+        render_offline:  bool
+    """
+    _enforce_memory_cap(request)
+    sb_path = _check_inside(req.storyboard_path)
+    if not sb_path.exists():
+        raise HTTPException(status_code=400, detail=f"storyboard not found: {sb_path}")
+
+    env_overlay: dict[str, str] = {}
+    if req.render_offline:
+        env_overlay["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
+    prior = {k: os.environ.get(k) for k in env_overlay}
+    os.environ.update(env_overlay)
+    try:
+        cmd = ["direct", str(sb_path), "--scene-index", str(req.scene_index)]
+        if req.replace_prompt:
+            cmd += ["--replace-prompt", req.replace_prompt]
+        if req.replace_camera:
+            cmd += ["--replace-camera", req.replace_camera]
+        if req.replace_name:
+            cmd += ["--replace-name", req.replace_name]
+        if req.out:
+            cmd += ["--out", str(_check_inside(req.out))]
+        if req.re_render:
+            cmd += ["--re-render"]
+            if req.wav:
+                cmd += ["--wav", str(_check_inside(req.wav))]
+            if req.render_out:
+                cmd += ["--render-out", str(_check_inside(req.render_out))]
+        _run_studio_subprocess(cmd)
+    finally:
+        for k, v in prior.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    edited_path = _check_inside(req.out) if req.out else sb_path
+    if edited_path.exists():
+        return edited_path.read_text()
+    return json.dumps({"storyboard": str(edited_path)}, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# Storyboard validation (severity-tagged report)
+# ---------------------------------------------------------------------------
+
+
+@app.post("/api/studio/validate", response_class=PlainTextResponse)
+async def studio_validate(req: "StudioValidateRequest", request: Request) -> str:
+    """Validate a storyboard.json and return a structured severity report.
+
+    Returns ``StoryboardValidationReport`` JSON:
+        {
+          "storyboard": "<path>",
+          "issues": [ {severity, code, scene_index, message}, ... ],
+          "errors":   <int>,
+          "warnings": <int>,
+          "info":     <int>,
+          "ok":       <bool>
+        }
+    """
+    _enforce_memory_cap(request)
+    sb_path = _check_inside(req.storyboard_path)
+    if not sb_path.exists():
+        raise HTTPException(status_code=400, detail=f"storyboard not found: {sb_path}")
+
+    from melosviz.conductor.validate import StoryboardValidator
+
+    payload = json.loads(sb_path.read_text())
+    report = StoryboardValidator().validate(payload)
+    return json.dumps(report.to_dict(), indent=2)
+
+
+# ---------------------------------------------------------------------------
+# SSE — live render queue events (queued / rendering / done / error per scene)
+# ---------------------------------------------------------------------------
+
+import asyncio
+import json as _json
+
+
+@app.get("/api/render/events")
+async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
+    """Server-Sent Events stream of orchestrator render progress.
+
+    Clients (web StudioConsole, desktop Director's Console) open an
+    ``EventSource('/api/render/events?job_id=...')`` and receive one
+    ``data: <json>\\n\\n`` SSE frame per RenderEvent. Frames are flushed
+    every 250ms while the connection is open and the bus has new events.
+
+    Query params:
+        job_id  — only emit events for this job (None = all jobs)
+        since_ms — replay buffered events newer than this timestamp
+                  (useful when a client reconnects mid-render)
+    """
+    from fastapi.responses import StreamingResponse
+
+    from melosviz.conductor.events import get_bus
+
+    bus = get_bus()
+
+    async def event_stream():
+        last_seen_ms = int(since_ms)
+        # Replay buffered events older than the connection start so a
+        # reconnecting client doesn't lose the queued/rendering events that
+        # fired while it was offline.
+        for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
+            last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
+            yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+
+        while True:
+            # Drain anything emitted since last flush, then sleep briefly
+            await asyncio.sleep(0.25)
+            for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
+                last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
+                yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+@app.get("/api/render/events/recent")
+async def render_events_recent(
+    job_id: str | None = None, since_ms: int = 0
+) -> dict[str, object]:
+    """JSON snapshot of buffered events for clients that don't want SSE.
+
+    Returns the same shape the SSE stream emits, in a single response. Useful
+    for polling clients (e.g. older desktop builds) and for tests.
+    """
+    from melosviz.conductor.events import get_bus
+
+    bus = get_bus()
+    events = [evt.to_dict() for evt in bus.recent(job_id=job_id, since_ms=since_ms)]
+    return {"events": events, "count": len(events)}
 
 
 # ---------------------------------------------------------------------------

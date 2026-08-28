@@ -3,9 +3,9 @@
 
 export interface ShortcutsMap {
   /** Space — toggles play / pause. */
-  play: () => void
+  play: () => void;
   /** Escape — stops playback. */
-  stop: () => void
+  stop: () => void;
 }
 
 /**
@@ -25,29 +25,29 @@ export interface ShortcutsMap {
 export function attachShortcuts(map: ShortcutsMap): () => void {
   const handler = (e: KeyboardEvent) => {
     // Ignore when user is typing in an input.
-    const target = e.target as HTMLElement
+    const target = e.target as HTMLElement;
     if (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
       target.isContentEditable
     ) {
-      return
+      return;
     }
 
     switch (e.code) {
-      case 'Space':
-        e.preventDefault()
-        map.play()
-        break
-      case 'Escape':
-        e.preventDefault()
-        map.stop()
-        break
+      case "Space":
+        e.preventDefault();
+        map.play();
+        break;
+      case "Escape":
+        e.preventDefault();
+        map.stop();
+        break;
     }
-  }
+  };
 
-  window.addEventListener('keydown', handler)
-  return () => window.removeEventListener('keydown', handler)
+  window.addEventListener("keydown", handler);
+  return () => window.removeEventListener("keydown", handler);
 }
 
 /**
@@ -55,8 +55,8 @@ export function attachShortcuts(map: ShortcutsMap): () => void {
  * Safe to call inside a component body.
  */
 export function useShortcuts(map: ShortcutsMap): () => void {
-  if (typeof window !== 'undefined') {
-    return attachShortcuts(map)
+  if (typeof window !== "undefined") {
+    return attachShortcuts(map);
   }
-  return () => {}
+  return () => {};
 }

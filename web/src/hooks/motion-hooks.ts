@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // ---------------------------------------------------------------------------
 // useReducedMotion – detects OS-level prefers-reduced-motion
@@ -6,15 +6,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useReducedMotion(): boolean {
   const [prefersReduced, setPrefersReduced] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   });
 
   useEffect(() => {
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handler = (e: MediaQueryListEvent) => setPrefersReduced(e.matches);
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
   }, []);
 
   return prefersReduced;
@@ -153,7 +153,7 @@ export function useInView(
     const el = ref.current;
     if (!el) return;
 
-    const { rootMargin = '0px', threshold = 0, once = false } = options;
+    const { rootMargin = "0px", threshold = 0, once = false } = options;
 
     const observer = new IntersectionObserver(
       ([e]) => {
@@ -189,11 +189,16 @@ interface StaggerOptions {
  * @param items  – the list/array whose length determines the number of phases
  * @param opts   – interval & delay tuning
  */
-export function useStagger<T>(items: T[], opts: StaggerOptions = {}): boolean[] {
+export function useStagger<T>(
+  items: T[],
+  opts: StaggerOptions = {},
+): boolean[] {
   const reduced = useReducedMotion();
   const { interval = 50, delay = 0 } = opts;
 
-  const [revealed, setRevealed] = useState<number>(() => (reduced ? items.length : 0));
+  const [revealed, setRevealed] = useState<number>(() =>
+    reduced ? items.length : 0,
+  );
 
   useEffect(() => {
     if (reduced) {

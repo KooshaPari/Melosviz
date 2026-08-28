@@ -13,24 +13,24 @@
 
 export interface Plugin {
   /** Unique identifier for this plugin. */
-  name: string
+  name: string;
   /** SemVer version string (e.g. "1.2.3"). */
-  version: string
+  version: string;
   /** Human-readable summary of what the plugin provides. */
-  description?: string
+  description?: string;
   /** Lifecycle: called immediately after the plugin is registered. */
-  onRegister?: () => void
+  onRegister?: () => void;
   /** Lifecycle: called when the plugin transitions from disabled → enabled. */
-  onEnable?: () => void
+  onEnable?: () => void;
   /** Lifecycle: called when the plugin transitions from enabled → disabled. */
-  onDisable?: () => void
+  onDisable?: () => void;
 }
 
 export interface PluginEntry {
   /** The registered plugin descriptor. */
-  plugin: Plugin
+  plugin: Plugin;
   /** Whether the plugin is currently enabled. */
-  enabled: boolean
+  enabled: boolean;
 }
 
 /**
@@ -42,9 +42,9 @@ export interface PluginEntry {
  * plugin without forcing the caller into a particular style.
  */
 export interface WebPersistable {
-  getItem(key: string): string | null | Promise<string | null>
-  setItem(key: string, value: string): void | Promise<void>
-  removeItem(key: string): void | Promise<void>
+  getItem(key: string): string | null | Promise<string | null>;
+  setItem(key: string, value: string): void | Promise<void>;
+  removeItem(key: string): void | Promise<void>;
 }
 
 // ---- PostMessage protocol types ------------------------------------------
@@ -61,24 +61,25 @@ export interface WebPersistable {
 //   { type: "plugin:error",      error: "...",     requestId?: string }
 
 export interface PluginMessageEvent {
-  type: "plugin:discover" | "plugin:enable" | "plugin:disable"
+  type: "plugin:discover" | "plugin:enable" | "plugin:disable";
   /** Plugin name — required for enable / disable. */
-  name?: string
+  name?: string;
   /** Opaque correlation token echoed back in the response. */
-  requestId?: string
+  requestId?: string;
 }
 
 export interface PluginMessageResponse {
-  type: "plugin:discovered" | "plugin:enabled" | "plugin:disabled" | "plugin:error"
-  plugins?: PluginEntry[]
-  name?: string
-  requestId?: string
-  error?: string
+  type:
+    "plugin:discovered" | "plugin:enabled" | "plugin:disabled" | "plugin:error";
+  plugins?: PluginEntry[];
+  name?: string;
+  requestId?: string;
+  error?: string;
 }
 
 // ---- Registry ------------------------------------------------------------
 
-const STORAGE_KEY = "melosviz:pluginRegistry:enabled"
+const STORAGE_KEY = "melosviz:pluginRegistry:enabled";
 
 export interface PluginRegistry {
   /**
@@ -89,33 +90,33 @@ export interface PluginRegistry {
    * - Automatically enables the plugin if its name was previously persisted
    *   in localStorage (i.e. it was enabled before a page reload).
    */
-  register(plugin: Plugin): void
+  register(plugin: Plugin): void;
 
   /**
    * Return every registered plugin annotated with its current enabled state.
    * Lazily loads persisted state on first call.
    */
-  discover(): Promise<PluginEntry[]>
+  discover(): Promise<PluginEntry[]>;
 
   /**
    * Enable a plugin by name.
    * Returns `false` if no plugin with that name is registered.
    * Persists the updated enabled-set to storage.
    */
-  enable(name: string): Promise<boolean>
+  enable(name: string): Promise<boolean>;
 
   /**
    * Disable a plugin by name.
    * Returns `false` if no plugin with that name is registered.
    * Persists the updated enabled-set to storage.
    */
-  disable(name: string): Promise<boolean>
+  disable(name: string): Promise<boolean>;
 
   /**
    * Look up a plugin by name without affecting its enabled state.
    * Returns `undefined` if the plugin has not been registered.
    */
-  getPlugin(name: string): Plugin | undefined
+  getPlugin(name: string): Plugin | undefined;
 
   /**
    * Start listening for `plugin:*` postMessage events from a native wrapper
@@ -125,7 +126,7 @@ export interface PluginRegistry {
    * method while the bridge is already active is a no-op and returns the
    * **same** cleanup function.
    */
-  startPostMessageBridge(): () => void
+  startPostMessageBridge(): () => void;
 }
 
 /**
@@ -155,56 +156,56 @@ export interface PluginRegistry {
 export function createPluginRegistry(
   persistable?: WebPersistable,
 ): PluginRegistry {
-  const plugins = new Map<string, Plugin>()
-  const enabled = new Set<string>()
+  const plugins = new Map<string, Plugin>();
+  const enabled = new Set<string>();
 
   /** Names that were present in storage when persistence was loaded.
    *  Used to auto-enable plugins that register *after* the storage read. */
-  const persistedNames = new Set<string>()
+  const persistedNames = new Set<string>();
 
-  let loaded = false
-  let loadPromise: Promise<void> | null = null
-  let bridgeCleanup: (() => void) | null = null
+  let loaded = false;
+  let loadPromise: Promise<void> | null = null;
+  let bridgeCleanup: (() => void) | null = null;
 
   // ---- Persistence helpers ------------------------------------------------
 
   async function ensureLoaded(): Promise<void> {
-    if (loaded) return
-    if (loadPromise) return loadPromise
+    if (loaded) return;
+    if (loadPromise) return loadPromise;
 
     loadPromise = (async () => {
       try {
         const raw = persistable
           ? await persistable.getItem(STORAGE_KEY)
-          : localStorage.getItem(STORAGE_KEY)
+          : localStorage.getItem(STORAGE_KEY);
 
         if (raw) {
-          const names = JSON.parse(raw) as string[]
+          const names = JSON.parse(raw) as string[];
           for (const name of names) {
-            persistedNames.add(name)
-            const plugin = plugins.get(name)
+            persistedNames.add(name);
+            const plugin = plugins.get(name);
             if (plugin) {
-              enabled.add(name)
-              plugin.onEnable?.()
+              enabled.add(name);
+              plugin.onEnable?.();
             }
           }
         }
       } catch {
         // Corrupt JSON, storage unavailable, or quota denial — start fresh
       }
-      loaded = true
-    })()
+      loaded = true;
+    })();
 
-    return loadPromise
+    return loadPromise;
   }
 
   async function persistState(): Promise<void> {
-    const data = JSON.stringify([...enabled])
+    const data = JSON.stringify([...enabled]);
     try {
       if (persistable) {
-        await persistable.setItem(STORAGE_KEY, data)
+        await persistable.setItem(STORAGE_KEY, data);
       } else {
-        localStorage.setItem(STORAGE_KEY, data)
+        localStorage.setItem(STORAGE_KEY, data);
       }
     } catch {
       // Storage full, sandbox denied, or adapter threw — best-effort
@@ -214,61 +215,61 @@ export function createPluginRegistry(
   // ---- PostMessage bridge -------------------------------------------------
 
   function handleBridgeMessage(event: MessageEvent<PluginMessageEvent>): void {
-    const { type, name, requestId } = event.data
+    const { type, name, requestId } = event.data;
 
-    if (!type || !type.startsWith("plugin:")) return
+    if (!type || !type.startsWith("plugin:")) return;
 
     const respond = (
       response: Omit<PluginMessageResponse, "requestId">,
     ): void => {
       try {
         if (event.source && "postMessage" in event.source) {
-          ;(event.source as Window).postMessage(
+          (event.source as Window).postMessage(
             { ...response, requestId },
             { targetOrigin: "*" },
-          )
+          );
         }
       } catch {
         // Cross-origin restrictions or detached iframe — swallow
       }
-    }
+    };
 
     switch (type) {
       case "plugin:discover":
         registry.discover().then((plugs) => {
-          respond({ type: "plugin:discovered", plugins: plugs })
-        })
-        break
+          respond({ type: "plugin:discovered", plugins: plugs });
+        });
+        break;
 
       case "plugin:enable":
         if (!name) {
-          respond({ type: "plugin:error", error: "Missing plugin name" })
-          return
+          respond({ type: "plugin:error", error: "Missing plugin name" });
+          return;
         }
         registry.enable(name).then((ok) => {
-          if (ok) respond({ type: "plugin:enabled", name })
+          if (ok) respond({ type: "plugin:enabled", name });
           else
             respond({
               type: "plugin:error",
               error: `Plugin "${name}" not found`,
-            })
-        })
-        break
+            });
+        });
+        break;
 
       case "plugin:disable":
         if (!name) {
-          respond({ type: "plugin:error", error: "Missing plugin name" })
-          return
+          respond({ type: "plugin:error", error: "Missing plugin name" });
+          return;
         }
         registry.disable(name).then((ok) => {
-          if (ok) respond({ type: "plugin:disabled", name })
+          if (ok) respond({ type: "plugin:disabled", name });
           else
             respond({
               type: "plugin:error",
               error: `Plugin "${name}" not found`,
-            })
-        })
-        break
+            });
+        });
+        break;
     }
   }
 
@@ -277,67 +278,71 @@ export function createPluginRegistry(
   const registry: PluginRegistry = {
     register(plugin: Plugin): void {
       if (!plugin.name) {
-        throw new Error('Plugin must have a "name" property')
+        throw new Error('Plugin must have a "name" property');
       }
       if (plugins.has(plugin.name)) {
-        throw new Error(`Plugin "${plugin.name}" is already registered`)
+        throw new Error(`Plugin "${plugin.name}" is already registered`);
       }
 
-      plugins.set(plugin.name, plugin)
-      plugin.onRegister?.()
+      plugins.set(plugin.name, plugin);
+      plugin.onRegister?.();
 
       // If persistence was already loaded and this name was previously saved,
       // auto-enable the plugin now.
-      if (loaded && persistedNames.has(plugin.name) && !enabled.has(plugin.name)) {
-        enabled.add(plugin.name)
-        plugin.onEnable?.()
+      if (
+        loaded &&
+        persistedNames.has(plugin.name) &&
+        !enabled.has(plugin.name)
+      ) {
+        enabled.add(plugin.name);
+        plugin.onEnable?.();
       }
     },
 
     async discover(): Promise<PluginEntry[]> {
-      await ensureLoaded()
+      await ensureLoaded();
       return Array.from(plugins.values()).map((plugin) => ({
         plugin,
         enabled: enabled.has(plugin.name),
-      }))
+      }));
     },
 
     async enable(name: string): Promise<boolean> {
-      await ensureLoaded()
-      const plugin = plugins.get(name)
-      if (!plugin) return false
-      if (enabled.has(name)) return true
-      enabled.add(name)
-      plugin.onEnable?.()
-      await persistState()
-      return true
+      await ensureLoaded();
+      const plugin = plugins.get(name);
+      if (!plugin) return false;
+      if (enabled.has(name)) return true;
+      enabled.add(name);
+      plugin.onEnable?.();
+      await persistState();
+      return true;
     },
 
     async disable(name: string): Promise<boolean> {
-      await ensureLoaded()
-      const plugin = plugins.get(name)
-      if (!plugin) return false
-      if (!enabled.has(name)) return true
-      enabled.delete(name)
-      plugin.onDisable?.()
-      await persistState()
-      return true
+      await ensureLoaded();
+      const plugin = plugins.get(name);
+      if (!plugin) return false;
+      if (!enabled.has(name)) return true;
+      enabled.delete(name);
+      plugin.onDisable?.();
+      await persistState();
+      return true;
     },
 
     getPlugin(name: string): Plugin | undefined {
-      return plugins.get(name)
+      return plugins.get(name);
     },
 
     startPostMessageBridge(): () => void {
-      if (bridgeCleanup) return bridgeCleanup
-      window.addEventListener("message", handleBridgeMessage)
+      if (bridgeCleanup) return bridgeCleanup;
+      window.addEventListener("message", handleBridgeMessage);
       bridgeCleanup = (): void => {
-        window.removeEventListener("message", handleBridgeMessage)
-        bridgeCleanup = null
-      }
-      return bridgeCleanup
+        window.removeEventListener("message", handleBridgeMessage);
+        bridgeCleanup = null;
+      };
+      return bridgeCleanup;
     },
-  }
+  };
 
-  return registry
+  return registry;
 }

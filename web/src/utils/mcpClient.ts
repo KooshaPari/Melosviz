@@ -10,72 +10,72 @@
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 
 interface JsonRpcRequest {
-  jsonrpc: '2.0'
-  id: number
-  method: string
-  params?: Record<string, unknown>
+  jsonrpc: "2.0";
+  id: number;
+  method: string;
+  params?: Record<string, unknown>;
 }
 
 interface JsonRpcError {
-  code: number
-  message: string
-  data?: unknown
+  code: number;
+  message: string;
+  data?: unknown;
 }
 
 interface JsonRpcResponse<T = unknown> {
-  jsonrpc: '2.0'
-  id: number
-  result?: T
-  error?: JsonRpcError
+  jsonrpc: "2.0";
+  id: number;
+  result?: T;
+  error?: JsonRpcError;
 }
 
 interface InitializeParams {
-  protocolVersion: string
-  capabilities: Record<string, unknown>
-  clientInfo: { name: string; version: string }
+  protocolVersion: string;
+  capabilities: Record<string, unknown>;
+  clientInfo: { name: string; version: string };
 }
 
 export interface InitializeResult {
-  protocolVersion: string
-  capabilities: Record<string, unknown>
-  serverInfo: { name: string; version: string }
+  protocolVersion: string;
+  capabilities: Record<string, unknown>;
+  serverInfo: { name: string; version: string };
 }
 
 export interface McpTool {
-  name: string
-  description?: string
-  inputSchema?: Record<string, unknown>
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
 }
 
-export type ToolCallArguments = Record<string, unknown>
+export type ToolCallArguments = Record<string, unknown>;
 
 export interface ToolCallContent {
-  type: string
-  text?: string
-  [key: string]: unknown
+  type: string;
+  text?: string;
+  [key: string]: unknown;
 }
 
 export interface ToolCallResult {
-  content: ToolCallContent[]
-  isError?: boolean
+  content: ToolCallContent[];
+  isError?: boolean;
 }
 
 /* ─── Retry / backoff helpers ───────────────────────────────────────────────── */
 
 interface BackoffOptions {
   /** Initial delay in ms (default 1000). */
-  baseDelayMs?: number
+  baseDelayMs?: number;
   /** Maximum delay in ms (default 30 000). */
-  maxDelayMs?: number
+  maxDelayMs?: number;
   /** Jitter fraction, 0 = none, 1 = full (default 0.2). */
-  jitter?: number
+  jitter?: number;
 }
 
 const DEFAULT_BACKOFF: Required<BackoffOptions> = {
   baseDelayMs: 1_000,
   maxDelayMs: 30_000,
   jitter: 0.2,
-}
+};
 
 /**
  * Return a promise that resolves after `ms` milliseconds, or rejects with
@@ -84,18 +84,18 @@ const DEFAULT_BACKOFF: Required<BackoffOptions> = {
 function delay(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      reject(new DOMException('Aborted', 'AbortError'))
-      return
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
     }
 
-    const timer = setTimeout(resolve, ms)
+    const timer = setTimeout(resolve, ms);
     const onAbort = () => {
-      clearTimeout(timer)
-      reject(new DOMException('Aborted', 'AbortError'))
-    }
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
 
-    signal?.addEventListener('abort', onAbort, { once: true })
-  })
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 /**
@@ -108,11 +108,11 @@ function computeBackoff(
   attempt: number,
   opts: Required<BackoffOptions>,
 ): number {
-  const exp = opts.baseDelayMs * 2 ** attempt
-  const clamped = Math.min(exp, opts.maxDelayMs)
-  const jitterRange = clamped * opts.jitter
-  const jitterAmount = Math.random() * jitterRange - jitterRange / 2
-  return Math.round(clamped + jitterAmount)
+  const exp = opts.baseDelayMs * 2 ** attempt;
+  const clamped = Math.min(exp, opts.maxDelayMs);
+  const jitterRange = clamped * opts.jitter;
+  const jitterAmount = Math.random() * jitterRange - jitterRange / 2;
+  return Math.round(clamped + jitterAmount);
 }
 
 /* ─── McpError ─────────────────────────────────────────────────────────────── */
@@ -124,14 +124,14 @@ function computeBackoff(
  * can distinguish protocol-level errors from transport failures.
  */
 export class McpError extends Error {
-  readonly code: number
-  readonly data?: unknown
+  readonly code: number;
+  readonly data?: unknown;
 
   constructor(code: number, message: string, data?: unknown) {
-    super(message)
-    this.name = 'McpError'
-    this.code = code
-    this.data = data
+    super(message);
+    this.name = "McpError";
+    this.code = code;
+    this.data = data;
   }
 }
 
@@ -153,23 +153,23 @@ export class McpError extends Error {
  * ```
  */
 export class McpClient {
-  private readonly baseUrl: string
-  private readonly backoffOpts: Required<BackoffOptions>
-  private nextId = 1
-  private initialized = false
+  private readonly baseUrl: string;
+  private readonly backoffOpts: Required<BackoffOptions>;
+  private nextId = 1;
+  private initialized = false;
 
   /**
    * @param baseUrl     - URL of the MCP bridge endpoint (default `/mcp`).
    * @param backoffOpts - Exponential backoff tuning.
    */
-  constructor(baseUrl: string = '/mcp', backoffOpts?: BackoffOptions) {
-    this.baseUrl = baseUrl
-    this.backoffOpts = { ...DEFAULT_BACKOFF, ...backoffOpts }
+  constructor(baseUrl: string = "/mcp", backoffOpts?: BackoffOptions) {
+    this.baseUrl = baseUrl;
+    this.backoffOpts = { ...DEFAULT_BACKOFF, ...backoffOpts };
   }
 
   /** Whether the MCP handshake (`initialize`) has completed. */
   get isInitialized(): boolean {
-    return this.initialized
+    return this.initialized;
   }
 
   /* ── Private helpers ────────────────────────────────────────────────── */
@@ -178,7 +178,7 @@ export class McpClient {
    * Allocate a fresh JSON-RPC request ID (monotonically increasing).
    */
   private allocId(): number {
-    return this.nextId++
+    return this.nextId++;
   }
 
   /**
@@ -194,58 +194,62 @@ export class McpClient {
     params?: Record<string, unknown>,
     signal?: AbortSignal,
   ): Promise<T> {
-    const id = this.allocId()
-    const body: JsonRpcRequest = { jsonrpc: '2.0', id, method, params }
+    const id = this.allocId();
+    const body: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
 
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 0; ; attempt++) {
       // Honour caller-initiated cancellation before each attempt
       if (signal?.aborted) {
-        throw new DOMException('Aborted', 'AbortError')
+        throw new DOMException("Aborted", "AbortError");
       }
 
       try {
         const res = await fetch(this.baseUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
           signal,
-        })
+        });
 
         if (!res.ok) {
           // HTTP-level failure — treat as transport error, retry
-          throw new Error(`HTTP ${res.status} ${res.statusText}`)
+          throw new Error(`HTTP ${res.status} ${res.statusText}`);
         }
 
-        const json = (await res.json()) as JsonRpcResponse<T>
+        const json = (await res.json()) as JsonRpcResponse<T>;
 
         if (json.error) {
           // JSON-RPC error — NOT retried, the server spoke valid JSON
-          throw new McpError(json.error.code, json.error.message, json.error.data)
+          throw new McpError(
+            json.error.code,
+            json.error.message,
+            json.error.data,
+          );
         }
 
-        return json.result as T
+        return json.result as T;
       } catch (err) {
         // AbortSignal cancellation — propagate immediately, no retry
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          throw err
+        if (err instanceof DOMException && err.name === "AbortError") {
+          throw err;
         }
 
         // Re-throw JSON-RPC errors without retrying
         if (err instanceof McpError) {
-          throw err
+          throw err;
         }
 
-        lastError = err instanceof Error ? err : new Error(String(err))
+        lastError = err instanceof Error ? err : new Error(String(err));
 
         // Wait before the next attempt (the wait itself can be aborted)
-        const ms = computeBackoff(attempt, this.backoffOpts)
+        const ms = computeBackoff(attempt, this.backoffOpts);
         try {
-          await delay(ms, signal)
+          await delay(ms, signal);
         } catch {
           // delay was aborted — surface the original error
-          throw lastError
+          throw lastError;
         }
       }
     }
@@ -264,23 +268,23 @@ export class McpClient {
    * @param signal        - Optional AbortSignal.
    */
   async initialize(
-    clientName: string = 'melosviz',
-    clientVersion: string = '0.1.0',
+    clientName: string = "melosviz",
+    clientVersion: string = "0.1.0",
     signal?: AbortSignal,
   ): Promise<InitializeResult> {
     const params: InitializeParams = {
-      protocolVersion: '2024-11-05',
+      protocolVersion: "2024-11-05",
       capabilities: { tools: {} },
       clientInfo: { name: clientName, version: clientVersion },
-    }
+    };
 
     const result = await this.send<InitializeResult>(
-      'initialize',
+      "initialize",
       params as unknown as Record<string, unknown>,
       signal,
-    )
-    this.initialized = true
-    return result
+    );
+    this.initialized = true;
+    return result;
   }
 
   /**
@@ -290,11 +294,11 @@ export class McpClient {
    */
   async toolsList(signal?: AbortSignal): Promise<McpTool[]> {
     const result = await this.send<{ tools: McpTool[] }>(
-      'tools/list',
+      "tools/list",
       undefined,
       signal,
-    )
-    return result.tools
+    );
+    return result.tools;
   }
 
   /**
@@ -310,9 +314,9 @@ export class McpClient {
     signal?: AbortSignal,
   ): Promise<ToolCallResult> {
     return await this.send<ToolCallResult>(
-      'tools/call',
+      "tools/call",
       { name, arguments: args },
       signal,
-    )
+    );
   }
 }

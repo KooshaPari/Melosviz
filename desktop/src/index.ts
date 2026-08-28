@@ -287,6 +287,133 @@ const rpc = defineElectrobunRPC<
         return videoPath;
       },
 
+      // -----------------------------------------------------------------
+      // Studio pipeline (ComfyUI + Cinema 4D + UE + AE + DaVinci)
+      // -----------------------------------------------------------------
+
+      async runStoryboard({
+        wavPath,
+        outDir,
+        concept,
+        bpm,
+        palette,
+        lyricsPath,
+        moodBoardPaths,
+        continuityCharacter,
+        continuityEnvironment,
+        aspectRatio,
+      }) {
+        if (!backendDir) {
+          throw new Error(
+            "[MelosViz] Backend not found — cannot run storyboard."
+          );
+        }
+        const args = ["storyboard", wavPath];
+        if (concept) args.push("--concept", concept);
+        if (typeof bpm === "number" && Number.isFinite(bpm)) {
+          args.push("--bpm", String(bpm));
+        }
+        if (palette) args.push("--palette", palette);
+        if (aspectRatio) args.push("--aspect-ratio", aspectRatio);
+        if (lyricsPath) args.push("--lyrics", lyricsPath);
+        if (Array.isArray(moodBoardPaths)) {
+          for (const mb of moodBoardPaths) {
+            if (mb) args.push("--mood-board", mb);
+          }
+        } else if (typeof moodBoardPaths === "string" && moodBoardPaths.length) {
+          // allow a single path string too
+          args.push("--mood-board", moodBoardPaths);
+        }
+        if (continuityCharacter) {
+          args.push("--continuity-character", continuityCharacter);
+        }
+        if (continuityEnvironment) {
+          args.push("--continuity-environment", continuityEnvironment);
+        }
+        if (outDir) args.push("--out", outDir);
+        else args.push("--out", path.join(path.dirname(wavPath), "storyboard.json"));
+        return runVizCli(args);
+      },
+
+      async runOrchestratedRender({ wavPath, storyboardPath, outDir }) {
+        if (!backendDir) {
+          throw new Error(
+            "[MelosViz] Backend not found — cannot run orchestrated render."
+          );
+        }
+        const targetDir =
+          outDir ?? path.join(path.dirname(wavPath), "melosviz-out");
+        const args = [
+          "generate",
+          wavPath,
+          "--storyboard",
+          storyboardPath,
+          "--out",
+          targetDir,
+        ];
+        return runVizCli(args);
+      },
+
+      async runMaster({ inputPath, outDir, lufsTarget, exportStems }) {
+        if (!backendDir) {
+          throw new Error("[MelosViz] Backend not found — cannot run master.");
+        }
+        const targetDir =
+          outDir ?? path.join(path.dirname(inputPath), "master");
+        const args = ["master", inputPath, "--out", targetDir];
+        if (typeof lufsTarget === "number" && Number.isFinite(lufsTarget)) {
+          args.push("--lufs-target", String(lufsTarget));
+        }
+        if (exportStems) {
+          args.push("--export-stems");
+        }
+        return runVizCli(args);
+      },
+
+      async runShip({ masterDir, outPath, lyricsPath }) {
+        if (!backendDir) {
+          throw new Error("[MelosViz] Backend not found — cannot run ship.");
+        }
+        const target =
+          outPath ?? path.join(path.dirname(masterDir), "final.zip");
+        const args = ["ship", masterDir, "--out", target];
+        if (lyricsPath) args.push("--lyrics", lyricsPath);
+        return runVizCli(args);
+      },
+
+      async runDirect({
+        storyboardPath,
+        sceneIndex,
+        replacePrompt,
+        replaceCamera,
+        replaceName,
+        outPath,
+        rerender,
+        wavPath,
+        renderOutDir,
+      }) {
+        if (!backendDir) {
+          throw new Error("[MelosViz] Backend not found — cannot run direct.");
+        }
+        const args = ["direct", storyboardPath, "--scene-index", String(sceneIndex)];
+        if (replacePrompt) args.push("--replace-prompt", replacePrompt);
+        if (replaceCamera) args.push("--replace-camera", replaceCamera);
+        if (replaceName) args.push("--replace-name", replaceName);
+        if (outPath) args.push("--out", outPath);
+        if (rerender) args.push("--re-render");
+        if (wavPath) args.push("--wav", wavPath);
+        if (renderOutDir) args.push("--render-out", renderOutDir);
+        return runVizCli(args);
+      },
+
+      async runValidate({ storyboardPath }) {
+        if (!backendDir) {
+          throw new Error("[MelosViz] Backend not found — cannot run validate.");
+        }
+        const args = ["validate", storyboardPath];
+        return runVizCli(args);
+      },
+
       async pickFile({ accept }) {
         try {
           const paths = await openFileDialog({
@@ -319,6 +446,152 @@ const rpc = defineElectrobunRPC<
 
       async revealInFinder({ filePath }) {
         showItemInFolder(filePath);
+      },
+
+      // -------------------------------------------------------------------
+      // Render-event SSE proxy — Order 2
+      //
+      // Electrobun webviews can't open EventSource (no Authorization
+      // header support, no fetch streaming on older WebKit). So the
+      // bun main process consumes the bridge's /api/render/events SSE
+      // stream and pushes each event into the webview via the
+      // reverse-RPC `pushRenderEvent` message channel.
+      //
+      // Subscription table keyed by an opaque subscriptionId so the
+      // webview can subscribe to multiple pipelines at once.
+      // -------------------------------------------------------------------
+      async subscribeRenderEvents({ jobId, subscriptionId }) {
+        if (!bridgeReady || !backendPort) {
+          throw new Error(
+            "[MelosViz] bridge not ready — cannot subscribe to render events"
+          );
+        }
+        if (!subscriptionId || typeof subscriptionId !== "string") {
+          throw new Error("[MelosViz] subscriptionId required");
+        }
+        if (renderEventSubscriptions.has(subscriptionId)) {
+          return { subscriptionId, alreadySubscribed: true };
+        }
+
+        const url = `http://127.0.0.1:${backendPort}/api/render/events?job_id=${encodeURIComponent(jobId)}`;
+        const headers: Record<string, string> = {
+          Accept: "text/event-stream",
+          traceparent: generateTraceparent(),
+          ...bridgeAuthHeaders(),
+        };
+
+        // Bun supports streaming fetch — consume the SSE body chunk-by-chunk
+        const controller = new AbortController();
+        const sub: RenderEventSubscription = {
+          jobId,
+          controller,
+          cleanup: () => controller.abort(),
+        };
+        renderEventSubscriptions.set(subscriptionId, sub);
+
+        (async () => {
+          try {
+            const r = await fetch(url, {
+              headers,
+              signal: controller.signal,
+            });
+            if (!r.ok || !r.body) {
+              const msg = `SSE upstream returned ${r.status}`;
+              webviewProxy.pushRenderEvent({
+                subscriptionId,
+                jobId,
+                kind: "error",
+                message: msg,
+                timestamp: Date.now(),
+              });
+              renderEventSubscriptions.delete(subscriptionId);
+              return;
+            }
+            const reader = r.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = "";
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buf += decoder.decode(value, { stream: true });
+              // SSE frames are separated by a blank line.
+              let idx;
+              while ((idx = buf.indexOf("\n\n")) !== -1) {
+                const frame = buf.slice(0, idx);
+                buf = buf.slice(idx + 2);
+                const event = parseSseFrame(frame);
+                if (!event) continue;
+                if (event.kind === "heartbeat") continue;
+                webviewProxy.pushRenderEvent({
+                  subscriptionId,
+                  jobId,
+                  kind: "event",
+                  event,
+                  timestamp: Date.now(),
+                });
+              }
+            }
+          } catch (err) {
+            const aborted =
+              (err as { name?: string } | null)?.name === "AbortError";
+            if (!aborted) {
+              console.warn("[MelosViz] SSE proxy error:", err);
+              webviewProxy.pushRenderEvent({
+                subscriptionId,
+                jobId,
+                kind: "error",
+                message: String((err as Error | null)?.message ?? err),
+                timestamp: Date.now(),
+              });
+            }
+          } finally {
+            renderEventSubscriptions.delete(subscriptionId);
+            webviewProxy.pushRenderEvent({
+              subscriptionId,
+              jobId,
+              kind: "closed",
+              timestamp: Date.now(),
+            });
+          }
+        })();
+
+        return { subscriptionId, alreadySubscribed: false };
+      },
+
+      async unsubscribeRenderEvents({ subscriptionId }) {
+        const sub = renderEventSubscriptions.get(subscriptionId);
+        if (!sub) return { unsubscribed: false };
+        sub.cleanup();
+        renderEventSubscriptions.delete(subscriptionId);
+        return { unsubscribed: true };
+      },
+
+      async recentRenderEvents({ jobId, sinceMs }) {
+        if (!bridgeReady || !backendPort) {
+          return { events: [] };
+        }
+        const url = new URL(
+          `http://127.0.0.1:${backendPort}/api/render/events/recent`
+        );
+        url.searchParams.set("job_id", jobId);
+        if (typeof sinceMs === "number") {
+          url.searchParams.set("since_ms", String(sinceMs));
+        }
+        try {
+          const r = await fetch(url, {
+            headers: {
+              Accept: "application/json",
+              traceparent: generateTraceparent(),
+              ...bridgeAuthHeaders(),
+            },
+          });
+          if (!r.ok) return { events: [] };
+          const body = (await r.json()) as { events?: unknown[] };
+          return { events: body.events ?? [] };
+        } catch (err) {
+          console.warn("[MelosViz] recentRenderEvents fetch failed:", err);
+          return { events: [] };
+        }
       },
     },
   },
