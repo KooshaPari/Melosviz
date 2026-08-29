@@ -568,7 +568,7 @@ class Orchestrator:
             # Render cache fast-path: if the same prompt/seed/size/model was
             # already rendered into scene_out_dir, skip the adapter call
             # entirely and emit a done event with from_cache=True.
-            cache_root: Path | None = self._render_cache.cache_root if self._render_cache is not None else None
+            cache_root: Path | None = self._render_cache.cache_dir if self._render_cache is not None else None
             cached_artifact: Path | None = None
             if cache_root is not None:
                 cached_artifact = scene_render_cached(seg, cache_root)
