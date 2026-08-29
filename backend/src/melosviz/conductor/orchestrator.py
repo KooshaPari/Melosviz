@@ -151,6 +151,17 @@ class Orchestrator:
         self._active_characters: tuple[str, ...] = ()  # names opted in via CLI
         if self._character_root is not None:
             self._load_character_registry()
+
+        # Depth layer: cache (skip unchanged scenes) + provenance sidecars.
+        # Both are best-effort: failures here log at debug and never block
+        # a successful render. The render() method reads these as instance
+        # attributes so they MUST exist even if disabled.
+        from melosviz.conductor.render_cache import RenderCache
+        from melosviz.conductor.provenance import ClipProvenance
+        self._render_cache: RenderCache = RenderCache(
+            self._output_dir / "_render_cache"
+        )
+        self._provenance_records: list[ClipProvenance] = []
         # Auto-offline: if the operator hasn't explicitly set offline mode
         # and ComfyUI is unreachable, enable offline so adapters emit job
         # specs instead of blowing up in CI / on developer laptops.
@@ -553,7 +564,7 @@ class Orchestrator:
             # Render cache fast-path: if the same prompt/seed/size/model was
             # already rendered into scene_out_dir, skip the adapter call
             # entirely and emit a done event with from_cache=True.
-            cache_root: Path | None = self._render_cache.cache_root if self._render_cache is not None else None
+            cache_root: Path | None = self._render_cache.cache_dir if self._render_cache is not None else None
             cached_artifact: Path | None = None
             if cache_root is not None:
                 cached_artifact = scene_render_cached(seg, cache_root)
