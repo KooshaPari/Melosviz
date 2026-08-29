@@ -530,9 +530,9 @@ def _cmd_direct(args: argparse.Namespace) -> int:
         # for cron / CI runs).
         if _neighbors > 0 and len(_scene_indices) > 1:
             print(
-                f"Re-rendering scene {args.scene_index} (+
-                    neighbors={_neighbors}, total scenes to re-render=
-                    {len(_scene_indices)}): {_scene_indices}",
+                f"Re-rendering scene {args.scene_index} "
+                f"(+neighbors={_neighbors}, "
+                f"total scenes to re-render={len(_scene_indices)}): {_scene_indices}",
                 file=sys.stderr,
             )
         print(f"Re-rendering scene {args.scene_index} → {render_out}", file=sys.stderr)

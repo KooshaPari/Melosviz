@@ -151,6 +151,21 @@ class Orchestrator:
         self._active_characters: tuple[str, ...] = ()  # names opted in via CLI
         if self._character_root is not None:
             self._load_character_registry()
+        # Depth layer (render-cache + provenance): always construct
+        # the per-instance attributes so the per-scene dispatch loop
+        # can call them even when no scene actually triggers the cache
+        # fast-path or the sidecar write. Both objects are best-effort:
+        # if the underlying modules are missing or the disk is full,
+        # the orchestrator logs at debug and continues. The attribute
+        # NAMES matter — render() reads self._render_cache.cache_dir and
+        # self._provenance_records, so renaming either would silently
+        # break the cache fast-path at runtime.
+        from melosviz.conductor.provenance import ClipProvenance
+        from melosviz.conductor.render_cache import RenderCache
+        self._render_cache: RenderCache = RenderCache(
+            self._output_dir / "_render_cache"
+        )
+        self._provenance_records: list[ClipProvenance] = []
         # Auto-offline: if the operator hasn't explicitly set offline mode
         # and ComfyUI is unreachable, enable offline so adapters emit job
         # specs instead of blowing up in CI / on developer laptops.
