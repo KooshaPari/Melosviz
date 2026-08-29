@@ -1,32 +1,69 @@
-# Dependabot — keep GitHub Actions, npm, Cargo, and pip surfaces fresh.
+# Dependabot — keep GitHub Actions, npm, and pip surfaces fresh.
+#
+# All updates are grouped so each weekly run collapses into a single
+# batch PR per ecosystem (instead of 9 individual PRs), which makes
+# review + CI merge queue dramatically easier.
+#
+# Cargo was removed in #211 (melosviz-render-wgpu + melosviz-mir deleted)
+# so the cargo ecosystem entry is gone.
 version: 2
+
+# All non-major GitHub Actions bumps in one PR.
+groups:
+  github-actions-minor:
+    patterns:
+      - "actions/**"
+      - "github/**"
+    update-types: ["minor", "patch"]
+
+  # Web + Desktop npm bumps bundled together; majors stay separate.
+  npm-runtime-minor:
+    patterns:
+      - "**"
+    update-types: ["minor", "patch"]
+
+  # Major npm bumps isolated so they get reviewed properly.
+  npm-runtime-major:
+    patterns:
+      - "**"
+    update-types: ["major"]
+
+  # Python dev/runtime bumps bundled.
+  pip-runtime:
+    patterns:
+      - "**"
+
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      - github-actions-minor
 
   - package-ecosystem: npm
     directory: /web
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      - npm-runtime-minor
+      - npm-runtime-major
 
   - package-ecosystem: npm
     directory: /desktop
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-
-  - package-ecosystem: cargo
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+    groups:
+      - npm-runtime-minor
+      - npm-runtime-major
 
   - package-ecosystem: pip
     directory: /backend
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      - pip-runtime
