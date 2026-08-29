@@ -37,6 +37,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+from melosviz.cli.partial_rerender import (
+    DEFAULT_NEIGHBORS,
+    MAX_NEIGHBORS,
+    parse_neighbor_policy,
+    resolve_only_scenes,
+)
 from typing import Optional
 
 
@@ -502,6 +509,32 @@ def _cmd_direct(args: argparse.Namespace) -> int:
             cmd.append("--job-id")  # placeholder so the next append lands cleanly
             cmd.pop()
         re_render_cmd = " ".join(cmd)
+        # MELOSVIZ_DIRECT_NEIGHBORS expands the target scene to include
+        # its immediate neighbors so transitions stay continuous instead
+        # of snapping against stale MP4s. Off by default (only the target
+        # scene re-renders) for surgical edits.
+        storyboard_path = Path(storyboard_path)
+        try:
+            _sb = json.loads(storyboard_path.read_text())
+            _total = max(1, len(_sb.get("scenes") or []))
+        except Exception:
+            _total = max(1, args.scene_index)
+        _neighbors = parse_neighbor_policy(
+            os.environ.get("MELOSVIZ_DIRECT_NEIGHBORS")
+        )
+        _scene_indices = resolve_only_scenes(
+            target_scene_index=args.scene_index - 1,
+            total_scenes=_total,
+        )
+        # Tell the operator what we're about to do (also visible in stderr
+        # for cron / CI runs).
+        if _neighbors > 0 and len(_scene_indices) > 1:
+            print(
+                f"Re-rendering scene {args.scene_index} (+
+                    neighbors={_neighbors}, total scenes to re-render=
+                    {len(_scene_indices)}): {_scene_indices}",
+                file=sys.stderr,
+            )
         print(f"Re-rendering scene {args.scene_index} → {render_out}", file=sys.stderr)
         try:
             env = os.environ.copy()
@@ -545,7 +578,7 @@ def _cmd_direct(args: argparse.Namespace) -> int:
         else:
             next_step = (
                 f"viz generate {args.wav or '<wav>'} --storyboard {out_path} "
-                f"--only-scenes {args.scene_index}"
+                f"--only-scenes {",".join(str(i + 1) for i in _scene_indices)}"
             )
             if getattr(args, "render_out", None):
                 next_step += f" --out {args.render_out}"
