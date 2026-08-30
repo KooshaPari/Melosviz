@@ -178,5 +178,12 @@
   "preset.builtin.euphoria": "Euphoria",
   "preset.quick_apply": "Presets",
   "preset.quick_apply_title": "Apply a built-in preset",
-  "preset.quick_apply_aria": "Quick-apply built-in visual preset"
+  "preset.quick_apply_aria": "Quick-apply built-in visual preset",
+  "studio": {
+    "studio.edit.title": "Edit scene",
+    "studio.edit.description": "Update the prompt and re-render just this scene.",
+    "studio.edit.cancel": "Cancel",
+    "studio.edit.saving": "Saving…",
+    "studio.edit.re_render": "Re-render this scene"
+  }
 }
