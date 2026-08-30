@@ -1,0 +1,63 @@
+name: gpu-smoke (manual)
+
+# Manual trigger only — keeps the default CI cheap.
+# Runs the GPU-ready pipeline end-to-end against a synthesized
+# WAV + LRC + storyboard, then validates the artifact topology.
+
+on:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: 'Python version'
+        default: '3.12'
+        required: false
+        type: choice
+        options:
+          - 3.10
+          - 3.11
+          - 3.12
+          - 3.13
+      ffmpeg:
+        description: 'Install ffmpeg?'
+        default: 'true'
+        type: boolean
+
+jobs:
+  gpu-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MELOSVIZ_COMFYUI_OFFLINE: '1'  # offline-mode (no GPU worker required)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        if: ${{ inputs.ffmpeg == 'true' }}
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: '0.5'
+
+      - name: Set up Python ${{ inputs.python-version }}
+        run: uv python install ${{ inputs.python-version }}
+
+      - name: Install backend deps
+        working-directory: backend
+        run: uv sync --all-extras --dev
+
+      - name: Run GPU smoke test (slow)
+        working-directory: backend
+        run: |
+          export PYTHONPATH=src
+          uv run python -m pytest             -v --tb=short             -m slow             tests/cli/test_gpu_smoke.py
+
+      - name: Summarize smoke results
+        if: always()
+        run: |
+          echo "## GPU smoke summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Result: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

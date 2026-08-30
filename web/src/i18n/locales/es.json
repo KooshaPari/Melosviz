@@ -178,5 +178,12 @@
   "preset.builtin.euphoria": "Euforia",
   "preset.quick_apply": "Presets",
   "preset.quick_apply_title": "Aplicar un preset integrado",
-  "preset.quick_apply_aria": "Aplicar rápido un preset visual integrado"
+  "preset.quick_apply_aria": "Aplicar rápido un preset visual integrado",
+  "studio": {
+    "studio.edit.title": "Editar escena",
+    "studio.edit.description": "Actualiza el prompt y vuelve a renderizar solo esta escena.",
+    "studio.edit.cancel": "Cancelar",
+    "studio.edit.saving": "Guardando…",
+    "studio.edit.re_render": "Volver a renderizar esta escena"
+  }
 }

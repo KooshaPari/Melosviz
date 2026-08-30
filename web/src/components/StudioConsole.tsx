@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type * as React from "react";
 import { t } from "../i18n";
+import * as Dialog from "@radix-ui/react-dialog";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -153,6 +154,11 @@ export function StudioConsole({
   /* ----- Outputs --------------------------------------------------------- */
   const [storyboard, setStoryboard] = useState<StoryboardPayload | null>(null);
   const [scenes, setScenes] = useState<StudioScene[]>([]);
+  const [editScene, setEditScene] = useState<
+    { index: number; prompt: string } | null
+  >(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const [, setMasterPlan] = useState<MasterPlan | null>(null);
   const [masterDeliverables, setMasterDeliverables] = useState<
     StudioMasterDeliverable[]
@@ -805,6 +811,21 @@ export function StudioConsole({
               key={s.index}
               className="studio-queue-item"
               data-state={s.status}
+              data-testid="studio-queue-item"
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                setEditScene({ index: s.index, prompt: s.prompt ?? "" })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setEditScene({
+                    index: s.index,
+                    prompt: s.prompt ?? "",
+                  });
+                }
+              }}
             >
               <span className="studio-queue-num">{s.index + 1}</span>
               <span className="studio-queue-name">{s.name}</span>
@@ -871,6 +892,115 @@ export function StudioConsole({
           )}
         </section>
       )}
+      {/* ---- Click-to-edit modal ----------------------------------------- */}
+      <Dialog.Root
+        open={editScene !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditScene(null);
+            setEditError(null);
+            setEditSaving(false);
+          }
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="studio-edit-overlay" />
+          <Dialog.Content
+            className="studio-edit-modal"
+            aria-describedby="studio-edit-description"
+            data-testid="studio-edit-modal"
+          >
+            <Dialog.Title>
+              {tr("studio.edit.title", "Edit scene")} #
+              {editScene !== null ? editScene.index + 1 : ""}
+            </Dialog.Title>
+            <Dialog.Description id="studio-edit-description">
+              {tr(
+                "studio.edit.description",
+                "Update the prompt and re-render just this scene.",
+              )}
+            </Dialog.Description>
+            <textarea
+              className="studio-edit-prompt"
+              data-testid="studio-edit-prompt"
+              value={editScene !== null ? editScene.prompt : ""}
+              onChange={(e) => {
+                if (editScene === null) return;
+                setEditScene({
+                  ...editScene,
+                  prompt: e.target.value,
+                });
+              }}
+              rows={4}
+            />
+            {editError !== null && (
+              <div role="alert" className="studio-edit-error">
+                {editError}
+              </div>
+            )}
+            <div className="studio-edit-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditScene(null);
+                  setEditError(null);
+                  setEditSaving(false);
+                }}
+                disabled={editSaving}
+              >
+                {tr("studio.edit.cancel", "Cancel")}
+              </button>
+              <button
+                type="button"
+                data-testid="studio-edit-save"
+                disabled={editSaving}
+                onClick={async () => {
+                  if (editScene === null) return;
+                  setEditSaving(true);
+                  setEditError(null);
+                  try {
+                    const res = await fetch(
+                      `${bridgeBase}/api/studio/direct`,
+                      {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          storyboard_path:
+                            wavPath.replace(/\.[^.]+$/, "") +
+                            ".studio/storyboard.json",
+                          scene_index: editScene.index,
+                          replace_prompt: editScene.prompt,
+                          re_render: true,
+                        }),
+                      },
+                    );
+                    if (!res.ok) {
+                      throw new Error(
+                        `/api/studio/direct ${res.status}`,
+                      );
+                    }
+                    setEditScene(null);
+                  } catch (err) {
+                    setEditError(
+                      err instanceof Error
+                        ? err.message
+                        : String(err),
+                    );
+                  } finally {
+                    setEditSaving(false);
+                  }
+                }}
+              >
+                {editSaving
+                  ? tr("studio.edit.saving", "Saving…")
+                  : tr("studio.edit.re_render", "Re-render this scene")}
+              </button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </section>
   );
 }
