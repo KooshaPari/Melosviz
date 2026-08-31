@@ -600,3 +600,112 @@ def run_master(
     }
     plan_path.write_text(json.dumps(plan, indent=2, default=str))
     return plan
+
+
+# ---------------------------------------------------------------------------
+# Python-import wrappers (drop-in for the AI stem backends)
+# ---------------------------------------------------------------------------
+
+def _try_import_demucs():
+    try:
+        from demucs.api import Separator  # type: ignore
+        return Separator
+    except ImportError:
+        return None
+
+
+def _try_import_spleeter():
+    try:
+        import spleeter.separator  # type: ignore
+        return spleeter.separator
+    except ImportError:
+        return None
+
+
+def _try_import_audio_separator():
+    try:
+        import audio_separator.separator  # type: ignore
+        return audio_separator.separator
+    except ImportError:
+        return None
+
+
+def has_python_stem_backend() -> bool:
+    """True if any AI stem backend is importable as a Python module."""
+    return any(
+        mod is not None
+        for mod in (_try_import_demucs(), _try_import_spleeter(), _try_import_audio_separator())
+    )
+
+
+def demucs_python_stems(wav_path, out_dir, model="htdemucs"):
+    """In-process Demucs stem-split (no CLI subprocess). Returns dict with 'stems' + 'logs'."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    Separator = _try_import_demucs()
+    if Separator is None:
+        return {"method": "demucs_python", "stems": [], "logs": ["demucs Python package not installed"]}
+    try:
+        sep = Separator(model=model, device="cpu")
+        sep.separate_audio_file(str(wav_path))
+        tracks_dir = out_dir / model / wav_path.stem
+        stems = sorted(str(p) for p in tracks_dir.glob("*.wav"))
+        return {"method": "demucs_python", "stems": stems, "logs": [f"demucs_python: {len(stems)} stems"]}
+    except Exception as exc:
+        return {"method": "demucs_python", "stems": [], "logs": [f"demucs_python failed: {exc}"]}
+
+
+def spleeter_python_stems(wav_path, out_dir, stems_count=4):
+    """In-process Spleeter stem-split."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    sep_mod = _try_import_spleeter()
+    if sep_mod is None:
+        return {"method": "spleeter_python", "stems": [], "logs": ["spleeter Python package not installed"]}
+    try:
+        separation = sep_mod.Separator(f"spleeter:{stems_count}stems")
+        separation.separate_to_file(str(wav_path), str(out_dir))
+        stems_dir = out_dir / wav_path.stem
+        stems = sorted(str(p) for p in stems_dir.glob("*.wav")) if stems_dir.exists() else []
+        return {"method": "spleeter_python", "stems": stems, "logs": [f"spleeter_python: {len(stems)} stems"]}
+    except Exception as exc:
+        return {"method": "spleeter_python", "stems": [], "logs": [f"spleeter_python failed: {exc}"]}
+
+
+def audio_separator_python_stems(wav_path, out_dir):
+    """In-process python-audio-separator stem-split."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    sep_mod = _try_import_audio_separator()
+    if sep_mod is None:
+        return {"method": "audio_separator_python", "stems": [], "logs": ["audio-separator Python package not installed"]}
+    try:
+        file = sep_mod.Separator(
+            str(wav_path),
+            model_filename="UVR-MDX-NET-Inst_HQ_3.onnx",
+            output_dir=str(out_dir),
+        )
+        file.process()
+        stems = sorted(str(p) for p in out_dir.glob("*.wav"))
+        return {"method": "audio_separator_python", "stems": stems, "logs": [f"audio_separator_python: {len(stems)} stems"]}
+    except Exception as exc:
+        return {"method": "audio_separator_python", "stems": [], "logs": [f"audio_separator_python failed: {exc}"]}
+
+
+def export_stems_python_first(wav_path, out_dir, *, backend=None):
+    """One-call entry: prefer Python import, fall back to CLI, then 3-band."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    target = backend or detect_stem_backend()
+    if target == "demucs":
+        r = demucs_python_stems(wav_path, out_dir)
+        if r["stems"]:
+            return r
+        return _demucs_stems(wav_path, out_dir)
+    if target == "spleeter":
+        r = spleeter_python_stems(wav_path, out_dir)
+        if r["stems"]:
+            return r
+        return _spleeter_stems(wav_path, out_dir)
+    if target == "audio-separator":
+        r = audio_separator_python_stems(wav_path, out_dir)
+        if r["stems"]:
+            return r
+        return _audio_separator_stems(wav_path, out_dir)
+    return _three_band_stems(wav_path, out_dir)

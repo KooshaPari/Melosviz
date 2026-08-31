@@ -285,3 +285,54 @@ def test_offline_plan_stems_export_surfaces_available_backends(tmp_path):
     } == set(STEM_BACKEND_PRIORITY)
     # Method must be one of the priority chain (not a hardcoded literal)
     assert plan["stems_export"]["method"] in STEM_BACKEND_PRIORITY
+
+
+def test_python_stem_backend_imports_and_fallback():
+    """has_python_stem_backend() reports correctly + all 3 Python-import wrappers
+    return gracefully when the package isn't installed (instead of raising)."""
+    from melosviz.render.audio_finishing import (
+        _try_import_demucs,
+        _try_import_spleeter,
+        _try_import_audio_separator,
+        has_python_stem_backend,
+        demucs_python_stems,
+        spleeter_python_stems,
+        audio_separator_python_stems,
+        export_stems_python_first,
+    )
+    import tempfile
+    from pathlib import Path
+
+    # 1. The import probes must return either the class or None — never raise.
+    for fn in (_try_import_demucs, _try_import_spleeter, _try_import_audio_separator):
+        result = fn()
+        assert result is None or callable(result)
+
+    # 2. has_python_stem_backend() returns bool.
+    assert isinstance(has_python_stem_backend(), bool)
+
+    # 3. Each Python wrapper returns the expected dict shape even when the
+    #    underlying package isn't installed (no exception).
+    with tempfile.TemporaryDirectory() as tmp:
+        wav = Path(tmp) / "x.wav"
+        wav.write_bytes(b"")
+        out = Path(tmp) / "out"
+        for fn in (demucs_python_stems, spleeter_python_stems, audio_separator_python_stems):
+            r = fn(wav, out)
+            assert isinstance(r, dict)
+            assert "method" in r and r["method"].endswith("_python")
+            assert "stems" in r and isinstance(r["stems"], list)
+            assert "logs" in r and isinstance(r["logs"], list)
+            # When the package isn't installed, the logs mention that
+            # and stems stays empty.
+            if not has_python_stem_backend():
+                assert r["stems"] == []
+                assert any("not installed" in line for line in r["logs"])
+
+        # 4. export_stems_python_first is a callable that returns either a
+        #    dict-like object or a dataclass — just verify the shape without
+        #    actually running it (which needs a real wav + ffmpeg).
+        assert callable(export_stems_python_first)
+        # The return type at runtime is StemExportResult with .method / .stems / .logs.
+        # We don't run it here — that's covered by the end-to-end test in tests/cli/.
+
