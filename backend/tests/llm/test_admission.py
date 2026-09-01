@@ -100,17 +100,23 @@ def test_concurrent_reservation_cleanup_finalizes_ledger_once() -> None:
     settle_thread = threading.Thread(target=settle)
     release_thread = threading.Thread(target=release)
     settle_thread.start()
-    assert finish_started.wait(timeout=2)
-    release_thread.start()
-    assert release_started.wait(timeout=2)
-    deadline = time.monotonic() + 0.25
-    while len(finish_calls) == 1 and time.monotonic() < deadline:
-        time.sleep(0.005)
-    allow_finish.set()
-    settle_thread.join(timeout=2)
-    release_thread.join(timeout=2)
+    release_thread_was_started = False
+    try:
+        assert finish_started.wait(timeout=2)
+        release_thread.start()
+        release_thread_was_started = True
+        assert release_started.wait(timeout=2)
+        deadline = time.monotonic() + 0.25
+        while len(finish_calls) == 1 and time.monotonic() < deadline:
+            time.sleep(0.005)
+    finally:
+        allow_finish.set()
+        settle_thread.join(timeout=2)
+        if release_thread_was_started:
+            release_thread.join(timeout=2)
 
-    assert not settle_thread.is_alive() and not release_thread.is_alive()
+    assert not settle_thread.is_alive()
+    assert not release_thread_was_started or not release_thread.is_alive()
     assert worker_errors == []
     assert len(finish_calls) == 1
     assert gate.spent_usd == Decimal("0.0001")
