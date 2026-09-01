@@ -122,7 +122,7 @@ def test_concurrent_reservation_cleanup_finalizes_ledger_once() -> None:
     assert gate.spent_usd == Decimal("0.0001")
 
 
-def test_created_attempt_keeps_reservation_open_until_attempt_exits() -> None:
+def test_entered_attempt_keeps_reservation_open_until_attempt_exits() -> None:
     config = LLMAdmissionConfig.from_env(_env())
     gate = LLMAdmissionGate(config)
     reservation = gate.reserve(config.estimate(b"reservation"))
@@ -146,17 +146,46 @@ def test_created_attempt_keeps_reservation_open_until_attempt_exits() -> None:
             worker_errors.append(exc)
 
     release_thread = threading.Thread(target=release)
-    release_thread.start()
-    attempt_completed = False
+    attempt.__enter__()
     try:
+        release_thread.start()
         assert release_started.wait(timeout=2)
         assert not finish_called.wait(timeout=0.1)
-        with attempt:
-            assert not finish_called.wait(timeout=0.1)
-        attempt_completed = True
-        assert finish_called.wait(timeout=2)
     finally:
-        if not attempt_completed:
+        attempt.__exit__(None, None, None)
+        release_thread.join(timeout=2)
+
+    assert finish_called.is_set()
+    assert not release_thread.is_alive()
+    assert worker_errors == []
+
+
+def test_unentered_attempt_does_not_block_close_and_cannot_enter_afterward() -> None:
+    config = LLMAdmissionConfig.from_env(_env())
+    gate = LLMAdmissionGate(config)
+    reservation = gate.reserve(config.estimate(b"reservation"))
+    attempt = reservation.attempt()
+    release_done = threading.Event()
+    worker_errors: list[BaseException] = []
+
+    def release() -> None:
+        try:
+            reservation.release()
+        except BaseException as exc:
+            worker_errors.append(exc)
+        finally:
+            release_done.set()
+
+    release_thread = threading.Thread(target=release)
+    release_thread.start()
+    released_before_enter = False
+    try:
+        released_before_enter = release_done.wait(timeout=0.1)
+        assert released_before_enter
+        with pytest.raises(LLMAdmissionError, match="already closed"):
+            attempt.__enter__()
+    finally:
+        if not released_before_enter:
             try:
                 with attempt:
                     pass

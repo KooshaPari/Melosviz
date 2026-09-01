@@ -111,11 +111,13 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
         self._closed = False
 
     def attempt(self) -> LLMAttempt:
+        return LLMAttempt(self._gate, self)
+
+    def _begin_attempt(self) -> None:
         with self._condition:
             if self._closed:
                 raise LLMAdmissionError("reservation is already closed")
             self._attempts += 1
-        return LLMAttempt(self._gate, self)
 
     def _finish_attempt(self) -> None:
         with self._condition:
@@ -162,6 +164,11 @@ class LLMAttempt(AbstractContextManager["LLMAttempt"]):
     def __enter__(self) -> LLMAttempt:
         if self._entered or self._finished:
             raise LLMAdmissionError("attempt context cannot be reused")
+        try:
+            self._reservation._begin_attempt()
+        except BaseException:
+            self._finished = True
+            raise
         try:
             self._gate._enter_attempt()
         except BaseException:
