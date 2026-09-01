@@ -122,6 +122,52 @@ def test_concurrent_reservation_cleanup_finalizes_ledger_once() -> None:
     assert gate.spent_usd == Decimal("0.0001")
 
 
+def test_created_attempt_keeps_reservation_open_until_attempt_exits() -> None:
+    config = LLMAdmissionConfig.from_env(_env())
+    gate = LLMAdmissionGate(config)
+    reservation = gate.reserve(config.estimate(b"reservation"))
+    attempt = reservation.attempt()
+    release_started = threading.Event()
+    finish_called = threading.Event()
+    worker_errors: list[BaseException] = []
+    original_finish = gate._finish_reservation
+
+    def observed_finish(reserved: Decimal, actual: Decimal) -> None:
+        finish_called.set()
+        original_finish(reserved, actual)
+
+    gate._finish_reservation = observed_finish  # type: ignore[method-assign]
+
+    def release() -> None:
+        try:
+            release_started.set()
+            reservation.release()
+        except BaseException as exc:
+            worker_errors.append(exc)
+
+    release_thread = threading.Thread(target=release)
+    release_thread.start()
+    attempt_completed = False
+    try:
+        assert release_started.wait(timeout=2)
+        assert not finish_called.wait(timeout=0.1)
+        with attempt:
+            assert not finish_called.wait(timeout=0.1)
+        attempt_completed = True
+        assert finish_called.wait(timeout=2)
+    finally:
+        if not attempt_completed:
+            try:
+                with attempt:
+                    pass
+            except BaseException as exc:
+                worker_errors.append(exc)
+        release_thread.join(timeout=2)
+
+    assert not release_thread.is_alive()
+    assert worker_errors == []
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.now = 0.0

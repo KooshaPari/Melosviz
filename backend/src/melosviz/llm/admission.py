@@ -106,17 +106,26 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
     ) -> None:
         self._gate = gate
         self.estimate = estimate
-        self._lock = Lock()
+        self._condition = Condition()
+        self._attempts = 0
         self._closed = False
 
     def attempt(self) -> LLMAttempt:
-        with self._lock:
+        with self._condition:
             if self._closed:
                 raise LLMAdmissionError("reservation is already closed")
-        return LLMAttempt(self._gate)
+            self._attempts += 1
+        return LLMAttempt(self._gate, self)
+
+    def _finish_attempt(self) -> None:
+        with self._condition:
+            self._attempts -= 1
+            self._condition.notify_all()
 
     def settle(self, actual_usd: Decimal | None = None) -> None:
-        with self._lock:
+        with self._condition:
+            while self._attempts:
+                self._condition.wait()
             if not self._closed:
                 self._gate._finish_reservation(
                     self.estimate.usd,
@@ -125,7 +134,9 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
                 self._closed = True
 
     def release(self) -> None:
-        with self._lock:
+        with self._condition:
+            while self._attempts:
+                self._condition.wait()
             if not self._closed:
                 self._gate._finish_reservation(self.estimate.usd, Decimal(0))
                 self._closed = True
@@ -140,12 +151,23 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
 
 
 class LLMAttempt(AbstractContextManager["LLMAttempt"]):
-    def __init__(self, gate: LLMAdmissionGate) -> None:
+    def __init__(
+        self, gate: LLMAdmissionGate, reservation: LLMReservation
+    ) -> None:
         self._gate = gate
+        self._reservation = reservation
         self._entered = False
+        self._finished = False
 
     def __enter__(self) -> LLMAttempt:
-        self._gate._enter_attempt()
+        if self._entered or self._finished:
+            raise LLMAdmissionError("attempt context cannot be reused")
+        try:
+            self._gate._enter_attempt()
+        except BaseException:
+            self._finished = True
+            self._reservation._finish_attempt()
+            raise
         self._entered = True
         return self
 
@@ -156,7 +178,12 @@ class LLMAttempt(AbstractContextManager["LLMAttempt"]):
         tb: TracebackType | None,
     ) -> None:
         if self._entered:
-            self._gate._leave_attempt()
+            try:
+                self._gate._leave_attempt()
+            finally:
+                self._entered = False
+                self._finished = True
+                self._reservation._finish_attempt()
 
 
 class LLMAdmissionGate:
