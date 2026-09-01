@@ -5,10 +5,11 @@ import os
 import time
 from collections import deque
 from collections.abc import Callable, Mapping
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, suppress
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from threading import Condition, Lock
+from types import TracebackType
 
 
 class LLMAdmissionError(RuntimeError):
@@ -105,29 +106,37 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
     ) -> None:
         self._gate = gate
         self.estimate = estimate
+        self._lock = Lock()
         self._closed = False
 
     def attempt(self) -> LLMAttempt:
-        if self._closed:
-            raise LLMAdmissionError("reservation is already closed")
+        with self._lock:
+            if self._closed:
+                raise LLMAdmissionError("reservation is already closed")
         return LLMAttempt(self._gate)
 
     def settle(self, actual_usd: Decimal | None = None) -> None:
-        if not self._closed:
-            self._gate._finish_reservation(
-                self.estimate.usd,
-                self.estimate.usd if actual_usd is None else actual_usd,
-            )
-            self._closed = True
+        with self._lock:
+            if not self._closed:
+                self._gate._finish_reservation(
+                    self.estimate.usd,
+                    self.estimate.usd if actual_usd is None else actual_usd,
+                )
+                self._closed = True
 
     def release(self) -> None:
-        if not self._closed:
-            self._gate._finish_reservation(self.estimate.usd, Decimal(0))
-            self._closed = True
+        with self._lock:
+            if not self._closed:
+                self._gate._finish_reservation(self.estimate.usd, Decimal(0))
+                self._closed = True
 
-    def __exit__(self, exc_type, exc, tb) -> None:
-        if not self._closed:
-            self.settle()
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        self.settle()
 
 
 class LLMAttempt(AbstractContextManager["LLMAttempt"]):
@@ -140,7 +149,12 @@ class LLMAttempt(AbstractContextManager["LLMAttempt"]):
         self._entered = True
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         if self._entered:
             self._gate._leave_attempt()
 
@@ -200,27 +214,34 @@ class LLMAdmissionGate:
             self._next_ticket += 1
             self._tickets.append(ticket)
 
-        while True:
-            delay = 0.0
+        try:
+            while True:
+                delay = 0.0
+                with self._condition:
+                    now = self._clock()
+                    while self._starts and now - self._starts[0] >= 60.0:
+                        self._starts.popleft()
+                    is_head = bool(self._tickets) and self._tickets[0] == ticket
+                    has_worker = self._active < self.config.max_concurrency
+                    has_rate = len(self._starts) < self.config.requests_per_minute
+                    if is_head and has_worker and has_rate:
+                        self._tickets.popleft()
+                        self._active += 1
+                        self._starts.append(now)
+                        self._condition.notify_all()
+                        return
+                    if is_head and has_worker and self._starts:
+                        delay = max(0.0, 60.0 - (now - self._starts[0]))
+                    else:
+                        self._condition.wait(timeout=0.05)
+                if delay > 0:
+                    self._sleep(delay)
+        except BaseException:
             with self._condition:
-                now = self._clock()
-                while self._starts and now - self._starts[0] >= 60.0:
-                    self._starts.popleft()
-                is_head = bool(self._tickets) and self._tickets[0] == ticket
-                has_worker = self._active < self.config.max_concurrency
-                has_rate = len(self._starts) < self.config.requests_per_minute
-                if is_head and has_worker and has_rate:
-                    self._tickets.popleft()
-                    self._active += 1
-                    self._starts.append(now)
-                    self._condition.notify_all()
-                    return
-                if is_head and has_worker and self._starts:
-                    delay = max(0.0, 60.0 - (now - self._starts[0]))
-                else:
-                    self._condition.wait(timeout=0.05)
-            if delay > 0:
-                self._sleep(delay)
+                with suppress(ValueError):
+                    self._tickets.remove(ticket)
+                self._condition.notify_all()
+            raise
 
     def _leave_attempt(self) -> None:
         with self._condition:
