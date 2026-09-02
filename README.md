@@ -25,17 +25,19 @@
 
 ## Quick Start
 
-### Offline demo (no GPU, no ComfyUI)
+Install [Task](https://taskfile.dev) once (`brew install go-task`) — it's the only required runner.
+
+### Offline playground (no GPU, no ComfyUI)
 ```
-make viz-install     # install melosviz into .venv
-make viz-demo        # full storyboard -> generate -> ship pipeline
+task install       # uv venv + melosviz into .venv, melosviz-demo Rust binary into target/
+task demo          # Rust binary drives storyboard → generate → ship end-to-end
 ls /tmp/melosviz-demo/generate/final.zip   # 10-file deterministic bundle
 ```
 
-### Production (with GPU + ComfyUI)
+### Production studio (with GPU + ComfyUI + Bridge + Web)
 ```
-make dev-up          # docker compose stack
-make dev-pipeline    # render a track end-to-end
+task dev-up        # docker compose stack (ComfyUI + C4D stub + bridge)
+task dev-pipeline  # render a track end-to-end through the real pipeline
 ```
 
 ### Web studio
@@ -44,6 +46,13 @@ cd backend && pip install -r requirements.txt
 uvicorn src.melosviz.bridge.server:app --port 5000
 
 cd web && bun install && bun run dev
+```
+
+### Native app (macOS .app / Windows .exe)
+```
+task app           # one-shot: cargo build + electrobun bundle
+open dist/MelosViz.app   # macOS
+dist\MelosViz.exe        # Windows
 ```
 
 ## Deploy to Vercel

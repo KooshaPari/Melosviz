@@ -1,0 +1,125 @@
+# Melosviz development task runner.
+#
+# One binary installs everything, runs every test, builds the Rust demo,
+# packages the native Mac/Windows installer, and exercises the full pipeline.
+#
+# Usage:
+#   task install      # uv venv + pip install + bun + cargo deps
+#   task test         # python + cargo tests
+#   task lint         # python + typescript + rust
+#   task demo         # one-shot end-to-end offline pipeline
+#   task build-demo   # cargo build -p melosviz-demo --release
+#   task app          # package Melosviz.app / Melosviz.exe (production installer)
+#   task app-dev      # launch desktop/ in dev mode (hot-reload)
+#   task clean        # remove .venv, target/, /tmp/melosviz-demo, demo output
+#   task reset        # clean + blow away node_modules + .electrobun
+
+version: "3"
+
+vars:
+  PYTHON_VERSION: "3.12"
+  VENV_DIR: ".venv"
+  DEMO_OUT: "/tmp/melosviz-demo"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: "Install all toolchains: uv venv, install backend+test extras, bun, cargo deps"
+    cmds:
+      - which uv || (echo "installing uv..." && brew install uv || curl -LsSf https://astral.sh/uv/install.sh | sh)
+      - uv venv --python {{.PYTHON_VERSION}} {{.VENV_DIR}}
+      - "uv pip install --python {{.VENV_DIR}} -e 'backend[test]'"
+      - which cargo || (echo "installing rust..." && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y)
+      - cargo fetch --manifest-path crates/melosviz-demo/Cargo.toml
+      - cd desktop && which bun || (echo "installing bun..." && curl -fsSL https://bun.sh/install | bash)
+
+  test:
+    desc: Run Python + Rust tests
+    cmds:
+      - .venv/bin/python -m pytest backend/tests -q -m "not slow" --tb=line --ignore=backend/tests/test_bridge_studio_pipeline.py
+      - cargo test -p melosviz-demo --release
+
+  test-bridge:
+    desc: Run the bridge SSE + studio pipeline tests (needs fastapi + python-multipart)
+    cmds:
+      - .venv/bin/python -m pytest backend/tests/test_bridge_studio_pipeline.py -q --tb=line -m "not slow"
+
+  lint:
+    desc: Run all linters
+    cmds:
+      - .venv/bin/python -m ruff check backend/src backend/tests
+      - cd desktop && bun run lint 2>&1 || true
+      - cargo clippy -p melosviz-demo --release -- -D warnings
+
+  demo:
+    desc: "Run the offline end-to-end demo (zero docker, zero network, zero GPU). Override DEMO_OUT=/path"
+    deps: [build-demo]
+    cmds:
+      - rm -rf {{.DEMO_OUT}}
+      - ./target/release/melosviz-demo --out-dir {{.DEMO_OUT}}
+    env:
+      MELOSVIZ_COMFYUI_OFFLINE: "1"
+      PYTHONPATH: backend/src
+
+  build-demo:
+    desc: Build the melosviz-demo Rust binary
+    cmds:
+      - cargo build -p melosviz-demo --release
+      - cp -f target/release/melosviz-demo .venv/bin/melosviz-demo
+
+  app:
+    desc: Package the native Melosviz installer (Melosviz.app on macOS, Melosviz.exe on Windows)
+    deps: [install]
+    cmds:
+      - cd desktop && bunx electrobun package
+      - echo "build artifacts in desktop/dist/"
+
+  app-dev:
+    desc: Launch the desktop app in dev mode (hot reload)
+    deps: [install]
+    cmds:
+      - cd desktop && bunx electrobun dev
+
+  dev-pipeline:
+    desc: Launch the full studio pipeline (ComfyUI + bridge + orchestrator) via docker compose
+    cmds:
+      - cd deploy && docker compose -f docker-compose.dev.yml up
+
+  dev-logs:
+    desc: Tail logs from the dev pipeline containers
+    cmds:
+      - cd deploy && docker compose -f docker-compose.dev.yml logs -f
+
+  dev-down:
+    desc: Stop the dev pipeline containers
+    cmds:
+      - cd deploy && docker compose -f docker-compose.dev.yml down
+
+  diagnose:
+    desc: Run the studio pipeline diagnostic script
+    cmds:
+      - .venv/bin/python scripts/diagnose.py
+
+  clean:
+    desc: Remove build artifacts, venv, demo output
+    cmds:
+      - rm -rf .venv target {{.DEMO_OUT}}
+      - find backend -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+  reset:
+    desc: "Blow away everything: venv, demo output, cargo target, node_modules, electrobun cache"
+    cmds:
+      - task: clean
+      - cd desktop && rm -rf node_modules .electrobun
+
+  verify:
+    desc: Run install + lint + test + demo in sequence
+    cmds:
+      - task: install
+      - task: lint
+      - task: test
+      - task: demo
