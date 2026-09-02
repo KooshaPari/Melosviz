@@ -295,6 +295,7 @@ class Orchestrator:
         scene_types: list[str] | None = None,
         segment_paths: list[str | Path] | None = None,
         only_scenes: list[int] | None = None,
+        audio_path: Path | None = None,
     ) -> OrchestratorResult:
         """Dispatch the render spec to all relevant adapters.
 
@@ -329,6 +330,22 @@ class Orchestrator:
             else render_spec
         )
         segs = spec_dict.get("scene_segments") or []
+
+        # audio_path resolution: prefer explicit kwarg, fall back to the
+        # spec's metadata.audio_path or the spec's top-level audio_path.
+        # The WBS-107..109 stamp below needs a path-shaped string for
+        # audio_video scene types — it can be None for purely visual jobs.
+        wav_path: Path | None = audio_path
+        if wav_path is None and isinstance(spec_dict, dict):
+            meta = spec_dict.get("metadata") or {}
+            if isinstance(meta, dict):
+                _raw = meta.get("audio_path")
+                if _raw:
+                    wav_path = Path(str(_raw))
+            if wav_path is None:
+                _raw = spec_dict.get("audio_path")
+                if _raw:
+                    wav_path = Path(str(_raw))
 
         # ---- v2 ContinuityAnchor plumbing (WBS-2, 2026-08) -----------------
         # Pull ``continuity.reference_image`` off the spec and stamp it onto

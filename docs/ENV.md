@@ -32,6 +32,14 @@
 | `MELOSVIZ_BRIDGE_URL` | `http://127.0.0.1:8765` | observability | Bridge base URL for sidecar health + port inference |
 | `MELOSVIZ_LOCALE` | `en` | web / CLI / desktop | Locale (`en` / `es`) — see `docs/I18N.md` (scaffold; not full coverage) |
 | `MELOSVIZ_BACKEND_PORT` | — | desktop | Sidecar port hint |
+| `MELOSVIZ_LLM_REQUESTS_PER_MINUTE` | `30` | Director | Starts per rolling 60-second window |
+| `MELOSVIZ_LLM_MAX_CONCURRENCY` | `2` | Director | Simultaneous LLM HTTP attempts |
+| `MELOSVIZ_LLM_MAX_QUEUE` | `32` | Director | Waiting attempts before template fallback |
+| `MELOSVIZ_LLM_MAX_RETRIES` | `3` | Director | 429/5xx retry count |
+| `MELOSVIZ_LLM_COST_CAP_USD` | `1.00` | Director | Process-local estimated/actual spend ceiling |
+| `MELOSVIZ_LLM_INPUT_USD_PER_MILLION` | required for LLM | Director | Operator-supplied input-token price |
+| `MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION` | required for LLM | Director | Operator-supplied output-token price |
+| `MELOSVIZ_LLM_MAX_OUTPUT_TOKENS` | `2048` | Director | Preflight output reservation |
 
 Token rotation: `docs/KEY_ROTATION.md`. Privacy: `docs/PRIVACY.md`.
 
