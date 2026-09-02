@@ -40,7 +40,7 @@ def test_scheduled_run_has_explicit_defaults() -> None:
     assert "PYTHON_VERSION:" in text
     assert "INSTALL_FFMPEG:" in text
     # Offline-mode stays on so the smoke doesn't require a live GPU.
-    assert "MELOSVIZ_COMFYUI_OFFLINE: '1'" in text
+    assert 'MELOSVIZ_COMFYUI_OFFLINE: "1"' in text
     # The actual smoke target is unchanged.
     assert "tests/cli/test_gpu_smoke.py" in text
 

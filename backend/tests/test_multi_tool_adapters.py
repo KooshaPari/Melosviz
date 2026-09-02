@@ -14,6 +14,7 @@ TDD protocol (failing-first → green):
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -740,3 +741,18 @@ def test_orchestrator_raises_for_unknown_scene_type_even_with_segs(tmp_path) -> 
     orch = Orchestrator(output_dir=out, skip_assembly=True)
     with pytest.raises(ConductorError):
         orch.render(spec, scene_types=["definitely_not_a_real_scene_type"])
+
+
+def test_orchestrator_does_not_pollute_os_environ(tmp_path, monkeypatch) -> None:
+    """Regression: ``Orchestrator.__init__`` used to write
+    ``os.environ["MELOSVIZ_COMFYUI_OFFLINE"] = "1"`` when ComfyUI wasn't
+    reachable — mutating process-global state and bleeding into other
+    tests in the same pytest run. The orchestrator now logs a warning
+    instead and lets adapters read the env directly."""
+
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    monkeypatch.delenv("MELOSVIZ_COMFYUI_OFFLINE", raising=False)
+    before = os.environ.get("MELOSVIZ_COMFYUI_OFFLINE")
+    Orchestrator(output_dir=tmp_path, skip_assembly=True)
+    assert os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == before

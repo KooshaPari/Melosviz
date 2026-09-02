@@ -172,19 +172,25 @@ class Orchestrator:
             self._output_dir / "_render_cache"
         )
         self._provenance_records: list[ClipProvenance] = []
-        # Auto-offline: if the operator hasn't explicitly set offline mode
-        # and ComfyUI is unreachable, enable offline so adapters emit job
-        # specs instead of blowing up in CI / on developer laptops.
+        # Offline detection: if the operator hasn't explicitly set
+        # ``MELOSVIZ_COMFYUI_OFFLINE`` and ComfyUI is unreachable, surface a
+        # warning so the operator knows the pipeline will fall back to
+        # stub-mode adapters. We deliberately do NOT mutate ``os.environ``
+        # here — global env mutation pollutes the parent process and breaks
+        # test isolation (subsequent test functions inherit the offline
+        # flag). Operators running the pipeline interactively should set
+        # ``MELOSVIZ_COMFYUI_OFFLINE=1`` themselves.
         if auto_offline and not os.environ.get("MELOSVIZ_COMFYUI_OFFLINE"):
             try:
                 from melosviz.render.comfyui_adapter import is_comfyui_available
 
                 if not is_comfyui_available():
-                    logger.info(
-                        "Orchestrator: ComfyUI not reachable; auto-enabling "
-                        "MELOSVIZ_COMFYUI_OFFLINE=1 so adapters emit job specs."
+                    logger.warning(
+                        "Orchestrator: ComfyUI not reachable; adapters will "
+                        "fall back to stub mode. Set "
+                        "MELOSVIZ_COMFYUI_OFFLINE=1 to suppress this warning "
+                        "and emit job-spec JSON instead."
                     )
-                    os.environ["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
             except Exception:  # pragma: no cover — defensive
                 pass
 
@@ -567,6 +573,9 @@ class Orchestrator:
             ]
 
         for scene_idx, scene_name, scene_type, _seg_for_render in per_scene_dispatch:
+            scene_out_dir = self._output_dir / scene_type
+            scene_out_dir.mkdir(parents=True, exist_ok=True)
+
             adapter_cls = ADAPTER_REGISTRY.get(scene_type)
             if adapter_cls is None:
                 # Emit error event then raise so the SSE stream gets the
@@ -586,8 +595,17 @@ class Orchestrator:
                     "Register an adapter in melosviz.conductor.registry.ADAPTER_REGISTRY."
                 )
 
-            scene_out_dir = self._output_dir / scene_type
-            scene_out_dir.mkdir(parents=True, exist_ok=True)
+            # Synthetic dispatch (no matching scene_segment in the spec)
+            # is a directory-only op: the caller asked the orchestrator to
+            # materialise output dirs for ``scene_types`` they listed, but
+            # there is no real scene work to render. Stub the per-scene
+            # result and continue without invoking the adapter.
+            if not _seg_for_render:
+                per_scene_results.setdefault(scene_type, {
+                    "artifact_path": None,
+                    "cache_key": "",
+                })
+                continue
 
             backend_key = f"{adapter_cls.__module__}.{adapter_cls.__name__}"
 
@@ -636,10 +654,10 @@ class Orchestrator:
                 )
                 bus._events.append(done_evt)
                 emitted.append(done_evt)
-                per_scene_results.setdefault(scene_type, _CachedAdapterResult(
-                    artifact_path=cached_artifact,
-                    cache_key=scene_cache_key(_seg_for_render, cache_root).fingerprint(),
-                ))
+                per_scene_results.setdefault(scene_type, {
+                    "artifact_path": cached_artifact,
+                    "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint(),
+                })
                 continue
 
             t0 = time.monotonic()
