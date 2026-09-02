@@ -528,14 +528,33 @@ class Orchestrator:
         # multiple scenes share a scene_type (the common case for a 27-scene
         # music video where many scenes dispatch to comfyui_image).
         per_scene_dispatch: list[tuple[int, str, str, dict]] = []
-        if segs:
+        if scene_types is not None and segs:
+            # The caller asked for an explicit set of scene_types. Honour
+            # the intersection with the segs so each matching scene_segment
+            # generates its own queued -> rendering -> done event triad.
+            # Fall back to a synthetic per-type dispatch only when no seg
+            # matches (so the adapter registry is exercised even when
+            # scene_segments lack matching scene_type metadata — this lets
+            # ConductorError surface for unknown types).
+            per_scene_dispatch = []
             for i, seg in enumerate(segs):
                 st = str(seg.get("scene_type", "video_export"))
                 if st == "assembly_encode":
                     continue
-                # When the caller also restricted scene_types, honor the
-                # intersection so the SSE stream matches the actual dispatch.
-                if scene_types is not None and st not in scene_types:
+                if st in scene_types:
+                    per_scene_dispatch.append(
+                        (i, _scene_label(seg, i), st, seg)
+                    )
+            if not per_scene_dispatch:
+                per_scene_dispatch = [
+                    (i, f"scene_{i:03d}", st, {})
+                    for i, st in enumerate(_types)
+                    if st != "assembly_encode"
+                ]
+        elif segs:
+            for i, seg in enumerate(segs):
+                st = str(seg.get("scene_type", "video_export"))
+                if st == "assembly_encode":
                     continue
                 per_scene_dispatch.append((i, _scene_label(seg, i), st, seg))
         elif _types:
