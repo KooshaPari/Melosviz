@@ -31,6 +31,14 @@ from typing import TYPE_CHECKING, Any, Sequence
 if TYPE_CHECKING:  # pragma: no cover
     from melosviz.analysis.models import RenderSpec
 
+from melosviz.conductor.provenance import ClipProvenance, write_provenance
+from melosviz.conductor.render_cache import (
+    RenderCache,
+    scene_cache_key,
+    scene_render_cached,
+)
+from melosviz.conductor.visual_diff import compute_visual_diff
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["Orchestrator", "ConductorError", "OrchestratorResult"]
@@ -160,8 +168,6 @@ class Orchestrator:
         # NAMES matter — render() reads self._render_cache.cache_dir and
         # self._provenance_records, so renaming either would silently
         # break the cache fast-path at runtime.
-        from melosviz.conductor.provenance import ClipProvenance
-        from melosviz.conductor.render_cache import RenderCache
         self._render_cache: RenderCache = RenderCache(
             self._output_dir / "_render_cache"
         )
@@ -590,13 +596,13 @@ class Orchestrator:
                     finished_at=_now_ms(),
                     duration_ms=0.0,
                     artifact_path=str(cached_artifact),
-                    extras={"from_cache": True, "cache_key": scene_cache_key(seg).hex()},
+                    extras={"from_cache": True, "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint()},
                 )
                 bus._events.append(done_evt)
                 emitted.append(done_evt)
                 per_scene_results.setdefault(scene_type, _CachedAdapterResult(
                     artifact_path=cached_artifact,
-                    cache_key=scene_cache_key(seg).hex(),
+                    cache_key=scene_cache_key(_seg_for_render, cache_root).fingerprint(),
                 ))
                 continue
 
@@ -683,41 +689,46 @@ class Orchestrator:
             per_scene_results.setdefault(scene_type, result)
 
             # ---- Provenance sidecar + render cache store ----
+            # Track wall-clock timestamps for duration_seconds in provenance.
+            _render_started_at = t0
+            _render_finished_at = _render_started_at + elapsed_ms / 1000.0
+            # Compute visual diff if artifact exists on disk.
+            _visual_diff: dict | None = None
+            if artifact and Path(artifact).is_file():
+                try:
+                    _visual_diff = compute_visual_diff(
+                        artifact_path=artifact,
+                        prompt=getattr(render_spec, "prompt", None) or scene_name,
+                    )
+                except Exception:  # best-effort
+                    _visual_diff = None
             try:
-                provenance_payload = ClipProvenance(
+                clip_prov = ClipProvenance(
                     scene_index=scene_idx,
                     scene_name=scene_name,
                     scene_type=scene_type,
+                    backend=backend_key,
+                    render_started_at=_render_started_at,
+                    render_finished_at=_render_finished_at,
                     seed=getattr(render_spec, "seed", None) or scene_idx,
+                    artifact_path=artifact,
                     prompt=getattr(render_spec, "prompt", None) or scene_name,
                     width=int(getattr(render_spec, "width", 1920) or 1920),
                     height=int(getattr(render_spec, "height", 1080) or 1080),
                     fps=int(getattr(render_spec, "fps", 24) or 24),
-                    backend=backend_key,
-                    artifact_path=artifact,
-                    duration_ms=elapsed_ms,
-                    license="CC-BY-NC-4.0",
-                    content_origin="melosviz-generated",
-                ).to_dict()
-                write_provenance(scene_out_dir, provenance_payload)
+                    visual_diff=_visual_diff,
+                )
+                write_provenance(clip_prov)
             except Exception as exc:  # provenance is best-effort
                 logger.debug("provenance write skipped: %s", exc)
 
             try:
-                cache_key = SceneCacheKey(
-                    scene_type=scene_type,
-                    prompt=getattr(render_spec, "prompt", None) or scene_name,
-                    width=int(getattr(render_spec, "width", 1920) or 1920),
-                    height=int(getattr(render_spec, "height", 1080) or 1080),
-                    fps=int(getattr(render_spec, "fps", 24) or 24),
-                    seed=getattr(render_spec, "seed", None) or scene_idx,
-                    backend=backend_key,
-                )
-                if self._render_cache is not None:
+                cache_key = scene_cache_key(_seg_for_render, cache_root) if cache_root else scene_cache_key(_seg_for_render, self._output_dir)
+                if self._render_cache is not None and artifact:
                     self._render_cache.store(
                         cache_key,
-                        artifact_path=artifact or str(scene_out_dir),
-                        duration_ms=elapsed_ms,
+                        src_artifact_path=Path(artifact),
+                        meta={"scene_index": scene_idx, "scene_name": scene_name},
                     )
             except Exception as exc:  # cache store is best-effort
                 logger.debug("render cache store skipped: %s", exc)

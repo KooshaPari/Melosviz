@@ -180,3 +180,43 @@ class RenderCache:
             "stored": len(files),
             "total_bytes": total,
         }
+
+
+def scene_cache_key(seg: dict, cache_root: Path) -> SceneCacheKey:
+    """Build a :class:`SceneCacheKey` for *seg* under *cache_root*.
+
+    Convenience wrapper used by the orchestrator to compute a fingerprint
+    for the render-cache lookup. Falls back to a minimal key when the
+    storyboard spec doesn't supply rich metadata.
+    """
+    # Build a thin RenderSpec stand-in for from_scene — only attributes
+    # the from_scene factory reads (width / height / fps) are needed.
+    spec_proxy = type("_S", (), {
+        "width": int(seg.get("width", 1920) or 1920),
+        "height": int(seg.get("height", 1080) or 1080),
+        "fps": int(seg.get("fps", 24) or 24),
+    })()
+    backend = str(seg.get("backend") or seg.get("scene_type") or "unknown")
+    return SceneCacheKey.from_scene(seg, backend, spec_proxy)
+
+
+def scene_render_cached(seg: dict, cache_root: Path) -> Path | None:
+    """Look up a cached artifact for *seg* in *cache_root*.
+
+    Returns the cached path if a hit is found, otherwise ``None``. The
+    orchestrator uses this for a fast-path before dispatching to
+    adapters.
+    """
+    if cache_root is None or not Path(cache_root).is_dir():
+        return None
+    key = scene_cache_key(seg, cache_root)
+    cache = RenderCache(cache_dir=Path(cache_root))
+    return cache.lookup(key)
+
+
+__all__ = [
+    "RenderCache",
+    "SceneCacheKey",
+    "scene_cache_key",
+    "scene_render_cached",
+]
