@@ -87,3 +87,24 @@ def test_duplicate_media_basenames_keep_distinct_archive_paths(tmp_path: Path) -
         assert archive.read("deliverables/club/master.mp4") == b"club"
     assert names.count("deliverables/festival/master.mp4") == 1
     assert names.count("deliverables/club/master.mp4") == 1
+
+
+def test_manifest_records_caller_supplied_path_not_resolved(
+    tmp_path: Path,
+) -> None:
+    """Regression: ``manifest['job_dir']`` was the *resolved* path, which
+    folds in the host's filesystem layout (/private/tmp vs /tmp on
+    macOS, realpath chains on bind mounts). Two runs on different hosts
+    produced different manifests. The manifest now records exactly what
+    the caller passed in."""
+
+    # Create a temp alias by symlinking and run with the *symlink* path.
+    target = tmp_path / "real_dir"
+    target.mkdir()
+    (target / "clip.mp4").write_bytes(b"x")
+    alias = tmp_path / "alias_dir"
+    alias.symlink_to(target)
+    result = build_delivery_package(alias)
+    # The manifest must echo the path the caller handed us, not the
+    # resolved one.
+    assert result["job_dir"] == str(alias)

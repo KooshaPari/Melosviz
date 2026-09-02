@@ -86,6 +86,8 @@ def test_concurrent_reservation_cleanup_finalizes_ledger_once() -> None:
 
     def settle() -> None:
         try:
+            with reservation.attempt():
+                pass  # mark an attempt as entered so settle() honours actual_usd
             reservation.settle(Decimal("0.0001"))
         except BaseException as exc:
             worker_errors.append(exc)
@@ -356,3 +358,96 @@ def test_queue_full_rejects_an_additional_waiter() -> None:
     assert waiter_done.is_set()
     assert not waiter.is_alive()
     assert worker_errors == []
+
+
+def test_settle_after_queue_rejection_records_zero_actual() -> None:
+    """Bug regression: when every attempt in a reservation is rejected
+    (queue full / cost cap), ``settle()`` must record actual=0, not the
+    estimate. Otherwise the gate's ``spent_usd`` overflows the budget on
+    reservations that never produced a real LLM call.
+    """
+
+    # max_queue=1 with max_concurrency=1: the holder runs, the waiter
+    # fills the only queue slot (blocked inside _enter_attempt), then
+    # the rejected reservation hits "queue is full" immediately.
+    # Build the config directly because from_env's positive_int rejects 0.
+    config = LLMAdmissionConfig(
+        requests_per_minute=30,
+        max_concurrency=1,
+        max_queue=1,
+        max_retries=3,
+        cost_cap_usd=Decimal("1.00"),
+        input_usd_per_million=Decimal("1.00"),
+        output_usd_per_million=Decimal("2.00"),
+        max_output_tokens=100,
+    )
+    gate = LLMAdmissionGate(config)
+
+    holder = gate.reserve(config.estimate(b"holder"))
+    holder_attempt = holder.attempt()
+    holder_attempt.__enter__()  # starts; _tickets empty, _active=1
+
+    waiter_started = threading.Event()
+    waiter_done = threading.Event()
+
+    def wait_forever() -> None:
+        try:
+            reservation = gate.reserve(config.estimate(b"waiter"))
+            waiter_started.set()
+            with reservation.attempt():
+                pass  # sits inside _enter_attempt holding the queue slot
+        finally:
+            waiter_done.set()
+
+    waiter = threading.Thread(target=wait_forever)
+    waiter.start()
+    try:
+        assert waiter_started.wait(timeout=2)
+        deadline = time.monotonic() + 2
+        while gate.waiting_count != 1 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert gate.waiting_count == 1
+
+        rejected = gate.reserve(config.estimate(b"rejected"))
+        estimate = rejected.estimate
+        try:
+            with pytest.raises(LLMAdmissionError, match="queue is full"):
+                rejected.attempt().__enter__()
+            spent_before = gate.spent_usd
+            rejected.settle(actual_usd=Decimal("0.05"))
+            # No attempt ever entered -> spent_usd should be unchanged.
+            assert gate.spent_usd == spent_before
+            # estimate was > 0; the actual recorded is 0 (rejection semantics).
+            assert estimate.usd > Decimal(0)
+            assert gate.spent_usd + estimate.usd != gate.spent_usd
+        finally:
+            rejected.release()
+    finally:
+        holder_attempt.__exit__(None, None, None)
+        holder.release()
+        waiter.join(timeout=2)
+
+    assert waiter_done.is_set()
+
+
+def test_settle_with_entered_attempts_records_actual() -> None:
+    """Once any attempt enters the queue, ``settle()`` records actual cost
+    (not the estimate) so the gate's ledger matches reported usage."""
+
+    config = LLMAdmissionConfig(
+        requests_per_minute=30,
+        max_concurrency=1,
+        max_queue=1,
+        max_retries=3,
+        cost_cap_usd=Decimal("1.00"),
+        input_usd_per_million=Decimal("1.00"),
+        output_usd_per_million=Decimal("2.00"),
+        max_output_tokens=100,
+    )
+    gate = LLMAdmissionGate(config)
+    estimate = config.estimate(b"x")
+    reservation = gate.reserve(estimate)
+    with reservation.attempt():
+        pass  # attempt entered
+    reservation.settle(actual_usd=Decimal("0.42"))
+    assert gate.spent_usd == Decimal("0.42")

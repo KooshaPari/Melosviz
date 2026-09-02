@@ -104,34 +104,49 @@ def discover_shots(job_dir: Path, media_paths: Sequence[Path]) -> list[dict]:
         fps).
     """
     objects = _load_objects(job_dir)
+    # Aggregate candidates from every JSON source. We no longer return on
+    # the first match because that silently dropped shots from any later
+    # JSON file. Within each tier (shots -> scenes -> provenance) the
+    # earlier source wins, and within a tier the earlier index wins, so
+    # the merge is fully deterministic.
+    candidates: list[dict] = []
+    seen_keys: set[tuple[int, int]] = set()
     for key in ("shots", "scenes"):
         for payload in objects:
             values = payload.get(key)
-            if isinstance(values, list) and values:
-                shots = [
-                    _normalize_shot(value, index)
-                    for index, value in enumerate(values)
-                    if isinstance(value, dict)
-                ]
-                return sorted(
-                    shots, key=lambda item: (item["scene_index"], item["shot_index"])
-                )
+            if not (isinstance(values, list) and values):
+                continue
+            for index, value in enumerate(values):
+                if not isinstance(value, dict):
+                    continue
+                shot = _normalize_shot(value, len(candidates))
+                shot_key = (shot["scene_index"], shot["shot_index"])
+                if shot_key in seen_keys:
+                    continue
+                seen_keys.add(shot_key)
+                candidates.append(shot)
+    if candidates:
+        return candidates
     provenance = [
         payload for payload in objects
         if "artifact_path" in payload and "scene_index" in payload
     ]
     if provenance:
-        return sorted(
-            [
-                _normalize_shot(value, index)
-                for index, value in enumerate(provenance)
-            ],
-            key=lambda item: (item["scene_index"], item["shot_index"]),
-        )
-    return [
-        _normalize_shot({"index": index, "label": path.stem}, index)
-        for index, path in enumerate(sorted(media_paths, key=lambda p: p.as_posix()))
-    ]
+        for index, value in enumerate(provenance):
+            shot = _normalize_shot(value, index)
+            shot_key = (shot["scene_index"], shot["shot_index"])
+            if shot_key in seen_keys:
+                continue
+            seen_keys.add(shot_key)
+            candidates.append(shot)
+        if candidates:
+            return candidates
+    for index, path in enumerate(
+        sorted(media_paths, key=lambda p: p.as_posix())
+    ):
+        shot = _normalize_shot({"index": index, "label": path.stem}, index)
+        candidates.append(shot)
+    return candidates
 
 
 def _svg(shot: dict) -> str:
@@ -332,11 +347,23 @@ def export_vj_cues(shots: Iterable[dict], output_dir: Path) -> list[Path]:
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
+    # If two shots share the same (scene_index, shot_index) tuple the
+    # derived filename would collide and silently overwrite. Detect
+    # collisions and append a sequence suffix so every cue is preserved
+    # on disk, while keeping the canonical name for the first occurrence
+    # so existing downstream tooling keeps working.
+    used_stems: dict[str, int] = {}
     for raw in shots:
         shot = _normalize_shot(raw, len(written))
         stem = f'shot-{shot["scene_index"]:04d}-{shot["shot_index"]:02d}'
-        svg_path = output_dir / f"{stem}.svg"
-        lottie_path = output_dir / f"{stem}.lottie.json"
+        count = used_stems.get(stem, 0)
+        used_stems[stem] = count + 1
+        if count == 0:
+            disk_stem = stem
+        else:
+            disk_stem = f"{stem}-{count:02d}"
+        svg_path = output_dir / f"{disk_stem}.svg"
+        lottie_path = output_dir / f"{disk_stem}.lottie.json"
         svg_path.write_text(_svg(shot), encoding="utf-8")
         lottie_path.write_text(
             json.dumps(_lottie(shot), sort_keys=True, separators=(",", ":")) + "\n",

@@ -48,7 +48,14 @@ def _atomic_json(path: Path, payload: dict) -> None:
 
 
 def build_delivery_package(job_dir: Path) -> dict:
-    root = job_dir.expanduser().resolve()
+    # Record the *caller-supplied* path in the manifest, not the
+    # resolved one. .resolve() would fold in the host's filesystem
+    # layout (e.g. /private/tmp vs /tmp on macOS, symlinked bind
+    # mounts, realpath chains) and break byte-stable reproducibility
+    # across machines. The resolved root is still used internally for
+    # safe rglob + relative_to work.
+    manifest_root = job_dir.expanduser()
+    root = manifest_root.resolve()
     if not root.is_dir():
         raise FileNotFoundError(root)
     media = _discover_media(root)
@@ -67,7 +74,7 @@ def build_delivery_package(job_dir: Path) -> dict:
     mode = "online" if media else "offline"
     manifest = {
         "schema_version": "1.0",
-        "job_dir": str(root),
+        "job_dir": str(manifest_root),
         "mode": mode,
         "count": len(copied),
         "deliverables": [

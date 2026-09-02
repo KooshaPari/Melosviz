@@ -594,7 +594,7 @@ class Orchestrator:
             cache_root: Path | None = self._render_cache.cache_dir if self._render_cache is not None else None
             cached_artifact: Path | None = None
             if cache_root is not None:
-                cached_artifact = scene_render_cached(seg, cache_root)
+                cached_artifact = scene_render_cached(_seg_for_render, cache_root)
             if cached_artifact is not None and cached_artifact.exists():
                 logger.info(
                     "Orchestrator: scene[%d] cache HIT → %s",

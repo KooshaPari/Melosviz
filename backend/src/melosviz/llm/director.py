@@ -101,11 +101,13 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 def _lyrics_align(phrases, segments, **kw):
+    """Thin wrapper around ``lyrics.align_to_segments`` so director stays import-safe."""
     from .lyrics import align_to_segments
     return align_to_segments(phrases, segments, **kw)
 
 
 def _mood_board(paths):
+    """Thin wrapper around ``moodboard.mood_board_summary`` for import safety."""
     from .moodboard import mood_board_summary
     return mood_board_summary(paths)
 
@@ -316,6 +318,7 @@ class StoryboardScene:
     continuity: ContinuityAnchor = field(default_factory=ContinuityAnchor)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-safe dict representation of the scene."""
         d = asdict(self)
         d["beats_in_segment"] = list(self.beats_in_segment)
         d["continuity"] = self.continuity.to_dict()
@@ -340,6 +343,7 @@ class Storyboard:
     continuity: ContinuityAnchor = field(default_factory=ContinuityAnchor)
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-safe dict representation of the storyboard."""
         return {
             "concept": self.concept,
             "duration_s": self.duration_s,
@@ -426,6 +430,7 @@ class Director:
         llm_opener=None,
         llm_sleeper=None,
     ) -> None:
+        """Construct a Director with optional injectable gate/opener/sleeper for LLM calls."""
         self._seed = seed if seed is not None else int(time.time()) & 0xFFFFFFFF
         self._llm_gate = llm_gate
         self._llm_opener = llm_opener or urllib.request.urlopen
@@ -579,6 +584,7 @@ class Director:
     # ------------------------------------------------------------------
 
     def _apply_concept_bias(self, concept: str, palette: list[str]) -> list[str]:
+        """Augment ``palette`` with the concept-keyword bias accents."""
         bias = _match_bias(concept)
         if not bias:
             return palette
@@ -595,6 +601,7 @@ class Director:
         mood_board_style: str = "",
         continuity: "ContinuityAnchor | None" = None,
     ) -> str:
+        """Compose a deterministic per-scene prompt string from concept + archetype."""
         bias = _match_bias(concept)
         lighting = bias["lighting"] if bias else "cinematic"
         pieces = [
@@ -643,6 +650,13 @@ class Director:
     def _maybe_refine_with_llm(
         self, scenes: list[StoryboardScene], req: DirectorRequest,
     ) -> list[StoryboardScene]:
+        """Optionally rewrite scene prompts via the configured LLM.
+
+        No-op when ``MELOSVIZ_LLM_ENDPOINT`` is unset. Any error
+        (admission rejection, network failure, malformed payload) is
+        caught and logged; the original template prompts are returned
+        unchanged so the Director never crashes an operator's run.
+        """
         endpoint = os.environ.get(_LLM_ENDPOINT_ENV)
         if not endpoint:
             return scenes
@@ -737,9 +751,11 @@ class Director:
             urllib.error.URLError,
             TimeoutError,
             OSError,
+            IndexError,  # choices=[] or empty message list
             KeyError,
             TypeError,
             ValueError,
+            AttributeError,  # malformed message dict (None / non-dict)
         ) as exc:
             logger.warning(
                 "Director: LLM refinement skipped (%s) — using template prompts.",
@@ -754,11 +770,13 @@ class Director:
 
 
 def _seed_from_str(s: str) -> int:
+    """Derive a stable 32-bit seed from an arbitrary string via SHA-256."""
     h = hashlib.sha256(s.encode("utf-8")).digest()
     return int.from_bytes(h[:4], "big")
 
 
 def _match_bias(concept: str) -> dict[str, str] | None:
+    """Return the keyword-bias dict for ``concept`` or ``None``."""
     c = concept.lower()
     for kw, bias in _CONCEPT_KEYWORD_BIAS.items():
         if re.search(rf"\b{re.escape(kw)}\b", c):
@@ -767,6 +785,7 @@ def _match_bias(concept: str) -> dict[str, str] | None:
 
 
 def _accent_colors(suffix: str) -> list[str]:
+    """Look up the accent hex pairs for a palette-bias suffix."""
     table = {
         "magenta+cyan":      ["#ff2bd6", "#22d3ee"],
         "amber+teal":        ["#ffb347", "#1ec8c8"],
@@ -783,6 +802,7 @@ def _accent_colors(suffix: str) -> list[str]:
 
 
 def _default_negative(scene_type: str) -> str:
+    """Return the standard negative prompt for a scene type."""
     base = "lowres, blurry, watermark, text artifacts, jpeg compression"
     if scene_type in ("comfyui_video", "unreal_cinematic"):
         base += ", flickering, jitter, motion blur glitches"
@@ -790,6 +810,7 @@ def _default_negative(scene_type: str) -> str:
 
 
 def _alternate_scene_type(current: str, rng: random.Random) -> str:
+    """Pick a different scene_type from :data:`DIRECTOR_SCENE_TYPES` to avoid repeats."""
     pool = [s for s in DIRECTOR_SCENE_TYPES if s != current]
     return rng.choice(pool) if pool else current
 
@@ -841,6 +862,7 @@ class StoryOutline:
     total_scenes: int
 
     def to_dict(self) -> dict:
+        """Return a JSON-safe dict representation of the story outline."""
         return {
             "title": self.title,
             "concept": self.concept,
@@ -865,6 +887,7 @@ class Shot:
     notes: str = ""
 
     def to_dict(self) -> dict:
+        """Return a JSON-safe dict representation of the shot."""
         return {
             "scene_index": self.scene_index,
             "shot_index": self.shot_index,
@@ -896,6 +919,7 @@ class MultiShotDirector:
     """
 
     def __init__(self, *, seed: int | None = None, shots_per_scene: int = 3) -> None:
+        """Build a MultiShotDirector with a base Director and shot budget."""
         self._base = Director(seed=seed)
         self._seed = self._base._seed
         self._shots_per_scene = max(2, min(5, shots_per_scene))

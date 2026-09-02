@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import hashlib
+import subprocess
 from pathlib import Path
 
-from melosviz.conductor.visual_diff import build_visual_diff, compute_visual_diff
+from melosviz.conductor.visual_diff import (
+    build_visual_diff,
+    compute_visual_diff,
+    extract_preview_frame,
+)
 
 
 def test_visual_diff_hashes_artifact_and_prompt(tmp_path: Path) -> None:
@@ -97,3 +102,73 @@ def test_compute_visual_diff_writes_manifest_and_uses_defaults(tmp_path: Path) -
     assert payload["timeline_thumbnail"]["start_seconds"] == 2.0
     assert payload["timeline_thumbnail"]["end_seconds"] == 10.0
     assert (artifact.parent / "visual-diff.svg").exists()
+
+
+def test_compute_visual_diff_zero_length_clip_preserves_zero_end(
+    tmp_path: Path,
+) -> None:
+    """Regression: ``end_seconds=0.0`` was treated as falsy and widened to
+    ``start + 8``. A truly zero-length clip (e.g. a 1-frame scene at the
+    song's last beat) must keep ``end_seconds == 0.0``."""
+
+    artifact = tmp_path / "scene.png"
+    artifact.write_bytes(b"x")
+    payload = compute_visual_diff(
+        artifact, "test", start_seconds=0.0, end_seconds=0.0
+    )
+    assert payload["timeline_thumbnail"]["start_seconds"] == 0.0
+    assert payload["timeline_thumbnail"]["end_seconds"] == 0.0
+
+
+def test_extract_preview_frame_handles_subprocess_timeout(tmp_path: Path) -> None:
+    """Regression: a hanging ffmpeg used to raise subprocess.TimeoutExpired
+    and crash the orchestrator. Now we degrade silently to ``False``."""
+
+    source = tmp_path / "clip.mp4"
+    source.write_bytes(b"not really video")
+    target = tmp_path / "frame.png"
+
+    def hang(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd="ffmpeg", timeout=0.01)
+
+    # Inject the throwing extractor into build_visual_diff so we exercise
+    # the same call site the orchestrator uses.
+    build_visual_diff(
+        artifact_path=source,
+        scene_dir=tmp_path,
+        job_dir=tmp_path,
+        scene_name="scene",
+        prompt="test",
+        start_seconds=0.0,
+        end_seconds=8.0,
+        beat_seconds=[],
+        palette=[],
+        frame_extractor=hang,
+    )
+    assert not target.exists()
+
+
+def test_extract_preview_frame_handles_oserror(tmp_path: Path) -> None:
+    """Regression: OSError (permission denied, binary vanished, …) used to
+    propagate out of the orchestrator. Now we degrade silently to False."""
+
+    source = tmp_path / "clip.mp4"
+    source.write_bytes(b"not really video")
+    target = tmp_path / "frame.png"
+
+    def os_explode(*_args, **_kwargs):
+        raise OSError("fake permission denied")
+
+    build_visual_diff(
+        artifact_path=source,
+        scene_dir=tmp_path,
+        job_dir=tmp_path,
+        scene_name="scene",
+        prompt="test",
+        start_seconds=0.0,
+        end_seconds=8.0,
+        beat_seconds=[],
+        palette=[],
+        frame_extractor=os_explode,
+    )
+    assert not target.exists()

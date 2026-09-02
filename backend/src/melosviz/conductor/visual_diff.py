@@ -71,28 +71,36 @@ def extract_preview_frame(source: Path, target: Path) -> bool:
     with non-zero size. Returns ``False`` silently when ffmpeg is missing
     or the source is not a regular file — operators without ffmpeg still
     get a fully usable SVG (just a coloured placeholder instead of a
-    frame).
+    frame). Also returns ``False`` on any failure mode (timeout, OS
+    error, permission denied) so a broken ffmpeg can never crash the
+    render pipeline.
     """
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None or not source.is_file():
         return False
-    completed = subprocess.run(
-        [
-            ffmpeg,
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-y",
-            "-i",
-            str(source),
-            "-frames:v",
-            "1",
-            str(target),
-        ],
-        capture_output=True,
-        check=False,
-        timeout=30,
-    )
+    try:
+        completed = subprocess.run(
+            [
+                ffmpeg,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(source),
+                "-frames:v",
+                "1",
+                str(target),
+            ],
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        # ffmpeg hung, the binary vanished mid-run, or the OS refused
+        # the exec — every one of these should degrade to "no preview"
+        # rather than crash the orchestrator.
+        return False
     return completed.returncode == 0 and target.is_file() and target.stat().st_size > 0
 
 
@@ -180,7 +188,13 @@ def build_visual_diff(
     """
     scene_dir.mkdir(parents=True, exist_ok=True)
     preview = scene_dir / "visual-diff-frame.png"
-    extracted = frame_extractor(artifact_path, preview)
+    try:
+        extracted = bool(frame_extractor(artifact_path, preview))
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        # Custom FrameExtractor implementations may raise; the built-in
+        # extract_preview_frame already swallows these, but third-party
+        # extractors shouldn't be able to crash the orchestrator either.
+        extracted = False
     if not extracted and preview.exists():
         preview.unlink()
     svg_path = scene_dir / "visual-diff.svg"
@@ -238,6 +252,10 @@ def compute_visual_diff(
     artifact = Path(artifact_path)
     scene_dir = artifact.parent
     job_dir = scene_dir  # visual-diff.svg lives next to the artifact
+    # Use ``is None`` rather than truthiness — ``end_seconds=0.0`` is a
+    # valid value (a zero-length clip) and must not be silently widened
+    # to ``start + 8``.
+    resolved_end = start_seconds + 8.0 if end_seconds is None else end_seconds
     return build_visual_diff(
         artifact_path=artifact,
         scene_dir=scene_dir,
@@ -245,7 +263,7 @@ def compute_visual_diff(
         scene_name=artifact.stem,
         prompt=prompt,
         start_seconds=start_seconds,
-        end_seconds=end_seconds or start_seconds + 8.0,
+        end_seconds=resolved_end,
         beat_seconds=beat_seconds or [],
         palette=palette or [],
         frame_extractor=extract_preview_frame,

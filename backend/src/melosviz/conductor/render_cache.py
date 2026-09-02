@@ -44,6 +44,32 @@ def _cache_root() -> Path:
     return Path.cwd() / CACHE_ROOT_DIRNAME
 
 
+def _audio_fingerprint(scene: Mapping[str, Any]) -> str:
+    """Content-hash of the audio input for *scene* (or "" if none).
+
+    Two scenes with the same prompt / seed / camera but different audio
+    must hash to different fingerprints — otherwise a re-render against
+    a swapped audio source would silently reuse the cached visual from
+    the previous audio. We hash the actual file content (cheap for the
+    short clips that ship through this pipeline) when present, and fall
+    back to the path string so callers can still get a stable key when
+    the audio is only described symbolically.
+    """
+    audio = scene.get("audio") or scene.get("wav_path") or scene.get("audio_path")
+    if audio is None or audio == "":
+        return ""
+    path = Path(str(audio))
+    if path.is_file():
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                h.update(chunk)
+        return f"sha256:{h.hexdigest()}"
+    # Symbolic / remote reference — keep the string verbatim so the key
+    # is still deterministic across hosts.
+    return f"path:{path.as_posix()}"
+
+
 @dataclass(frozen=True)
 class SceneCacheKey:
     """A scene's render input fingerprint.
@@ -68,6 +94,7 @@ class SceneCacheKey:
     env_token: str
     palette_key: str
     lrc_phrase_key: str
+    audio_fingerprint: str
     extra: Mapping[str, Any]
 
     @staticmethod
@@ -100,6 +127,7 @@ class SceneCacheKey:
             env_token=str(continuity.get("env_token") or ""),
             palette_key="|".join(palette_list),
             lrc_phrase_key=f"{lyric.get('phrase_id', '')}::{lyric.get('start', 0):.3f}->{lyric.get('end', 0):.3f}",
+            audio_fingerprint=_audio_fingerprint(scene),
             extra=copy.deepcopy(scene.get("cache_extra") or {}),
         )
 
@@ -119,6 +147,7 @@ class SceneCacheKey:
             "env_token": self.env_token,
             "palette_key": self.palette_key,
             "lrc_phrase_key": self.lrc_phrase_key,
+            "audio_fingerprint": self.audio_fingerprint,
             "extra": dict(self.extra),
         }
         canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))

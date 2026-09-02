@@ -573,3 +573,45 @@ def test_llm_records_actual_cost_in_gate(monkeypatch) -> None:
     expected_actual = config.actual_cost(4, 2)
     assert gate.spent_usd == expected_actual
     assert gate.spent_usd != estimate.usd
+
+
+def test_llm_malformed_payload_falls_back_to_templates(
+    monkeypatch, caplog
+) -> None:
+    """Malformed LLM payloads (empty choices, missing message key, None
+    message) must not crash the Director — fall back to templates and log
+    a warning instead. Regression test for IndexError / AttributeError
+    that wasn't in the original except list.
+    """
+
+    monkeypatch.setenv("MELOSVIZ_LLM_ENDPOINT", "https://llm.invalid")
+    monkeypatch.setenv("MELOSVIZ_LLM_MODEL", "fixed-model")
+    monkeypatch.setenv("MELOSVIZ_LLM_INPUT_USD_PER_MILLION", "1.00")
+    monkeypatch.setenv("MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION", "2.00")
+    monkeypatch.setenv("MELOSVIZ_LLM_MAX_OUTPUT_TOKENS", "100")
+
+    malformed_payloads = [
+        # choices empty
+        {"choices": [], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # choices missing
+        {"usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # message key missing
+        {"choices": [{}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # message value is None
+        {"choices": [{"message": None}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # content not a string
+        {"choices": [{"message": {"content": 12345}}],
+         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+    ]
+    for i, payload in enumerate(malformed_payloads):
+
+        def opener(request, timeout, p=payload):
+            return FakeResponse(p)
+
+        with caplog.at_level(logging.WARNING, logger="melosviz.llm.director"):
+            board = Director(seed=i, llm_opener=opener).storyboard(
+                _single_scene_request()
+            )
+        assert "scene verse" in board.scenes[0].prompt, f"case {i}: templates not used"
+        assert "refinement skipped" in caplog.text, f"case {i}: no warning logged"
+        caplog.clear()

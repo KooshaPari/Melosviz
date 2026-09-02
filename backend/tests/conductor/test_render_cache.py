@@ -229,3 +229,49 @@ def test_render_cache_handles_preexisting_file_overwrite(tmp_path, monkeypatch):
     hit = cache.lookup(key)
     assert hit is not None
     assert hit.read_text() == "second"
+
+
+def test_scene_cache_key_changes_when_audio_content_changes(tmp_path: Path) -> None:
+    """Regression: two scenes with identical prompt / seed / camera but
+    different audio inputs MUST hash to different fingerprints —
+    otherwise a re-render against a swapped audio source would silently
+    reuse the cached visual from the previous audio."""
+    import hashlib
+
+    audio_a = tmp_path / "vox_a.wav"
+    audio_a.write_bytes(b"raw-pcm-vocals-a")
+    audio_b = tmp_path / "vox_b.wav"
+    audio_b.write_bytes(b"raw-pcm-instrumental-b")
+
+    spec = _render_spec_stub()
+    scene_a = _make_scene(prompt="same", seed=1)
+    scene_a["audio"] = str(audio_a)
+    scene_b = _make_scene(prompt="same", seed=1)
+    scene_b["audio"] = str(audio_b)
+    ka = SceneCacheKey.from_scene(scene_a, "comfyui_image", spec)
+    kb = SceneCacheKey.from_scene(scene_b, "comfyui_image", spec)
+    assert ka.fingerprint() != kb.fingerprint()
+    assert ka.audio_fingerprint.startswith("sha256:")
+    expected = hashlib.sha256(b"raw-pcm-vocals-a").hexdigest()
+    assert ka.audio_fingerprint == f"sha256:{expected}"
+
+
+def test_scene_cache_key_uses_path_when_audio_file_missing(tmp_path: Path) -> None:
+    """When the audio is only a symbolic reference (no file on disk), the
+    cache key is still deterministic across hosts because we use the
+    POSIX path verbatim — no realpath, no hostname."""
+    spec = _render_spec_stub()
+    scene_a = _make_scene()
+    scene_a["audio"] = "s3://bucket/track.wav"
+    scene_b = _make_scene()
+    scene_b["audio"] = "s3://bucket/track.wav"
+    ka = SceneCacheKey.from_scene(scene_a, "comfyui_image", spec)
+    kb = SceneCacheKey.from_scene(scene_b, "comfyui_image", spec)
+    assert ka.fingerprint() == kb.fingerprint()
+    assert ka.audio_fingerprint.startswith("path:")
+
+
+def test_scene_cache_key_audio_fingerprint_empty_when_unset() -> None:
+    spec = _render_spec_stub()
+    k = SceneCacheKey.from_scene(_make_scene(), "comfyui_image", spec)
+    assert k.audio_fingerprint == ""
