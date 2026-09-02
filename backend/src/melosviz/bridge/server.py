@@ -221,7 +221,7 @@ class StudioDirectRequest(BaseModel):
 
 
 class StudioValidateRequest(BaseModel):
-    """Storyboard validation request — runs the conductor's StoryboardValidator."""
+    """Storyboard validation request — runs the conductor's ``validate_storyboard`` helper."""
 
     storyboard_path: str
     # Optional hard-rule overrides (kept conservative by default).
