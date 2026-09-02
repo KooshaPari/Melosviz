@@ -9,12 +9,12 @@ name: gpu-smoke
 
 on:
   schedule:
-    - cron: '17 8 * * 1'
+    - cron: "17 8 * * 1"
   workflow_dispatch:
     inputs:
       python-version:
-        description: 'Python version'
-        default: '3.12'
+        description: "Python version"
+        default: "3.12"
         required: false
         type: choice
         options:
@@ -23,7 +23,7 @@ on:
           - 3.12
           - 3.13
       ffmpeg:
-        description: 'Install ffmpeg?'
+        description: "Install ffmpeg?"
         default: true
         type: boolean
 
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      MELOSVIZ_COMFYUI_OFFLINE: '1'  # offline-mode (no GPU worker required)
+      MELOSVIZ_COMFYUI_OFFLINE: "1" # offline-mode (no GPU worker required)
       PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python-version || '3.12' }}
       INSTALL_FFMPEG: ${{ github.event_name == 'schedule' || inputs.ffmpeg }}
     steps:
@@ -46,7 +46,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
-          version: '0.5'
+          version: "0.5"
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         run: uv python install ${{ env.PYTHON_VERSION }}

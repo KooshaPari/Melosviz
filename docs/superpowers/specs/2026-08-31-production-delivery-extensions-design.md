@@ -98,16 +98,16 @@ and retry tests do not wait in real time.
 
 ### Configuration contract
 
-| Environment variable | Default | Meaning |
-|---|---:|---|
-| `MELOSVIZ_LLM_REQUESTS_PER_MINUTE` | `30` | Starts allowed in a rolling 60-second window |
-| `MELOSVIZ_LLM_MAX_CONCURRENCY` | `2` | Requests simultaneously inside the HTTP section |
-| `MELOSVIZ_LLM_MAX_QUEUE` | `32` | Waiting callers before fail-closed fallback |
-| `MELOSVIZ_LLM_MAX_RETRIES` | `3` | Additional attempts for 429 and retryable 5xx responses |
-| `MELOSVIZ_LLM_COST_CAP_USD` | `1.00` | Process-local reserved plus actual cost ceiling |
-| `MELOSVIZ_LLM_INPUT_USD_PER_MILLION` | unset | Provider price supplied by the operator |
-| `MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION` | unset | Provider price supplied by the operator |
-| `MELOSVIZ_LLM_MAX_OUTPUT_TOKENS` | `2048` | Output reservation used for the preflight estimate |
+| Environment variable                  | Default | Meaning                                                 |
+| ------------------------------------- | ------: | ------------------------------------------------------- |
+| `MELOSVIZ_LLM_REQUESTS_PER_MINUTE`    |    `30` | Starts allowed in a rolling 60-second window            |
+| `MELOSVIZ_LLM_MAX_CONCURRENCY`        |     `2` | Requests simultaneously inside the HTTP section         |
+| `MELOSVIZ_LLM_MAX_QUEUE`              |    `32` | Waiting callers before fail-closed fallback             |
+| `MELOSVIZ_LLM_MAX_RETRIES`            |     `3` | Additional attempts for 429 and retryable 5xx responses |
+| `MELOSVIZ_LLM_COST_CAP_USD`           |  `1.00` | Process-local reserved plus actual cost ceiling         |
+| `MELOSVIZ_LLM_INPUT_USD_PER_MILLION`  |   unset | Provider price supplied by the operator                 |
+| `MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION` |   unset | Provider price supplied by the operator                 |
+| `MELOSVIZ_LLM_MAX_OUTPUT_TOKENS`      |  `2048` | Output reservation used for the preflight estimate      |
 
 The cost estimator conservatively approximates input tokens as
 `ceil(UTF-8 byte length / 4)`. It reserves the configured maximum output tokens

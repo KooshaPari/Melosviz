@@ -10,22 +10,22 @@
 
 ## What Was Done (14 unpushed commits)
 
-| # | Commit | Description |
-|---|---|---|
-| 1 | `a5e34f8` | Design doc (plan foundation) |
-| 2 | `845f4af` | Plan doc |
-| 3 | `73d35cb` | Chore (worktree ignore) |
-| 4 | `02cbfda` | Core: LLM admission gate |
-| 5 | `0eeab0c` | Fix race conditions in cleanup |
-| 6 | `b5c1d06` | Tests for race cleanup |
-| 7 | `22a307f` | Bind attempts to cost reservations |
-| 8 | `f843553` | Reserve on attempt entry |
-| 9 | `444c9d6` | Wire Director to admission gate + retry/settle + 4 integration tests |
-| 10 | `fbc2852` | visual_diff module + provenance fix + cache helpers |
-| 11 | `edbbff9` | GPU smoke workflow: weekly schedule + explicit defaults |
-| 12 | `5a31628` | VJ export: SVG + Lottie cue export |
-| 13 | `6e824c1` | Deterministic package module + viz ship CLI wiring |
-| 14 | `8cc7998` | Fix orchestrator `wav_path` bug + smoke tests + ENV.md + STUDIO_PIPELINE.md + Gherkin acceptance spec |
+| #   | Commit    | Description                                                                                           |
+| --- | --------- | ----------------------------------------------------------------------------------------------------- |
+| 1   | `a5e34f8` | Design doc (plan foundation)                                                                          |
+| 2   | `845f4af` | Plan doc                                                                                              |
+| 3   | `73d35cb` | Chore (worktree ignore)                                                                               |
+| 4   | `02cbfda` | Core: LLM admission gate                                                                              |
+| 5   | `0eeab0c` | Fix race conditions in cleanup                                                                        |
+| 6   | `b5c1d06` | Tests for race cleanup                                                                                |
+| 7   | `22a307f` | Bind attempts to cost reservations                                                                    |
+| 8   | `f843553` | Reserve on attempt entry                                                                              |
+| 9   | `444c9d6` | Wire Director to admission gate + retry/settle + 4 integration tests                                  |
+| 10  | `fbc2852` | visual_diff module + provenance fix + cache helpers                                                   |
+| 11  | `edbbff9` | GPU smoke workflow: weekly schedule + explicit defaults                                               |
+| 12  | `5a31628` | VJ export: SVG + Lottie cue export                                                                    |
+| 13  | `6e824c1` | Deterministic package module + viz ship CLI wiring                                                    |
+| 14  | `8cc7998` | Fix orchestrator `wav_path` bug + smoke tests + ENV.md + STUDIO_PIPELINE.md + Gherkin acceptance spec |
 
 **Total diff:** +5,100 lines across 25 files.
 
@@ -44,24 +44,28 @@ Relevant suites: `backend/tests/llm/`, `backend/tests/conductor/`, `backend/test
 ## Implemented Features
 
 ### LLM Admission Gate (`backend/src/melosviz/llm/admission.py`)
+
 - `LLMAdmissionGate`: thread-safe token-bucket gate using `Decimal` for exact arithmetic
 - `LLMAdmissionConfig`: `estimate()` / `actual_cost()` / `check()` / `reserve()` / `settle()`
 - `LLMAdmissionError`: raised on budget exhaustion or gate timeout
 - 8 test cases proving budget enforcement, concurrent bounds, exact arithmetic, and race safety
 
 ### Director Admission Integration (`backend/src/melosviz/llm/director.py`)
+
 - `Director(llm_gate, llm_opener, llm_sleeper)` — fully injectable for testing
 - `_maybe_refine_with_llm` uses `get_shared_gate().reserve()` → `reservation.attempt()` → retries 429/5xx → `reservation.settle(actual_cost())`
 - Falls back to template prompts on any error
 - 4 integration tests: missing prices, 429+Retry-After, 400, actual_cost settlement
 
 ### Visual Diff (`backend/src/melosviz/conductor/visual_diff.py`)
+
 - `build_visual_diff()`: full-featured SVG timeline + JSON manifest
 - `compute_visual_diff()`: orchestrator-friendly wrapper
 - `ClipProvenance.visual_diff: dict | None` — round-tripped through `to_dict()`
 - 4 tests
 
 ### Orchestrator Provenance Fix (`backend/src/melosviz/conductor/orchestrator.py`)
+
 - Fixed broken `write_provenance()` call (was passing a `dict` instead of `ClipProvenance`)
 - Removed non-existent fields (`duration_ms`, `license`, `content_origin`)
 - Added `audio_path: Path | None` kwarg to `render()` — resolved pre-existing `wav_path` NameError
@@ -69,12 +73,14 @@ Relevant suites: `backend/tests/llm/`, `backend/tests/conductor/`, `backend/test
 - Added `scene_cache_key()` / `scene_render_cached()` helpers
 
 ### GPU Smoke Workflow (`.github/workflows/gpu-smoke.yml`)
+
 - Weekly cron (Mon 08:17 UTC) trigger alongside `workflow_dispatch`
 - Explicit `PYTHON_VERSION` and `INSTALL_FFMPEG` computed from event so schedule works
 - Artifact upload on failure
 - 3 workflow contract tests in `backend/tests/test_gpu_smoke_workflow.py`
 
 ### VJ Export (`backend/src/melosviz/export/vj.py`)
+
 - Shot plan: provenance timing → multi-shot plan doc → single-file defaults
 - SVG timeline: beat-grid, colored shot bands, scene labels, time ticks, keyframe annotations
 - Lottie cue export: keyframe positions keyed by `sha256(scene_prompt)`, "next shot" cues
@@ -82,6 +88,7 @@ Relevant suites: `backend/tests/llm/`, `backend/tests/conductor/`, `backend/test
 - 4 tests
 
 ### Package + Ship CLI (`backend/src/melosviz/export/package.py` + `backend/src/melosviz/cli/main.py`)
+
 - `build_delivery_package()`: deterministic ZIP bundle (stable sort by relative path → byte-identical runs)
 - `PackageManifest`: per-artifact SHA-256 with relative paths
 - `MERMAID.md` visual summary + `SHA-256SUMS`
@@ -89,7 +96,8 @@ Relevant suites: `backend/tests/llm/`, `backend/tests/conductor/`, `backend/test
 - 5 package tests + 2 ship CLI tests
 
 ### Docs & Specs
-- `docs/ENV.md`: MELOSVIZ_LLM_* guard-rail env vars documented
+
+- `docs/ENV.md`: MELOSVIZ*LLM*\* guard-rail env vars documented
 - `docs/STUDIO_PIPELINE.md`: visual-diff.svg, provenance sidecars, VJ layouts, ship output
 - `docs/specs/acceptance/production_delivery_extensions.feature`: Gherkin acceptance spec
 
@@ -97,12 +105,12 @@ Relevant suites: `backend/tests/llm/`, `backend/tests/conductor/`, `backend/test
 
 ## Known Pre-Existing Issues (not introduced by this work)
 
-| Issue | Location | Notes |
-|---|---|---|
-| `backend/tests/test_antigame_fuzz_chaos.py` | NameError: `given` undefined | Hypothesis not installed — harmless in CI |
-| `backend/tests/test_diagnose_bdd.py` | Collection error | Needs `given` or `from hypothesis import given` |
-| `backend/tests/test_fuzz_renderspec.py` | Collection error | Same |
-| `backend/tests/test_spectrum.py` | Collection error | Same |
+| Issue                                                                         | Location                     | Notes                                           |
+| ----------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------- |
+| `backend/tests/test_antigame_fuzz_chaos.py`                                   | NameError: `given` undefined | Hypothesis not installed — harmless in CI       |
+| `backend/tests/test_diagnose_bdd.py`                                          | Collection error             | Needs `given` or `from hypothesis import given` |
+| `backend/tests/test_fuzz_renderspec.py`                                       | Collection error             | Same                                            |
+| `backend/tests/test_spectrum.py`                                              | Collection error             | Same                                            |
 | These 4 files are excluded from CI runs; they don't affect the feature branch |
 
 ---

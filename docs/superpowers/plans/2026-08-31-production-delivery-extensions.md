@@ -16,15 +16,15 @@ The approved design contains four independent subsystems but one shared delivery
 contract. Keep them in one branch and one eventual PR, while preserving the
 following commit boundaries:
 
-| Order | Unit | Primary files | Proof |
-|---:|---|---|---|
-| 1 | LLM admission core | `llm/admission.py` | focused unit tests |
-| 2 | Director retry integration | `llm/director.py` | Director behavior tests |
-| 3 | Visual-diff provenance | `conductor/visual_diff.py`, `orchestrator.py` | unit + orchestrator tests |
-| 4 | Weekly smoke schedule | `gpu-smoke.yml` | contract test + actionlint |
-| 5 | VJ cue export | `export/vj.py` | SVG/Lottie tests |
-| 6 | Deterministic shipping | `export/package.py`, `cli/main.py` | CLI + ZIP tests |
-| 7 | Docs and acceptance | `docs/ENV.md`, `docs/STUDIO_PIPELINE.md` | full verification |
+| Order | Unit                       | Primary files                                 | Proof                      |
+| ----: | -------------------------- | --------------------------------------------- | -------------------------- |
+|     1 | LLM admission core         | `llm/admission.py`                            | focused unit tests         |
+|     2 | Director retry integration | `llm/director.py`                             | Director behavior tests    |
+|     3 | Visual-diff provenance     | `conductor/visual_diff.py`, `orchestrator.py` | unit + orchestrator tests  |
+|     4 | Weekly smoke schedule      | `gpu-smoke.yml`                               | contract test + actionlint |
+|     5 | VJ cue export              | `export/vj.py`                                | SVG/Lottie tests           |
+|     6 | Deterministic shipping     | `export/package.py`, `cli/main.py`            | CLI + ZIP tests            |
+|     7 | Docs and acceptance        | `docs/ENV.md`, `docs/STUDIO_PIPELINE.md`      | full verification          |
 
 Do not push, open a PR, enable auto-merge, or merge as part of this plan. Those
 are separate hosted-state gates after local verification. Do not admin-bypass
@@ -74,6 +74,7 @@ branch protection.
 ## Task 1: Implement the Director admission core
 
 **Files:**
+
 - Create: `backend/tests/llm/test_admission.py`
 - Create: `backend/src/melosviz/llm/admission.py`
 
@@ -544,6 +545,7 @@ git commit -m "feat(llm): add bounded Director admission gate" \
 ## Task 2: Integrate retries and cost settlement into Director
 
 **Files:**
+
 - Modify: `backend/src/melosviz/llm/director.py:55-70,412-418,611-675`
 - Modify: `backend/tests/llm/test_director.py`
 
@@ -807,6 +809,7 @@ git commit -m "feat(llm): guard and retry Director refinement" \
 ## Task 3: Build deterministic per-clip visual diffs
 
 **Files:**
+
 - Create: `backend/tests/conductor/test_visual_diff.py`
 - Create: `backend/src/melosviz/conductor/visual_diff.py`
 - Modify: `backend/src/melosviz/conductor/provenance.py`
@@ -1156,6 +1159,7 @@ git commit -m "feat(conductor): add deterministic clip visual diffs" \
 ## Task 4: Wire valid provenance through the orchestrator
 
 **Files:**
+
 - Create: `backend/tests/conductor/test_orchestrator_provenance.py`
 - Modify: `backend/src/melosviz/conductor/orchestrator.py:560-724`
 
@@ -1335,6 +1339,7 @@ git commit -m "fix(conductor): persist clip provenance and visual diffs" \
 ## Task 5: Schedule the offline GPU smoke weekly
 
 **Files:**
+
 - Create: `backend/tests/test_gpu_smoke_workflow.py`
 - Modify: `.github/workflows/gpu-smoke.yml`
 
@@ -1386,12 +1391,12 @@ name: gpu-smoke
 
 on:
   schedule:
-    - cron: '17 8 * * 1'
+    - cron: "17 8 * * 1"
   workflow_dispatch:
     inputs:
       python-version:
-        description: 'Python version'
-        default: '3.12'
+        description: "Python version"
+        default: "3.12"
         required: false
         type: choice
         options:
@@ -1400,7 +1405,7 @@ on:
           - 3.12
           - 3.13
       ffmpeg:
-        description: 'Install ffmpeg?'
+        description: "Install ffmpeg?"
         default: true
         type: boolean
 ```
@@ -1409,7 +1414,7 @@ Replace the job environment with:
 
 ```yaml
 env:
-  MELOSVIZ_COMFYUI_OFFLINE: '1'
+  MELOSVIZ_COMFYUI_OFFLINE: "1"
   PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python-version || '3.12' }}
   INSTALL_FFMPEG: ${{ github.event_name == 'schedule' || inputs.ffmpeg }}
 ```
@@ -1451,6 +1456,7 @@ git commit -m "ci: schedule weekly offline GPU smoke" \
 ## Task 6: Generate deterministic SVG and Lottie VJ cues
 
 **Files:**
+
 - Create: `backend/src/melosviz/export/__init__.py`
 - Create: `backend/src/melosviz/export/vj.py`
 - Create: `backend/tests/export/test_vj.py`
@@ -1904,6 +1910,7 @@ git commit -m "feat(export): add SVG and Lottie VJ cues" \
 ## Task 7: Create a real deterministic final.zip
 
 **Files:**
+
 - Create: `backend/src/melosviz/export/package.py`
 - Create: `backend/tests/export/test_package.py`
 - Create: `backend/tests/cli/test_ship.py`
@@ -2288,6 +2295,7 @@ git commit -m "feat(ship): package deterministic VJ delivery archive" \
 ## Task 8: Extend offline smoke acceptance and operator documentation
 
 **Files:**
+
 - Modify: `backend/tests/cli/test_gpu_smoke.py`
 - Create: `docs/specs/acceptance/production_delivery_extensions.feature`
 - Modify: `docs/ENV.md`
@@ -2419,6 +2427,7 @@ git commit -m "docs: document production delivery extensions" \
 ## Task 9: Full local verification and handoff
 
 **Files:**
+
 - Verify only; modify files only for failures directly caused by this branch.
 
 - [ ] **Step 1: Verify worktree and requirement coverage**
