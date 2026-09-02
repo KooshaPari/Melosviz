@@ -60,6 +60,12 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+
+from .admission import (
+    LLMAdmissionConfig,
+    LLMAdmissionError,
+    get_shared_gate,
+)
 from pathlib import Path
 from typing import Any
 
@@ -412,8 +418,18 @@ class DirectorRequest:
 class Director:
     """Storyboards a track into a beat-synced scene plan."""
 
-    def __init__(self, *, seed: int | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        seed: int | None = None,
+        llm_gate: "LLMAdmissionGate | None" = None,
+        llm_opener=None,
+        llm_sleeper=None,
+    ) -> None:
         self._seed = seed if seed is not None else int(time.time()) & 0xFFFFFFFF
+        self._llm_gate = llm_gate
+        self._llm_opener = llm_opener or urllib.request.urlopen
+        self._llm_sleeper = llm_sleeper or time.sleep
 
     # ------------------------------------------------------------------
     # Public API
@@ -608,21 +624,31 @@ class Director:
             pieces.append("bold type, geometric shapes, beat-driven timing")
         return ", ".join(p for p in pieces if p)
 
+    @staticmethod
+    def _retry_delay(exc: urllib.error.HTTPError, attempt: int) -> float:
+        """Backoff: honour ``Retry-After`` when present, else ``2**attempt``."""
+        retry_after = exc.headers.get("Retry-After") if exc.headers else None
+        if retry_after is not None:
+            try:
+                return max(0.0, min(30.0, float(retry_after)))
+            except (TypeError, ValueError):
+                pass
+        return float(min(30, 2 ** attempt))
+
+    @staticmethod
+    def _is_retryable_http(exc: urllib.error.HTTPError) -> bool:
+        """``429`` and the standard 5xx family are retryable."""
+        return exc.code == 429 or exc.code in {500, 502, 503, 504}
+
     def _maybe_refine_with_llm(
         self, scenes: list[StoryboardScene], req: DirectorRequest,
     ) -> list[StoryboardScene]:
         endpoint = os.environ.get(_LLM_ENDPOINT_ENV)
         if not endpoint:
             return scenes
-        try:
-            timeout = int(os.environ.get(_LLM_TIMEOUT_ENV, str(DEFAULT_LLM_TIMEOUT_S)))
-        except ValueError:
-            timeout = DEFAULT_LLM_TIMEOUT_S
-        model = os.environ.get(_LLM_MODEL_ENV, DEFAULT_LLM_MODEL)
-        api_key = os.environ.get(_LLM_KEY_ENV, "")
 
         body = {
-            "model": model,
+            "model": os.environ.get(_LLM_MODEL_ENV, DEFAULT_LLM_MODEL),
             "messages": [
                 {
                     "role": "system",
@@ -650,26 +676,75 @@ class Director:
             "temperature": 0.7,
         }
         try:
-            req_obj = urllib.request.Request(
-                endpoint,
-                method="POST",
-                data=json.dumps(body).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    **({"Authorization": f"Bearer {api_key}"} if api_key else {}),
-                },
+            timeout = int(os.environ.get(_LLM_TIMEOUT_ENV, str(DEFAULT_LLM_TIMEOUT_S)))
+        except ValueError:
+            timeout = DEFAULT_LLM_TIMEOUT_S
+        api_key = os.environ.get(_LLM_KEY_ENV, "")
+        encoded_body = json.dumps(body).encode("utf-8")
+
+        try:
+            config = LLMAdmissionConfig.from_env()
+            gate = self._llm_gate or get_shared_gate(config)
+            estimate = config.estimate(encoded_body)
+            with gate.reserve(estimate) as reservation:
+                payload: dict | None = None
+                # ``range(max_retries + 1)`` → first call + up to N retries.
+                for attempt in range(config.max_retries + 1):
+                    req_obj = urllib.request.Request(
+                        endpoint,
+                        method="POST",
+                        data=encoded_body,
+                        headers={
+                            "Content-Type": "application/json",
+                            **({"Authorization": f"Bearer {api_key}"} if api_key else {}),
+                        },
+                    )
+                    try:
+                        with reservation.attempt():
+                            with self._llm_opener(req_obj, timeout=timeout) as resp:
+                                payload = json.loads(resp.read().decode("utf-8"))
+                        break
+                    except urllib.error.HTTPError as exc:
+                        if (
+                            not self._is_retryable_http(exc)
+                            or attempt >= config.max_retries
+                        ):
+                            raise
+                        self._llm_sleeper(self._retry_delay(exc, attempt))
+
+                if payload is None:
+                    raise ValueError("Director LLM returned no payload")
+
+                usage = payload.get("usage") or {}
+                if "prompt_tokens" in usage and "completion_tokens" in usage:
+                    reservation.settle(config.actual_cost(
+                        int(usage["prompt_tokens"]),
+                        int(usage["completion_tokens"]),
+                    ))
+
+                text = payload["choices"][0]["message"]["content"]
+                rewrites = json.loads(text).get("rewrites") or []
+                by_index = {int(r["index"]): str(r["prompt"]) for r in rewrites}
+                for s in scenes:
+                    if s.index in by_index and by_index[s.index]:
+                        s.prompt = by_index[s.index]
+                logger.info(
+                    "Director: LLM rewrote %d/%d scene prompts",
+                    len(by_index), len(scenes),
+                )
+        except (
+            LLMAdmissionError,
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            KeyError,
+            TypeError,
+            ValueError,
+        ) as exc:
+            logger.warning(
+                "Director: LLM refinement skipped (%s) — using template prompts.",
+                exc,
             )
-            with urllib.request.urlopen(req_obj, timeout=timeout) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
-            text = payload["choices"][0]["message"]["content"]
-            rewrites = json.loads(text).get("rewrites") or []
-            by_index = {int(r["index"]): str(r["prompt"]) for r in rewrites}
-            for s in scenes:
-                if s.index in by_index and by_index[s.index]:
-                    s.prompt = by_index[s.index]
-            logger.info("Director: LLM rewrote %d/%d scene prompts", len(by_index), len(scenes))
-        except (urllib.error.URLError, TimeoutError, OSError, KeyError, ValueError) as exc:
-            logger.warning("Director: LLM refinement skipped (%s) — using template prompts.", exc)
         return scenes
 
 
