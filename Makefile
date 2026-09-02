@@ -1,7 +1,7 @@
 # MelosViz — top-level Makefile
 # Companion self-check surface for MV-FR-50.
 
-.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke hermetic-python-smoke portability-smoke sdk-pack-smoke flaky-quarantine sdk-publish-dry-run dev-up dev-down dev-pipeline dev-logs
+.PHONY: diagnose test-backend lint-backend golden harbor a11y-fixture trace wbs gap-matrix journeys timing-budgets repro-smoke hermetic-smoke hermetic-python-smoke portability-smoke sdk-pack-smoke flaky-quarantine sdk-publish-dry-run dev-up dev-down dev-pipeline dev-logs viz-install viz-demo viz-offline-demo
 
 diagnose:
 	python3 scripts/diagnose.py
@@ -83,4 +83,24 @@ dev-c4d-stub-test:
 
 dev-pipeline:
 	@bash deploy/scripts/run_pipeline_dev.sh
+
+# --- Zero-dependency offline demo (no GPU, no ComfyUI, no Docker) ---------
+
+PYTHON ?= python3
+
+viz-install:
+	@command -v uv >/dev/null 2>&1 || { echo "uv not found — install from https://docs.astral.sh/uv/"; exit 1; }
+	@if [ ! -d .venv ]; then uv venv --python 3.12 .venv; fi
+	@. .venv/bin/activate && uv pip install -e backend/ pytest
+	@echo "Installed. Activate with:  source .venv/bin/activate"
+
+viz-demo: viz-install
+	@. .venv/bin/activate && bash scripts/demo_offline.sh /tmp/melosviz-demo
+
+viz-offline-demo:
+	@. .venv/bin/activate && bash scripts/demo_offline.sh /tmp/melosviz-demo
+
+# Clean the offline demo artifacts (artefacts under /tmp).
+viz-demo-clean:
+	rm -rf /tmp/melosviz-demo
 

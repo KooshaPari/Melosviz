@@ -24,12 +24,25 @@
 - **PWA**: installable with theme-color and manifest
 
 ## Quick Start
+
+### Offline demo (no GPU, no ComfyUI)
 ```
-# Backend
+make viz-install     # install melosviz into .venv
+make viz-demo        # full storyboard -> generate -> ship pipeline
+ls /tmp/melosviz-demo/generate/final.zip   # 10-file deterministic bundle
+```
+
+### Production (with GPU + ComfyUI)
+```
+make dev-up          # docker compose stack
+make dev-pipeline    # render a track end-to-end
+```
+
+### Web studio
+```
 cd backend && pip install -r requirements.txt
 uvicorn src.melosviz.bridge.server:app --port 5000
 
-# Frontend
 cd web && bun install && bun run dev
 ```
 
