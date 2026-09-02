@@ -35,6 +35,10 @@ test = [
     "uvicorn[standard]>=0.29",
     "hypothesis>=6.100",
     "pytest-bdd>=7.0",
+    # python-multipart is needed for bridge / FastAPI multipart form
+    # parsing in test_bridge_studio_pipeline.py. It must be installed
+    # at collection time (before pytest imports the bridge tests).
+    "python-multipart>=0.0.9",
 ]
 lint = [
     "ruff>=0.6",
