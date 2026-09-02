@@ -726,7 +726,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     if char_names:
         orchestrator.set_active_characters(tuple(char_names))
     try:
-        result = orchestrator.render(spec)  # type: ignore[arg-type]
+        result = orchestrator.render(spec, audio_path=wav_path)  # type: ignore[arg-type]
     except Exception as exc:
         print(t("cli.error.generate_failed", error=str(exc)), file=sys.stderr)
         return 1
@@ -1048,57 +1048,20 @@ def _cmd_master(args: argparse.Namespace) -> int:
 
 
 def _cmd_ship(args: argparse.Namespace) -> int:
-    """Package final deliverables (MP4, ProRes, audio stems, captions, EDL)."""
-    import zipfile
-
+    """Package final deliverables and portable festival-VJ cues."""
+    from melosviz.export.package import build_delivery_package
     from melosviz.i18n import t
 
     job_dir = Path(args.job_dir)
-    if not job_dir.exists():
+    if not job_dir.is_dir():
         print(t("cli.error.dir_not_found", path=job_dir), file=sys.stderr)
         return 1
-
-    deliverables: list[str] = []
-    # Copy any MP4 / ProRes / WAV into a deliverable/ folder.
-    deliv_dir = job_dir / "deliverables"
-    deliv_dir.mkdir(parents=True, exist_ok=True)
-    for ext in ("*.mp4", "*.mov", "*.wav", "*.aif", "*.srt", "*.vtt", "*.edl"):
-        for f in job_dir.rglob(ext):
-            dest = deliv_dir / f.name
-            if not dest.exists():
-                dest.write_bytes(f.read_bytes())
-            deliverables.append(str(dest))
-
-    # Offline-mode fallback: still emit a manifest + a final.zip stub so the
-    # rest of the toolchain (YouTube upload, festival delivery) has something
-    # to consume.
-    if not deliverables:
-        manifest = {
-            "job_dir": str(job_dir),
-            "mode": "offline",
-            "deliverables": [],
-            "count": 0,
-            "note": (
-                "No rendered media files found — this is an offline smoke test. "
-                "Re-run `viz master` then `viz ship` after rendering real clips."
-            ),
-        }
-        (deliv_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-        # Drop a placeholder zip so downstream uploaders don't crash.
-        zip_path = job_dir / "final.zip"
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("README.txt", "Melosviz offline render — no clips produced yet.\n")
-            zf.writestr("manifest.json", json.dumps(manifest, indent=2))
-        print(json.dumps({**manifest, "final_zip": str(zip_path)}, indent=2))
-        return 0
-
-    manifest = {
-        "job_dir": str(job_dir),
-        "deliverables": deliverables,
-        "count": len(deliverables),
-    }
-    (deliv_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(json.dumps(manifest, indent=2))
+    try:
+        payload = build_delivery_package(job_dir)
+    except (OSError, ValueError) as exc:
+        print(f"viz ship failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(payload, indent=2))
     return 0
 
 
