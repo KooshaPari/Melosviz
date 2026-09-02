@@ -1,10 +1,15 @@
-name: gpu-smoke (manual)
+name: gpu-smoke
 
-# Manual trigger only — keeps the default CI cheap.
-# Runs the GPU-ready pipeline end-to-end against a synthesized
-# WAV + LRC + storyboard, then validates the artifact topology.
+# Manual + weekly schedule.
+#
+# The default CI stays cheap because the schedule only fires once a
+# week.  Scheduled runs must work with NO `inputs.*` context, so the
+# job's env block computes event-safe defaults for python-version and
+# ffmpeg install.
 
 on:
+  schedule:
+    - cron: '17 8 * * 1'
   workflow_dispatch:
     inputs:
       python-version:
@@ -19,7 +24,7 @@ on:
           - 3.13
       ffmpeg:
         description: 'Install ffmpeg?'
-        default: 'true'
+        default: true
         type: boolean
 
 jobs:
@@ -28,12 +33,14 @@ jobs:
     timeout-minutes: 20
     env:
       MELOSVIZ_COMFYUI_OFFLINE: '1'  # offline-mode (no GPU worker required)
+      PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python-version || '3.12' }}
+      INSTALL_FFMPEG: ${{ github.event_name == 'schedule' || inputs.ffmpeg }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install ffmpeg
-        if: ${{ inputs.ffmpeg == 'true' }}
+        if: ${{ env.INSTALL_FFMPEG == 'true' }}
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Install uv
@@ -41,8 +48,8 @@ jobs:
         with:
           version: '0.5'
 
-      - name: Set up Python ${{ inputs.python-version }}
-        run: uv python install ${{ inputs.python-version }}
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
 
       - name: Install backend deps
         working-directory: backend
@@ -61,3 +68,14 @@ jobs:
           echo "- Branch: ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- Result: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload smoke output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-output
+          path: |
+            /tmp/melviz_smoke/
+            backend/_smoke_logs/
+          if-no-files-found: ignore
+          retention-days: 7
