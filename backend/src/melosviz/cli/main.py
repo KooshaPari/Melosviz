@@ -1278,6 +1278,10 @@ def main(argv: list[str] | None = None) -> None:
     # ---- melosviz ship --------------------------------------------------------
     p_ship = sub.add_parser("ship", help=t("cli.ship.help"))
     p_ship.add_argument("job_dir", help=t("cli.arg.job_dir.help"))
+    p_ship.add_argument("--bundle-name", default=None,
+                        help=t("cli.ship.arg.bundle_name.help"))
+    p_ship.add_argument("--bundle-output", default=None,
+                        help=t("cli.ship.arg.bundle_output.help"))
 
     # ---- melosviz direct (art-director single-scene edit) ---------------------
     p_direct = sub.add_parser(
