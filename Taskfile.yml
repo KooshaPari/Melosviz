@@ -19,7 +19,9 @@ version: "3"
 vars:
   PYTHON_VERSION: "3.12"
   VENV_DIR: ".venv"
-  DEMO_OUT: "/tmp/melosviz-demo"
+  # DEMO_OUT comes from the environment (e.g. `DEMO_OUT=/tmp/foo task demo`)
+  # with this fallback when unset.
+  DEMO_OUT: '{{.DEMO_OUT | default "/tmp/melosviz-demo"}}'
 
 tasks:
   default:

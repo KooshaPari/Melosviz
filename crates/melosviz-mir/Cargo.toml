@@ -1,0 +1,12 @@
+[package]
+name = "melosviz-mir"
+version = "0.1.0"
+edition = "2021"
+description = "Stub Melosviz MIR (Music Intermediate Representation) crate placeholder."
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+# No dependencies — placeholder for the future MIR pass.
+[dependencies]

@@ -1,12 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    # TODO(KP): re-enable once the upstream crate sources land — both
-    # currently missing their src/ trees on this branch's base (pre-existing
-    # repo breakage, not in production-delivery-extensions scope).
-    # "crates/melosviz-render-wgpu",
-    # "crates/melosviz-mir",
     "crates/melosviz-demo",
+    "crates/melosviz-mir",
+    "crates/melosviz-render-wgpu",
 ]
 exclude = ["fuzz"]
 
