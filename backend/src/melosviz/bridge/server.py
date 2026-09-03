@@ -919,12 +919,12 @@ async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
             cmd += ["--replace-camera", req.replace_camera]
         if req.replace_name:
             cmd += ["--replace-name", req.replace_name]
-        if req.out:
-            cmd += ["--out", str(_check_inside(req.out))]
+        if req.out_path:
+            cmd += ["--out", str(_check_inside(req.out_path))]
         if req.re_render:
             cmd += ["--re-render"]
-            if req.wav:
-                cmd += ["--wav", str(_check_inside(req.wav))]
+            if req.wav_path:
+                cmd += ["--wav", str(_check_inside(req.wav_path))]
             if req.render_out:
                 cmd += ["--render-out", str(_check_inside(req.render_out))]
         _run_studio_subprocess(cmd)
@@ -935,10 +935,25 @@ async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
             else:
                 os.environ[k] = v
 
-    edited_path = _check_inside(req.out) if req.out else sb_path
-    if edited_path.exists():
-        return edited_path.read_text()
-    return json.dumps({"storyboard": str(edited_path)}, indent=2)
+    # Always list the supported edit operations, but report edit_count
+    # as the number actually applied (i.e. those with a non-None value).
+    edits = ["replace_prompt", "replace_camera", "replace_name"]
+    applied = sum(
+        1
+        for op in edits
+        if getattr(req, op, None)
+    )
+    return json.dumps(
+        {
+            "storyboard_path": str(sb_path),
+            "scene_index": req.scene_index,
+            "edits": edits,
+            "edit_count": applied,
+            "re_render": req.re_render,
+            "render_out": str(_check_inside(req.render_out)) if req.render_out else None,
+        },
+        indent=2,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -965,10 +980,10 @@ async def studio_validate(req: "StudioValidateRequest", request: Request) -> str
     if not sb_path.exists():
         raise HTTPException(status_code=400, detail=f"storyboard not found: {sb_path}")
 
-    from melosviz.conductor.validate import StoryboardValidator
+    from melosviz.conductor.validate import validate_storyboard
 
     payload = json.loads(sb_path.read_text())
-    report = StoryboardValidator().validate(payload)
+    report = validate_storyboard(payload, storyboard_path=str(sb_path))
     return json.dumps(report.to_dict(), indent=2)
 
 
