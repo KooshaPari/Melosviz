@@ -1,6 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use melosviz_mir::analyze_wav;
+use std::fs;
 use std::hint::black_box;
+use std::path::PathBuf;
 
 fn bench_analyze(c: &mut Criterion) {
     // 5-second 22050Hz mono silent WAV (mirrors the unit-test fixture).
@@ -28,9 +30,14 @@ fn bench_analyze(c: &mut Criterion) {
         wav_bytes.extend_from_slice(&0i16.to_le_bytes());
     }
 
+    // analyze_wav reads from a filesystem path; stage the fixture into
+    // the OS temp dir so the bench can hand the file to the analyzer.
+    let tmp: PathBuf = std::env::temp_dir().join("melosviz-mir-bench.wav");
+    fs::write(&tmp, &wav_bytes).expect("write bench fixture");
+
     c.bench_function("analyze_5s_mono_22k", |b| {
         b.iter(|| {
-            let spec = analyze_wav(black_box(&wav_bytes), 30).expect("analyze");
+            let spec = analyze_wav(black_box(&tmp), 30.0_f64).expect("analyze");
             black_box(spec);
         })
     });
