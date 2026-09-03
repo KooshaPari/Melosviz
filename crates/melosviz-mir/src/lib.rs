@@ -1,23 +1,7 @@
-//! Melosviz MIR (Music Intermediate Representation) — stub crate.
-//!
-//! This is a no-op placeholder so that workspace-level CI checks
-//! (`cargo metadata --locked`, `cargo bench -p melosviz-mir`, etc.) pass.
-//! The real MIR implementation is planned for a follow-up branch.
+// melosviz-mir stub library — see src/bin/main.rs for the CLI.
+// The real MIR analyzer will land in follow-up PRs once the production
+// wgpu renderer is in place.
 
-/// Run a no-op analysis. Returns an empty string.
-///
-/// Real implementations will run MIR-level dataflow analysis
-/// (beat-alignment, section-segmentation, loudness normalization).
-pub fn analyze(_input: &str) -> String {
-    String::new()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn smoke() {
-        assert_eq!(analyze("anything"), "");
-    }
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
 }
