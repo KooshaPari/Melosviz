@@ -10,7 +10,7 @@ on:
         required: true
 
 permissions:
-  id-token: write  # for OIDC trusted publishing
+  id-token: write # for OIDC trusted publishing
   contents: read
 
 jobs:

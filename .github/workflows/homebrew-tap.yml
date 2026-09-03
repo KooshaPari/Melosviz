@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # for GitHub App signing of the PR
+  id-token: write # for GitHub App signing of the PR
   pull-requests: write
 
 jobs:
