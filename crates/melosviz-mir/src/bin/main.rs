@@ -1,30 +1,26 @@
-//! `melosviz-mir` analyzer binary.
-//!
-//! Reads a WAV file (PCM 16-bit mono/stereo), parses the RIFF header to extract
-//! duration / sample_rate / channels, and emits a JSON spec mirroring the Python
-//! `melosviz.analysis.audio.spec_from_wav()` shape:
-//!
-//! ```json
-//! {
-//!   "metadata": {"sample_rate": 22050, "channels": 1, "duration": 1.0, "fps": 30.0},
-//!   "dense_keyframes": [{"t_seconds": 0.0, "bpm": 120.0, "energy": 0.5,
-//!                        "spectral_centroid": 500.0, "beat_phase": 0.0}, ...],
-//!   "timeline_events": [...],
-//!   "scene_segments": [...],
-//!   "stem_channels": [...],
-//!   "mir": {...}
-//! }
-//! ```
-//!
-//! Today this is a deterministic placeholder (matches the Python fixture used
-//! in `test_rust_python_parity.py`). The real MIR pass lands in a follow-up PR.
+// melosviz-mir analyzer binary.
+//
+// Reads a WAV file (PCM 16-bit mono/stereo) via RIFF header parsing,
+// derives a deterministic audio analysis spec, and emits a JSON file
+// mirroring the Python melosviz.analysis.models.RenderSpec shape:
+//
+//   metadata:      {sample_rate, channels, duration, fps}
+//   dense_keyframes: [t_seconds, bpm, energy, spectral_centroid, beat_phase]
+//   timeline_events: [t_seconds, kind, label]
+//   scene_segments:  [start_seconds, end_seconds, label]
+//   stem_channels:  {stem_name: [floats aligned with dense_keyframes]}
+//   mir:           {onbeat_density, spectrum, rms, peak, dynamic_range}
+//
+// Today this is a deterministic placeholder that matches the Python fixture
+// used in tests/test_rust_python_parity.py. The real MIR pass (FFT, onset
+// detection, stem separation) lands in a follow-up PR.
 
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-const REQUIRED_KEYS: &[&str] = &[
+const REQUIRED_TOP_KEYS: &[&str] = &[
     "metadata",
     "dense_keyframes",
     "timeline_events",
@@ -33,12 +29,26 @@ const REQUIRED_KEYS: &[&str] = &[
     "mir",
 ];
 
+const REQUIRED_METADATA_KEYS: &[&str] = &["sample_rate", "channels", "duration", "fps"];
+
+const REQUIRED_DENSE_KEYS: &[&str] = &[
+    "t_seconds",
+    "bpm",
+    "energy",
+    "spectral_centroid",
+    "beat_phase",
+];
+
+const REQUIRED_TIMELINE_KEYS: &[&str] = &["t_seconds", "kind", "label"];
+const REQUIRED_SCENE_KEYS: &[&str] = &["start_seconds", "end_seconds", "label"];
+const REQUIRED_MIR_KEYS: &[&str] = &["onbeat_density", "spectrum", "rms", "peak", "dynamic_range"];
+
 fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
     let mut wav_path: Option<PathBuf> = None;
     let mut out_path: Option<PathBuf> = None;
     let mut fps: f64 = 30.0;
 
+    let args: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
@@ -93,10 +103,7 @@ fn read_wav_header(path: &PathBuf) -> std::io::Result<(u32, u16, f64)> {
     let mut f = fs::File::open(path)?;
     let mut buf = [0u8; 44];
     let _ = f.read(&mut buf)?;
-    let header_len = match buf.len() {
-        n if n >= 44 => 44,
-        n => n,
-    };
+    let header_len = std::cmp::min(buf.len(), 44);
     let buf = &buf[..header_len];
 
     // Validate "RIFF" / "WAVE" / "fmt " markers.
@@ -123,20 +130,22 @@ fn read_wav_header(path: &PathBuf) -> std::io::Result<(u32, u16, f64)> {
 }
 
 fn build_payload(sample_rate: u32, channels: u16, duration: f64, fps: f64) -> serde_json::Value {
-    // Dense keyframes: one per ~50ms, with deterministic values derived from t.
-    let mut dense_keyframes: Vec<serde_json::Value> = Vec::new();
+    // ---- dense_keyframes: one per ~50ms -----------------------------------
     let step = (1.0 / fps).max(0.02);
-    let mut t = 0.0;
-    let mut i = 0;
-    while t <= duration.max(step) {
-        let bpm = 120.0 + (i as f64).sin().abs() * 10.0;
+    let mut dense_keyframes: Vec<serde_json::Value> = Vec::new();
+    let mut t: f64 = 0.0;
+    let mut i: usize = 0;
+    let upper = duration.max(step);
+    while t <= upper + 1e-9 {
+        let phase = (t * 2.0).fract();
+        let bpm = 120.0 + (i as f64 * 0.137).sin().abs() * 6.0;
         let energy = (((i as f64) * 0.37).sin().abs() * 0.9 + 0.1).clamp(0.0, 1.0);
         dense_keyframes.push(serde_json::json!({
             "t_seconds": round6(t),
             "bpm": round2(bpm),
             "energy": round6(energy),
             "spectral_centroid": round2(500.0 + (i as f64) * 4.0),
-            "beat_phase": round6((t * 2.0).fract()),
+            "beat_phase": round6(phase),
         }));
         t += step;
         i += 1;
@@ -153,7 +162,8 @@ fn build_payload(sample_rate: u32, channels: u16, duration: f64, fps: f64) -> se
         }));
     }
 
-    let mut timeline_events = vec![
+    // ---- timeline_events ---------------------------------------------------
+    let timeline_events = vec![
         serde_json::json!({
             "t_seconds": 0.0, "kind": "downbeat", "label": "start"
         }),
@@ -168,6 +178,7 @@ fn build_payload(sample_rate: u32, channels: u16, duration: f64, fps: f64) -> se
         }),
     ];
 
+    // ---- scene_segments ----------------------------------------------------
     let scene_segments = vec![
         serde_json::json!({
             "start_seconds": 0.0,
@@ -181,16 +192,45 @@ fn build_payload(sample_rate: u32, channels: u16, duration: f64, fps: f64) -> se
         }),
     ];
 
-    let stem_channels = if channels >= 2 {
-        vec![
-            serde_json::json!({"name": "vocals", "weight": 0.6}),
-            serde_json::json!({"name": "instrumental", "weight": 0.4}),
-        ]
+    // ---- stem_channels: dict[stem_name] -> list[float] aligned with kfs ---
+    let stem_names: Vec<&str> = if channels >= 2 {
+        vec!["vocals", "instrumental"]
     } else {
-        vec![serde_json::json!({"name": "mono", "weight": 1.0})]
+        vec!["mono"]
     };
+    let mut stem_channels: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+    for (s_idx, name) in stem_names.iter().enumerate() {
+        let series: Vec<serde_json::Value> = (0..dense_keyframes.len())
+            .map(|kf_i| {
+                let weight = if s_idx == 0 { 0.6 } else { 0.4 };
+                round6(
+                    weight
+                        * (((kf_i as f64) * 0.21 + s_idx as f64 * 1.3).sin().abs() * 0.9 + 0.1)
+                            .clamp(0.0, 1.0),
+                )
+            })
+            .map(serde_json::Value::from)
+            .collect();
+        stem_channels.insert((*name).to_string(), serde_json::Value::Array(series));
+    }
 
-    let mut payload = serde_json::json!({
+    // ---- mir --------------------------------------------------------------
+    let spectrum: Vec<serde_json::Value> = (0..8)
+        .map(|band| {
+            let v = ((band as f64) * 0.71).sin().abs() * 0.8 + 0.2;
+            round6(v)
+        })
+        .map(serde_json::Value::from)
+        .collect();
+    let mir = serde_json::json!({
+        "onbeat_density": 2.0,
+        "spectrum": spectrum,
+        "rms": 0.45,
+        "peak": 0.9,
+        "dynamic_range": 0.55,
+    });
+
+    serde_json::json!({
         "metadata": {
             "sample_rate": sample_rate,
             "channels": channels,
@@ -201,26 +241,8 @@ fn build_payload(sample_rate: u32, channels: u16, duration: f64, fps: f64) -> se
         "timeline_events": timeline_events,
         "scene_segments": scene_segments,
         "stem_channels": stem_channels,
-        "mir": {
-            "bpm_mean": 120.0,
-            "bpm_variance": 5.0,
-            "energy_peak": round6(0.9),
-            "onset_density": 2.0,
-            "harmonic_ratio": 0.6,
-        },
-    });
-
-    // Ensure every required top-level key is present (even if empty array/object).
-    let map = payload.as_object_mut().unwrap();
-    for key in REQUIRED_KEYS {
-        if !map.contains_key(*key) {
-            map.insert(
-                (*key).to_string(),
-                serde_json::json!([]),
-            );
-        }
-    }
-    payload
+        "mir": mir,
+    })
 }
 
 fn round2(x: f64) -> f64 {
@@ -229,4 +251,54 @@ fn round2(x: f64) -> f64 {
 
 fn round6(x: f64) -> f64 {
     (x * 1_000_000.0).round() / 1_000_000.0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_payload_has_all_required_keys() {
+        let p = build_payload(22050, 2, 1.0, 30.0);
+        let obj = p.as_object().expect("payload is an object");
+        for k in REQUIRED_TOP_KEYS {
+            assert!(obj.contains_key(*k), "missing top-level key: {k}");
+        }
+        let md = obj.get("metadata").and_then(|v| v.as_object()).unwrap();
+        for k in REQUIRED_METADATA_KEYS {
+            assert!(md.contains_key(*k), "missing metadata key: {k}");
+        }
+        let kfs = obj.get("dense_keyframes").and_then(|v| v.as_array()).unwrap();
+        assert!(kfs.len() >= 10, "need >=10 dense keyframes, got {}", kfs.len());
+        for kf in kfs {
+            let kf_obj = kf.as_object().expect("dense_keyframe is object");
+            for k in REQUIRED_DENSE_KEYS {
+                assert!(kf_obj.contains_key(*k), "missing dense_keyframes key: {k}");
+            }
+        }
+        let evs = obj.get("timeline_events").and_then(|v| v.as_array()).unwrap();
+        for ev in evs {
+            let ev_obj = ev.as_object().expect("event is object");
+            for k in REQUIRED_TIMELINE_KEYS {
+                assert!(ev_obj.contains_key(*k), "missing timeline_events key: {k}");
+            }
+        }
+        let segs = obj.get("scene_segments").and_then(|v| v.as_array()).unwrap();
+        for seg in segs {
+            let seg_obj = seg.as_object().expect("scene segment is object");
+            for k in REQUIRED_SCENE_KEYS {
+                assert!(seg_obj.contains_key(*k), "missing scene_segments key: {k}");
+            }
+        }
+        let stems = obj.get("stem_channels").and_then(|v| v.as_object()).unwrap();
+        assert!(!stems.is_empty(), "stem_channels must not be empty");
+        for (_name, series) in stems {
+            let arr = series.as_array().expect("stem series is array");
+            assert!(!arr.is_empty(), "stem series must align with keyframes");
+        }
+        let mir = obj.get("mir").and_then(|v| v.as_object()).unwrap();
+        for k in REQUIRED_MIR_KEYS {
+            assert!(mir.contains_key(*k), "missing mir key: {k}");
+        }
+    }
 }
