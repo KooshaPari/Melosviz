@@ -18,26 +18,39 @@ on:
         required: false
         type: choice
         options:
-          - 3.10
-          - 3.11
-          - 3.12
-          - 3.13
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
       ffmpeg:
         description: "Install ffmpeg?"
         default: true
         type: boolean
+
+# Read-only repo + minimal CI token scopes.
+permissions:
+  contents: read
+
+# Shared defaults so we can flip the install flag with a clean expression
+# (env values must be strings, not YAML booleans, in workflow `env:`).
+env:
+  PYTHON_VERSION_DEFAULT: "3.12"
+  INSTALL_FFMPEG_DEFAULT: "true"
 
 jobs:
   gpu-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      MELOSVIZ_COMFYUI_OFFLINE: "1" # offline-mode (no GPU worker required)
-      PYTHON_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.python-version || '3.12' }}
-      INSTALL_FFMPEG: ${{ github.event_name == 'schedule' || inputs.ffmpeg }}
+      MELOSVIZ_OFFLINE: "1"
+      MELOSVIZ_COMFYUI_OFFLINE: "1"
+      PYTHON_VERSION: ${{ inputs.python-version || env.PYTHON_VERSION_DEFAULT }}
+      INSTALL_FFMPEG: ${{ inputs.ffmpeg && 'true' || (inputs.ffmpeg == false && 'false' || env.INSTALL_FFMPEG_DEFAULT) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install ffmpeg
         if: ${{ env.INSTALL_FFMPEG == 'true' }}
