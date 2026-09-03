@@ -639,10 +639,8 @@
         "responses": {
           "200": {
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
+              "application/json": {
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -819,7 +817,7 @@
     },
     "/api/studio/validate": {
       "post": {
-        "description": "Validate a storyboard.json and return a structured severity report.\n\nReturns ``StoryboardValidationReport`` JSON:\n    {\n      \"storyboard\": \"<path>\",\n      \"issues\": [ {severity, code, scene_index, message}, ... ],\n      \"errors\":   <int>,\n      \"warnings\": <int>,\n      \"info\":     <int>,\n      \"ok\":       <bool>\n    }",
+        "description": "Validate a storyboard JSON for completeness and consistency.\n\nReturns ``StoryboardValidationReport`` JSON:\n    {\n      \"storyboard\": \"<path>\",\n      \"issues\": [ {severity, code, scene_index, message}, ... ],\n      \"errors\":   <int>,\n      \"warnings\": <int>,\n      \"info\":     <int>,\n      \"ok\":       <bool>\n    }",
         "operationId": "studio_validate_api_studio_validate_post",
         "requestBody": {
           "content": {
@@ -834,10 +832,8 @@
         "responses": {
           "200": {
             "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string"
-                }
+              "application/json": {
+                "schema": {}
               }
             },
             "description": "Successful Response"
