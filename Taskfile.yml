@@ -125,3 +125,87 @@ tasks:
       - task: lint
       - task: test
       - task: demo
+
+  # ------------------------------------------------------------------
+  # Release / publish pipelines (all 6 package managers)
+  # ------------------------------------------------------------------
+
+  release-build:
+    desc: "Build all distribution artifacts locally (Linux/macOS/Windows CLI + Mac DMG + SBOM + tarball)"
+    cmds:
+      - act --workflows .github/workflows/release.yml --job build-cli-tools -P version={{.VERSION | default "0.0.0-dev"}}
+      - act --workflows .github/workflows/release.yml --job build-macos -P version={{.VERSION | default "0.0.0-dev"}}
+      - act --workflows .github/workflows/release.yml --job sdk-pack -P version={{.VERSION | default "0.0.0-dev"}}
+
+  release-dry-run:
+    desc: "Dry-run the GitHub Release workflow (uploads to a /dev/null URL — does not publish)"
+    cmds:
+      - act --workflows .github/workflows/release.yml --job release --dryrun
+      - 'echo validated dry-run no artifacts published'
+
+  publish-pypi-dry-run:
+    desc: "Build + verify a PyPI wheel+sdist for backend/ without uploading"
+    cmds:
+      - .venv/bin/pip install --upgrade build twine
+      - .venv/bin/python -m build --sdist --wheel --outdir dist/ backend/
+      - .venv/bin/twine check 'dist/*'
+      - 'echo built dist/melosviz-*.whl'
+
+  publish-pypi:
+    desc: "Publish the Python SDK to PyPI (uses OIDC trusted publishing when triggered on GitHub)"
+    cmds:
+      - .venv/bin/python -m build --sdist --wheel --outdir dist/ backend/
+      - .venv/bin/twine upload 'dist/melosviz-*.whl' 'dist/melosviz-*.tar.gz'
+      - 'echo PyPI at https://pypi.org/project/melosviz/'
+
+  publish-cargo-dry-run:
+    desc: "Dry-run cargo publish for the entire workspace (does not upload)"
+    cmds:
+      - cargo publish --workspace --dry-run --allow-dirty
+
+  publish-cargo:
+    desc: "Publish the Rust crates (melosviz-mir, melosviz-demo) to crates.io"
+    cmds:
+      - cargo publish -p melosviz-mir
+      - cargo publish -p melosviz-demo
+
+  publish-npm-dry-run:
+    desc: "Dry-run npm publish for the desktop bridge package"
+    cmds:
+      - cd desktop && npm pack --dry-run
+
+  publish-npm:
+    desc: "Publish the desktop bridge package to the npm registry"
+    cmds:
+      - cd desktop && npm publish --provenance --access public
+      - 'echo npm at https://www.npmjs.com/package/@kooshapari/melosviz-bridge'
+
+  publish-homebrew:
+    desc: "PR a Homebrew formula update to KooshaPari/homebrew-tap"
+    cmds:
+      - gh workflow run homebrew-tap.yml --ref feat/production-delivery-extensions -f version={{.VERSION | default "0.0.0-dev"}}
+      - 'echo PR opened at https://github.com/KooshaPari/homebrew-tap/pulls'
+
+  publish-scoop:
+    desc: "PR a Scoop manifest update to KooshaPari/scoop-bucket"
+    cmds:
+      - gh workflow run scoop-bucket.yml --ref feat/production-delivery-extensions -f version={{.VERSION | default "0.0.0-dev"}}
+      - 'echo PR opened at https://github.com/KooshaPari/scoop-bucket/pulls'
+
+  publish-winget:
+    desc: "PR a winget manifest update to microsoft/winget-pkgs"
+    cmds:
+      - gh workflow run winget-pr.yml --ref feat/production-delivery-extensions -f version={{.VERSION | default "0.0.0-dev"}}
+      - 'echo PR opened at https://github.com/microsoft/winget-pkgs/pulls'
+
+  publish-all:
+    desc: "Publish to all 6 channels (PyPI, crates.io, npm, Homebrew, Scoop, winget) + cut GitHub Release"
+    cmds:
+      - task: publish-pypi
+      - task: publish-cargo
+      - task: publish-npm
+      - task: publish-homebrew
+      - task: publish-scoop
+      - task: publish-winget
+      - gh release create v{{.VERSION | default "0.0.0-dev"}} --generate-notes --draft
+      - 'echo release drafted: https://github.com/KooshaPari/Melosviz/releases'

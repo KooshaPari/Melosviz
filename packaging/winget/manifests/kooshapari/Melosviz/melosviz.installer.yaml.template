@@ -1,0 +1,18 @@
+PackageIdentifier: kooshapari.Melosviz
+PackageVersion: {{version}}
+PackageLocale: en-US
+Publisher: Koosha Pari
+PackageName: Melosviz
+License: MIT
+ShortDescription: Deterministic audio-driven music video studio pipeline
+Installers:
+  - Architecture: x64
+    InstallerType: zip
+    InstallerUrl: https://github.com/KooshaPari/Melosviz/releases/download/v{{version}}/melosviz-desktop-windows-x86_64.zip
+    InstallerSha256: {{desktop_sha256}}
+  - Architecture: x64
+    InstallerType: zip
+    InstallerUrl: https://github.com/KooshaPari/Melosviz/releases/download/v{{version}}/melosviz-cli-windows-x86_64.zip
+    InstallerSha256: {{cli_sha256}}
+ManifestType: installer
+ManifestVersion: 1.6.0
