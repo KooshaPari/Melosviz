@@ -20,6 +20,9 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+// Schema contract constants — referenced by tests/analyzer_contract.rs
+// and kept here so the source of truth lives next to the analyzer.
+#[allow(dead_code)]
 const REQUIRED_TOP_KEYS: &[&str] = &[
     "metadata",
     "dense_keyframes",
@@ -29,8 +32,10 @@ const REQUIRED_TOP_KEYS: &[&str] = &[
     "mir",
 ];
 
+#[allow(dead_code)]
 const REQUIRED_METADATA_KEYS: &[&str] = &["sample_rate", "channels", "duration", "fps"];
 
+#[allow(dead_code)]
 const REQUIRED_DENSE_KEYS: &[&str] = &[
     "t_seconds",
     "bpm",
@@ -39,8 +44,11 @@ const REQUIRED_DENSE_KEYS: &[&str] = &[
     "beat_phase",
 ];
 
+#[allow(dead_code)]
 const REQUIRED_TIMELINE_KEYS: &[&str] = &["t_seconds", "kind", "label"];
+#[allow(dead_code)]
 const REQUIRED_SCENE_KEYS: &[&str] = &["start_seconds", "end_seconds", "label"];
+#[allow(dead_code)]
 const REQUIRED_MIR_KEYS: &[&str] = &["onbeat_density", "spectrum", "rms", "peak", "dynamic_range"];
 
 fn main() -> ExitCode {
