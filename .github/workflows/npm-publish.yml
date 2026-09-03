@@ -1,0 +1,70 @@
+name: Publish @melosviz/* to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # for OIDC trusted publishing via npm provenance
+
+jobs:
+  publish-electron-app:
+    name: "@melosviz/electron-app"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup npm auth via OIDC provenance
+        uses: npm/login-action@v3
+        with:
+          registry-url: https://registry.npmjs.org/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build
+        working-directory: desktop
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+
+      - name: Publish
+        working-directory: desktop
+        run: bunx npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-cli-frontend:
+    name: "@melosviz/cli-frontend"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: npm/login-action@v3
+        with:
+          registry-url: https://registry.npmjs.org/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Build
+        working-directory: packages/cli-frontend
+        run: bun install --frozen-lockfile && bun run build
+
+      - name: Publish
+        working-directory: packages/cli-frontend
+        run: bunx npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

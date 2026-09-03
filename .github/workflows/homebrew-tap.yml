@@ -1,0 +1,92 @@
+name: Update homebrew-tap
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write # for GitHub App signing of the PR
+  pull-requests: write
+
+jobs:
+  bump-formula:
+    name: Bump homebrew formula
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify release exists
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          [ -n "$VERSION" ] || VERSION="${{ inputs.version }}"
+          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Compute SHA256 for macOS arm64 tarball
+        id: sha-arm64
+        run: |
+          VERSION="${VERSION#v}"
+          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/melosviz-cli-macos-aarch64.tar.xz"
+          curl -fsSL "$URL" -o /tmp/cli.tar.xz
+          SHA=$(sha256sum /tmp/cli.tar.xz | awk '{print $1}')
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "tarball_url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Compute SHA256 for macOS x86_64 tarball
+        id: sha-x86_64
+        run: |
+          VERSION="${VERSION#v}"
+          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/melosviz-cli-macos-x86_64.tar.xz"
+          curl -fsSL "$URL" -o /tmp/cli.tar.xz
+          SHA=$(sha256sum /tmp/cli.tar.xz | awk '{print $1}')
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "tarball_url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Write formula file
+        run: |
+          mkdir -p packaging/homebrew-tap/Formula
+          cat > packaging/homebrew-tap/Formula/melosviz.rb <<EOF
+          class Melosviz < Formula
+            desc "Deterministic audio-driven music video studio pipeline"
+            homepage "https://github.com/${{ github.repository }}"
+            url "${TARBALL_URL}"
+            version "${VERSION}"
+            sha256 "${SHA}"
+            license "MIT"
+
+            depends_on "rust" => :build
+            depends_on "ffmpeg"
+
+            def install
+              system "tar", "-xf", "melosviz-cli-macos.tar.xz", "-C", buildpath
+              bin.install "melosviz-demo" => "melosviz-demo"
+              bin.install "melosviz-mir" => "melosviz-mir"
+            end
+
+            test do
+              system "#{bin}/melosviz-demo", "--help"
+            end
+          end
+          EOF
+        env:
+          TARBALL_URL: ${{ steps.sha-arm64.outputs.tarball_url }}
+          SHA: ${{ steps.sha-arm64.outputs.sha }}
+          VERSION: ${{ env.VERSION }}
+
+      - name: Open PR against homebrew-tap repo
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          branch: bump-melosviz-${{ env.VERSION }}
+          title: "melosviz ${{ env.VERSION }}"
+          body: |
+            Bumps the Melosviz formula to ${{ env.VERSION }}.
+            - macOS arm64 SHA256: ${{ steps.sha-arm64.outputs.sha }}
+            - macOS x86_64 SHA256: ${{ steps.sha-x86_64.outputs.sha }}
+          commit-message: "melosviz ${{ env.VERSION }}"
+          add-paths: |
+            Formula/melosviz.rb

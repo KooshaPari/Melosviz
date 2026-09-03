@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/melosviz-render-wgpu",
+    "crates/melosviz-demo",
     "crates/melosviz-mir",
+    "crates/melosviz-render-wgpu",
 ]
 exclude = ["fuzz"]
 

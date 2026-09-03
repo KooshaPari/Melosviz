@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - ComfyUI-centric studio pivot: orchestrator over ComfyUI/C4D/UE/AE/DaVinci with multi-shot Director, auto-critic, interpolation bridge, render cache, provenance, LUFS mastering, AI stems, and web/desktop Director's Console.
 - Real Demucs / Spleeter / audio-separator Python-import wrappers for audio (`feat(audio)`).
 - Click-to-edit modal and GPU smoke CI workflow for the web surface (`feat(web)`, #215).
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README AI slop-inside and downloads badges (#229).
 
 ### Changed
+
 - Updated GitHub Actions to current majors: `actions/checkout` 4→7, `actions/setup-node` 4→7, `actions/setup-python` 5→7, `actions/setup-go` 5→7, `astral-sh/setup-uv` 3→7, `actions/upload-artifact` 4→7, `docker/login-action` 3→4, `docker/build-push-action` 6→7, `docker/setup-buildx-action` 3→4, `docker/metadata-action` 5→6, `ossf/scorecard-action` 2.4.0→2.4.4, `sigstore/cosign-installer` 3.8.2→4.1.2, `EmbarkStudios/cargo-deny-action` 1→2, `softprops/action-gh-release` 2.2.1→3.0.2, `gitleaks/gitleaks-action` 2→3, `dtolnay/rust-toolchain` and `oven-sh/setup-bun` bumps.
 - Web dependencies: `vite` 8.1.4→8.2.2, `@playwright/test` 1.61.1→1.62.1, `autoprefixer` 10.5.2→10.5.4, `react-dom`/`@types/react-dom`, `@typescript-eslint/parser`, `jsdom` 30.0.0→30.0.1, `three` 0.175.0→0.185.1, `@radix-ui/react-slider` 1.4.3→1.4.7, `postcss`, `wavesurfer.js` 7.12.10→7.12.11, `web-vitals` 5.3.0→6.1.0.
 - Rust dependencies: `clap` 4.6.3→4.6.6, `serde_json` 1.0.150→1.0.151, `serde` 1.0.228→1.0.229, `bytemuck` 1.25.0→1.25.2, `anyhow` 1.0.103→1.0.104.
@@ -28,9 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Brought in CircleCI parallel pipeline, Trunk.io lint/format config, and Mergify auto-merge rules.
 
 ### Removed
+
 - Legacy cargo crates: `melosviz-render-wgpu` and `melosviz-mir`.
 
 ### Fixed
+
 - Orchestrator: wired `_render_cache` and `_provenance_records` in `__init__`, and renamed `cache_root` → `cache_dir` (#214).
 - CI: replaced broken trunk-action with a deterministic prettier-scoped check (#188).
 - Release: corrected `softprops/action-gh-release` v2.2.1 SHA pin and `cargo-cyclonedx` v0.5.9 `--format` / `--override-filename` invocation.
@@ -39,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-07-04
 
 ### Added
+
 - **Quality-gate wave P1A–P1Q (full v38 scorecard B-grade):**
   - GitHub Packages SDK publish workflow + consumption docs (97.8% A, #155).
   - Hermetic Python wheelhouse CI + portability smoke (97.5% A, #154).
@@ -89,12 +94,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Audit:** MelosViz C03–C11 scorecards — full v38 sweep across 9 clusters (#109); C03 scorecard — Agent Readiness (22/36, C) (#108); wave P1P/P1Q merge triage status for PRs #156–#163.
 
 ### Changed
+
 - Brought forward stable lint/test gate names; refreshed `pre-commit-config.yaml`, `renovate.json`, `trunk.yaml`, `.trunk/trunk.yaml`, `.circleci/config.yml`, `.github/stale.yml`, `.mergify.yml`.
 - Stop tracking Rust `target/` build artifacts.
 - Raise render quota ceiling in bridge load-smoke fixture.
 - Adopted shared Python `.gitignore` template from `phenotype-tooling`.
 
 ### Fixed
+
 - Security: patch 5 open Dependabot alerts (`vitest`, `vite`, `esbuild`, #89).
 - Resolve all 318 ruff lint errors in backend (#88).
 - Re-enable / isolate quality-gate job; correct `phenotype-pm-core` trace-gate ref (main → master, #84); debug bisection for parse failure; bare quality-gate call without `with` block.
@@ -108,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-06-14
 
 ### Added
+
 - Initial scaffold of Melosviz — music-to-visual generation toolkit.
 - Hexagonal docs, governance baseline, and Phase 0–4 modernization.
 - Release workflow with tag triggers, build, test, and artifact release.
@@ -131,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency upgrades: `vite` 5.4.21→8.0.16 in `/web`; `actions/setup-node` 4.4.0→6.4.0; merge conflicts resolved keeping updated action SHAs; `softprops/action-gh-release` 2.6.2→3.0.0; `actions/checkout` 4.3.1→6.0.3.
 
 ### Fixed
+
 - CI: bump action SHAs, resolve merge conflicts, keep updated SHAs (#3).
 - Backend pytest import path.
 - Restore `melosviz` package so `test_video_exporter` can collect and pass.

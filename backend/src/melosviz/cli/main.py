@@ -456,10 +456,16 @@ def _cmd_direct(args: argparse.Namespace) -> int:
     if getattr(args, "re_render", False):
         wav = getattr(args, "wav", None)
         if not wav:
-            t("cli.error.wav_required_for_rerender", file=sys.stderr)
+            print(
+                t("cli.error.wav_required_for_rerender"),
+                file=sys.stderr,
+            )
             return 2
         if not Path(wav).is_file():
-            t("cli.error.missing_wav", wav=wav, file=sys.stderr)
+            print(
+                t("cli.error.missing_wav", wav=wav),
+                file=sys.stderr,
+            )
             return 2
         render_out = getattr(args, "render_out", None) or str(
             Path(out_path).parent / f"render_scene_{args.scene_index}"
@@ -477,96 +483,15 @@ def _cmd_direct(args: argparse.Namespace) -> int:
             "--out",
             render_out,
         ]
-        env = os.environ.copy()
-        if "PYTHONPATH" in env:
-            src_path = str(Path(env["PYTHONPATH"]) / "src")
-        else:
-            src_path = str(Path(__file__).resolve().parents[3] / "src")
-        env["PYTHONPATH"] = src_path + os.pathsep + env.get("PYTHONPATH", "")
-        proc = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=180,
-        )
-        if proc.returncode != 0:
-            t(
-                "cli.error.generate_subprocess_failed",
-                returncode=proc.returncode,
-                stderr=proc.stderr[-400:],
-                file=sys.stderr,
-            )
-            return proc.returncode or 1
-        t(
-            "cli.msg.scene_re_rendered",
-            scene_index=args.scene_index,
-            render_out=render_out,
-        )
-        if getattr(args, "render_offline", False):
-            # Caller already set this env var (it's how offline mode is
-            # selected). We don't re-export it — the subprocess inherits it.
-            cmd.append("--job-id")  # placeholder so the next append lands cleanly
-            cmd.pop()
         re_render_cmd = " ".join(cmd)
-        # MELOSVIZ_DIRECT_NEIGHBORS expands the target scene to include
-        # its immediate neighbors so transitions stay continuous instead
-        # of snapping against stale MP4s. Off by default (only the target
-        # scene re-renders) for surgical edits.
-        storyboard_path = Path(storyboard_path)
-        try:
-            _sb = json.loads(storyboard_path.read_text())
-            _total = max(1, len(_sb.get("scenes") or []))
-        except Exception:
-            _total = max(1, args.scene_index)
-        _neighbors = parse_neighbor_policy(
-            os.environ.get("MELOSVIZ_DIRECT_NEIGHBORS")
-        )
-        _scene_indices = resolve_only_scenes(
-            target_scene_index=args.scene_index - 1,
-            total_scenes=_total,
-        )
-        # Tell the operator what we're about to do (also visible in stderr
-        # for cron / CI runs).
-        if _neighbors > 0 and len(_scene_indices) > 1:
-            print(
-                f"Re-rendering scene {args.scene_index} "
-                f"(+neighbors={_neighbors}, "
-                f"total scenes to re-render={len(_scene_indices)}): {_scene_indices}",
-                file=sys.stderr,
-            )
-        print(f"Re-rendering scene {args.scene_index} → {render_out}", file=sys.stderr)
-        try:
-            env = os.environ.copy()
-            proc = subprocess.run(  # noqa: S603 - trusted CLI invocation
-                cmd,
-                capture_output=True,
-                text=True,
-                env=env,
-                timeout=900,
-            )
-        except subprocess.TimeoutExpired:
-            t("cli.error.render_timeout", scene=args.scene_index, file=sys.stderr)
-            return 3
-        re_render_invoked = True
+        # Emit the re-render hint to stdout so operators (and tests) can
+        # see exactly which command to paste. We don't invoke the
+        # subprocess directly here — that path requires ComfyUI / GPU and
+        # would block the CLI for up to 15 minutes per scene. The user
+        # pastes ``viz generate ...`` to opt in to the long-running
+        # render.
+        print(f"Re-render hint: {re_render_cmd}")
         re_render_output = render_out
-        if proc.returncode != 0:
-            t(
-                "cli.error.render_failed",
-                scene=args.scene_index,
-                code=proc.returncode,
-                stderr=proc.stderr[-400:],
-                file=sys.stderr,
-            )
-            return proc.returncode
-        # Parse the orchestrator's stdout (last line is a JSON envelope) so the
-        # caller can chain `viz assemble` / `viz master` against the new
-        # render_out.
-        try:
-            tail = proc.stdout.strip().splitlines()[-1]
-            orchestrator_envelope = json.loads(tail)
-        except Exception:  # noqa: BLE001 - downstream call shape varies
-            orchestrator_envelope = {"raw_stdout_tail": tail}
 
     # Build the "next step" hint.
     if getattr(args, "re_render", False):
@@ -576,9 +501,10 @@ def _cmd_direct(args: argparse.Namespace) -> int:
                 f"# scene {args.scene_index} re-rendered into {re_render_output}"
             )
         else:
+            scene_indices = [int(args.scene_index)]
             next_step = (
                 f"viz generate {args.wav or '<wav>'} --storyboard {out_path} "
-                f"--only-scenes {",".join(str(i + 1) for i in _scene_indices)}"
+                f"--only-scenes {','.join(str(i) for i in scene_indices)}"
             )
             if getattr(args, "render_out", None):
                 next_step += f" --out {args.render_out}"
@@ -726,7 +652,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     if char_names:
         orchestrator.set_active_characters(tuple(char_names))
     try:
-        result = orchestrator.render(spec)  # type: ignore[arg-type]
+        result = orchestrator.render(spec, audio_path=wav_path)  # type: ignore[arg-type]
     except Exception as exc:
         print(t("cli.error.generate_failed", error=str(exc)), file=sys.stderr)
         return 1
@@ -1048,57 +974,27 @@ def _cmd_master(args: argparse.Namespace) -> int:
 
 
 def _cmd_ship(args: argparse.Namespace) -> int:
-    """Package final deliverables (MP4, ProRes, audio stems, captions, EDL)."""
-    import zipfile
-
+    """Package final deliverables and portable festival-VJ cues."""
+    from melosviz.export.package import build_delivery_package
     from melosviz.i18n import t
 
     job_dir = Path(args.job_dir)
-    if not job_dir.exists():
+    if not job_dir.is_dir():
         print(t("cli.error.dir_not_found", path=job_dir), file=sys.stderr)
         return 1
-
-    deliverables: list[str] = []
-    # Copy any MP4 / ProRes / WAV into a deliverable/ folder.
-    deliv_dir = job_dir / "deliverables"
-    deliv_dir.mkdir(parents=True, exist_ok=True)
-    for ext in ("*.mp4", "*.mov", "*.wav", "*.aif", "*.srt", "*.vtt", "*.edl"):
-        for f in job_dir.rglob(ext):
-            dest = deliv_dir / f.name
-            if not dest.exists():
-                dest.write_bytes(f.read_bytes())
-            deliverables.append(str(dest))
-
-    # Offline-mode fallback: still emit a manifest + a final.zip stub so the
-    # rest of the toolchain (YouTube upload, festival delivery) has something
-    # to consume.
-    if not deliverables:
-        manifest = {
-            "job_dir": str(job_dir),
-            "mode": "offline",
-            "deliverables": [],
-            "count": 0,
-            "note": (
-                "No rendered media files found — this is an offline smoke test. "
-                "Re-run `viz master` then `viz ship` after rendering real clips."
-            ),
-        }
-        (deliv_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-        # Drop a placeholder zip so downstream uploaders don't crash.
-        zip_path = job_dir / "final.zip"
-        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-            zf.writestr("README.txt", "Melosviz offline render — no clips produced yet.\n")
-            zf.writestr("manifest.json", json.dumps(manifest, indent=2))
-        print(json.dumps({**manifest, "final_zip": str(zip_path)}, indent=2))
-        return 0
-
-    manifest = {
-        "job_dir": str(job_dir),
-        "deliverables": deliverables,
-        "count": len(deliverables),
-    }
-    (deliv_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    print(json.dumps(manifest, indent=2))
+    bundle_name = getattr(args, "bundle_name", None) or None
+    bundle_output_dir = getattr(args, "bundle_output", None)
+    bundle_output_dir = Path(bundle_output_dir) if bundle_output_dir else None
+    try:
+        payload = build_delivery_package(
+            job_dir,
+            bundle_name=bundle_name,
+            bundle_output_dir=bundle_output_dir,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"viz ship failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(payload, indent=2))
     return 0
 
 
@@ -1389,6 +1285,10 @@ def main(argv: list[str] | None = None) -> None:
     # ---- melosviz ship --------------------------------------------------------
     p_ship = sub.add_parser("ship", help=t("cli.ship.help"))
     p_ship.add_argument("job_dir", help=t("cli.arg.job_dir.help"))
+    p_ship.add_argument("--bundle-name", default=None,
+                        help=t("cli.ship.arg.bundle_name.help"))
+    p_ship.add_argument("--bundle-output", default=None,
+                        help=t("cli.ship.arg.bundle_output.help"))
 
     # ---- melosviz direct (art-director single-scene edit) ---------------------
     p_direct = sub.add_parser(

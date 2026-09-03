@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/ScoopInstaller/Scoop/master/schema.json",
+  "version": "{{version}}",
+  "description": "Deterministic audio-driven music video studio pipeline",
+  "homepage": "https://github.com/KooshaPari/Melosviz",
+  "license": "MIT",
+  "url": "https://github.com/KooshaPari/Melosviz/releases/download/v#{version}/melosviz-cli-windows-x86_64.zip",
+  "hash": "{{sha256}}",
+  "bin": [
+    "melosviz-demo.exe",
+    "melosviz-mir.exe"
+  ],
+  "depends": "ffmpeg"
+}

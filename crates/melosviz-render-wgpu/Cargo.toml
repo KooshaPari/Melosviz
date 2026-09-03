@@ -1,0 +1,10 @@
+[package]
+name = "melosviz-render-wgpu"
+version = "0.6.0"
+edition = "2021"
+description = "Stub workspace member: wgpu-based renderer (placeholder for follow-up PR)."
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+path = "src/lib.rs"
