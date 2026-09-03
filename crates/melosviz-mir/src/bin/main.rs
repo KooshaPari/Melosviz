@@ -61,11 +61,50 @@ fn main() -> ExitCode {
                 i += 2;
             }
             "--fps" if i + 1 < args.len() => {
-                fps = args[i + 1].parse().unwrap_or(30.0);
+                match args[i + 1].parse::<f64>() {
+                    Ok(v) if v > 0.0 && v.is_finite() => fps = v,
+                    _ => {
+                        eprintln!(
+                            "error: --fps must be a positive finite number, got {:?}",
+                            args[i + 1]
+                        );
+                        return ExitCode::from(2);
+                    }
+                }
                 i += 2;
             }
-            _ => i += 1,
+            "--help" | "-h" => {
+                println!("usage: melosviz-mir --wav <path> --out <path> [--fps <n>]");
+                return ExitCode::SUCCESS;
+            }
+            "--wav" | "--out" | "--fps" => {
+                eprintln!("error: flag {} requires a value", args[i]);
+                return ExitCode::from(2);
+            }
+            other => {
+                eprintln!(
+                    "error: unknown argument {:?} (use --help)",
+                    other
+                );
+                return ExitCode::from(2);
+            }
         }
+    }
+
+    // Validate --wav before doing real work.
+    if !wav_path.as_ref().map_or(false, |p| p.is_file()) {
+        eprintln!(
+            "error: --wav path does not exist or is not a regular file: {}",
+            wav_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default()
+        );
+        return ExitCode::from(2);
+    }
+    if out_path.as_ref().map_or(false, |p| p.exists() && p.is_dir()) {
+        eprintln!(
+            "error: --out path is an existing directory: {}",
+            out_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default()
+        );
+        return ExitCode::from(2);
     }
 
     let (wav_path, out_path) = match (wav_path, out_path) {

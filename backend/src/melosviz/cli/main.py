@@ -982,8 +982,15 @@ def _cmd_ship(args: argparse.Namespace) -> int:
     if not job_dir.is_dir():
         print(t("cli.error.dir_not_found", path=job_dir), file=sys.stderr)
         return 1
+    bundle_name = getattr(args, "bundle_name", None) or None
+    bundle_output_dir = getattr(args, "bundle_output", None)
+    bundle_output_dir = Path(bundle_output_dir) if bundle_output_dir else None
     try:
-        payload = build_delivery_package(job_dir)
+        payload = build_delivery_package(
+            job_dir,
+            bundle_name=bundle_name,
+            bundle_output_dir=bundle_output_dir,
+        )
     except (OSError, ValueError) as exc:
         print(f"viz ship failed: {exc}", file=sys.stderr)
         return 1

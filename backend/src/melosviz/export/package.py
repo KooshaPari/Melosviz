@@ -13,15 +13,47 @@ from .vj import discover_shots, export_vj_cues
 
 MEDIA_PATTERNS = ("*.mp4", "*.mov", "*.wav", "*.aif", "*.srt", "*.vtt", "*.edl")
 FIXED_ZIP_TIME = (2020, 1, 1, 0, 0, 0)
+EXCLUDED_PATH_PARTS = frozenset(
+    {
+        ".git",
+        "node_modules",
+        "__pycache__",
+        ".venv",
+        "venv",
+        "target",
+        ".pytest_cache",
+        ".mypy_cache",
+        ".ruff_cache",
+        "dist",
+        "build",
+        ".worktrees",
+    }
+)
+MAX_DISCOVERY_DEPTH = 6
 
 
 def _discover_media(job_dir: Path) -> list[Path]:
     excluded = {job_dir / "final.zip", job_dir / ".final.zip.tmp"}
     found: set[Path] = set()
+    job_dir_resolved = job_dir.resolve()
     for pattern in MEDIA_PATTERNS:
         for path in job_dir.rglob(pattern):
-            if path.is_file() and path not in excluded and "deliverables" not in path.parts:
-                found.add(path)
+            if not path.is_file() or path in excluded:
+                continue
+            if "deliverables" in path.parts:
+                continue
+            # Skip paths inside excluded build / VCS / dependency trees.
+            if any(part in EXCLUDED_PATH_PARTS for part in path.parts):
+                continue
+            # Bound recursion depth: an unexpectedly huge tree (bind mounts,
+            # accidental nested checkouts) must not OOM the packaging step.
+            try:
+                relative = path.relative_to(job_dir_resolved)
+            except ValueError:
+                continue
+            if len(relative.parts) > MAX_DISCOVERY_DEPTH:
+                continue
+            found.add(path)
     return sorted(found, key=lambda path: path.relative_to(job_dir).as_posix())
 
 
@@ -47,7 +79,12 @@ def _atomic_json(path: Path, payload: dict) -> None:
     os.replace(temporary, path)
 
 
-def build_delivery_package(job_dir: Path) -> dict:
+def build_delivery_package(
+    job_dir: Path,
+    *,
+    bundle_name: str | None = None,
+    bundle_output_dir: Path | None = None,
+) -> dict:
     # Record the *caller-supplied* path in the manifest, not the
     # resolved one. .resolve() would fold in the host's filesystem
     # layout (e.g. /private/tmp vs /tmp on macOS, symlinked bind
@@ -90,8 +127,11 @@ def build_delivery_package(job_dir: Path) -> dict:
     manifest_path = deliverables / "manifest.json"
     _atomic_json(manifest_path, manifest)
 
-    final_zip = root / "final.zip"
-    temporary_zip = root / ".final.zip.tmp"
+    output_dir = bundle_output_dir if bundle_output_dir is not None else root
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    final_zip = output_dir / (bundle_name or "final.zip")
+    temporary_zip = output_dir / ".final.zip.tmp"
     try:
         with zipfile.ZipFile(temporary_zip, "w") as archive:
             if mode == "offline":
