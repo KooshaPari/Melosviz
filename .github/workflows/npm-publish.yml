@@ -7,11 +7,11 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # for OIDC trusted publishing via npm provenance
+  id-token: write # for OIDC trusted publishing via npm provenance
 
 jobs:
   publish-electron-app:
-    name: @melosviz/electron-app
+    name: "@melosviz/electron-app"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-cli-frontend:
-    name: @melosviz/cli-frontend
+    name: "@melosviz/cli-frontend"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
