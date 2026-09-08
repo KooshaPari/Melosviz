@@ -578,7 +578,7 @@ def _cmd_direct(args: argparse.Namespace) -> int:
         else:
             next_step = (
                 f"viz generate {args.wav or '<wav>'} --storyboard {out_path} "
-                f"--only-scenes {",".join(str(i + 1) for i in _scene_indices)}"
+                f"--only-scenes {','.join(str(i + 1) for i in _scene_indices)}"
             )
             if getattr(args, "render_out", None):
                 next_step += f" --out {args.render_out}"
