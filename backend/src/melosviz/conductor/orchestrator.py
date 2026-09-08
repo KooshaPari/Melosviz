@@ -26,6 +26,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -485,6 +486,8 @@ class Orchestrator:
         else:
             _types = list(scene_types)
 
+        from melosviz.conductor.render_cache import SceneCacheKey
+
         # ---- Setup render-event bus ----------------------------------------
         from melosviz.conductor.events import (
             RenderEvent,
@@ -568,10 +571,12 @@ class Orchestrator:
             # Render cache fast-path: if the same prompt/seed/size/model was
             # already rendered into scene_out_dir, skip the adapter call
             # entirely and emit a done event with from_cache=True.
-            cache_root: Path | None = self._render_cache.cache_dir if self._render_cache is not None else None
+            cache_key = SceneCacheKey.from_scene(
+                _seg_for_render, backend_key, render_spec
+            )
             cached_artifact: Path | None = None
-            if cache_root is not None:
-                cached_artifact = scene_render_cached(seg, cache_root)
+            if self._render_cache is not None:
+                cached_artifact = self._render_cache.lookup(cache_key)
             if cached_artifact is not None and cached_artifact.exists():
                 logger.info(
                     "Orchestrator: scene[%d] cache HIT → %s",
@@ -579,24 +584,19 @@ class Orchestrator:
                     cached_artifact,
                 )
                 elapsed_ms = 0.0
-                done_evt = RenderEvent(
+                done_evt = bus.emit_done(
                     job_id=job_id,
                     scene_index=scene_idx,
                     scene_name=scene_name,
                     scene_type=scene_type,
-                    state="done",
                     backend=backend_key,
-                    started_at=_now_ms(),
-                    finished_at=_now_ms(),
                     duration_ms=0.0,
                     artifact_path=str(cached_artifact),
-                    extras={"from_cache": True, "cache_key": scene_cache_key(seg).hex()},
                 )
-                bus._events.append(done_evt)
                 emitted.append(done_evt)
-                per_scene_results.setdefault(scene_type, _CachedAdapterResult(
-                    artifact_path=cached_artifact,
-                    cache_key=scene_cache_key(seg).hex(),
+                per_scene_results.setdefault(scene_type, SimpleNamespace(
+                    files=[cached_artifact],
+                    cache_key=cache_key.fingerprint(),
                 ))
                 continue
 
@@ -704,20 +704,12 @@ class Orchestrator:
                 logger.debug("provenance write skipped: %s", exc)
 
             try:
-                cache_key = SceneCacheKey(
-                    scene_type=scene_type,
-                    prompt=getattr(render_spec, "prompt", None) or scene_name,
-                    width=int(getattr(render_spec, "width", 1920) or 1920),
-                    height=int(getattr(render_spec, "height", 1080) or 1080),
-                    fps=int(getattr(render_spec, "fps", 24) or 24),
-                    seed=getattr(render_spec, "seed", None) or scene_idx,
-                    backend=backend_key,
-                )
-                if self._render_cache is not None:
+                if self._render_cache is not None and artifact:
+                    self._render_cache.cache_dir.mkdir(parents=True, exist_ok=True)
                     self._render_cache.store(
                         cache_key,
-                        artifact_path=artifact or str(scene_out_dir),
-                        duration_ms=elapsed_ms,
+                        Path(artifact),
+                        meta={"scene_index": scene_idx, "scene_name": scene_name},
                     )
             except Exception as exc:  # cache store is best-effort
                 logger.debug("render cache store skipped: %s", exc)
