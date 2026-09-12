@@ -44,6 +44,32 @@ def _cache_root() -> Path:
     return Path.cwd() / CACHE_ROOT_DIRNAME
 
 
+def _audio_fingerprint(scene: Mapping[str, Any]) -> str:
+    """Content-hash of the audio input for *scene* (or "" if none).
+
+    Two scenes with the same prompt / seed / camera but different audio
+    must hash to different fingerprints — otherwise a re-render against
+    a swapped audio source would silently reuse the cached visual from
+    the previous audio. We hash the actual file content (cheap for the
+    short clips that ship through this pipeline) when present, and fall
+    back to the path string so callers can still get a stable key when
+    the audio is only described symbolically.
+    """
+    audio = scene.get("audio") or scene.get("wav_path") or scene.get("audio_path")
+    if audio is None or audio == "":
+        return ""
+    path = Path(str(audio))
+    if path.is_file():
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(65536), b""):
+                h.update(chunk)
+        return f"sha256:{h.hexdigest()}"
+    # Symbolic / remote reference — keep the string verbatim so the key
+    # is still deterministic across hosts.
+    return f"path:{path.as_posix()}"
+
+
 @dataclass(frozen=True)
 class SceneCacheKey:
     """A scene's render input fingerprint.
@@ -68,6 +94,7 @@ class SceneCacheKey:
     env_token: str
     palette_key: str
     lrc_phrase_key: str
+    audio_fingerprint: str
     extra: Mapping[str, Any]
 
     @staticmethod
@@ -100,6 +127,7 @@ class SceneCacheKey:
             env_token=str(continuity.get("env_token") or ""),
             palette_key="|".join(palette_list),
             lrc_phrase_key=f"{lyric.get('phrase_id', '')}::{lyric.get('start', 0):.3f}->{lyric.get('end', 0):.3f}",
+            audio_fingerprint=_audio_fingerprint(scene),
             extra=copy.deepcopy(scene.get("cache_extra") or {}),
         )
 
@@ -119,6 +147,7 @@ class SceneCacheKey:
             "env_token": self.env_token,
             "palette_key": self.palette_key,
             "lrc_phrase_key": self.lrc_phrase_key,
+            "audio_fingerprint": self.audio_fingerprint,
             "extra": dict(self.extra),
         }
         canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
@@ -180,3 +209,43 @@ class RenderCache:
             "stored": len(files),
             "total_bytes": total,
         }
+
+
+def scene_cache_key(seg: dict, cache_root: Path) -> SceneCacheKey:
+    """Build a :class:`SceneCacheKey` for *seg* under *cache_root*.
+
+    Convenience wrapper used by the orchestrator to compute a fingerprint
+    for the render-cache lookup. Falls back to a minimal key when the
+    storyboard spec doesn't supply rich metadata.
+    """
+    # Build a thin RenderSpec stand-in for from_scene — only attributes
+    # the from_scene factory reads (width / height / fps) are needed.
+    spec_proxy = type("_S", (), {
+        "width": int(seg.get("width", 1920) or 1920),
+        "height": int(seg.get("height", 1080) or 1080),
+        "fps": int(seg.get("fps", 24) or 24),
+    })()
+    backend = str(seg.get("backend") or seg.get("scene_type") or "unknown")
+    return SceneCacheKey.from_scene(seg, backend, spec_proxy)
+
+
+def scene_render_cached(seg: dict, cache_root: Path) -> Path | None:
+    """Look up a cached artifact for *seg* in *cache_root*.
+
+    Returns the cached path if a hit is found, otherwise ``None``. The
+    orchestrator uses this for a fast-path before dispatching to
+    adapters.
+    """
+    if cache_root is None or not Path(cache_root).is_dir():
+        return None
+    key = scene_cache_key(seg, cache_root)
+    cache = RenderCache(cache_dir=Path(cache_root))
+    return cache.lookup(key)
+
+
+__all__ = [
+    "RenderCache",
+    "SceneCacheKey",
+    "scene_cache_key",
+    "scene_render_cached",
+]

@@ -70,6 +70,7 @@ jobs:
         working-directory: backend
         run: |
           python -m pip install -e ".[test]"
+          python -m pip install python-multipart
       - name: Run pytest (bridge, skip the known-hanging SSE stream test)
         working-directory: backend
         run: |

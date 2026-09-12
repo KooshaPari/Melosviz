@@ -14,6 +14,7 @@ TDD protocol (failing-first → green):
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -704,3 +705,54 @@ class TestRegistryCoverage:
         adapter_cls = ADAPTER_REGISTRY["live_stage"]
         inst = adapter_cls()
         assert inst is not None
+
+
+# ---------------------------------------------------------------------------
+# Regression: scene_types dispatch (production-delivery-extensions followup)
+# ---------------------------------------------------------------------------
+
+
+def test_orchestrator_dispatches_scene_types_when_segs_lack_match(tmp_path) -> None:
+    """Regression: when the caller passes ``scene_types=[st]`` and the spec's
+    scene_segments don't carry a matching ``scene_type``, the orchestrator
+    must still dispatch the requested types. Previously the dispatch
+    loop silently produced an empty ``per_scene_results``."""
+
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    spec = _minimal_spec()  # segs lack scene_type
+    out = tmp_path / "out"
+    orch = Orchestrator(output_dir=out, skip_assembly=True)
+    result = orch.render(spec, scene_types=["motion_graphics_beat_sync"])
+    # motion_graphics_beat_sync adapter should have been invoked.
+    assert "motion_graphics_beat_sync" in result.per_scene_results
+
+
+def test_orchestrator_raises_for_unknown_scene_type_even_with_segs(tmp_path) -> None:
+    """Regression: ``ConductorError`` must be raised for unknown scene
+    types even when the spec has scene_segments. Previously the ``if
+    scene_types is not None and st not in scene_types`` filter silently
+    dropped every seg and the adapter lookup never ran."""
+
+    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
+
+    spec = _minimal_spec()
+    out = tmp_path / "out"
+    orch = Orchestrator(output_dir=out, skip_assembly=True)
+    with pytest.raises(ConductorError):
+        orch.render(spec, scene_types=["definitely_not_a_real_scene_type"])
+
+
+def test_orchestrator_does_not_pollute_os_environ(tmp_path, monkeypatch) -> None:
+    """Regression: ``Orchestrator.__init__`` used to write
+    ``os.environ["MELOSVIZ_COMFYUI_OFFLINE"] = "1"`` when ComfyUI wasn't
+    reachable — mutating process-global state and bleeding into other
+    tests in the same pytest run. The orchestrator now logs a warning
+    instead and lets adapters read the env directly."""
+
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    monkeypatch.delenv("MELOSVIZ_COMFYUI_OFFLINE", raising=False)
+    before = os.environ.get("MELOSVIZ_COMFYUI_OFFLINE")
+    Orchestrator(output_dir=tmp_path, skip_assembly=True)
+    assert os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == before

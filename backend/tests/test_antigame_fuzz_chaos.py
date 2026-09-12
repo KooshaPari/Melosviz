@@ -37,11 +37,14 @@ import pytest
 # ---------------------------------------------------------------------------
 try:
     from hypothesis import HealthCheck, given, settings  # type: ignore
-    from hypothesis import strategies as st
+    from hypothesis import strategies as st  # type: ignore
 
     HAVE_HYPOTHESIS = True
 except ImportError:  # pragma: no cover — handled below
     HAVE_HYPOTHESIS = False
+    given = None  # type: ignore[assignment, misc]
+    settings = None  # type: ignore[assignment, misc]
+    st = None  # type: ignore[assignment, misc]
 
 
 # ===========================================================================
@@ -51,91 +54,99 @@ except ImportError:  # pragma: no cover — handled below
 from melosviz.analysis.models import RenderSpec  # noqa: E402
 
 
-class TestRenderSpecFuzz:
-    """Random structured JSON inputs must parse, not crash, not produce
-    a broken model that explodes on the first attribute access."""
+if HAVE_HYPOTHESIS:
 
-    @pytest.mark.skipif(not HAVE_HYPOTHESIS, reason="hypothesis not installed")
-    @given(
-        metadata=st.dictionaries(
-            keys=st.sampled_from(
-                [
-                    "source_audio",
-                    "duration",
-                    "fps",
-                    "width",
-                    "height",
-                    "sample_rate",
-                    "channels",
-                    "estimated_bpm",
-                ]
-            ),
-            values=st.one_of(
-                st.none(),
-                st.floats(allow_nan=False, allow_infinity=False, max_value=1e6),
-                st.integers(min_value=-1_000_000, max_value=1_000_000),
-                st.text(max_size=64),
-                st.booleans(),
-            ),
-            max_size=8,
-        ),
-    )
-    @settings(
-        max_examples=50, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
-    )
-    def test_metadata_never_crashes(self, metadata: dict) -> None:
-        try:
-            spec = RenderSpec(metadata=metadata)
-        except Exception as exc:  # noqa: BLE001
-            # Pydantic may reject some types (e.g. duration=negative). That is
-            # acceptable; only uncaught crashes are bad.
-            assert exc.__class__.__name__ in {
-                "ValidationError",
-                "TypeError",
-                "ValueError",
-            }, f"unexpected exception: {exc!r}"
-        else:
-            # If we got a spec, it must round-trip cleanly back to JSON.
-            dump = spec.model_dump()
-            assert isinstance(dump["metadata"], dict)
+    class TestRenderSpecFuzz:
+        """Random structured JSON inputs must parse, not crash, not produce
+        a broken model that explodes on the first attribute access."""
 
-    @pytest.mark.skipif(not HAVE_HYPOTHESIS, reason="hypothesis not installed")
-    @given(
-        payload=st.binary(min_size=0, max_size=512),
-    )
-    @settings(
-        max_examples=40, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
-    )
-    def test_garbage_bytes_to_renderspec(self, payload: bytes) -> None:
-        """Random byte strings should never hang or crash; they should
-        either round-trip to a default spec or raise ValidationError."""
-        # The fuzz vector: try parsing the bytes as JSON; if that fails, wrap
-        # as a string and ensure the model still produces a valid spec.
-        for variant in (
-            payload,
-            payload.decode("utf-8", errors="replace"),
-            json.dumps({"metadata": {"x": payload.decode("utf-8", errors="replace")}}),
-        ):
+        @pytest.mark.skipif(not HAVE_HYPOTHESIS, reason="hypothesis not installed")
+        @given(
+            metadata=st.dictionaries(
+                keys=st.sampled_from(
+                    [
+                        "source_audio",
+                        "duration",
+                        "fps",
+                        "width",
+                        "height",
+                        "sample_rate",
+                        "channels",
+                        "estimated_bpm",
+                    ]
+                ),
+                values=st.one_of(
+                    st.none(),
+                    st.floats(allow_nan=False, allow_infinity=False, max_value=1e6),
+                    st.integers(min_value=-1_000_000, max_value=1_000_000),
+                    st.text(max_size=64),
+                    st.booleans(),
+                ),
+                max_size=8,
+            ),
+        )
+        @settings(
+            max_examples=50, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
+        )
+        def test_metadata_never_crashes(self, metadata: dict) -> None:
             try:
-                if isinstance(variant, bytes):
-                    obj = json.loads(variant.decode("utf-8", errors="replace"))
-                else:
-                    obj = json.loads(variant) if variant.startswith("{") else None
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                obj = None
-            if obj is None:
-                continue
-            try:
-                spec = RenderSpec.model_validate(obj)
+                spec = RenderSpec(metadata=metadata)
             except Exception as exc:  # noqa: BLE001
+                # Pydantic may reject some types (e.g. duration=negative). That is
+                # acceptable; only uncaught crashes are bad.
                 assert exc.__class__.__name__ in {
                     "ValidationError",
                     "TypeError",
                     "ValueError",
-                }
+                }, f"unexpected exception: {exc!r}"
             else:
-                # Round-trip again — must not corrupt.
-                spec.model_dump()
+                # If we got a spec, it must round-trip cleanly back to JSON.
+                dump = spec.model_dump()
+                assert isinstance(dump["metadata"], dict)
+
+        @pytest.mark.skipif(not HAVE_HYPOTHESIS, reason="hypothesis not installed")
+        @given(
+            payload=st.binary(min_size=0, max_size=512),
+        )
+        @settings(
+            max_examples=40, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
+        )
+        def test_garbage_bytes_to_renderspec(self, payload: bytes) -> None:
+            """Random byte strings should never hang or crash; they should
+            either round-trip to a default spec or raise ValidationError."""
+            # The fuzz vector: try parsing the bytes as JSON; if that fails, wrap
+            # as a string and ensure the model still produces a valid spec.
+            for variant in (
+                payload,
+                payload.decode("utf-8", errors="replace"),
+                json.dumps({"metadata": {"x": payload.decode("utf-8", errors="replace")}}),
+            ):
+                try:
+                    if isinstance(variant, bytes):
+                        obj = json.loads(variant.decode("utf-8", errors="replace"))
+                    else:
+                        obj = json.loads(variant) if variant.startswith("{") else None
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    obj = None
+                if obj is None:
+                    continue
+                try:
+                    spec = RenderSpec.model_validate(obj)
+                except Exception as exc:  # noqa: BLE001
+                    assert exc.__class__.__name__ in {
+                        "ValidationError",
+                        "TypeError",
+                        "ValueError",
+                    }
+                else:
+                    # Round-trip again — must not corrupt.
+                    spec.model_dump()
+
+else:
+    # Provide a no-op placeholder class so pytest can still collect
+    # the file and run the non-hypothesis test classes below.
+    class TestRenderSpecFuzz:
+        pass
 
 
 # ===========================================================================

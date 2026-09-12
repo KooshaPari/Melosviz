@@ -1,0 +1,59 @@
+name: Publish Rust crates to crates.io
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # for OIDC trusted publishing via crates.io
+
+jobs:
+  publish-demo:
+    name: melosviz-demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: katyo/publish-crates@v0.6.1
+        with:
+          args: --token "${{ secrets.CARGO_REGISTRY_TOKEN }}" -p melosviz-demo
+
+  publish-mir:
+    name: melosviz-mir
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: katyo/publish-crates@v0.6.1
+        with:
+          args: --token "${{ secrets.CARGO_REGISTRY_TOKEN }}" -p melosviz-mir
+
+  publish-wgpu:
+    name: melosviz-render-wgpu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: katyo/publish-crates@v0.6.1
+        with:
+          args: --token "${{ secrets.CARGO_REGISTRY_TOKEN }}" -p melosviz-render-wgpu

@@ -73,3 +73,7 @@ vite-out.log
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Local isolated implementation worktrees
+.worktrees/
+.venv/

@@ -7,8 +7,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from hypothesis import HealthCheck, given, settings
-from hypothesis import strategies as st
+
+# Skip the whole module if hypothesis is not installed — the @given
+# decorators below require hypothesis to be present at collection time.
+pytest.importorskip("hypothesis")
+from hypothesis import HealthCheck, given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 
 def _write_wav(path: Path, samples: list[int], sample_rate: int = 8000) -> Path:

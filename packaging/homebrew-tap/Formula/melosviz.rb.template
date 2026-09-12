@@ -1,0 +1,19 @@
+class Melosviz < Formula
+  desc "Deterministic audio-driven music video studio pipeline"
+  homepage "https://github.com/KooshaPari/Melosviz"
+  license "MIT"
+
+  url "https://github.com/KooshaPari/Melosviz/releases/download/v#{version}/melosviz-cli-macos-#{arch}.tar.xz"
+  sha256 "{{sha256}}"
+
+  depends_on "ffmpeg"
+
+  def install
+    bin.install "melosviz-demo" => "melosviz-demo"
+    bin.install "melosviz-mir" => "melosviz-mir"
+  end
+
+  test do
+    assert_match "melosviz", shell_output("#{bin}/melosviz-demo --help", 2)
+  end
+end

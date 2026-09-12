@@ -67,6 +67,7 @@ class ClipProvenance:
     workflow_json_path: str | None = None
     comfyui_prompt_id: str | None = None
     comfyui_job_id: str | None = None
+    visual_diff: dict | None = None  # visual_diff.compute_visual_diff() payload
     extra: dict = field(default_factory=dict)
 
     @property
@@ -99,6 +100,7 @@ class ClipProvenance:
             "workflow_json_path": self.workflow_json_path,
             "comfyui_prompt_id": self.comfyui_prompt_id,
             "comfyui_job_id": self.comfyui_job_id,
+            "visual_diff": self.visual_diff,
             "extra": self.extra,
         }
         return d

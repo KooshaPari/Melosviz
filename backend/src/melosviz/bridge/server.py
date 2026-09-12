@@ -221,7 +221,7 @@ class StudioDirectRequest(BaseModel):
 
 
 class StudioValidateRequest(BaseModel):
-    """Storyboard validation request — runs the conductor's StoryboardValidator."""
+    """Storyboard validation request — runs the conductor's ``validate_storyboard`` helper."""
 
     storyboard_path: str
     # Optional hard-rule overrides (kept conservative by default).
@@ -884,8 +884,8 @@ async def studio_ship(req: StudioShipRequest, request: Request) -> str:
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/studio/direct", response_class=PlainTextResponse)
-async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
+@app.post("/api/studio/direct")
+async def studio_direct(req: "StudioDirectRequest", request: Request):
     """Edit one scene's prompt / camera / name and (optionally) re-render.
 
     Body:
@@ -919,15 +919,15 @@ async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
             cmd += ["--replace-camera", req.replace_camera]
         if req.replace_name:
             cmd += ["--replace-name", req.replace_name]
-        if req.out:
-            cmd += ["--out", str(_check_inside(req.out))]
+        if req.out_path:
+            cmd += ["--out", str(_check_inside(req.out_path))]
         if req.re_render:
             cmd += ["--re-render"]
-            if req.wav:
-                cmd += ["--wav", str(_check_inside(req.wav))]
+            if req.wav_path:
+                cmd += ["--wav", str(_check_inside(req.wav_path))]
             if req.render_out:
                 cmd += ["--render-out", str(_check_inside(req.render_out))]
-        _run_studio_subprocess(cmd)
+        sub = _run_studio_subprocess(cmd)
     finally:
         for k, v in prior.items():
             if v is None:
@@ -935,10 +935,37 @@ async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
             else:
                 os.environ[k] = v
 
-    edited_path = _check_inside(req.out) if req.out else sb_path
-    if edited_path.exists():
-        return edited_path.read_text()
-    return json.dumps({"storyboard": str(edited_path)}, indent=2)
+    # List edit operations actually supplied in the request body. The
+    # edit_count comes from the subprocess JSON stdout (which knows
+    # what the CLI actually applied, not just what was requested).
+    # Fall back to counting non-None fields when the subprocess didn't
+    # return a parseable JSON payload.
+    edits = [
+        op
+        for op in ("replace_prompt", "replace_camera", "replace_name")
+        if getattr(req, op, None) is not None
+    ]
+    sub_edit_count: int | None = None
+    try:
+        raw = getattr(sub, "stdout", b"") or b""
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8", errors="replace")
+        sub_payload = json.loads(raw)
+        if isinstance(sub_payload, dict) and "edit_count" in sub_payload:
+            sub_edit_count = int(sub_payload.get("edit_count") or 0)
+    except (ValueError, TypeError, AttributeError):
+        pass
+
+    applied = sub_edit_count if sub_edit_count is not None else len(edits)
+
+    return {
+        "storyboard_path": str(sb_path),
+        "scene_index": req.scene_index,
+        "edits": edits,
+        "edit_count": applied,
+        "re_render": req.re_render,
+        "render_out": str(_check_inside(req.render_out)) if req.render_out else None,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -946,9 +973,9 @@ async def studio_direct(req: "StudioDirectRequest", request: Request) -> str:
 # ---------------------------------------------------------------------------
 
 
-@app.post("/api/studio/validate", response_class=PlainTextResponse)
-async def studio_validate(req: "StudioValidateRequest", request: Request) -> str:
-    """Validate a storyboard.json and return a structured severity report.
+@app.post("/api/studio/validate")
+async def studio_validate(req: "StudioValidateRequest", request: Request):
+    """Validate a storyboard JSON for completeness and consistency.
 
     Returns ``StoryboardValidationReport`` JSON:
         {
@@ -965,11 +992,11 @@ async def studio_validate(req: "StudioValidateRequest", request: Request) -> str
     if not sb_path.exists():
         raise HTTPException(status_code=400, detail=f"storyboard not found: {sb_path}")
 
-    from melosviz.conductor.validate import StoryboardValidator
+    from melosviz.conductor.validate import validate_storyboard
 
     payload = json.loads(sb_path.read_text())
-    report = StoryboardValidator().validate(payload)
-    return json.dumps(report.to_dict(), indent=2)
+    report = validate_storyboard(payload, storyboard_path=str(sb_path))
+    return report.to_dict()
 
 
 # ---------------------------------------------------------------------------

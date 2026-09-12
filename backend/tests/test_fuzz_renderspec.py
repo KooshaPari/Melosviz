@@ -3,6 +3,9 @@
 Structured Hypothesis coverage for keyframes, scene segments, camera poses,
 and palette/color fields — enough property depth for C07 L66 without a slow
 fuzz farm (modest ``max_examples``, ``deadline=None``).
+
+This file uses ``pytest.importorskip`` to skip all tests if hypothesis is not
+installed, so pytest can still collect the file without errors.
 """
 
 from __future__ import annotations
@@ -10,12 +13,13 @@ from __future__ import annotations
 import json
 
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
+
+# Must be first — the @given decorators below require these at collection time.
+pytest.importorskip("hypothesis")
+from hypothesis import given, settings  # noqa: E402
+from hypothesis import strategies as st  # noqa: E402
 
 from melosviz.analysis.models import RenderSpec
-
-pytest.importorskip("hypothesis")
 
 # ---- shared strategies (keep leaf sizes small for CI speed) ---------------
 

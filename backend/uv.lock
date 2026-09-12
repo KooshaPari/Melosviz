@@ -1136,7 +1136,7 @@ wheels = [
 
 [[package]]
 name = "melosviz"
-version = "0.1.0"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
@@ -1186,6 +1186,7 @@ test = [
     { name = "pytest" },
     { name = "pytest-bdd" },
     { name = "pytest-timeout" },
+    { name = "python-multipart" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -1208,6 +1209,7 @@ requires-dist = [
     { name = "pytest-bdd", marker = "extra == 'test'", specifier = ">=7.0" },
     { name = "pytest-timeout", marker = "extra == 'test'", specifier = ">=2.3" },
     { name = "python-multipart", marker = "extra == 'bridge'", specifier = ">=0.0.9" },
+    { name = "python-multipart", marker = "extra == 'test'", specifier = ">=0.0.9" },
     { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.6" },
     { name = "scipy", marker = "extra == 'analysis'", specifier = ">=1.13" },
     { name = "torch", marker = "extra == 'stems'", specifier = ">=2.0" },

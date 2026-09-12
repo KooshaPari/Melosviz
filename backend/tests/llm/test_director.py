@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import io
 import json
 import logging
+import urllib.error
 from pathlib import Path
 
 import pytest
 
+from melosviz.llm.admission import LLMAdmissionConfig, LLMAdmissionGate
 from melosviz.llm.director import (
     CONTINUITY_ANCHOR_VERSION,
     ContinuityAnchor,
@@ -438,3 +441,177 @@ def test_chorus_archetype_routes_to_audio_video_seedance_with_character() -> Non
 # ---------------------------------------------------------------------------
 # v2 ContinuityAnchor.reference_image (WBS-2)
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# LLM admission integration (production-delivery-extensions Task 2)
+# ---------------------------------------------------------------------------
+
+
+class FakeResponse:
+    """Minimal context-manager response for testing LLM injection."""
+
+    def __init__(self, payload: dict) -> None:
+        self._body = json.dumps(payload).encode()
+
+    def __enter__(self) -> "FakeResponse":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
+
+
+def _llm_env(monkeypatch) -> None:
+    values = {
+        "MELOSVIZ_LLM_ENDPOINT": "https://llm.invalid/v1/chat/completions",
+        "MELOSVIZ_LLM_MODEL": "fixed-model",
+        "MELOSVIZ_LLM_INPUT_USD_PER_MILLION": "1.00",
+        "MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION": "2.00",
+        "MELOSVIZ_LLM_MAX_OUTPUT_TOKENS": "100",
+    }
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+
+
+def _single_scene_request() -> DirectorRequest:
+    return DirectorRequest(
+        concept="neon city",
+        duration_s=8.0,
+        bpm=120.0,
+        segments=[{"label": "verse", "start": 0.0, "end": 8.0}],
+    )
+
+
+def test_llm_missing_prices_falls_back_without_network(monkeypatch, caplog) -> None:
+    """Pricing env vars missing -> no network call, template prompts are used."""
+    monkeypatch.setenv("MELOSVIZ_LLM_ENDPOINT", "https://llm.invalid")
+    calls = 0
+
+    def opener(request, timeout):
+        nonlocal calls
+        calls += 1
+        raise AssertionError("network must not be called")
+
+    with caplog.at_level(logging.WARNING, logger="melosviz.llm.director"):
+        board = Director(seed=1, llm_opener=opener).storyboard(_single_scene_request())
+    assert calls == 0
+    assert "scene verse" in board.scenes[0].prompt
+    assert "must be configured" in caplog.text
+
+
+def test_llm_429_honors_retry_after_and_keeps_model(monkeypatch) -> None:
+    """429 with Retry-After header: sleep is honoured, model is preserved across retries."""
+    _llm_env(monkeypatch)
+    requests: list[dict] = []
+    sleeps: list[float] = []
+    responses = [
+        urllib.error.HTTPError(
+            "https://llm.invalid", 429, "rate limited", {"Retry-After": "2"}, io.BytesIO()
+        ),
+        FakeResponse({
+            "choices": [{"message": {"content": json.dumps({
+                "rewrites": [{"index": 0, "prompt": "refined prompt"}]
+            })}}],
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+        }),
+    ]
+
+    def opener(request, timeout):
+        requests.append(json.loads(request.data.decode()))
+        response = responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    board = Director(
+        seed=1, llm_opener=opener, llm_sleeper=sleeps.append
+    ).storyboard(_single_scene_request())
+    assert board.scenes[0].prompt == "refined prompt"
+    assert sleeps == [2.0]
+    assert [request["model"] for request in requests] == ["fixed-model", "fixed-model"]
+
+
+def test_llm_non_retryable_400_attempts_once(monkeypatch) -> None:
+    """400 Bad Request: no retry, no network beyond the first call."""
+    _llm_env(monkeypatch)
+    calls = 0
+
+    def opener(request, timeout):
+        nonlocal calls
+        calls += 1
+        raise urllib.error.HTTPError(
+            request.full_url, 400, "bad request", {}, io.BytesIO()
+        )
+
+    board = Director(seed=1, llm_opener=opener).storyboard(_single_scene_request())
+    assert calls == 1
+    assert "scene verse" in board.scenes[0].prompt
+
+
+def test_llm_records_actual_cost_in_gate(monkeypatch) -> None:
+    """When the LLM returns usage, the gate's spent_usd reflects actual_cost
+    (not the reserved estimate), so the budget ledger stays accurate."""
+    _llm_env(monkeypatch)
+    config = LLMAdmissionConfig.from_env()
+    gate = LLMAdmissionGate(config)
+    estimate = config.estimate(b"x")
+
+    def opener(request, timeout):
+        return FakeResponse({
+            "choices": [{"message": {"content": json.dumps({
+                "rewrites": [{"index": 0, "prompt": "ok"}]
+            })}}],
+            "usage": {"prompt_tokens": 4, "completion_tokens": 2},
+        })
+
+    board = Director(
+        seed=1, llm_gate=gate, llm_opener=opener
+    ).storyboard(_single_scene_request())
+    assert board.scenes[0].prompt == "ok"
+    expected_actual = config.actual_cost(4, 2)
+    assert gate.spent_usd == expected_actual
+    assert gate.spent_usd != estimate.usd
+
+
+def test_llm_malformed_payload_falls_back_to_templates(
+    monkeypatch, caplog
+) -> None:
+    """Malformed LLM payloads (empty choices, missing message key, None
+    message) must not crash the Director — fall back to templates and log
+    a warning instead. Regression test for IndexError / AttributeError
+    that wasn't in the original except list.
+    """
+
+    monkeypatch.setenv("MELOSVIZ_LLM_ENDPOINT", "https://llm.invalid")
+    monkeypatch.setenv("MELOSVIZ_LLM_MODEL", "fixed-model")
+    monkeypatch.setenv("MELOSVIZ_LLM_INPUT_USD_PER_MILLION", "1.00")
+    monkeypatch.setenv("MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION", "2.00")
+    monkeypatch.setenv("MELOSVIZ_LLM_MAX_OUTPUT_TOKENS", "100")
+
+    malformed_payloads = [
+        # choices empty
+        {"choices": [], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # choices missing
+        {"usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # message key missing
+        {"choices": [{}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # message value is None
+        {"choices": [{"message": None}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        # content not a string
+        {"choices": [{"message": {"content": 12345}}],
+         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+    ]
+    for i, payload in enumerate(malformed_payloads):
+
+        def opener(request, timeout, p=payload):
+            return FakeResponse(p)
+
+        with caplog.at_level(logging.WARNING, logger="melosviz.llm.director"):
+            board = Director(seed=i, llm_opener=opener).storyboard(
+                _single_scene_request()
+            )
+        assert "scene verse" in board.scenes[0].prompt, f"case {i}: templates not used"
+        assert "refinement skipped" in caplog.text, f"case {i}: no warning logged"
+        caplog.clear()

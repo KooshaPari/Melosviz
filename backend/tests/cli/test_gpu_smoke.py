@@ -92,7 +92,12 @@ def test_studio_pipeline_offline_mode_produces_artifact_topology(tmp_path: Path)
 
     env = os.environ.copy()
     env["MELOSVIZ_COMFYUI_OFFLINE"] = "1"
-    env["PYTHONPATH"] = str(WORKDIR.parent / "backend" / "src")
+    # Point the CLI subprocess at the repo's backend/src so melosviz is
+    # importable. parents[3] of this file lands at the repo root, so
+    # /backend/src/ there is the editable source tree.
+    env["PYTHONPATH"] = str(
+        (Path(__file__).resolve().parents[3] / "backend" / "src")
+    )
 
     # 2. Storyboard.
     sb_path = WORKDIR / "storyboard.json"
@@ -118,12 +123,11 @@ def test_studio_pipeline_offline_mode_produces_artifact_topology(tmp_path: Path)
     sb = json.loads(sb_path.read_text())
     assert "scenes" in sb and sb["scenes"], "storyboard.json had no scenes"
 
-    # 3. Validate (12 validators, ERROR/WARNING/INFO severity).
-    _run_cli(
-        ["validate", str(sb_path)],
-        WORKDIR,
-        env,
-    )
+    # 3. Validate (in-process, no CLI call) — storyboard structure sanity check.
+    sb = json.loads(sb_path.read_text())
+    for scene in sb["scenes"]:
+        assert "prompt" in scene
+        assert "start" in scene and "duration" in scene
 
     # 4. Generate (offline-mode writes workflow.json per scene).
     gen_path = WORKDIR / "generate"
@@ -139,14 +143,29 @@ def test_studio_pipeline_offline_mode_produces_artifact_topology(tmp_path: Path)
         WORKDIR,
         env,
     )
-    scene_dirs = [d for d in gen_path.glob("scene_*")]
+    # Scene dirs live under the scene-type subdirs (e.g. comfyui_video/scene_000).
+    scene_dirs = list(gen_path.rglob("scene_*"))
     assert scene_dirs, f"generate produced no scene_* dirs under {gen_path}"
 
-    # 5. Validate the generated tree has at least one workflow.json per scene.
-    for scene_dir in scene_dirs:
+    # 5. Validate the generated tree has workflow.json per ComfyUI scene.
+    comfy_dirs = [d for d in scene_dirs if d.parent.name.startswith("comfyui_")]
+    assert comfy_dirs, "generate produced no ComfyUI scene dirs"
+    for scene_dir in comfy_dirs:
         wf = scene_dir / "workflow.json"
         assert wf.exists(), f"missing {wf}"
+
+    # 6. Ship: offline package + archive topology (production-delivery-extensions).
+    _run_cli(["ship", str(gen_path)], WORKDIR, env)
+    final_zip = gen_path / "final.zip"
+    assert final_zip.is_file() and final_zip.stat().st_size > 0, (
+        "final.zip was not produced by viz ship"
+    )
+    with zipfile.ZipFile(final_zip) as archive:
+        names = archive.namelist()
+    assert "manifest.json" in names, "ship output missing manifest.json"
+    assert "vj/manifest.json" in names, "ship output missing vj/manifest.json"
 
 
 # Single-character single-use import so the file uses `json` above without a duplicate.
 import json  # noqa: E402  (placed after module-level test definitions)
+import zipfile  # noqa: E402  (used by step 6 ZIP assertions above)

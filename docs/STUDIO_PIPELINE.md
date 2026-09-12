@@ -139,7 +139,10 @@ out/
 ├── job_spec.json          # what the orchestrator did
 ├── scene_000/
 │   ├── workflow.json      # ComfyUI prompt graph (open in ComfyUI GUI)
-│   └── render_manifest.json
+│   ├── render_manifest.json
+│   ├── clip.mp4.provenance.json   # render provenance (sha256, timing, seed)
+│   ├── visual-diff.svg             # deterministic SVG timeline card
+│   └── visual-diff-frame.png       # preview frame extracted by ffmpeg
 ├── scene_001/
 │   ├── c4d_render_plan.json
 │   └── ...
@@ -223,20 +226,31 @@ color LUT (you can replace the LUT with your own .cube file via
 ## 7. Step 6 — Ship (package + captions + stems)
 
 ```bash
-viz ship ./master --out ./final.zip
+viz ship ./master
 ```
 
-Produces `./final.zip` containing:
+Produces `./master/final.zip` containing:
 
-- `festival_master.mov`
-- `club_1080p.mp4`
-- `youtube_1080p.mp4`
-- `audio_stems/` — `drums.wav`, `bass.wav`, `vocals.wav`, `other.wav`
-  (when Demucs separation ran during analyze)
-- `captions.srt` — auto-generated from lyrics if you pass
-  `--lyrics lyrics.txt` to `viz analyze`, otherwise beat-marker captions
-- `storyboard.json` — the source of truth for what was rendered
-- `manifest.json` — full provenance (seeds, prompts, models, durations)
+```
+final.zip
+├── manifest.json           # full provenance (mode, deliverables, cue count)
+├── deliverables/
+│   ├── festival_master.mov
+│   ├── club_1080p.mp4
+│   └── youtube_1080p.mp4
+└── vj/
+    ├── manifest.json      # cue count + file list
+    ├── shot-0000-00.svg       # deterministic SVG cue card
+    ├── shot-0000-00.lottie.json  # Lottie v5.12 animation cue
+    └── ...
+```
+
+SVG and Lottie files are **cue and timing metadata** — not vectorized copies
+of rendered footage. They encode beat-grid positions, palette swatches, scene
+labels, and prompt text so VJ software (Resolume, TouchDesigner, VJ Zero) can
+animate shot transitions in lock-step with the music. The weekly GPU smoke runs
+in offline mode and verifies this topology without claiming GPU rendering
+succeeded.
 
 ---
 

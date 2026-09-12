@@ -1,0 +1,57 @@
+name: Publish melosviz to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "PyPI version (e.g. 0.1.0)"
+        required: true
+
+permissions:
+  id-token: write # for OIDC trusted publishing
+  contents: read
+
+jobs:
+  build-sdist:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.x"
+
+      - name: Build sdist + wheel
+        working-directory: backend
+        run: |
+          uv build --sdist --wheel --out-dir dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: melosviz-pypi-dist
+          path: backend/dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build-sdist
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/melosviz
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: melosviz-pypi-dist
+          path: backend/dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -121,8 +121,9 @@ jobs:
       - name: Package CLI tools as tarball
         run: |
           mkdir -p dist
-          cp target/release/melosviz-render    dist/
-          cp target/release/melosviz-mir       dist/
+          cp target/release/melosviz-demo     dist/
+          cp target/release/melosviz-mir      dist/
+          cp target/release/melosviz-demo     dist/melosviz  # canonical name
           cp LICENSE dist/
           tar --sort=name \
             --mtime="@${SOURCE_DATE_EPOCH}" \
@@ -166,7 +167,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
-          Copy-Item target\release\melosviz-render.exe dist\
+          Copy-Item target\release\melosviz-demo.exe dist\
           Copy-Item target\release\melosviz-mir.exe dist\
           Copy-Item LICENSE dist\
           Compress-Archive -Path dist\* -DestinationPath "MelosViz-${{ github.ref_name }}-windows-x86_64.zip"
