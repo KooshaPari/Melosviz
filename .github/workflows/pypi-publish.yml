@@ -49,7 +49,7 @@ jobs:
       name: pypi
       url: https://pypi.org/p/melosviz
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: melosviz-pypi-dist
           path: backend/dist/
