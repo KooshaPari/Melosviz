@@ -26,7 +26,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/
       - id: ruff-format
+        files: ^backend/
 
   # ── Python type checking ──
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -38,6 +40,7 @@ repos:
         pass_filenames: false
         entry: mypy src/
         language: system
+        files: ^backend/src/
 
   # ── Rust ──
   - repo: https://github.com/rust-lang/rust-clippy
