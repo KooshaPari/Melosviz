@@ -7,11 +7,11 @@ calls (HTTP, ffmpeg probe) are mocked or guarded by skipif markers.
 
 from __future__ import annotations
 
-import io
 import json
 import os
 import shutil
-import struct
+import subprocess
+import urllib.error
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -21,11 +21,9 @@ from melosviz.render.comfyui_adapter import (
     ComfyUIAdapter,
     ComfyUIError,
     ComfyUIUnavailableError,
-    ComfyUIWorkflowMissingError,
     _generate_placeholder_clip,
     _hex_to_rgb,
     _http_download,
-    _http_json,
     _scene_duration,
     _submit_workflow,
     render_image,
@@ -37,6 +35,34 @@ HAS_FFPROBE = shutil.which("ffprobe") is not None
 
 needs_ffmpeg = pytest.mark.skipif(not HAS_FFMPEG, reason="ffmpeg not on $PATH")
 needs_ffprobe = pytest.mark.skipif(not HAS_FFPROBE, reason="ffprobe not on $PATH")
+
+
+# ---------------------------------------------------------------------------
+# Helpers to create mock responses compatible with shutil.copyfileobj
+# ---------------------------------------------------------------------------
+
+
+def _make_read_mock(content: bytes):
+    """Return a ``read`` method that yields *content* once, then b''.
+
+    ``shutil.copyfileobj`` calls ``read(16384)`` in a loop; a mock that
+    always returns the full payload causes an infinite loop.
+    """
+    calls = [content, b""]
+
+    def _read(n=-1):
+        return calls.pop(0) if calls else b""
+
+    return _read
+
+
+def _make_http_response(content: bytes):
+    """Build a mock response usable as a context manager with shutil."""
+    resp = MagicMock()
+    resp.read = _make_read_mock(content)
+    resp.__enter__ = lambda s: s
+    resp.__exit__ = MagicMock(return_value=False)
+    return resp
 
 
 # ---------------------------------------------------------------------------
@@ -168,10 +194,7 @@ class TestSubmitWorkflowReturnsJobId:
 
     def test_submit_workflow_returns_string_job_id(self):
         fake_response = json.dumps({"prompt_id": "abc-123-def"}).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = fake_response
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp = _make_http_response(fake_response)
 
         with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
                     return_value=mock_resp) as mock_urlopen:
@@ -191,10 +214,7 @@ class TestSubmitWorkflowReturnsJobId:
 
     def test_submit_workflow_raises_on_no_prompt_id(self):
         fake_response = json.dumps({"error": "queue full"}).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = fake_response
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp = _make_http_response(fake_response)
 
         with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
                     return_value=mock_resp):
@@ -245,13 +265,12 @@ class TestPollStatusHandlesRetryableErrors:
 
         # Return empty history (prompt_id not found) every time
         empty_resp = json.dumps({}).encode()
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = empty_resp
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+
+        def _poll_side_effect(*args, **kwargs):
+            return _make_http_response(empty_resp)
 
         with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    return_value=mock_resp):
+                    side_effect=_poll_side_effect):
             with pytest.raises(ComfyUIError, match="did not finish"):
                 _await_workflow(
                     "prompt-xyz",
@@ -271,10 +290,7 @@ class TestDownloadOutputWritesFile:
 
     def test_download_writes_bytes(self, tmp_path):
         content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100  # Fake image bytes
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = content
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp = _make_http_response(content)
 
         dest = tmp_path / "output_image.png"
         with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
@@ -301,13 +317,11 @@ class TestDownloadOutputWritesFile:
         }
         fake_bytes = b"\x89PNG" + b"\xff" * 50
 
-        mock_resp = MagicMock()
-        mock_resp.read.return_value = fake_bytes
-        mock_resp.__enter__ = lambda s: s
-        mock_resp.__exit__ = MagicMock(return_value=False)
+        def _fake_open(*args, **kwargs):
+            return _make_http_response(fake_bytes)
 
         with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    return_value=mock_resp):
+                    side_effect=_fake_open):
             files = _collect_outputs(
                 history_entry, base_url="http://fake:8188", output_dir=tmp_path
             )
@@ -338,8 +352,6 @@ class TestPlaceholderClipValidDuration:
 
     def _probe_duration(self, clip_path: Path) -> float:
         """Use ffprobe to get the duration of a video file."""
-        import subprocess
-
         result = subprocess.run(
             [
                 "ffprobe", "-v", "quiet",
@@ -385,8 +397,6 @@ class TestPlaceholderClipValidCodec:
 
     def _probe_codec(self, clip_path: Path) -> str:
         """Use ffprobe to get the video codec name."""
-        import subprocess
-
         result = subprocess.run(
             [
                 "ffprobe", "-v", "quiet",
@@ -410,8 +420,6 @@ class TestPlaceholderClipValidCodec:
 
     def test_placeholder_clip_pixel_format(self, tmp_path):
         """Verify yuv420p pixel format for maximum compatibility."""
-        import subprocess
-
         scene = {"prompt": "pix fmt", "duration_s": 1.0}
         clip = tmp_path / "pixfmt_test.mp4"
 
