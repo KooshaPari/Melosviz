@@ -99,7 +99,7 @@ python -m melosviz.cli.main master "$ASSEMBLED" \
 T1=$(now_ms)
 STEP5_MS=$((T1 - T0))
 json_set "$REPORT" "steps.master_ms" "$STEP5_MS"
-MASTERED=$(find "$WORK_DIR/master" -name "*.mp4" -type f 2>/dev/null | head -1)
+MASTERED=$(find "$WORK_DIR/master" -name "*.wav" -type f 2>/dev/null | head -1)
 echo "[5/6] master        ${STEP5_MS}ms"
 
 # ── Step 6: Ship ────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ if [ -f "$ASSEMBLED" ]; then
 
     # Frame count
     FRAMES=$($FFPROBE -v error -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$ASSEMBLED" 2>/dev/null || echo "?")
-    json_set "$REPORT" "probe.assembled_frame_count" "$FRAMES"
+    json_set "$REPORT" "probe.assembled_frame_count" "\"${FRAMES:-?}\""
     echo "  Frames: $FRAMES"
 fi
 
