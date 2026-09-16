@@ -119,14 +119,13 @@ class TestAnalyzeEndpoint:
         assert response.status_code == 400
         assert "not found" in response.json()["detail"].lower()
 
-    def test_analyze_empty_path_returns_400(self, client, reset_security):
-        """Empty path string returns 400."""
+    def test_analyze_empty_path_returns_422(self, client, reset_security):
+        """Empty path string returns 422 (Pydantic validation)."""
         response = client.post(
             "/analyze",
             json={"wav_path": ""},
         )
-        assert response.status_code == 400
-        assert "empty" in response.json()["detail"].lower()
+        assert response.status_code == 422
 
     def test_analyze_invalid_wav_returns_400(self, client, tmp_path, reset_security):
         """Invalid WAV file returns 400 with error detail."""

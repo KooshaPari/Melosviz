@@ -621,13 +621,18 @@ class TestMEAdapterRemaining:
     def test_render_with_segment_paths_non_empty(self, tmp_path):
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.mediaencoder_adapter import MEAdapter
+        from unittest.mock import patch
 
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
         # Create dummy segment paths
         seg1 = tmp_path / "seg1.mp4"
         seg1.write_bytes(b"dummy")
-        result = adapter.render(spec, output_path=tmp_path, segment_paths=[seg1])
+        with patch(
+            "melosviz.render.mediaencoder_adapter.assemble_with_ffmpeg",
+            return_value=tmp_path / "melosviz-assembled.mp4",
+        ):
+            result = adapter.render(spec, output_path=tmp_path, segment_paths=[seg1])
         assert result is not None
 
     def test_render_fallback_ffmpeg(self, tmp_path):

@@ -1483,20 +1483,27 @@ class TestOrchestrator:
             orch.render(self._spec(), scene_types=["video_export"])
 
     def test_adapter_render_failure_raises(self, tmp_path):
+        from melosviz.analysis.models import RenderSpec
         from melosviz.conductor import registry as reg_mod
         from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
         mock_adapter_cls = MagicMock()
+        mock_adapter_cls.__name__ = "MockVideoExport"
+        mock_adapter_cls.__module__ = "tests.test_coverage_100"
         mock_adapter = MagicMock()
         mock_adapter.render.side_effect = RuntimeError("adapter exploded")
         mock_adapter_cls.return_value = mock_adapter
         registry = {"video_export": mock_adapter_cls}
+        spec = RenderSpec(
+            metadata={"duration": 0.1},
+            scene_segments=[{"scene_type": "video_export", "start": 0.0, "end": 0.1}],
+        )
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         with (
             patch.object(reg_mod, "ADAPTER_REGISTRY", registry),
             pytest.raises(ConductorError, match="adapter for scene_type"),
         ):
-            orch.render(self._spec(), scene_types=["video_export"])
+            orch.render(spec, scene_types=["video_export"])
 
     def test_assembly_encode_skipped_inline(self, tmp_path):
         """assembly_encode in scene_types list should not be dispatched inline."""
@@ -1541,6 +1548,8 @@ class TestOrchestrator:
         )
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         mock_adapter_cls = MagicMock()
+        mock_adapter_cls.__name__ = "MockVideoExport"
+        mock_adapter_cls.__module__ = "tests.test_coverage_100"
         mock_adapter = MagicMock()
         mock_adapter.render.return_value = MagicMock()
         mock_adapter_cls.return_value = mock_adapter
@@ -1555,6 +1564,8 @@ class TestOrchestrator:
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         mock_adapter_cls = MagicMock()
+        mock_adapter_cls.__name__ = "MockVideoExport"
+        mock_adapter_cls.__module__ = "tests.test_coverage_100"
         mock_adapter = MagicMock()
         mock_adapter.render.return_value = MagicMock()
         mock_adapter_cls.return_value = mock_adapter

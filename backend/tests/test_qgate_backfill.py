@@ -563,8 +563,14 @@ class TestOrchestrator:
     def test_orchestrator_adapter_error_wraps_as_conductor_error(
         self, tmp_path
     ) -> None:
+        from melosviz.analysis.models import RenderSpec
         from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
+        spec = RenderSpec(
+            metadata={"duration": 3.0, "fps": 24, "bpm": 120.0},
+            palette=["#000000", "#ffffff"],
+            scene_segments=[{"scene_type": "video_export", "start": 0.0, "end": 3.0}],
+        )
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
         with (
             patch(
@@ -573,7 +579,7 @@ class TestOrchestrator:
             ),
             pytest.raises(ConductorError, match="adapter.*failed"),
         ):
-            orch.render(_minimal_render_spec(), scene_types=["video_export"])
+            orch.render(spec, scene_types=["video_export"])
 
     def test_orchestrator_assembly_encode_skips_in_loop(self, tmp_path) -> None:
         """assembly_encode scene_type is handled separately, not dispatched inline."""
@@ -960,8 +966,14 @@ class TestChaosResilience:
             pytest.fail("spec_from_wav on corrupt data should raise")
 
     def test_orchestrator_adapter_failure_propagates(self, tmp_path) -> None:
+        from melosviz.analysis.models import RenderSpec
         from melosviz.conductor.orchestrator import Orchestrator
 
+        spec = RenderSpec(
+            metadata={"duration": 3.0, "fps": 24, "bpm": 120.0},
+            palette=["#000000", "#ffffff"],
+            scene_segments=[{"scene_type": "video_export", "start": 0.0, "end": 3.0}],
+        )
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
         with (
             patch(
@@ -970,7 +982,7 @@ class TestChaosResilience:
             ),
             pytest.raises((RuntimeError, Exception)),
         ):
-            orch.render(_minimal_render_spec(), scene_types=["video_export"])
+            orch.render(spec, scene_types=["video_export"])
 
     def test_td_bridge_osc_send_failure_propagates_as_warning(self) -> None:
         """OSC send errors must be logged, never silently ignored or crash."""

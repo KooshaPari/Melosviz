@@ -374,6 +374,7 @@ class TestMEAdapter:
 
     def test_me_adapter_render_writes_job_spec(self, tmp_path: Path) -> None:
         from melosviz.render.mediaencoder_adapter import MEAdapter
+        from unittest.mock import patch
 
         # Create a dummy segment path (need at least one to build a valid spec)
         seg = tmp_path / "seg0.mp4"
@@ -381,11 +382,15 @@ class TestMEAdapter:
 
         # use_ame=None: auto-detect. AME absent in CI → spec written, no assembly.
         adapter = MEAdapter(use_ame=None)
-        result = adapter.render(
-            _minimal_spec(),
-            output_path=tmp_path,
-            segment_paths=[seg],
-        )
+        with patch(
+            "melosviz.render.mediaencoder_adapter.assemble_with_ffmpeg",
+            return_value=tmp_path / "melosviz-assembled.mp4",
+        ):
+            result = adapter.render(
+                _minimal_spec(),
+                output_path=tmp_path,
+                segment_paths=[seg],
+            )
         assert result is not None
         # Job spec file should be written regardless of AME availability
         assert (tmp_path / "ame_batch_job.json").exists()

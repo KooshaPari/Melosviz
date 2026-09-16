@@ -30,7 +30,6 @@
   "cli.arg.key.help": "Sobrescribir tonalidad (predeterminado: detectado por MIR)",
   "cli.arg.seed.help": "Semilla aleatoria para reproducibilidad",
   "cli.arg.palette.help": "Códigos hex de paleta (separados por espacios)",
-  "cli.arg.storyboard.help": "Ruta al storyboard.json (sobrescribe --concept)",
   "cli.arg.lyrics.help": "Archivo de letras LRC / texto plano / JSON; ajusta los límites de escena a las frases",
   "cli.arg.mood_board.help": "Una o varias imágenes de referencia (paleta y estilo extraídos vía PIL median-cut)",
   "cli.arg.moodboard.help": "Una o varias imágenes de referencia (paleta y estilo extraídos vía PIL median-cut)",
@@ -75,5 +74,14 @@
   "cli.error.no_deliverables": "viz ship: no se encontraron MP4 / MOV / WAV / SRT bajo {path}",
   "cli.msg.plan_written": "viz build: plan guardado en {path}",
   "cli.msg.storyboard_written": "viz storyboard: {scenes} escenas -> {path}",
-  "cli.msg.no_diff": "(sin diferencias)"
+  "cli.msg.no_diff": "(sin diferencias)",
+  "cli.direct.no_changes": "viz direct: no se proporcionaron cambios (usa --prompt / --camera / --name)",
+  "cli.direct.render_invoked": "viz direct: re-renderizando escena {index} solo -> {path}",
+  "cli.direct.scene_edited": "viz direct: escena {index} editada ({changes})",
+  "cli.direct.scene_index_out_of_range": "viz direct: indice de escena {index} fuera de rango (el storyboard tiene {total} escenas, valores: 0..{max})",
+  "cli.direct.scene_index_required": "viz direct: --scene es obligatorio (usa --scene 0 para la primera escena)",
+  "cli.direct.usage": "viz direct STORYBOARD --scene INDEX [--prompt TEXT] [--camera MOTION] [--name TEXT] [--rerender-only] [--wav PATH]",
+  "cli.direct.wav_required_for_rerender": "viz direct: --rerender-only requiere --wav para que el renderizador pueda recomponer el corte",
+  "cli.direct.written": "viz direct: storyboard escrito en {path}",
+  "cli.error.lyrics_parse_failed": "viz storyboard: error al analizar letras en {path}: {error}"
 }

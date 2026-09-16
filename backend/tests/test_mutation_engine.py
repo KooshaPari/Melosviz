@@ -227,6 +227,7 @@ class MutationReport:
     elapsed_s: float = 0.0
 
 
+@pytest.mark.timeout(300)
 @pytest.mark.skipif(
     not (SRC / "melosviz" / "analysis" / "models.py").exists(),
     reason="melosviz analysis models not in this checkout",

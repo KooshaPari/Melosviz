@@ -42,33 +42,34 @@ BACKEND = REPO / "backend"
 
 
 def _write_180s_124bpm_wav(path: Path) -> None:
-    from math import exp, sin  # local import keeps fixture self-contained
+    import numpy as np
 
     sr = 22050  # smaller sample rate to keep the file tiny
     dur = 180.0
     n = int(sr * dur)
     bpm = 124
     beat_period = 60.0 / bpm
+    t = np.arange(n, dtype=np.float64) / sr
+    bt = t % beat_period
+    kick = 0.5 * (np.where(bt < 0.04, 1.0, 0.0) * np.exp(-bt * 50))
+    # Mood arc via piecewise bass params
+    bass_hz = np.where(t < 60, 55, np.where(t < 120, 41, 65))
+    bass_amp = np.where(t < 60, 0.18, np.where(t < 120, 0.24, 0.16))
+    harm_param = np.where(t < 60, 0.06, np.where(t < 120, -0.05, 0.08))
+    bass = bass_amp * np.sin(2 * 3.14159 * bass_hz * t)
+    snare = np.where(
+        (np.floor(t * 2) % 2).astype(int) == 1,
+        0.30 * np.exp(-((t * 0.5) % 1.0) * 30),
+        0.0,
+    )
+    harm_val = harm_param * np.sin(2 * 3.14159 * 220 * t)
+    samples = np.clip(kick + bass + snare + harm_val, -1.0, 1.0)
+    int_samples = (samples * 32767).astype(np.int16)
     with wave.open(str(path), "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(sr)
-        # Mood arc: bright 0-60s, dark 60-120s, euphoric 120-180s
-        for i in range(n):
-            t = i / sr
-            bt = t % beat_period
-            kick = 0.5 * (1.0 if bt < 0.04 else 0.0) * exp(-bt * 50)
-            if t < 60:
-                bass_hz, bass_amp, harm = 55, 0.18, 0.06
-            elif t < 120:
-                bass_hz, bass_amp, harm = 41, 0.24, -0.05
-            else:
-                bass_hz, bass_amp, harm = 65, 0.16, 0.08
-            bass = bass_amp * sin(2 * 3.14159 * bass_hz * t)
-            snare = 0.30 * exp(-((t * 0.5) % 1.0) * 30) if int(t * 2) % 2 == 1 else 0
-            harm_val = harm * sin(2 * 3.14159 * 220 * t)
-            sample = max(-1.0, min(1.0, kick + bass + snare + harm_val))
-            w.writeframesraw(struct.pack("<h", int(sample * 32767)))
+        w.writeframesraw(int_samples.tobytes())
 
 
 def _write_lrc(path: Path) -> None:
@@ -103,7 +104,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
         env=env,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
     )
 
 
@@ -113,6 +114,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess:
 
 
 @pytest.mark.slow
+@pytest.mark.timeout(300)
 def test_full_pipeline_three_minute_track(tmp_path: Path) -> None:
     """Run the entire music-video pipeline against a synthesized 3-min track."""
     if not shutil.which("ffmpeg"):

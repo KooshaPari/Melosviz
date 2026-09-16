@@ -168,6 +168,8 @@ def test_render_with_known_scene_type_dispatches_adapter(tmp_path):
     mock_adapter_instance = MagicMock()
     mock_adapter_instance.render.return_value = mock_result
     mock_adapter_cls = MagicMock(return_value=mock_adapter_instance)
+    mock_adapter_cls.__name__ = "MockVideoExport"
+    mock_adapter_cls.__module__ = "tests.test_conductor"
 
     patched = {"video_export": mock_adapter_cls}
     original = reg_mod.ADAPTER_REGISTRY
@@ -192,6 +194,8 @@ def test_render_skip_assembly_omits_assembly_step(tmp_path):
     mock_video_instance = MagicMock()
     mock_video_instance.render.return_value = {}
     mock_video_cls = MagicMock(return_value=mock_video_instance)
+    mock_video_cls.__name__ = "MockVideoExport"
+    mock_video_cls.__module__ = "tests.test_conductor"
 
     assembly_cls = MagicMock()
 
@@ -217,6 +221,8 @@ def test_render_adapter_exception_wrapped_as_conductor_error(tmp_path):
     boom_instance = MagicMock()
     boom_instance.render.side_effect = RuntimeError("adapter exploded")
     boom_cls = MagicMock(return_value=boom_instance)
+    boom_cls.__name__ = "MockBoomAdapter"
+    boom_cls.__module__ = "tests.test_conductor"
 
     patched = {"video_export": boom_cls}
     original = reg_mod.ADAPTER_REGISTRY

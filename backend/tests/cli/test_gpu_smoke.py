@@ -35,19 +35,21 @@ WORKDIR = Path("/tmp/melviz_smoke")
 
 def _synth_wav(path: Path, dur_s: float = 6.0, bpm: int = 120) -> None:
     """Write a minimal stereo 22050Hz 16-bit PCM WAV with a kick on every beat."""
+    import numpy as np
+
     sr = 22050
     n = int(sr * dur_s)
     period = 60.0 / bpm
+    t = np.arange(n, dtype=np.float64) / sr
+    bt = t % period
+    kick = np.where(bt < 0.05, 0.55 * np.exp(-bt * 50.0), 0.0)
+    samples = np.clip(kick, -1.0, 1.0)
+    int_samples = (samples * 32767).astype(np.int16)
     with wave.open(str(path), "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(sr)
-        for i in range(n):
-            t = i / sr
-            bt = t % period
-            kick = 0.55 * math.exp(-bt * 50.0) if bt < 0.05 else 0.0
-            sample = int(max(-1.0, min(1.0, kick)) * 32767)
-            w.writeframes(struct.pack("<h", sample))
+        w.writeframes(int_samples.tobytes())
 
 
 def _write_lrc(path: Path) -> None:
