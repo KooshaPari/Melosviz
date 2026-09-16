@@ -15,11 +15,25 @@ const STUDIO_POLISH_PREFIXES = [
   "audio.stop",
 ] as const;
 
+function flattenKeys(catalog: Record<string, unknown>): string[] {
+  const flat: string[] = [];
+  for (const [k, v] of Object.entries(catalog)) {
+    if (typeof v === "object" && v !== null && !Array.isArray(v)) {
+      for (const sub of Object.keys(v as Record<string, unknown>)) {
+        flat.push(`${k}.${sub}`);
+      }
+    } else {
+      flat.push(k);
+    }
+  }
+  return flat;
+}
+
 function keysWithPrefix(
-  catalog: Record<string, string>,
+  catalog: Record<string, unknown>,
   prefix: string,
 ): string[] {
-  return Object.keys(catalog)
+  return flattenKeys(catalog)
     .filter((k) => k.startsWith(prefix))
     .sort();
 }

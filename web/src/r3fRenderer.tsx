@@ -3,12 +3,14 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { RenderSpec } from "./renderSpec";
 import { BeatPulse } from "./components/BeatPulse";
+import { SceneSummaryAnnouncer } from "./components/SceneSummary";
 import {
   getSceneTemplate,
   type SceneTemplate,
   type SceneTemplateId,
 } from "./sceneTemplates";
 import { resolveSceneBlend, type SceneBlendState } from "./utils/sceneBlend";
+import { buildSceneSummary } from "./utils/sceneSummary";
 
 // ---- Internal: per-frame state ref -----------------------------------------
 
@@ -355,6 +357,9 @@ export function SceneView({
   };
 
   const sceneLabel = currentSceneLabel?.trim() || blend.sceneLabel || "Scene";
+
+  const sceneSummary = buildSceneSummary({ spec, playbackT, sceneLabel });
+  const summaryDetailId = "scene-summary-detail";
 
   return (
     <div className={className}>

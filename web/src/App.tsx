@@ -218,6 +218,12 @@ export default function App() {
         /* preset editor triggered externally */
       },
       toggleFullscreen: () => setFullscreen((v) => !v),
+      toggleMute: () => {
+        /* mute toggled externally */
+      },
+      toggleLoop: () => {
+        /* loop toggled externally */
+      },
       restartPlayback: () => {
         setAutoPlay(false);
         setPlaybackT(0);

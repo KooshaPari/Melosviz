@@ -1,8 +1,8 @@
 // Scene-boundary blend resolution for multi-scene crossfades.
 
-import type { Keyframe, RenderSpec } from "./renderSpec";
+import type { Keyframe, RenderSpec } from "../renderSpec";
 import { lerpKeyframe, type InterpolatedFrame } from "./interpolate";
-import type { SceneTemplateId } from "./sceneTemplates";
+import type { SceneTemplateId } from "../sceneTemplates";
 
 export interface SceneBlendState {
   fromTemplate: SceneTemplateId;
