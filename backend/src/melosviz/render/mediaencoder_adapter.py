@@ -527,23 +527,19 @@ class MEAdapter:
         used_ffmpeg = False
         ffmpeg_output: Path | None = None
 
-        if not _ame_present and _seg_paths and self._use_ame is False:
-            # Explicit ffmpeg fallback — never silent.
-            # Only attempt when use_ame=False is explicitly set; when use_ame=None
-            # (auto-detect) and AME is absent, we write the spec only.
+        if not _ame_present and _seg_paths and self._use_ame is not True:
+            # FFmpeg fallback when AME is absent and not explicitly required.
+            # When use_ame is None (auto-detect) or False, fall back to ffmpeg concat.
             ffmpeg_out = Path(str(_out_dir)) / "melosviz-assembled.mp4"
+            _spec_dict = (
+                render_spec.model_dump()
+                if hasattr(render_spec, "model_dump")
+                else render_spec if isinstance(render_spec, dict) else {}
+            )
             ffmpeg_output = assemble_with_ffmpeg(
                 _seg_paths,
                 ffmpeg_out,
-                fps=int(
-                    (
-                        render_spec.model_dump()
-                        if hasattr(render_spec, "model_dump")
-                        else render_spec
-                    )
-                    .get("metadata", {})
-                    .get("fps", 30)  # type: ignore[union-attr]
-                ),
+                fps=int(_spec_dict.get("metadata", {}).get("fps", 30)),
             )
             used_ffmpeg = True
         elif not _ame_present and not _seg_paths:

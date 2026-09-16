@@ -779,6 +779,10 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
             segment_paths.append(f)
         for f in sorted(sub.glob("*.mov")):
             segment_paths.append(f)
+        # Recurse into scene_*/ for clip.mp4 files produced by offline mode.
+        for f in sorted(sub.rglob("clip.mp4")):
+            if f not in segment_paths:
+                segment_paths.append(f)
         # Recurse one level into scene_*/ for job_spec.json and per-scene plans.
         for f in sorted(sub.glob("*plan*.json")):
             plan_paths.append(f)
@@ -798,10 +802,10 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
     # equal-tempo grid when no storyboard is found (offline-mode is ok).
     from melosviz.compose.beat_cuts import (
         build_assemble_effects_plan,
-        BeatCutConfig,
     )
 
     sb_path: Path | None = None
+    sb_dict: dict = {}
     for plan_path in plan_paths:
         try:
             payload = json.loads(plan_path.read_text())
@@ -809,19 +813,11 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
             continue
         if isinstance(payload, dict) and isinstance(payload.get("scenes"), list):
             sb_path = plan_path
+            sb_dict = payload
             break
 
     effects_plan = build_assemble_effects_plan(
-        storyboard_path=sb_path,
-        clip_paths=[str(p) for p in segment_paths],
-        config=BeatCutConfig(
-            strategy="cut_on_downbeat",
-            bpm=None,           # taken from storyboard.concept_bpm if present
-            snaps_to_lyric=True,
-            crossfade_ms=120,
-            min_gap_ms=180,
-            max_cuts_per_scene=4,
-        ),
+        sb_dict if sb_dict else {"scenes": []},
     )
     effects_path = target / "effects.json"
     effects_path.write_text(json.dumps(effects_plan, indent=2, default=str))

@@ -183,6 +183,121 @@ def _comfyui_timeout_s() -> int:
         return DEFAULT_COMFYUI_TIMEOUT_S
 
 
+# ---------------------------------------------------------------------------
+# Offline placeholder clip generation
+# ---------------------------------------------------------------------------
+
+# Default palette colours (hex) cycled when a scene has no palette.
+_PLACEHOLDER_PALETTE = ["#00f5ff", "#ff2fd5", "#8a75ff", "#ffb347", "#47d147"]
+
+
+def _hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+    """Convert ``#rgb`` or ``#rrggbb`` to ``(r, g, b)``.  Falls back to grey."""
+    clean = hex_str.strip().lstrip("#")
+    if len(clean) == 3:
+        clean = "".join(c * 2 for c in clean)
+    if len(clean) != 6:
+        return (128, 128, 128)
+    try:
+        return (int(clean[0:2], 16), int(clean[2:4], 16), int(clean[4:6], 16))
+    except ValueError:
+        return (128, 128, 128)
+
+
+def _scene_duration(scene: dict, default: float = 1.0) -> float:
+    """Extract duration in seconds from a scene dict."""
+    dur = scene.get("duration_s") or scene.get("duration")
+    if dur is not None:
+        try:
+            return max(0.1, float(dur))
+        except (TypeError, ValueError):
+            pass
+    start = scene.get("start", 0)
+    end = scene.get("end", 0)
+    try:
+        d = float(end) - float(start)
+        if d > 0:
+            return d
+    except (TypeError, ValueError):
+        pass
+    return default
+
+
+def _generate_placeholder_clip(
+    scene: dict,
+    out_path: Path,
+    *,
+    width: int = 1280,
+    height: int = 720,
+    fps: int = 30,
+    scene_index: int = 0,
+) -> Path:
+    """Generate a solid-colour placeholder MP4 via FFmpeg.
+
+    The clip has a text overlay showing the scene label and index so
+    operators can visually identify scenes in the offline pipeline.
+    No third-party deps beyond ffmpeg.
+
+    Returns:
+        Absolute path to the produced MP4.
+    """
+    ffmpeg = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+    if not ffmpeg:
+        raise ComfyUIError(
+            "Offline placeholder clip generation requires ffmpeg on $PATH. "
+            "Install ffmpeg or set MELOSVIZ_FFMPEG_BIN."
+        )
+
+    duration = _scene_duration(scene)
+    label = scene.get("label", scene.get("name", f"scene_{scene_index:03d}"))
+    # Pick colour from palette or cycle defaults.
+    palette = scene.get("palette", [])
+    if isinstance(palette, str):
+        palette = [palette]
+    hex_color = palette[scene_index % len(palette)] if palette else _PLACEHOLDER_PALETTE[scene_index % len(_PLACEHOLDER_PALETTE)]
+    r, g, b = _hex_to_rgb(str(hex_color))
+    ffmpeg_color = f"0x{r:02x}{g:02x}{b:02x}"
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # FFmpeg: solid colour clip.  No text overlay (drawtext requires
+    # libfreetype which is not guaranteed in minimal FFmpeg builds).
+    filter_graph = (
+        f"color=c={ffmpeg_color}:s={width}x{height}:d={duration}:r={fps}"
+    )
+
+    cmd = [
+        ffmpeg, "-y",
+        "-f", "lavfi",
+        "-i", filter_graph,
+        "-c:v", "libx264",
+        "-pix_fmt", "yuv420p",
+        "-t", str(duration),
+        str(out_path),
+    ]
+    try:
+        subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, OSError) as exc:
+        raise ComfyUIError(
+            f"Placeholder clip FFmpeg failed: {exc}"
+        ) from exc
+
+    if not out_path.exists() or out_path.stat().st_size == 0:
+        raise ComfyUIError(f"Placeholder clip missing or empty: {out_path}")
+
+    logger.info(
+        "ComfyUIAdapter: offline placeholder clip → %s (%.1fs, %dx%d)",
+        out_path, duration, width, height,
+    )
+    return out_path
+
+
 def _workflows_dir() -> Path:
     override = os.environ.get(_COMFYUI_ENV_WORKFLOWS)
     if override:
@@ -490,7 +605,9 @@ class ComfyUIAdapter:
             return []
 
         results: list[Path] = []
-        # Offline mode → write a per-scene job spec and skip the network.
+        # Offline mode → write a per-scene job spec AND a placeholder MP4 clip
+        # so the downstream pipeline (assemble / master / ship) can run
+        # without a live ComfyUI server.
         if _comfyui_offline():
             job_spec = {
                 "mode": "offline-job-spec",
@@ -506,6 +623,25 @@ class ComfyUIAdapter:
                 scene_out.mkdir(parents=True, exist_ok=True)
                 spec_path = scene_out / "workflow.json"
                 spec_path.write_text(json.dumps(workflow, indent=2), encoding="utf-8")
+                # Generate a placeholder MP4 clip so assemble/master/ship work.
+                clip_path = scene_out / "clip.mp4"
+                try:
+                    _generate_placeholder_clip(
+                        scene, clip_path,
+                        width=int(scene.get("width", 1280)),
+                        height=int(scene.get("height", 720)),
+                        fps=int(scene.get("fps", 30)),
+                        scene_index=i,
+                    )
+                    results.append(clip_path)
+                except ComfyUIError as exc:
+                    # If FFmpeg is missing, still return the workflow JSON
+                    # so the pipeline doesn't hard-fail in minimal envs.
+                    logger.warning(
+                        "ComfyUIAdapter: placeholder clip failed (%s); "
+                        "returning workflow JSON instead.", exc,
+                    )
+                    results.append(spec_path)
                 job_spec["scenes"].append({
                     "index": i,
                     "scene_type": wf_type,
@@ -514,8 +650,8 @@ class ComfyUIAdapter:
                     "negative": scene.get("negative", ""),
                     "seed": scene.get("seed", 0),
                     "workflow_json": str(spec_path),
+                    "placeholder_clip": str(clip_path) if clip_path.exists() else None,
                 })
-                results.append(spec_path)
             manifest = out_dir / "job_spec.json"
             manifest.write_text(json.dumps(job_spec, indent=2), encoding="utf-8")
             return results
