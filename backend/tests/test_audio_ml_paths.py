@@ -139,6 +139,7 @@ def beat_track_wav(tmp_path: Path) -> Path:
 
 class TestTryImportHelpers:
     def test_try_import_librosa_returns_module_when_installed(self) -> None:
+        pytest.importorskip("librosa")
         librosa_mod = _try_import_librosa()
         assert librosa_mod is not None
         assert hasattr(librosa_mod, "load")
@@ -273,6 +274,7 @@ class TestRmsFallbackEnvelope:
 
 class TestLibrosaSegmentBoundaries:
     def test_boundaries_match_requested_count(self) -> None:
+        pytest.importorskip("librosa")
         import librosa
         import numpy as np
 
@@ -294,6 +296,7 @@ class TestLibrosaSegmentBoundaries:
             assert start <= end <= 3.0
 
     def test_pads_when_not_enough_boundaries(self) -> None:
+        pytest.importorskip("librosa")
         import librosa
         import numpy as np
 
@@ -372,6 +375,7 @@ class TestBuildSceneSegments:
             assert "end" in seg
 
     def test_with_librosa_uses_real_boundaries(self) -> None:
+        pytest.importorskip("librosa")
         import librosa
         import numpy as np
 
@@ -402,6 +406,7 @@ class TestBuildSceneSegments:
 
 class TestSpectralStemFallback:
     def test_returns_expected_stem_keys(self) -> None:
+        pytest.importorskip("librosa")
         import librosa
         import numpy as np
 
@@ -542,6 +547,7 @@ class TestAnalyzeWavRichE2E:
         assert spec_hi.metadata["n_dense_fps"] == 30
 
     def test_emits_timeline_events(self, beat_track_wav: Path) -> None:
+        pytest.importorskip("librosa")
         spec = analyze_wav_rich(beat_track_wav, n_dense_fps=10, use_demucs=False)
         types = {ev["type"] for ev in spec.timeline_events}
         # Beat track + onset + section labels should all appear

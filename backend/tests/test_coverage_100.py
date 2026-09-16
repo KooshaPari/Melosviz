@@ -1460,7 +1460,12 @@ class TestOrchestrator:
     def _spec(self) -> Any:
         from melosviz.analysis.models import RenderSpec
 
-        return RenderSpec(metadata={"duration": 0.1})
+        return RenderSpec(
+            metadata={"duration": 0.1},
+            scene_segments=[
+                {"name": "scene_000", "scene_type": "video_export"},
+            ],
+        )
 
     def test_no_adapter_raises_conductor_error(self, tmp_path):
         from melosviz.conductor.orchestrator import ConductorError, Orchestrator
