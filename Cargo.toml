@@ -5,7 +5,7 @@ members = [
     "crates/melosviz-mir",
     "crates/melosviz-render-wgpu",
 ]
-exclude = ["fuzz"]
+exclude = ["fuzz", "src-tauri"]
 
 [profile.release]
 opt-level = 3

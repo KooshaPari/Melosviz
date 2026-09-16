@@ -88,15 +88,15 @@ where = ["src"]
 "melosviz" = ["py.typed", "i18n/locales/*.json"]
 
 [tool.ruff]
-line-length = 88
-target-version = "py310"
+line-length = 100
+target-version = "py311"
 
 [tool.ruff.lint]
 # Keep the ruleset narrow: critical correctness + modern style only.
 select = [
     "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
     "F",    # pyflakes
+    "N",    # pep8-naming
     "I",    # isort
     "B",    # flake8-bugbear
     "UP",   # pyupgrade
@@ -110,8 +110,11 @@ ignore = [
 "tests/*" = ["B011"]  # asserts are fine in tests
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
 # RenderSpec is a pydantic model: don't let mypy trip on the dynamic
 # pydantic field assignment that ``cinematic.apply`` does.
 disable_error_code = ["method-assign"]
