@@ -77,3 +77,4 @@ vite-out.log
 # Local isolated implementation worktrees
 .worktrees/
 .venv/
+*.provenance.json
