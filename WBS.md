@@ -1,12 +1,13 @@
-# WBS — MelosViz (2026-08-25)
+# WBS — MelosViz (2026-08-25, revised 2026-09-17)
 
-**Repo:** [<REDACTED>/Melosviz](https://github.com/<REDACTED>/Melosviz)
-**Branch:** `feat/comfyui-studio-pivot`
-**Status:** Studio pipeline pivot in flight; see [`SPEC.md`](SPEC.md) §11
-and [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md) for the architecture
-and end-to-end guide.
+**Repo:** https://github.com/KooshaPari/Melosviz
+**Branch:** `main` (current) · previous `feat/comfyui-studio-pivot`
+**Status:** v0.1.0 released 2026-09-17 (macOS `.app` + `.dmg`); live creative
+render backend still offline. Web tests 246/246, 0 skipped. See
+[`SPEC.md`](SPEC.md) §11 and [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md)
+for the architecture and end-to-end guide.
 
-**Owner:** forge (agent CLI). **Driver:** `python -m melosviz.cli.main …`.
+**Owner:** jcode (agent). **Driver:** `cargo tauri build` (desktop) · `pnpm test` (web).
 
 ---
 

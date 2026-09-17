@@ -40,6 +40,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release: corrected `softprops/action-gh-release` v2.2.1 SHA pin and `cargo-cyclonedx` v0.5.9 `--format` / `--override-filename` invocation.
 - Web: restored clean `App.tsx` and `useAnalysis.ts` and fixed `typescript-eslint` version mismatch.
 
+## [0.1.1] - 2026-09-17
+
+The September 17, 2026 macOS artifact (`Melosviz_0.1.0_aarch64.dmg`) is the first
+release that is installable on a clean machine and fully test-green. It supersedes
+the June v0.1.0 scaffold. Tagged `v0.1.0` at release time; this changelog entry
+captures the post-June deltas shipped in that artifact.
+
+### Added
+
+- Tauri desktop bundle targets (`f082aa5`): `cargo tauri build` now emits `Melosviz.app` + `Melosviz_0.1.0_aarch64.dmg`.
+- Working packaged web frontend embedded in the native shell (`83f8edd`, `d6bac76`, `b6520b7`).
+- `FullscreenToggle`, `SceneJumpPanel`, and wired `PlaybackTransport` components (`d14aa8e`) — spec-first accessible UI surfaced in the right panel and bottom transport.
+
+### Changed
+
+- Web test suite green at 246/246, 0 skipped (`390b859`, `d14aa8e`). Three previously-skipped a11y tests now pass against real components.
+- Desktop build command skips `tsc` in the Tauri `beforeBuildCommand` and adds an app icon (`b6520b7`).
+
+### Fixed
+
+- Remaining web-test failures from the prior run resolved (`390b859`): Radix portal query, AudioDropzone regex name, SpecViewer `createObjectURL`/`createElement` mocking, PlaybackTransport `getAllByRole`.
+- TS runtime errors so the packaged app loads (`83f8edd`).
+
 ## [0.2.0] - 2026-07-04
 
 ### Added
@@ -144,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backend pytest import path.
 - Restore `melosviz` package so `test_video_exporter` can collect and pass.
 
-[Unreleased]: https://github.com/<REDACTED>/Melosviz/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/<REDACTED>/Melosviz/releases/tag/v0.2.0
-[0.1.0]: https://github.com/<REDACTED>/Melosviz/releases/tag/v0.1.0
+[Unreleased]: https://github.com/KooshaPari/Melosviz/compare/v0.1.1...HEAD
+[0.2.0]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.2.0
+[0.1.1]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.1
+[0.1.0]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.0
