@@ -9,8 +9,19 @@ Every entry states the evidence, not just the conclusion.
 
 ## GHSA-wrw7-89jp-8q8g — `glib` unsoundness in `VariantStrIter` (alert 28)
 
-**Status:** accepted, not reachable in shipped artifacts. Alert dismissed as
-tolerable risk.
+**Status:** accepted as unreachable. **The Dependabot alert is deliberately
+left open** — dismissing a security alert is an operator decision, and this
+environment requires explicit approval for it. The recommendation and its
+evidence are recorded here; the alert stays visible until an operator acts.
+
+To dismiss it with the recorded rationale:
+
+```bash
+gh api -X PATCH repos/KooshaPari/Melosviz/dependabot/alerts/28 \
+  -f state=dismissed \
+  -f dismissed_reason=tolerable_risk \
+  -f dismissed_comment="Not reachable in shipped artifacts, and unfixable upstream; see docs/security/DEPENDENCY-ADVISORIES.md"
+```
 
 **Advisory.** Unsound `Iterator` / `DoubleEndedIterator` impls for
 `glib::VariantStrIter`. Affected `>= 0.15.0, < 0.20.0`. Lock has `glib 0.18.5`.
@@ -80,7 +91,8 @@ gh api repos/KooshaPari/Melosviz/dependabot/alerts \
 
 ## GHSA-px8p-9vwx-vf98 — `fflate` unzip infinite loop (alert 23)
 
-**Status:** fixed.
+**Status:** fixed and verified closed. Dependabot alert 23 closed automatically
+after the fix landed on `main`.
 
 `three-stdlib` pins `fflate ^0.6.9`, which resolved to the vulnerable `0.6.10`.
 Added a scoped override in `web/package.json`:
