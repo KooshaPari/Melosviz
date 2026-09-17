@@ -15,6 +15,9 @@ import { WaveformDisplay } from "./components/WaveformDisplay";
 import { PresetEditor } from "./components/PresetEditor";
 
 import { KeyboardHelp } from "./components/KeyboardHelp";
+import { PlaybackTransport } from "./components/PlaybackTransport";
+import { FullscreenToggle } from "./components/FullscreenToggle";
+import { SceneJumpPanel } from "./components/SceneJumpPanel";
 
 
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -412,6 +415,14 @@ export default function App() {
             </button>
           ))}
         </div>
+        <FullscreenToggle
+          fullscreen={fullscreen}
+          onToggle={() => setFullscreen((v) => !v)}
+        />
+        <SceneJumpPanel
+          spec={activeSpec}
+          onJumpToKeyframe={(frac) => setPlaybackT(frac)}
+        />
       </div>
 
       {/* ---- Waveform display (visible when an audio path is set) ---------- */}
@@ -423,6 +434,25 @@ export default function App() {
 
       {/* ---- Bottom bar: playback controls -------------------------------- */}
       <div className="absolute bottom-4 left-4 right-4 z-10 flex flex-col gap-2">
+        {/* Accessibility-first playback transport (a11y spec-first wiring) */}
+        <PlaybackTransport
+          playbackT={playbackT}
+          autoPlay={autoPlay}
+          durationSecs={activeSpec.durationSecs}
+          currentSceneLabel={currentSceneLabel}
+          isListening={isPlaying}
+          bpm={activeSpec.bpm}
+          onTogglePlay={() => setAutoPlay((v) => !v)}
+          onSeek={(frac) => {
+            setAutoPlay(false);
+            setPlaybackT(frac);
+          }}
+          onReset={() => {
+            setAutoPlay(false);
+            setPlaybackT(0);
+          }}
+        />
+
         {/* Slider + auto-play */}
         <div className="flex items-center gap-3 rounded-lg bg-black/40 border border-white/10 px-4 py-3">
           {/* Auto-play toggle */}
