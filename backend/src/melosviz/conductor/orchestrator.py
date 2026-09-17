@@ -724,10 +724,25 @@ class Orchestrator:
 
             elapsed_ms = (time.monotonic() - t0) * 1000.0
             artifact = ""
-            if hasattr(result, "files") and result.files:
+            if isinstance(result, (list, tuple)) and result:
+                first = result[0]
+                if first is not None:
+                    artifact = str(first)
+            elif hasattr(result, "files") and result.files:
                 artifact = str(result.files[0])
             elif hasattr(result, "output_paths") and result.output_paths:
                 artifact = str(result.output_paths[0])
+
+            # ---- A1 outcome typing (2026-09-17) -------------------------------
+            # Offline placeholder outputs must stay traceable: record them in
+            # provenance ``extra`` so production acceptance can distinguish a
+            # placeholder from a real render (NEXT-ACTIONS A1).
+            _offline_placeholder = bool(
+                os.environ.get("MELOSVIZ_COMFYUI_OFFLINE", "").strip().lower()
+                in ("1", "true", "yes", "on")
+                and scene_type == "comfyui_image"
+                and artifact.endswith(".mp4")
+            )
 
             done_evt = bus.emit_done(
                 job_id=job_id,
@@ -771,6 +786,9 @@ class Orchestrator:
                     height=int(getattr(render_spec, "height", 1080) or 1080),
                     fps=int(getattr(render_spec, "fps", 24) or 24),
                     visual_diff=_visual_diff,
+                    extra={"outcome": (
+                        "offline-placeholder" if _offline_placeholder else "render"
+                    )},
                 )
                 write_provenance(clip_prov)
             except Exception as exc:  # provenance is best-effort
