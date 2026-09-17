@@ -14,6 +14,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Global type packages. `node` is needed because i18n reads
+       process.env.MELOSVIZ_LOCALE (docs/ENV.md). vite/client comes in via the
+       triple-slash reference in src/vite-env.d.ts and jest-dom via an explicit
+       import in the test setup, so neither needs listing here. */
+    "types": ["node"],
+
     /* Strict */
     "strict": true,
     "noUnusedLocals": true,

@@ -1,4 +1,7 @@
-import "@testing-library/jest-dom";
+// The `/vitest` entry augments Vitest's own `Assertion` interface. Importing
+// the bare package only augments Jest's, which left every jest-dom matcher
+// untyped under `tsc` (toHaveTextContent, toBeInTheDocument, ...).
+import "@testing-library/jest-dom/vitest";
 
 // Polyfill localStorage for Node 26+ (--localstorage-file not provided)
 if (typeof localStorage === "undefined") {

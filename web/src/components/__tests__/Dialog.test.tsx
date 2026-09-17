@@ -20,7 +20,7 @@ describe("Dialog motion", () => {
       dispatchEvent: vi.fn(),
     }));
 
-    const { container } = render(
+    render(
       <Dialog.Root open>
         <Dialog.Portal>
           <DialogOverlay data-testid="overlay" />
