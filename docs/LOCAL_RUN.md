@@ -83,6 +83,37 @@ do not invent alternate package indexes. **SDK consumers** pulling `@melosviz/*`
 from GitHub Packages: `docs/sdk/README.md`. Keyboard/focus contract (skip link →
 `#main`): `docs/a11y/FOCUS.md`.
 
+### Web quality gates
+
+Run from `web/`. Install with `--legacy-peer-deps` — that is what
+`.github/workflows/a11y.yml` uses, and a plain `npm ci`/`npm install` fails on a
+React peer conflict.
+
+| Gate | Command | What it proves |
+|------|---------|----------------|
+| Build | `npm run build` | `tsc && vite build` — type-checks then bundles |
+| Tests | `npm test` | Vitest, 246 tests across 27 files |
+| Lint | `npm run lint` | oxlint, reports findings but exits 0 |
+| Lint (gate) | `npm run lint:strict` | same rules, `--deny-warnings` → non-zero exit |
+
+**Why oxlint and not eslint.** The `eslint` / `@typescript-eslint` toolchain
+cannot run in this workspace at all: `@typescript-eslint/parser@8.70.0` declares
+`typescript: ">=4.8.4 <6.1.0"` and hard-throws
+(`typescript-eslint does not support TS 7.0`) on this repo's TypeScript 7.0.2.
+No eslint config could fix that, which is why `npm run lint` previously died on
+"ESLint couldn't find an eslint.config.* file". oxlint parses TS itself and does
+not depend on the TypeScript version. Revisit if typescript-eslint ships TS 7
+support (tracked upstream in typescript-eslint#10940).
+
+`npm run lint` currently reports **46 warnings, 0 errors**. Two are fixed;
+the rest are a backlog concentrated in `src/r3fRenderer.tsx` (13),
+`src/components/PlaylistPanel.tsx` (7) and `src/components/CommandPalette.tsx`
+(5). By rule: `prefer-tag-over-role` 15, react-hooks `refs` 10,
+`set-state-in-effect` 6, plus assorted a11y rules. `lint:strict` is the gate to
+switch on once that backlog is cleared; the `exhaustive-deps` and
+`set-state-in-effect` entries need judgement (they change effect timing), not a
+blind autofix.
+
 ## Recovery / publish (Shell blocked)
 
 When Cursor Shell or AMDRMPATH blocks `git push` / `gh pr create`, publish

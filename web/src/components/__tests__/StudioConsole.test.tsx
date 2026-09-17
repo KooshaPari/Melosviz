@@ -346,7 +346,8 @@ describe("StudioConsole (Director\u2019s Console)", () => {
       String(c[0]).includes("/api/studio/master"),
     );
     expect(masterCall).toBeTruthy();
-    const body = JSON.parse((masterCall?.[1] as RequestInit).body as string);
+    const [, masterInit] = masterCall!;
+    const body = JSON.parse(String((masterInit as RequestInit).body));
     expect(body.lufs_target).toBe("youtube");
     expect(body.export_stems).toBe(true);
     expect(

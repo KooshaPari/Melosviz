@@ -62,7 +62,7 @@ function defaultDeserialize<T>(raw: string): T {
  * const draft = withAutosave<MyFormData>('compose.draft', { title: '', body: '' })
  *
  * draft.set(prev => ({ ...prev, title: 'Hello' }))
- * // → persists to localStorage after 300 ms
+ * // → persists to localStorage after 300 ms
  *
  * draft.flush()
  * // → writes immediately
