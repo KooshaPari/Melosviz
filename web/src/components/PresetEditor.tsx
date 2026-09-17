@@ -323,8 +323,9 @@ export function PresetEditor({
           onOpenAutoFocus={(e) => {
             // Prefer the Load Preset select as initial focus (FOCUS.md).
             e.preventDefault();
+            const target = e.currentTarget as unknown as Element;
             const select =
-              e.currentTarget.querySelector<HTMLSelectElement>("select");
+              target.querySelector<HTMLSelectElement>("select");
             select?.focus();
           }}
         >

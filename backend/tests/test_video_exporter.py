@@ -901,7 +901,7 @@ def test_melosviz_ffmpeg_bin_env_var_is_honoured(
         "spawned with rawvideo pipe input on some macOS builds (dyld x265 "
         "mismatch or broken libavcodec). This test documents the crash path "
         "and will be un-xfailed once the binary dependency is pinned. "
-        "See: https://github.com/KooshaPari/Melosviz/issues/XX"
+        "See: https://github.com/<REDACTED>/Melosviz/issues/XX"
     ),
     strict=False,
 )

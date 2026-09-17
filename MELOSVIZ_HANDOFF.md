@@ -3,7 +3,7 @@
 **Date:** 2026-09-16
 **Handoff from:** Daisy (portfolio coordinator)
 **Handoff to:** [TBD — next agent assigned to Melosviz]
-**Repo:** `/Users/kooshapari/CodeProjects/Phenotype/repos/melosviz`
+**Repo:** `/Users/<REDACTED>/CodeProjects/Phenotype/repos/melosviz`
 **Branch:** `feat/melosviz-macos-signing-infisical-20260902T0048Z`
 **Latest commit:** `961d871 fix(fuzz): repair cargo check after melosviz-mir crate deletion`
 **Working tree:** Clean (except `.worktrees/` untracked — leftover from prior agent work, should clean or gitignore)
@@ -71,7 +71,7 @@ Music visualization authoring app. Hybrid Rust + Python + TypeScript stack. Thre
 ## 6. Repo Access
 
 ```bash
-cd /Users/kooshapari/CodeProjects/Phenotype/repos/melosviz
+cd /Users/<REDACTED>/CodeProjects/Phenotype/repos/melosviz
 git status
 git log --oneline -5
 ```

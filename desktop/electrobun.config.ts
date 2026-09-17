@@ -53,7 +53,7 @@ const config: ElectrobunConfig = {
   // is not "dev" (Updater skips checks on the dev channel).
   release: {
     baseUrl:
-      "https://github.com/KooshaPari/Melosviz/releases/latest/download",
+      "https://github.com/<REDACTED>/Melosviz/releases/latest/download",
   },
 };
 

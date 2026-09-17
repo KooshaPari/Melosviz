@@ -1,6 +1,6 @@
 # audit-v38 Scorecard - MelosViz
 
-**Repo:** KooshaPari/Melosviz
+**Repo:** <REDACTED>/Melosviz
 **Date:** 2026-07-13
 **Repo-type profile:** desktop + CLI + library + web-app
 **Auditor:** p1o-gh-packages wave

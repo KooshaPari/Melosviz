@@ -1,7 +1,7 @@
 # qgate Quality Gate Baseline — MelosViz
 
 **Date:** 2026-07-13
-**Gate:** in-repo reusable workflow `.github/workflows/reusable/quality-gate.yml` (qgate binary built from `KooshaPari/phenotype-tooling`)
+**Gate:** in-repo reusable workflow `.github/workflows/reusable/quality-gate.yml` (qgate binary built from `<REDACTED>/phenotype-tooling`)
 **CI entrypoints:** `.github/workflows/ci.yml` (`quality-gate` job) · `.github/workflows/qgate.yml` (standalone baseline)
 **Threshold:** 100% granular-recursive (every module, not averaged)
 **Status:** 100% overall — every module at 100%. Gate GREEN.

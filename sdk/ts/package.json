@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KooshaPari/Melosviz.git",
+    "url": "git+https://github.com/<REDACTED>/Melosviz.git",
     "directory": "sdk/ts"
   },
   "publishConfig": {

@@ -626,7 +626,7 @@ as of the repo scan on 2026-07-03.
 ### 8.5 Cross-cutting
 
 - **Traceability gate:** `trace-gate.yml` (reusable workflow from
-  `KooshaPari/phenotype-pm-core`) checks that every `MV-FR-*` /
+  `<REDACTED>/phenotype-pm-core`) checks that every `MV-FR-*` /
   `MV-NFR-*` ID in `docs/TRACEABILITY.md` resolves to code + test
 - **Secret scan:** `gitleaks.yml` runs on every push and PR
 - **Security posture:** `scorecard.yml` evaluates OpenSSF Scorecard
@@ -753,8 +753,8 @@ primary; Quality-of-Life 90%) and are out of scope for MV-FR-54.
 
 | Rev | Date       | Author                                 | Change                                                                                                                                                                                                                                                                                                                                                                  |
 | --- | ---------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 2026-07-03 | kooshapari (via MV-FR-54 xDD chain)    | Baseline top-level product spec. Authored from `docs/COMPLETENESS.md`, ADR 0003, `docs/TRACEABILITY.md`, and `docs/specs/SPEC.md`. Distribution grounded in `release.yml`; test strategy grounded in `ci.yml` + actual filesystem scan.                                                                                                                                 |
-| 2   | 2026-08-25 | kooshapari (feat/comfyui-studio-pivot) | Studio pipeline pivot — ComfyUI becomes the primary generative renderer; new Cinema 4D, Unreal Engine, and DaVinci Resolve adapters wired into the conductor registry. New `viz storyboard / generate / assemble / master / ship` CLI subcommands. Director LLM (`melosviz.llm.director`) with deterministic template fallback. See § 11 and `docs/STUDIO_PIPELINE.md`. |
+| 1   | 2026-07-03 | <REDACTED> (via MV-FR-54 xDD chain)    | Baseline top-level product spec. Authored from `docs/COMPLETENESS.md`, ADR 0003, `docs/TRACEABILITY.md`, and `docs/specs/SPEC.md`. Distribution grounded in `release.yml`; test strategy grounded in `ci.yml` + actual filesystem scan.                                                                                                                                 |
+| 2   | 2026-08-25 | <REDACTED> (feat/comfyui-studio-pivot) | Studio pipeline pivot — ComfyUI becomes the primary generative renderer; new Cinema 4D, Unreal Engine, and DaVinci Resolve adapters wired into the conductor registry. New `viz storyboard / generate / assemble / master / ship` CLI subcommands. Director LLM (`melosviz.llm.director`) with deterministic template fallback. See § 11 and `docs/STUDIO_PIPELINE.md`. |
 
 Future revisions will be appended below this row, never replacing prior
 entries. Each revision MUST update the `version` field at the top of this

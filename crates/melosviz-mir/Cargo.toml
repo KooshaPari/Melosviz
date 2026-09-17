@@ -4,7 +4,7 @@ version = "0.6.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "Rust MIR (Media Intermediate Representation) analyzer for Melosviz audio"
-repository = "https://github.com/KooshaPari/Melosviz"
+repository = "https://github.com/<REDACTED>/Melosviz"
 
 [lib]
 path = "src/lib.rs"

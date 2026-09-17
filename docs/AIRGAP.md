@@ -9,7 +9,7 @@ On a networked build host (same OS/arch as the target):
 
 ```bash
 # Optional: pull the published bridge image first
-docker pull ghcr.io/kooshapari/melosviz-bridge:latest
+docker pull ghcr.io/<REDACTED>/melosviz-bridge:latest
 
 ./scripts/airgap_bundle.sh
 # → dist/airgap/melosviz-airgap-YYYYMMDD.tar.gz
@@ -32,7 +32,7 @@ Copy the tarball (USB / sneaker-net) to the air-gapped host and extract.
 
 ```bash
 docker load -i bridge-image.tar
-docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:latest
+docker run --rm -p 8765:8765 ghcr.io/<REDACTED>/melosviz-bridge:latest
 curl -sf http://127.0.0.1:8765/health
 ```
 

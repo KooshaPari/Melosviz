@@ -1,9 +1,9 @@
 class Melosviz < Formula
   desc "Deterministic audio-driven music video studio pipeline"
-  homepage "https://github.com/KooshaPari/Melosviz"
+  homepage "https://github.com/<REDACTED>/Melosviz"
   license "MIT"
 
-  url "https://github.com/KooshaPari/Melosviz/releases/download/v#{version}/melosviz-cli-macos-#{arch}.tar.xz"
+  url "https://github.com/<REDACTED>/Melosviz/releases/download/v#{version}/melosviz-cli-macos-#{arch}.tar.xz"
   sha256 "{{sha256}}"
 
   depends_on "ffmpeg"

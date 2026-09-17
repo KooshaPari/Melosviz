@@ -2,7 +2,7 @@
 
 **Session UUID:** `01a05b35-f397-7803-9d63-462c5faa9a5a`
 **Branch:** `feat/production-delivery-extensions`
-**Worktree:** `/Users/kooshapari/CodeProjects/Phenotype/repos/Melosviz/.worktrees/production-delivery-extensions`
+**Worktree:** `/Users/<REDACTED>/CodeProjects/Phenotype/repos/Melosviz/.worktrees/production-delivery-extensions`
 **Handed off by:** GLM-Powered Forge session (2026-09-01)
 **Resume when:** Codex limits reset (approx. 5 days)
 

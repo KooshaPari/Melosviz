@@ -8,7 +8,7 @@
 | Windows CLI zip | Delete extracted folder | none |
 | Linux CLI tarball | Delete extracted folder | `~/.local/share/melosviz` if used |
 | pip editable | `pip uninstall melosviz` | local `.venv` |
-| GHCR bridge image | `docker rmi ghcr.io/kooshapari/melosviz-bridge:<tag>` | stopped containers (`docker ps -a`) |
+| GHCR bridge image | `docker rmi ghcr.io/<REDACTED>/melosviz-bridge:<tag>` | stopped containers (`docker ps -a`) |
 | Air-gap extract | Delete `melosviz-airgap-*` directory | loaded docker images from `docker load` |
 | Devcontainer | Delete codespace / container | docker volumes |
 

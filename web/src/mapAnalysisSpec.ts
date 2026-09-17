@@ -96,7 +96,7 @@ export function applyPresetToSpec(
     "octa_pulse",
   ];
   let prev: SceneTemplateId | null = null;
-  const remappedSegments = spec.sceneSegments.map((seg, i) => {
+  const remappedSegments = spec.sceneSegments.map((seg) => {
     const label = seg.label ?? "unknown";
     let template = family[label] ?? family.unknown ?? "torus_flow";
     if (prev && template === prev) {

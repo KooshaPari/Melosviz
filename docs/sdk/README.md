@@ -18,7 +18,7 @@ links (how `web/package.json` wires UI today).
 ## First-run: authenticate to GitHub Packages
 
 You need a GitHub **personal access token (classic or fine-grained)** with
-`read:packages` for the `KooshaPari/Melosviz` org/user scope.
+`read:packages` for the `<REDACTED>/Melosviz` org/user scope.
 
 ### Project-local `.npmrc` (recommended)
 

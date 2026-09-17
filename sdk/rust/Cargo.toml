@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Rust SDK for the MelosViz render system"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/KooshaPari/melosviz"
+repository = "https://github.com/<REDACTED>/melosviz"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

@@ -15,6 +15,8 @@ describe("Dialog motion", () => {
       onchange: null,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
       dispatchEvent: vi.fn(),
     }));
 
@@ -26,7 +28,8 @@ describe("Dialog motion", () => {
       </Dialog.Root>,
     );
 
-    const overlay = container.querySelector('[data-testid="overlay"]');
-    expect(overlay?.className).not.toMatch(/animate-in/);
+    const overlay = document.querySelector('[data-testid="overlay"]');
+    expect(overlay).toBeTruthy();
+    expect(overlay?.getAttribute('class') ?? '').not.toMatch(/animate-in/);
   });
 });

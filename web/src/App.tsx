@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { t } from "./i18n";
 import { SceneView } from "./r3fRenderer";
 import { AudioAdapter } from "./audioAdapter";
-import { mapAnalysisToRenderSpec, applyPresetToSpec } from "./mapAnalysisSpec";
+import { applyPresetToSpec } from "./mapAnalysisSpec";
 import type { RenderSpec } from "./renderSpec";
 import { SpecViewer } from "./components/SpecViewer";
 import { useAnalysis, analyzeAudioPath } from "./hooks/useAnalysis";
@@ -13,10 +13,10 @@ import { SplashScreen } from "./components/SplashScreen";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { WaveformDisplay } from "./components/WaveformDisplay";
 import { PresetEditor } from "./components/PresetEditor";
-import { PresetQuickApply } from "./components/PresetQuickApply";
+
 import { KeyboardHelp } from "./components/KeyboardHelp";
-import { LocaleSwitcher } from "./components/LocaleSwitcher";
-import { AudioDropzone } from "./components/AudioDropzone";
+
+
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./theme/ThemeProvider";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -255,6 +255,12 @@ export default function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#080808]">
+      <a
+        href="#main"
+        className="skip-link sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded focus:bg-cyan-500 focus:px-3 focus:py-1 focus:text-sm focus:text-white"
+      >
+        {t("a11y.skip_link")}
+      </a>
       {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <LoadingOverlay visible={analyzing} />
       <KeyboardHelp open={showHelp} onOpenChange={setShowHelp} />
@@ -262,6 +268,7 @@ export default function App() {
       {mode === "studio" ? (
         <main
           id="main"
+          tabIndex={-1}
           className="absolute inset-0 z-0 overflow-y-auto bg-[#080808]"
         >
           <ErrorBoundary>

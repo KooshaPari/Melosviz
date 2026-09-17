@@ -11,7 +11,7 @@ This document is the Time-2 packaging map for audit-v38 cluster C11.
 | Linux CLI | `melosviz-mir` + `melosviz-render` tarball | `linux-cli` |
 | Windows CLI | `melosviz-mir.exe` + `melosviz-render.exe` zip | `windows-cli` |
 | Windows desktop | Electrobun package (packaging soft-fail) | `windows-desktop` (install/build hard-fail; package/upload `continue-on-error`) |
-| GHCR bridge | `ghcr.io/kooshapari/melosviz-bridge` | `ghcr-bridge.yml` |
+| GHCR bridge | `ghcr.io/<REDACTED>/melosviz-bridge` | `ghcr-bridge.yml` |
 | Air-gap tarball | `scripts/airgap_bundle.sh` → `dist/airgap/*.tar.gz` | local / operator |
 | Air-gap desktop (prebuilt) | `scripts/airgap_fetch_desktop.sh` → `dist/airgap/desktop/`; optional `INCLUDE_DESKTOP=1` in bundle | local / operator |
 | SBOM | CycloneDX Python + Cargo | `sbom` |
@@ -85,7 +85,7 @@ Release artifacts land on GitHub Releases with SLSA-style attestations.
 Electrobun auto-update is wired via `release.baseUrl` in
 `desktop/electrobun.config.ts` pointing at:
 
-`https://github.com/KooshaPari/Melosviz/releases/latest/download`
+`https://github.com/<REDACTED>/Melosviz/releases/latest/download`
 
 Stable-channel builds (`bunx electrobun build --env=stable`) embed the
 updater channel; the desktop main process calls `Updater.checkForUpdate()`
@@ -133,8 +133,8 @@ tray-driven quick-render action — tracked as residual polish, not a blocker.
 Production-oriented bridge image:
 
 ```bash
-docker build -t ghcr.io/kooshapari/melosviz-bridge:local -f Dockerfile .
-docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:local
+docker build -t ghcr.io/<REDACTED>/melosviz-bridge:local -f Dockerfile .
+docker run --rm -p 8765:8765 ghcr.io/<REDACTED>/melosviz-bridge:local
 ```
 
 CI workflow `.github/workflows/ghcr-bridge.yml` builds on PRs and pushes to

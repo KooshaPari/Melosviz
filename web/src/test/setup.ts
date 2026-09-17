@@ -1,5 +1,34 @@
 import "@testing-library/jest-dom";
 
+// Polyfill localStorage for Node 26+ (--localstorage-file not provided)
+if (typeof localStorage === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const store: Record<string, string> = {};
+  (globalThis as any).localStorage = {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => { store[k] = String(v); },
+    removeItem: (k: string) => { delete store[k]; },
+    clear: () => { Object.keys(store).forEach(k => delete store[k]); },
+    get length() { return Object.keys(store).length; },
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  };
+}
+
+// Polyfill matchMedia for jsdom (used by Dialog, LoadingOverlay, AudioDropzone)
+if (typeof window.matchMedia === "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  });
+}
+
 // Polyfill ResizeObserver for jsdom (used by Radix UI components)
 if (typeof ResizeObserver === "undefined") {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

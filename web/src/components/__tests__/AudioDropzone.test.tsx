@@ -49,7 +49,7 @@ describe("AudioDropzone", () => {
     );
     const onChange = vi.fn();
     render(<AudioDropzone value="" onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "demo.wav" }));
+    fireEvent.click(screen.getByRole("button", { name: /demo\.wav/i }));
     expect(onChange).toHaveBeenCalledWith("/tmp/demo.wav");
   });
 
@@ -85,7 +85,7 @@ describe("AudioDropzone", () => {
     );
     expect(localStorage.getItem(RECENT_AUDIO_STORAGE_KEY)).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "demo.wav" }),
+      screen.queryByRole("button", { name: /demo\.wav/i }),
     ).not.toBeInTheDocument();
   });
 });

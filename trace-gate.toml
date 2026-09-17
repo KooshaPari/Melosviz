@@ -1,7 +1,7 @@
 # FR (Functional Requirement) Coverage Gate Configuration
 #
 # Enforces traceability between code changes and documented functional requirements.
-# See: https://github.com/KooshaPari/phenotype-pm-core
+# See: https://github.com/<REDACTED>/phenotype-pm-core
 #
 # This configuration file specifies:
 # - Source directories to scan for FR decorators / annotations

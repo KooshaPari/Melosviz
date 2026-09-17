@@ -178,19 +178,19 @@ tasks:
     desc: "Publish the desktop bridge package to the npm registry"
     cmds:
       - cd desktop && npm publish --provenance --access public
-      - "echo npm at https://www.npmjs.com/package/@kooshapari/melosviz-bridge"
+      - "echo npm at https://www.npmjs.com/package/@<REDACTED>/melosviz-bridge"
 
   publish-homebrew:
-    desc: "PR a Homebrew formula update to KooshaPari/homebrew-tap"
+    desc: "PR a Homebrew formula update to <REDACTED>/homebrew-tap"
     cmds:
       - gh workflow run homebrew-tap.yml --ref feat/production-delivery-extensions -f version={{.VERSION | default "0.0.0-dev"}}
-      - "echo PR opened at https://github.com/KooshaPari/homebrew-tap/pulls"
+      - "echo PR opened at https://github.com/<REDACTED>/homebrew-tap/pulls"
 
   publish-scoop:
-    desc: "PR a Scoop manifest update to KooshaPari/scoop-bucket"
+    desc: "PR a Scoop manifest update to <REDACTED>/scoop-bucket"
     cmds:
       - gh workflow run scoop-bucket.yml --ref feat/production-delivery-extensions -f version={{.VERSION | default "0.0.0-dev"}}
-      - "echo PR opened at https://github.com/KooshaPari/scoop-bucket/pulls"
+      - "echo PR opened at https://github.com/<REDACTED>/scoop-bucket/pulls"
 
   publish-winget:
     desc: "PR a winget manifest update to microsoft/winget-pkgs"
@@ -208,4 +208,4 @@ tasks:
       - task: publish-scoop
       - task: publish-winget
       - gh release create v{{.VERSION | default "0.0.0-dev"}} --generate-notes --draft
-      - "echo release drafted: https://github.com/KooshaPari/Melosviz/releases"
+      - "echo release drafted: https://github.com/<REDACTED>/Melosviz/releases"

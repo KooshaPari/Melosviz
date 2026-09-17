@@ -2,7 +2,7 @@
 import json
 import datetime
 
-P = '/Users/kooshapari/CodeProjects/Phenotype/repos/MelosViz-audit.json'
+P = '/Users/<REDACTED>/CodeProjects/Phenotype/repos/MelosViz-audit.json'
 d = json.load(open(P))
 now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
 

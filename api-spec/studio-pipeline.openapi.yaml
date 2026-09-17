@@ -13,7 +13,7 @@ info:
     available as side-band operations.
   contact:
     name: MelosViz Studio
-    url: https://github.com/KooshaPari/Melosviz
+    url: https://github.com/<REDACTED>/Melosviz
 servers:
   - url: http://localhost:8765
     description: Local dev bridge (default port)

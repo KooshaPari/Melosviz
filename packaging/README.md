@@ -25,7 +25,7 @@ files live under `packaging/`:
 
 - `packaging/homebrew-tap/Formula/melosviz.rb.template`
 - `packaging/scoop-bucket/melosviz.json.template`
-- `packaging/winget/manifests/kooshapari/Melosviz/{melosviz,melosviz.installer}.yaml.template`
+- `packaging/winget/manifests/<REDACTED>/Melosviz/{melosviz,melosviz.installer}.yaml.template`
 
 Substitute `{{version}}` and `{{sha256}}` after a tag is published.
 

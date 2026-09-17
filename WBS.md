@@ -1,6 +1,6 @@
 # WBS — MelosViz (2026-08-25)
 
-**Repo:** [KooshaPari/Melosviz](https://github.com/KooshaPari/Melosviz)
+**Repo:** [<REDACTED>/Melosviz](https://github.com/<REDACTED>/Melosviz)
 **Branch:** `feat/comfyui-studio-pivot`
 **Status:** Studio pipeline pivot in flight; see [`SPEC.md`](SPEC.md) §11
 and [`docs/STUDIO_PIPELINE.md`](docs/STUDIO_PIPELINE.md) for the architecture

@@ -1,6 +1,6 @@
 # MelosViz bridge — production-oriented image for GHCR
-# Build: docker build -t ghcr.io/kooshapari/melosviz-bridge:local -f Dockerfile .
-# Run:   docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:local
+# Build: docker build -t ghcr.io/<REDACTED>/melosviz-bridge:local -f Dockerfile .
+# Run:   docker run --rm -p 8765:8765 ghcr.io/<REDACTED>/melosviz-bridge:local
 
 FROM python:3.12-slim-bookworm
 

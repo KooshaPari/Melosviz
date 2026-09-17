@@ -2,7 +2,7 @@
 
 **Status:** Accepted  
 **Date:** 2026-06-29  
-**Deciders:** kooshapari  
+**Deciders:** <REDACTED>  
 **Supersedes:** —  
 **Traceability IDs:** MV-NFR-001, MV-FR-A01 through MV-FR-A10
 

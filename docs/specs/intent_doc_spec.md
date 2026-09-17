@@ -4,7 +4,7 @@
 **Type:** Functional — Documentation Specification
 **Date:** 2026-07-03
 **Status:** Accepted
-**Deciders:** kooshapari
+**Deciders:** <REDACTED>
 **Traceability:** Traces into `docs/TRACEABILITY.md` Rev 3, `docs/COMPLETENESS.md` Part 5.
 
 ---

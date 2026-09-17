@@ -17,7 +17,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STAMP="$(date -u +%Y%m%d)"
 OUT="${ROOT}/dist/airgap/melosviz-airgap-${STAMP}"
-IMAGE="${MELOSVIZ_AIRGAP_IMAGE:-ghcr.io/kooshapari/melosviz-bridge:latest}"
+IMAGE="${MELOSVIZ_AIRGAP_IMAGE:-ghcr.io/<REDACTED>/melosviz-bridge:latest}"
 DESKTOP_SRC="${MELOSVIZ_DESKTOP_DIR:-${ROOT}/dist/airgap/desktop}"
 
 mkdir -p "${OUT}/locks" "${OUT}/docs"
@@ -37,7 +37,7 @@ Transfer this archive to an offline host, then:
 
 1. **Bridge image** (if `bridge-image.tar` present):
    `docker load -i bridge-image.tar`
-   `docker run --rm -p 8765:8765 ghcr.io/kooshapari/melosviz-bridge:<tag>`
+   `docker run --rm -p 8765:8765 ghcr.io/<REDACTED>/melosviz-bridge:<tag>`
 
 2. **Python from source** (online build host first):
    `uv sync --frozen` using `locks/uv.lock`, then copy the venv or wheelhouse.

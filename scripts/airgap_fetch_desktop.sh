@@ -13,7 +13,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REPO="${MELOSVIZ_GITHUB_REPO:-KooshaPari/Melosviz}"
+REPO="${MELOSVIZ_GITHUB_REPO:-<REDACTED>/Melosviz}"
 TAG="${MELOSVIZ_RELEASE_TAG:-latest}"
 OUT="${MELOSVIZ_DESKTOP_OUT:-${ROOT}/dist/airgap/desktop}"
 BASE="https://github.com/${REPO}/releases"

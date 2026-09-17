@@ -21,7 +21,8 @@ export function KeyboardHelp({ open, onOpenChange }: KeyboardHelpProps) {
           onOpenAutoFocus={(e) => {
             // Land on the labeled close control (docs/a11y/FOCUS.md initial-focus).
             e.preventDefault();
-            const close = e.currentTarget.querySelector<HTMLElement>(
+            const target = e.currentTarget as unknown as Element;
+            const close = target.querySelector<HTMLElement>(
               "#keyboard-help-close",
             );
             close?.focus();

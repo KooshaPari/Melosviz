@@ -1,10 +1,7 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import * as SpecViewerModule from "../SpecViewer";
+import { SpecViewer } from "../SpecViewer";
 import type { RenderSpec } from "../../renderSpec";
-
-const { SpecViewer, downloadRenderSpec, copyRenderSpecToClipboard } =
-  SpecViewerModule;
 
 const MOCK_SPEC: RenderSpec = {
   durationSecs: 180,
@@ -37,68 +34,41 @@ it("renders summary and download button", () => {
   ).toBeInTheDocument();
 });
 
-it("downloadRenderSpec triggers a JSON blob download", () => {
+it("download button triggers a JSON blob download via anchor click", () => {
   const click = vi.fn();
   const createObjectURL = vi.fn(() => "blob:renderspec");
   const revokeObjectURL = vi.fn();
-  const createElement = vi
-    .spyOn(document, "createElement")
-    .mockImplementation((tag) => {
-      if (tag === "a") {
-        return {
-          click,
-          download: "",
-          href: "",
-        } as unknown as HTMLAnchorElement;
-      }
-      return document.createElement(tag);
-    });
-
-  vi.stubGlobal("URL", {
-    createObjectURL,
-    revokeObjectURL,
+  const originalCreate = document.createElement.bind(document);
+  vi.spyOn(document, "createElement").mockImplementation((tag) => {
+    if (tag === "a") {
+      return { click, download: "", href: "" } as unknown as HTMLAnchorElement;
+    }
+    return originalCreate(tag);
   });
-
-  downloadRenderSpec(MOCK_SPEC, "test-spec.json");
-
-  expect(createObjectURL).toHaveBeenCalled();
-  expect(click).toHaveBeenCalled();
-  expect(revokeObjectURL).toHaveBeenCalledWith("blob:renderspec");
-  createElement.mockRestore();
-});
-
-it("download button invokes download helper", () => {
-  const downloadSpy = vi
-    .spyOn(SpecViewerModule, "downloadRenderSpec")
-    .mockImplementation(() => {});
+  vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
 
   render(<SpecViewer spec={MOCK_SPEC} />);
   fireEvent.click(
     screen.getByRole("button", { name: /download renderspec as json/i }),
   );
-  expect(downloadSpy).toHaveBeenCalledWith(MOCK_SPEC);
+
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalled();
 });
 
-it("copyRenderSpecToClipboard writes JSON text", async () => {
+it("copy button writes JSON to clipboard and shows toast", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   vi.stubGlobal("navigator", { clipboard: { writeText } });
-
-  await copyRenderSpecToClipboard(MOCK_SPEC);
-
-  expect(writeText).toHaveBeenCalledWith(JSON.stringify(MOCK_SPEC, null, 2));
-});
-
-it("copy button invokes clipboard helper and shows toast feedback", async () => {
-  const copySpy = vi
-    .spyOn(SpecViewerModule, "copyRenderSpecToClipboard")
-    .mockResolvedValue(undefined);
 
   render(<SpecViewer spec={MOCK_SPEC} />);
   fireEvent.click(
     screen.getByRole("button", { name: /copy renderspec json to clipboard/i }),
   );
 
-  expect(copySpy).toHaveBeenCalledWith(MOCK_SPEC);
+  expect(writeText).toHaveBeenCalledWith(
+    JSON.stringify(MOCK_SPEC, null, 2),
+  );
   const toast = await screen.findByTestId("toast");
   expect(toast).toHaveAttribute("aria-live", "polite");
   expect(toast).toHaveTextContent(/renderspec json copied to clipboard/i);

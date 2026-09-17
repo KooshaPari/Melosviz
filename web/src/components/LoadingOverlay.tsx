@@ -58,7 +58,8 @@ export function LoadingOverlay({
           onOpenAutoFocus={(e) => {
             if (!onCancel) return;
             e.preventDefault();
-            e.currentTarget
+            const target = e.currentTarget as unknown as Element;
+            target
               .querySelector<HTMLElement>("#loading-overlay-cancel")
               ?.focus();
           }}
@@ -104,7 +105,6 @@ export function LoadingOverlay({
                         transformOrigin: "bottom",
                       }
                     : {
-                        // @ts-expect-error CSS custom property
                         "--dur": `${0.4 + i * 0.07}s`,
                         animationDelay: `${i * 0.06}s`,
                       }),

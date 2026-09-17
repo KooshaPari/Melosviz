@@ -1,7 +1,7 @@
 # MV-SPEC-MV-FR-54 — Spec for the Top-Level `SPEC.md`
 
 > **This file is the spec (the "what") for MV-FR-54.**
-> The implementation that satisfies this spec is `/Users/kooshapari/CodeProjects/Phenotype/repos/MelosViz/SPEC.md`
+> The implementation that satisfies this spec is `/Users/<REDACTED>/CodeProjects/Phenotype/repos/MelosViz/SPEC.md`
 > (top-level, repo root).
 >
 > **Do not confuse with `docs/specs/SPEC.md`** — that is the existing inner FR-N
@@ -40,7 +40,7 @@ the product. It is referenced by `README.md`, `CONTRIBUTING.md`,
 The implementation MUST live at:
 
 ```
-/Users/kooshapari/CodeProjects/Phenotype/repos/MelosViz/SPEC.md
+/Users/<REDACTED>/CodeProjects/Phenotype/repos/MelosViz/SPEC.md
 ```
 
 That is **`<repo-root>/SPEC.md`** — the same directory as `README.md`,
