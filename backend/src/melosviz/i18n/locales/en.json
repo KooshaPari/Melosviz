@@ -65,7 +65,6 @@
   "cli.arg.preset.help": "Preset name (e.g. cinematic)",
   "cli.arg.host.help": "Bind host (default: 127.0.0.1)",
   "cli.arg.port.help": "Bind port (default: 8000)",
-  "cli.error.file_not_found": "viz {cmd}: file not found: {path}",
   "cli.error.dir_not_found": "viz {cmd}: directory not found: {path}",
   "cli.error.uvicorn_missing": "viz serve: uvicorn is not installed. Install it with: pip install \"melosviz[bridge]\"",
   "cli.error.unknown_preset": "viz apply: unknown preset {preset!r}. Available: {available}",
@@ -75,7 +74,6 @@
   "cli.error.no_segments": "viz assemble: no per-scene clips found under {path}",
   "cli.error.no_deliverables": "viz ship: no MP4 / MOV / WAV / SRT files under {path}",
   "cli.msg.plan_written": "viz build: plan written to {path}",
-  "cli.msg.storyboard_written": "viz storyboard: {scenes} scenes -> {path}",
   "cli.msg.no_diff": "(no differences)",
   "cli.direct.help": "Art-director edit: mutate one scene in a storyboard.json, optionally re-render just that scene",
   "cli.direct.usage": "viz direct STORYBOARD --scene INDEX [--prompt TEXT] [--camera MOTION] [--name TEXT] [--rerender-only] [--wav PATH] [--render-out DIR]",
@@ -85,5 +83,10 @@
   "cli.direct.scene_index_required": "viz direct: --scene is required (use --scene 0 for the first scene)",
   "cli.direct.scene_index_out_of_range": "viz direct: scene index {index} out of range (storyboard has {total} scenes, valid indices: 0..{last})",
   "cli.direct.no_changes": "viz direct: no changes supplied (use --prompt / --camera / --name)",
-  "cli.direct.wav_required_for_rerender": "viz direct: --rerender-only requires --wav so the renderer can recompose the cut"
+  "cli.direct.wav_required_for_rerender": "viz direct: --rerender-only requires --wav so the renderer can recompose the cut",
+  "cli.arg.reference.help": "Reference master WAV to match: converges the output onto the reference's integrated loudness, loudness range (LRA) and true peak",
+  "cli.master.reference_matched": "viz master: reference-matched master written to {path}",
+  "cli.master.reference_summary": "reference {ref_i} LUFS / {ref_lra} LU / {ref_tp} dBTP -> achieved {got_i} LUFS / {got_lra} LU / {got_tp} dBTP (converged={converged}, passes={passes})",
+  "cli.error.reference_not_found": "viz master: reference file not found ({path})",
+  "cli.error.reference_requires_audio": "viz master: --reference requires --audio (the source WAV to master)"
 }

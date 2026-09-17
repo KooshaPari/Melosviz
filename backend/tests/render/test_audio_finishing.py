@@ -214,16 +214,16 @@ def test_detect_stem_backend_prefer_unknown_warns_and_falls_back(caplog):
 def test_detect_stem_backend_prefer_uses_requested_when_available(monkeypatch):
     """prefer='demucs' when demucs is on PATH should return 'demucs'."""
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_demucs", lambda: True
+        "melosviz.render.audio_finishing.stems._has_demucs", lambda: True
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_spleeter", lambda: False
+        "melosviz.render.audio_finishing.stems._has_spleeter", lambda: False
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_audio_separator", lambda: False
+        "melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing.ffmpeg_available", lambda: True
+        "melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True
     )
     assert detect_stem_backend(prefer="demucs") == "demucs"
 
@@ -231,16 +231,16 @@ def test_detect_stem_backend_prefer_uses_requested_when_available(monkeypatch):
 def test_detect_stem_backend_uses_priority_chain(monkeypatch):
     """Without prefer, demucs beats spleeter beats three-band fallback."""
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_demucs", lambda: False
+        "melosviz.render.audio_finishing.stems._has_demucs", lambda: False
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_audio_separator", lambda: False
+        "melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing._has_spleeter", lambda: True
+        "melosviz.render.audio_finishing.stems._has_spleeter", lambda: True
     )
     monkeypatch.setattr(
-        "melosviz.render.audio_finishing.ffmpeg_available", lambda: True
+        "melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True
     )
     assert detect_stem_backend() == "spleeter"
 

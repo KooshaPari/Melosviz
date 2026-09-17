@@ -83,5 +83,10 @@
   "cli.direct.usage": "viz direct STORYBOARD --scene INDEX [--prompt TEXT] [--camera MOTION] [--name TEXT] [--rerender-only] [--wav PATH]",
   "cli.direct.wav_required_for_rerender": "viz direct: --rerender-only requiere --wav para que el renderizador pueda recomponer el corte",
   "cli.direct.written": "viz direct: storyboard escrito en {path}",
-  "cli.error.lyrics_parse_failed": "viz storyboard: error al analizar letras en {path}: {error}"
+  "cli.error.lyrics_parse_failed": "viz storyboard: error al analizar letras en {path}: {error}",
+  "cli.arg.reference.help": "WAV de master de referencia a igualar: converge la salida hacia el loudness integrado, rango de loudness (LRA) y pico real de la referencia",
+  "cli.master.reference_matched": "viz master: master igualado a la referencia guardado en {path}",
+  "cli.master.reference_summary": "referencia {ref_i} LUFS / {ref_lra} LU / {ref_tp} dBTP -> obtenido {got_i} LUFS / {got_lra} LU / {got_tp} dBTP (convergido={converged}, pasadas={passes})",
+  "cli.error.reference_not_found": "viz master: archivo de referencia no encontrado ({path})",
+  "cli.error.reference_requires_audio": "viz master: --reference requiere --audio (el WAV de origen a masterizar)"
 }

@@ -934,6 +934,73 @@ def _cmd_master(args: argparse.Namespace) -> int:
         print(json.dumps(plan, indent=2, default=str))
         return 0
 
+    # ---- Reference-matched mastering ----------------------------------------
+    # Offered before the LUFS-preset path because a reference master carries a
+    # richer signature than a single loudness number: integrated LUFS *plus*
+    # loudness range and true peak. Explicit and opt-in, so preset behaviour is
+    # unchanged when --reference is absent.
+    reference_raw = getattr(args, "reference", None)
+    if reference_raw:
+        reference_wav = Path(reference_raw)
+        if not reference_wav.exists():
+            print(
+                t("cli.error.reference_not_found", path=reference_wav),
+                file=sys.stderr,
+            )
+            return 1
+        if audio_wav is None or not audio_wav.exists():
+            print(t("cli.error.reference_requires_audio"), file=sys.stderr)
+            return 1
+
+        from melosviz.render.audio_finishing import analyze_reference, match_reference
+
+        out_wav = out_dir / "audio_master_reference_matched.wav"
+        try:
+            profile = analyze_reference(reference_wav)
+            match = match_reference(audio_wav, out_wav, profile)
+        except Exception as exc:  # pragma: no cover — best-effort path
+            print(t("cli.error.master_failed", error=str(exc)), file=sys.stderr)
+            return 1
+
+        achieved = match.achieved
+        deliverable: dict = {
+            "path": str(out_wav),
+            "codec": "PCM 24-bit 48k (reference-matched)",
+            "use": "reference-matched master",
+            "converged": match.converged,
+        }
+        if achieved is not None:
+            deliverable["loudness"] = achieved.to_dict()
+        plan = {
+            "finishing": "reference_matched_master",
+            "mode": "online",
+            "edit": str(edit_path),
+            "master_dir": str(out_dir),
+            "reference": profile.to_dict(),
+            "match": match.to_dict(),
+            "deliverables": [deliverable],
+            "log": match.log,
+        }
+        (out_dir / "master_plan.json").write_text(
+            json.dumps(plan, indent=2, default=str)
+        )
+        print(json.dumps(plan, indent=2, default=str))
+        print(
+            t(
+                "cli.master.reference_summary",
+                ref_i=f"{profile.integrated_lufs:.2f}",
+                ref_lra=f"{profile.lra:.2f}",
+                ref_tp=f"{profile.true_peak_dbtp:.2f}",
+                got_i=f"{achieved.integrated_lufs:.2f}" if achieved else "n/a",
+                got_lra=f"{achieved.lra:.2f}" if achieved else "n/a",
+                got_tp=f"{achieved.true_peak_dbtp:.2f}" if achieved else "n/a",
+                converged=match.converged,
+                passes=match.iterations,
+            ),
+            file=sys.stderr,
+        )
+        return 0
+
     # ---- Online: ffmpeg loudnorm + stems (when available), else Resolve ----
     try:
         from melosviz.render.audio_finishing import ffmpeg_available, run_master as run_master_ffmpeg
@@ -1276,6 +1343,12 @@ def main(argv: list[str] | None = None) -> None:
         metavar="WAV",
         default=None,
         help=t("cli.arg.audio.help"),
+    )
+    p_mas.add_argument(
+        "--reference",
+        metavar="WAV",
+        default=None,
+        help=t("cli.arg.reference.help"),
     )
 
     # ---- melosviz ship --------------------------------------------------------

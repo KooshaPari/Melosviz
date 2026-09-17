@@ -71,6 +71,73 @@ python -m melosviz.cli.main master ./rough.mp4 --out ./master
 python -m melosviz.cli.main ship ./master --out ./final.zip
 ```
 
+### Mastering to a reference master
+
+`--lufs-target` pins **one** number (integrated loudness). A finished master
+also has a signature in two other dimensions listeners hear immediately:
+**loudness range** (LRA, how much the track breathes) and **true peak**
+(the intersample ceiling the chain left behind).
+
+If you already have a master you like, hand it over as a reference and melosviz
+will converge the output onto that three-dimensional signature:
+
+```bash
+python -m melosviz.cli.main master ./rough.mp4 \
+    --out ./master \
+    --audio track.wav \
+    --reference "./reference_master.wav"
+```
+
+```json
+{
+  "finishing": "reference_matched_master",
+  "reference": { "integrated_lufs": -14.0, "lra": 1.6, "true_peak_dbtp": -5.6 },
+  "match": {
+    "converged": true,
+    "iterations": 2,
+    "achieved": { "integrated_lufs": -14.0, "lra": 1.8, "true_peak_dbtp": -5.5 },
+    "params": {
+      "compressor_threshold_db": -33.2,
+      "compressor_ratio": 8.0,
+      "gain_db": -0.6,
+      "limiter_ceiling_db": -6.6
+    }
+  }
+}
+```
+
+Output lands at `master/audio_master_reference_matched.wav` and the full
+convergence trace goes to `master/master_plan.json`.
+
+**How it converges.** Three coupled objectives, each with its own lever:
+
+| Objective       | Lever                    |
+| --------------- | ------------------------ |
+| integrated LUFS | linear gain trim         |
+| loudness range  | compressor **threshold** |
+| true peak       | limiter ceiling          |
+
+The loop re-measures the rendered file after every pass and stops once all
+three errors are inside tolerance (0.15 LUFS / 0.25 LU / 0.30 dBTP by default).
+
+Two details worth knowing:
+
+- **The LRA lever is the compressor threshold, not its ratio.** Ratio only
+  reduces content *above* the threshold, while LRA is driven by the quiet
+  sections sitting *below* it. Measured on a real EDM master, raising the ratio
+  at a fixed threshold stalls around LRA 2 LU; lowering the threshold from
+  -24 dB to -50 dB drives LRA from 2.1 LU to 1.0 LU.
+- **The limiter ceiling is driven below the requested true peak.** `ebur128`
+  reports *true* peak (4x oversampled) while ffmpeg's `alimiter` works in the
+  sample domain, so the ceiling leaves ~1 dB of inter-sample headroom.
+
+Matching a reference's LRA reproduces that master's *density*. If the reference
+has a much narrower range than the source (a slammed club master vs. a track
+with a quiet breakdown), closing the gap means compressing the arrangement's
+own dynamics. Check `match.params.compressor_threshold_db` before shipping: a
+threshold below roughly -40 dB is audible pumping on material with soft
+sections.
+
 ---
 
 ## 3. What you get out the other end
@@ -100,7 +167,7 @@ python -m melosviz.cli.main ship ./master --out ./final.zip
 | Real-time cinematic | **Unreal Engine 5** (`UnrealEditor-Cmd`)      | `render/unreal_adapter.py`                       | offline → `ue_render_plan.json`     |
 | Motion graphics     | **After Effects** (`aerender`)                | `render/aftereffects_adapter.py`                 | `nexrender` server fallback         |
 | Assemble            | **Adobe Media Encoder** (`ame`) or **ffmpeg** | `render/mediaencoder_adapter.py`                 | ffmpeg always                       |
-| Master              | **DaVinci Resolve** (`resolve-script`)        | `render/davinci_adapter.py`                      | ffmpeg → 3 deliverables             |
+| Master              | **DaVinci Resolve** (`resolve-script`)        | `render/davinci_adapter.py`                      | ffmpeg → 3 deliverables, or `--reference` LUFS/LRA/TP match |
 | Ship                | ffmpeg + sha256 + cosign                      | `viz ship`                                       | always                              |
 
 ---
