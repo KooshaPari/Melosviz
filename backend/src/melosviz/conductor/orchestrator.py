@@ -762,10 +762,14 @@ class Orchestrator:
             # Offline placeholder outputs must stay traceable: record them in
             # provenance ``extra`` so production acceptance can distinguish a
             # placeholder from a real render (NEXT-ACTIONS A1).
+            # Offline mode covers every scene type the serving adapter has an
+            # offline branch for, so ask the adapter rather than assuming
+            # ``comfyui_image`` (the registry routes seven scene types to the
+            # ComfyUI adapter, and all of them get placeholder clips offline).
             _offline_placeholder = bool(
                 os.environ.get("MELOSVIZ_COMFYUI_OFFLINE", "").strip().lower()
                 in ("1", "true", "yes", "on")
-                and scene_type == "comfyui_image"
+                and getattr(adapter, "emits_offline_placeholders", False)
                 and artifact.endswith(".mp4")
             )
             # A scene that reported no usable artifact path is neither a render

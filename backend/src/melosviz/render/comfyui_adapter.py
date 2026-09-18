@@ -571,6 +571,13 @@ class ComfyUIAdapter:
 
     scene_type: str = "comfyui_image"
 
+    #: In offline mode (``MELOSVIZ_COMFYUI_OFFLINE=1``) ``render`` branches once,
+    #: before any scene-type dispatch, and emits a placeholder clip plus a
+    #: ``job_spec.json`` for *every* scene it serves -- not only
+    #: ``comfyui_image``. Declared here so the orchestrator can label the render
+    #: outcome truthfully (A1) instead of reporting a placeholder as a render.
+    emits_offline_placeholders: bool = True
+
     def __init__(self, scene_type: str = "comfyui_image") -> None:
         if scene_type not in SCENE_TYPES:
             raise ValueError(
