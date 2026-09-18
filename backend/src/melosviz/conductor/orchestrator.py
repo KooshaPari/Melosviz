@@ -70,6 +70,33 @@ def _path_like_str(value: Any) -> str | None:
     return None
 
 
+def _artifact_rejection(artifact: str) -> str | None:
+    """Return why `artifact` is unusable as media, or ``None`` when it is fine.
+
+    Measured on this codebase: an adapter that reported a zero-byte file, a path
+    it never wrote, or even a directory was still recorded as a successful
+    ``render``, so release acceptance could silently consume output that is not
+    media (A1: "malformed ... media are rejected or explicitly blocked").
+
+    A zero-*duration* container also counts as malformed media, but detecting it
+    needs real container probing and this repo has no ffprobe helper, so it is
+    deliberately not claimed here.
+    """
+    if not artifact:
+        return None
+    path = Path(artifact)
+    try:
+        if not path.exists():
+            return "artifact missing (the adapter reported a path that does not exist)"
+        if not path.is_file():
+            return "artifact is not a file"
+        if path.stat().st_size == 0:
+            return "artifact is empty (0 bytes)"
+    except OSError as exc:  # unreadable path/metadata
+        return f"artifact could not be inspected: {exc}"
+    return None
+
+
 def _extract_artifact_path(result: Any) -> str:
     """Return the first artifact path `result` reports, else ``""``.
 
@@ -814,6 +841,10 @@ class Orchestrator:
                     _artifact_path = scene_out_dir / _artifact_path
                 artifact = str(_artifact_path)
 
+            # A claimed artifact that is missing, not a file, or empty is not
+            # media and must not be accepted as a render (A1).
+            _artifact_issue = _artifact_rejection(artifact)
+
             # ---- A1 outcome typing (2026-09-17) -------------------------------
             # Offline placeholder outputs must stay traceable: record them in
             # provenance ``extra`` so production acceptance can distinguish a
@@ -841,14 +872,21 @@ class Orchestrator:
             # A scene that reported no usable artifact path is neither a render
             # nor a placeholder. Label it so release acceptance can see it.
             _outcome = (
-                "offline-placeholder"
-                if _offline_placeholder
+                "malformed"
+                if _artifact_issue
                 else (
-                    "job-spec-only"
-                    if _plan_only
-                    else ("render" if artifact else "unavailable")
+                    "offline-placeholder"
+                    if _offline_placeholder
+                    else (
+                        "job-spec-only"
+                        if _plan_only
+                        else ("render" if artifact else "unavailable")
+                    )
                 )
             )
+            _extra: dict[str, Any] = {"outcome": _outcome}
+            if _artifact_issue:
+                _extra["rejection_reason"] = _artifact_issue
 
             done_evt = bus.emit_done(
                 job_id=job_id,
@@ -892,9 +930,9 @@ class Orchestrator:
                     height=int(getattr(render_spec, "height", 1080) or 1080),
                     fps=int(getattr(render_spec, "fps", 24) or 24),
                     visual_diff=_visual_diff,
-                    extra={"outcome": _outcome},
+                    extra=_extra,
                 )
-                if artifact:
+                if artifact and not _artifact_issue:
                     write_provenance(clip_prov)
                 else:
                     # Nothing to sit next to: keep the sidecar inside the render
@@ -909,7 +947,7 @@ class Orchestrator:
 
             try:
                 cache_key = scene_cache_key(_seg_for_render, cache_root) if cache_root else scene_cache_key(_seg_for_render, self._output_dir)
-                if self._render_cache is not None and artifact:
+                if self._render_cache is not None and artifact and not _artifact_issue:
                     self._render_cache.store(
                         cache_key,
                         src_artifact_path=Path(artifact),

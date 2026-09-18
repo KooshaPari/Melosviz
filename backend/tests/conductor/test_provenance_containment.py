@@ -69,6 +69,12 @@ class _RelativePathAdapter:
     """Adapter that reports a relative artifact path (no directory part)."""
 
     def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
+        out = Path(str(kwargs["output_path"]))
+        out.mkdir(parents=True, exist_ok=True)
+        # Write the clip under the scene output dir but report it *relative*, so
+        # the resolution path is what is under test. Without the write the
+        # artifact is unusable and is (correctly) rejected as malformed.
+        (out / "clip.mp4").write_bytes(b"\x00" * 16)
         return [Path("clip.mp4")]
 
 
