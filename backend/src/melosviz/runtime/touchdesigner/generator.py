@@ -743,12 +743,12 @@ def generate_network(
 
         # 1. Network spec JSON
         network_spec_path = output_dir / "network_spec.json"
-        network_spec_path.write_text(network.to_json())
+        network_spec_path.write_text(network.to_json(), encoding="utf-8")
         logger.info("Wrote network spec: %s", network_spec_path)
 
         # 2. TD-side bootstrap Python script
         bootstrap_path = output_dir / "td_bootstrap.py"
-        bootstrap_path.write_text(render_bootstrap_script(network))
+        bootstrap_path.write_text(render_bootstrap_script(network), encoding="utf-8")
         logger.info("Wrote TD bootstrap: %s", bootstrap_path)
 
         # 3. Minimal .toe stub (metadata JSON, not a real binary .toe)
@@ -760,7 +760,7 @@ def generate_network(
             "meta": network.meta,
         }
         project_path = output_dir / "runtime.toe.json"
-        project_path.write_text(json.dumps(toe_stub, indent=2))
+        project_path.write_text(json.dumps(toe_stub, indent=2), encoding="utf-8")
         logger.info("Wrote .toe stub: %s", project_path)
 
     return GenerateResult(
