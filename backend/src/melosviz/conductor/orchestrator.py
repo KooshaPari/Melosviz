@@ -53,6 +53,33 @@ def _scene_label(seg: dict[str, Any], scene_index: int) -> str:
     return name[:80]
 
 
+def _extract_artifact_path(result: Any) -> str:
+    """Return the first artifact path `result` reports, else ``""``.
+
+    Only real path-like values count. ``hasattr(result, "files")`` is true for
+    *any* ``Mock``, so a repr used to be mistaken for a path: a provenance
+    sidecar was then written under the process CWD, and two such files escaped
+    into the repository (commit ``6539d2b``), which made every Windows checkout
+    of ``main`` fail with ``fatal: unable to checkout working tree``.
+
+    A result no path can be read out of now reports no artifact at all, which
+    the caller labels as an ``unavailable`` outcome instead of fabricating one.
+    """
+    if isinstance(result, (list, tuple)):
+        candidates: list[Any] = list(result)
+    else:
+        candidates = []
+        for attr in ("files", "output_paths"):
+            value = getattr(result, attr, None)
+            if isinstance(value, (list, tuple)) and value:
+                candidates = list(value)
+                break
+    for candidate in candidates:
+        if isinstance(candidate, (str, os.PathLike)) and str(candidate):
+            return str(candidate)
+    return ""
+
+
 class OrchestratorResult:
     """Aggregated result from a full :meth:`Orchestrator.render` run.
 
@@ -723,15 +750,14 @@ class Orchestrator:
                 ) from exc
 
             elapsed_ms = (time.monotonic() - t0) * 1000.0
-            artifact = ""
-            if isinstance(result, (list, tuple)) and result:
-                first = result[0]
-                if first is not None:
-                    artifact = str(first)
-            elif hasattr(result, "files") and result.files:
-                artifact = str(result.files[0])
-            elif hasattr(result, "output_paths") and result.output_paths:
-                artifact = str(result.output_paths[0])
+            artifact = _extract_artifact_path(result)
+            if artifact:
+                # Resolve against the scene output dir so a relative path can
+                # never be resolved against the process CWD.
+                _artifact_path = Path(artifact)
+                if not _artifact_path.is_absolute():
+                    _artifact_path = scene_out_dir / _artifact_path
+                artifact = str(_artifact_path)
 
             # ---- A1 outcome typing (2026-09-17) -------------------------------
             # Offline placeholder outputs must stay traceable: record them in
@@ -742,6 +768,13 @@ class Orchestrator:
                 in ("1", "true", "yes", "on")
                 and scene_type == "comfyui_image"
                 and artifact.endswith(".mp4")
+            )
+            # A scene that reported no usable artifact path is neither a render
+            # nor a placeholder. Label it so release acceptance can see it.
+            _outcome = (
+                "offline-placeholder"
+                if _offline_placeholder
+                else ("render" if artifact else "unavailable")
             )
 
             done_evt = bus.emit_done(
@@ -786,11 +819,18 @@ class Orchestrator:
                     height=int(getattr(render_spec, "height", 1080) or 1080),
                     fps=int(getattr(render_spec, "fps", 24) or 24),
                     visual_diff=_visual_diff,
-                    extra={"outcome": (
-                        "offline-placeholder" if _offline_placeholder else "render"
-                    )},
+                    extra={"outcome": _outcome},
                 )
-                write_provenance(clip_prov)
+                if artifact:
+                    write_provenance(clip_prov)
+                else:
+                    # Nothing to sit next to: keep the sidecar inside the render
+                    # output dir and name it from the index, so a spec-supplied
+                    # scene label cannot steer the path.
+                    write_provenance(
+                        clip_prov,
+                        target=scene_out_dir / f"scene_{scene_idx:03d}.provenance.json",
+                    )
             except Exception as exc:  # provenance is best-effort
                 logger.debug("provenance write skipped: %s", exc)
 

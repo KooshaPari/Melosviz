@@ -44,6 +44,47 @@ from typing import Any, Mapping
 
 PROVENANCE_SCHEMA_VERSION = "1.0"
 
+# Characters Windows forbids anywhere in a path component. A sidecar is written
+# next to its artifact, so an artifact name that only some platforms can
+# represent produces a file that cannot be checked out on the others.
+_NON_PORTABLE_CHARS = '<>:"|?*'
+
+# Device names Windows reserves regardless of extension.
+_RESERVED_NAMES = (
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+
+
+def _assert_portable_component(name: str) -> None:
+    """Reject a file name that cannot exist on every supported platform.
+
+    Raises:
+        ValueError: if `name` is empty, holds a Windows-illegal character, holds
+            a control character, ends in a dot or space, or is a reserved
+            Windows device name.
+
+    Guarding here matters because the failure is not local: a sidecar named
+    after a Mock repr (``<MagicMock ...>.provenance.json``) was committed at
+    ``6539d2b`` and made ``git clone`` abort with ``fatal: unable to checkout
+    working tree`` on Windows, leaving the whole worktree short of files.
+    """
+    if not name:
+        raise ValueError("artifact path has no file name")
+    illegal = sorted({ch for ch in name if ch in _NON_PORTABLE_CHARS})
+    if illegal:
+        raise ValueError(
+            f"artifact name {name!r} contains characters that are not portable "
+            f"to Windows: {''.join(illegal)!r}"
+        )
+    if any(ord(ch) < 0x20 for ch in name):
+        raise ValueError(f"artifact name {name!r} contains control characters")
+    if name != name.rstrip(". "):
+        raise ValueError(f"artifact name {name!r} ends with a dot or a space")
+    if name.split(".")[0].strip().upper() in _RESERVED_NAMES:
+        raise ValueError(f"artifact name {name!r} is a reserved Windows device name")
+
 
 @dataclass
 class ClipProvenance:
@@ -106,19 +147,48 @@ class ClipProvenance:
         return d
 
 
+def _assert_portable_path(path: Path) -> None:
+    """Validate the file name `path` would create on disk.
+
+    Combines :func:`_assert_portable_component` with a drive-relative check:
+    Windows reads ``"c:clip.mp4"`` as a drive-qualified relative path, so the
+    colon never reaches ``.name`` and a sidecar would be written somewhere other
+    than the directory the caller asked for.
+    """
+    _assert_portable_component(path.name)
+    if not path.is_absolute() and ":" in str(path):
+        raise ValueError(f"path {str(path)!r} is drive-relative; its colon is not portable")
+
+
 def provenance_path_for(artifact: Path | str) -> Path:
-    """Return the sidecar `.provenance.json` path for `artifact`."""
+    """Return the sidecar `.provenance.json` path for `artifact`.
+
+    The derived name is validated for cross-platform portability; see
+    :func:`_assert_portable_path`.
+    """
     p = Path(artifact)
+    _assert_portable_path(p)
     return p.with_name(p.name + ".provenance.json")
 
 
-def write_provenance(prov: ClipProvenance, *, indent: int = 2) -> Path:
-    target = provenance_path_for(prov.artifact_path)
-    target.write_text(
+def write_provenance(
+    prov: ClipProvenance, *, indent: int = 2, target: Path | str | None = None
+) -> Path:
+    """Write the sidecar for `prov`; return the path written.
+
+    By default the sidecar sits next to ``prov.artifact_path``. Pass `target`
+    when a render produced no artifact path but its outcome still has to stay
+    traceable; the caller then owns keeping that path inside the render output
+    directory.
+    """
+    dest = Path(target) if target is not None else provenance_path_for(prov.artifact_path)
+    _assert_portable_path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(
         json.dumps(prov.to_dict(), ensure_ascii=False, indent=indent),
         encoding="utf-8",
     )
-    return target
+    return dest
 
 
 def collect_manifest_from_dir(out_dir: Path | str) -> list[dict]:
