@@ -767,6 +767,39 @@ class Orchestrator:
                     duration_ms=elapsed_ms,
                 )
                 emitted.append(err_evt)
+                # A scene that failed must still leave a dated record inside the
+                # output dir, otherwise a failed render is indistinguishable from
+                # one that never ran (A1: "rejected or explicitly blocked"). This
+                # is best-effort and must never mask the real failure.
+                try:
+                    write_provenance(
+                        ClipProvenance(
+                            artifact_path="",
+                            scene_index=scene_idx,
+                            scene_name=scene_name,
+                            scene_type=scene_type,
+                            backend=backend_key,
+                            render_started_at=t0,
+                            render_finished_at=t0 + elapsed_ms / 1000.0,
+                            seed=getattr(render_spec, "seed", None) or scene_idx,
+                            prompt=getattr(render_spec, "prompt", None) or scene_name,
+                            width=int(getattr(render_spec, "width", 1920) or 1920),
+                            height=int(getattr(render_spec, "height", 1080) or 1080),
+                            fps=int(getattr(render_spec, "fps", 24) or 24),
+                            extra={
+                                "outcome": "failed",
+                                "error_type": type(exc).__name__,
+                                "error": str(exc)[:500],
+                            },
+                        ),
+                        target=scene_out_dir / f"scene_{scene_idx:03d}.provenance.json",
+                    )
+                except Exception:  # pragma: no cover - provenance is best-effort
+                    logger.debug(
+                        "provenance write skipped for failed scene[%d]",
+                        scene_idx,
+                        exc_info=True,
+                    )
                 raise ConductorError(
                     f"Orchestrator: adapter for scene_type={scene_type!r} failed: {exc}"
                 ) from exc
