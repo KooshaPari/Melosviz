@@ -167,7 +167,11 @@ tracked tree is never the mutation target, and fail loudly if the source differs
   `ConductorError` exactly as before, so rehearsal behaviour is unchanged. The
   "no adapter registered" and final assembly-step failures are **not** covered and still
   raise without a record.
-- Rejection/blocking of malformed or zero-duration media — **still open**.
+- Rejection/blocking of **malformed** media — done in `def9d8e`: a zero-byte file, a
+  path an adapter never wrote, and a directory are now recorded as `malformed` with a
+  reason and are no longer accepted as a `render` (see §8.8).
+- Rejection/blocking of **zero-duration** media — **still open**, and it needs real
+  container probing; this repo has no ffprobe helper, so it is not claimed anywhere.
 
 ### 5.4 `collected_paths` is never appended to — observation, intent UNKNOWN
 
@@ -528,6 +532,29 @@ test. Several other modules still call `write_text()` without an explicit encodi
 the same failure is possible wherever a non-ASCII payload (an accented prompt, an emoji)
 reaches them on Windows.
 
+### 8.8 Unusable artifacts were accepted as renders (fixed)
+
+Measured on the real public API before the fix, with an adapter per case:
+
+| what the adapter reported | outcome before | outcome now |
+|---|---|---|
+| a zero-byte `clip.mp4` | `render` | **`malformed`** |
+| a path it never wrote | `render` | **`malformed`** |
+| a **directory** | `render` | **`malformed`** |
+
+`def9d8e` inspects the artifact it is handed, records `extra.outcome="malformed"` plus a
+`rejection_reason`, keeps the sidecar inside the scene output dir (so a directory
+artifact cannot place it elsewhere), and skips the render-cache store. The render still
+completes, so rehearsal stays runnable. The eleven real scene types keep their previous
+labels, so the sweep in §8.6 is unchanged.
+
+One existing fixture had to change: `_RelativePathAdapter` reported `Path("clip.mp4")`
+without writing it, which is now correctly malformed. It writes the clip it reports and
+still tests relative-path resolution.
+
+Zero-*duration* media is deliberately **not** covered: detecting it needs container
+probing and no such helper exists in this repo.
+
 ## 9. Handoff backlog status
 
 | Item | Status |
@@ -562,3 +589,25 @@ authenticated with `repo` + `workflow` scopes.
   laptop; the desktop clone `Melosviz-work` was clean).
 - Did not activate the render cache (§3) or modify the mutation engine (§5.1).
 - Did not restate item 4 as done, and did not create a competing ledger.
+
+## 12. Delegated work in flight (and a spawn hazard worth knowing)
+
+Two workstreams were delegated to swarm workers on the `deepseek-v4.1-flash` route
+(`openai-compatible:opencode-go`), each in its own clone on its own branch, with a
+reproduce command, a red-before/passing-after requirement, exact suite commands to
+report, and an explicit **no-push** instruction so integration stays serial:
+
+| Worker | Scope | Clone / branch |
+|---|---|---|
+| `nautilus` | root-cause the `live_stage` `'dict' object has no attribute 'metadata'` failure + regression test | `agents/sandbox/melos-worker-a`, `fix/live-stage-type-bug` |
+| `wyvern` | remaining `write_text` / `open("w")` / `json.dump` sites that rely on the platform default encoding, with a non-ASCII round-trip test | `agents/sandbox/melos-worker-b`, `chore/encoding-sweep` |
+
+**Hazard:** the first `spawn` call returned `Failed to spawn agent: deadline has elapsed`
+but had in fact created a session (`humpback`), and the retry created a second one
+(`nautilus`) pointed at the *same* clone and branch. Two agents writing one working tree
+would have corrupted it. The duplicate was stopped before it wrote anything and
+`melos-worker-a` was verified clean afterwards. Lesson: after a spawn that reports a
+timeout, list the agents before retrying.
+
+Worker claims are not evidence. Each commit still has to be inspected and its acceptance
+command re-run by the owner before integration.
