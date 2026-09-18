@@ -158,7 +158,46 @@ intentional; it is recorded because nothing in the code says so.
 
 ---
 
-## 6. Verification and failure attribution
+## 6. Published artifacts and the install gate
+
+Resolves the "**v0.2.0** tag verified to exist; contents and assets UNVERIFIED" item
+from HANDOFF §7.
+
+| Fact | Observed |
+|---|---|
+| GitHub releases | exactly one: `Melosviz v0.1.1`, published 2026-09-17, not draft/prerelease |
+| `v0.2.0` release | **does not exist** (`gh release view v0.2.0` -> `release not found`); the tag `5835da3` has no release and therefore **no assets at all** |
+| `v0.1.1` assets | `Melosviz_0.1.1_aarch64.dmg` (4,810,712 B) and `Melosviz-v0.1.1-macos-arm64.tar.gz` (4,805,307 B) — **both macOS arm64**, no Windows or Linux artifact |
+| Recorded downloads | dmg 1, tar.gz 0 (matches the "0 artifact downloads" observation) |
+
+**Integrity verified (this session):** both assets were downloaded and their SHA-256
+digests match the published release digests exactly:
+
+```
+1c588123e7964a063e2d9358e449b8ff4f6590f031b86216cdce1b067cc45496  Melosviz-v0.1.1-macos-arm64.tar.gz
+2946909e4143f112754275ea931568e1f3271791632b8d945df880dd4b1e0d51  Melosviz_0.1.1_aarch64.dmg
+```
+
+**Structure verified:** the tarball holds a well-formed bundle —
+`Melosviz.app/Contents/{Info.plist, MacOS/melosviz-desktop, Resources/icon.icns}`.
+The executable is a genuine 64-bit Mach-O (`cf fa ed fe`, cputype `0x0100000c` = arm64),
+13,652,288 bytes, and it contains the embedded frontend markers `index.html`,
+`assets/`, `<div id=`, plus `tauri`, `wry`, `WebView` and `brotli`.
+
+**Defect found — the shipped app reports the wrong version.** `Info.plist` declares
+`CFBundleShortVersionString` = **0.1.0** and `CFBundleVersion` = **0.1.0** inside an
+artifact released and named as **v0.1.1**. Anyone verifying an install by reading the
+app's version will see 0.1.0. Relevant to item 6 (shipped feature set vs release notes).
+The same plist still carries a 2000s-era DTD reference and `LSRequiresCarbon`, both
+stale for a Tauri 2 bundle — recorded as an observation, cause UNKNOWN.
+
+**Item 4 consequence.** The install smoke cannot run on this desktop: nothing published
+is installable on Windows, and both assets target Apple Silicon macOS. Item 4 therefore
+needs an arm64 Mac, and the only version available to install there is **v0.1.1**, since
+v0.2.0 has no release. Launch, packaged-frontend load and a basic workflow run remain
+**NOT RUN**.
+
+## 7. Verification and failure attribution
 
 Same Windows host, `--ignore=tests/performance`, one hanging test deselected
 (`tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar`, which self
@@ -200,18 +239,18 @@ user acceptance.
 
 ---
 
-## 7. Handoff backlog status
+## 8. Handoff backlog status
 
 | Item | Status |
 |---|---|
-| **Item 4** clean-machine install smoke | **Step one unblocked** (cloning and checking out now work on Windows). **Still NOT RUN**: it needs the published `.dmg` / `.tar.gz` and a machine without the repo. |
+| **Item 4** clean-machine install smoke | **Step one unblocked** (cloning and checking out now work on Windows). **Still NOT RUN, and not runnable here**: both published assets are macOS arm64, so this needs an arm64 Mac; see §6. |
 | **Item 5** wire the three spec-first web components | Unchanged; 3 web tests still skipped. Desktop-local, no blocker. |
 | **A2** real creative output | Unchanged; needs the GPU-capable host or a qualified remote renderer. |
 | **A3** installation + comparison qualification | Unchanged. |
 | **Item 6** delivery contract docs | Unchanged. `v0.2.0` tag contents and assets remain **UNVERIFIED**. |
 | A1 remainder | Partly advanced (§2 added `unavailable`); see §5.3 for what is left. |
 
-## 8. Resume commands (this host, owner session)
+## 9. Resume commands (this host, owner session)
 
 ```bat
 git clone --branch main --single-branch https://github.com/KooshaPari/Melosviz.git <dir>
@@ -226,7 +265,7 @@ Notes: pass `--basetemp` (pytest's default `pytest-current` symlink cleanup rais
 profile root. `git push` works over HTTPS with the credential manager; `gh` is
 authenticated with `repo` + `workflow` scopes.
 
-## 9. What this session deliberately did not do
+## 10. What this session deliberately did not do
 
 - No force push, no history rewrite: all four commits are fix-forward on `main`
   (`d501aa2`, `f5879a8`, `8e546da`, `f32e282`).
