@@ -437,7 +437,7 @@ def _librosa_segment_boundaries(librosa: Any, np: Any, y: Any, sr: int, n_segmen
         boundaries = sorted(times_all[:n_segments - 1].tolist())
         edges = [0.0] + boundaries + [duration_sec]
         segments = [(edges[i], edges[i + 1]) for i in range(len(edges) - 1)]
-        while len(segments) <= n_segments:
+        while len(segments) < n_segments:
             segments.append((duration_sec, duration_sec))
         return segments[:n_segments]
     except Exception:
