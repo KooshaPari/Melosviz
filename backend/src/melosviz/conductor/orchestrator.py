@@ -53,6 +53,23 @@ def _scene_label(seg: dict[str, Any], scene_index: int) -> str:
     return name[:80]
 
 
+def _path_like_str(value: Any) -> str | None:
+    """Return `value` as a path string, or ``None`` when it is not really a path.
+
+    Only concrete ``str`` and :class:`pathlib.Path` are accepted. A general
+    ``os.PathLike`` test is deliberately **not** used: ``isinstance(MagicMock(),
+    os.PathLike)`` is ``True`` because ``MagicMock`` provides ``__fspath__``, and
+    that is the repr-as-path defect this module already paid for once (the two
+    sidecars committed at ``6539d2b``). Adapters that report a single artifact
+    return a ``Path`` (``export_video`` is annotated ``-> Path``).
+    """
+    if isinstance(value, str):
+        return value or None
+    if isinstance(value, Path):
+        return str(value)
+    return None
+
+
 def _extract_artifact_path(result: Any) -> str:
     """Return the first artifact path `result` reports, else ``""``.
 
@@ -64,10 +81,15 @@ def _extract_artifact_path(result: Any) -> str:
 
     A result no path can be read out of now reports no artifact at all, which
     the caller labels as an ``unavailable`` outcome instead of fabricating one.
+    A single path is a valid adapter contract (``export_video`` is annotated
+    ``-> Path``) and is accepted through :func:`_path_like_str`.
     """
     if isinstance(result, (list, tuple)):
         candidates: list[Any] = list(result)
     else:
+        direct = _path_like_str(result)
+        if direct is not None:
+            return direct
         candidates = []
         for attr in ("files", "output_paths"):
             value = getattr(result, attr, None)
@@ -75,8 +97,9 @@ def _extract_artifact_path(result: Any) -> str:
                 candidates = list(value)
                 break
     for candidate in candidates:
-        if isinstance(candidate, (str, os.PathLike)) and str(candidate):
-            return str(candidate)
+        found = _path_like_str(candidate)
+        if found is not None:
+            return found
     return ""
 
 
@@ -766,18 +789,32 @@ class Orchestrator:
             # offline branch for, so ask the adapter rather than assuming
             # ``comfyui_image`` (the registry routes seven scene types to the
             # ComfyUI adapter, and all of them get placeholder clips offline).
+            _offline_env = os.environ.get(
+                "MELOSVIZ_COMFYUI_OFFLINE", ""
+            ).strip().lower() in ("1", "true", "yes", "on")
             _offline_placeholder = bool(
-                os.environ.get("MELOSVIZ_COMFYUI_OFFLINE", "").strip().lower()
-                in ("1", "true", "yes", "on")
+                _offline_env
                 and getattr(adapter, "emits_offline_placeholders", False)
                 and artifact.endswith(".mp4")
+            )
+            # Cinema 4D / Unreal / Blender emit a render *plan* offline and no
+            # media at all: calling that a render overstates the artifact, and
+            # calling it unavailable hides the plan that a reviewer can read.
+            _plan_only = bool(
+                _offline_env
+                and not _offline_placeholder
+                and getattr(adapter, "offline_emits_plan_only", False)
             )
             # A scene that reported no usable artifact path is neither a render
             # nor a placeholder. Label it so release acceptance can see it.
             _outcome = (
                 "offline-placeholder"
                 if _offline_placeholder
-                else ("render" if artifact else "unavailable")
+                else (
+                    "job-spec-only"
+                    if _plan_only
+                    else ("render" if artifact else "unavailable")
+                )
             )
 
             done_evt = bus.emit_done(

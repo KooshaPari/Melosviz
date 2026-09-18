@@ -283,6 +283,12 @@ def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
 class UEAdapter:
     """Conductor-compatible adapter for Unreal Engine."""
 
+    #: Offline mode (``MELOSVIZ_COMFYUI_OFFLINE=1``) writes a render plan and
+    #: never invokes the tool, so the scene produces no media at all. Declared so
+    #: the orchestrator labels the outcome ``job-spec-only`` instead of claiming a
+    #: render.
+    offline_emits_plan_only: bool = True
+
     scene_type: str = "unreal_cinematic"
 
     def render(self, render_spec: Any, *, output_path: Any = None,

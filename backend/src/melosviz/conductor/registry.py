@@ -133,6 +133,10 @@ class _BlenderAdapterShim:
 
     scene_type: str = "procedural_3d_animation"
 
+    #: Offline mode writes a Blender render plan and never invokes blender, so the
+    #: scene produces no media: ``job-spec-only`` rather than a render claim.
+    offline_emits_plan_only: bool = True
+
     def render(self, render_spec: Any, *, output_path: Any = None, **_: Any) -> Any:
         import pathlib
 

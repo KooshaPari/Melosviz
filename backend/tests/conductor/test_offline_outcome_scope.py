@@ -92,3 +92,73 @@ def test_comfyui_adapter_declares_offline_placeholders() -> None:
     from melosviz.render.comfyui_adapter import ComfyUIAdapter
 
     assert getattr(ComfyUIAdapter, "emits_offline_placeholders", False) is True
+
+
+class _SinglePathAdapter:
+    """Returns one path directly, like ``video_exporter.export_video -> Path``."""
+
+    def render(self, render_spec: Any, **kwargs: Any) -> Path:
+        out = Path(str(kwargs["output_path"]))
+        out.mkdir(parents=True, exist_ok=True)
+        clip = out / "melosviz-render.mp4"
+        clip.write_bytes(b"\x00" * 16)
+        return clip
+
+
+class _PlanOnlyAdapter:
+    """Offline branch writes a plan and no media, like C4D / Unreal / Blender."""
+
+    offline_emits_plan_only = True
+
+    def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
+        out = Path(str(kwargs["output_path"]))
+        (out / "scene_000").mkdir(parents=True, exist_ok=True)
+        plan = out / "render_plan.json"
+        plan.write_text("{}", encoding="utf-8")
+        return []
+
+
+def test_single_path_result_is_surfaced_not_labelled_unavailable(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A scene that produced media must not report ``unavailable``."""
+    payload = _render(tmp_path, "video_export", _SinglePathAdapter, monkeypatch)
+    assert payload["artifact_path"], (
+        "a bare-path adapter result was dropped, so the sidecar has no artifact"
+    )
+    assert payload["artifact_path"].endswith("melosviz-render.mp4")
+    assert payload["extra"]["outcome"] == "render", (
+        f"media-producing scene labelled {payload['extra']['outcome']!r}"
+    )
+
+
+def test_plan_only_adapter_is_labelled_job_spec_only(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A plan with no media is ``job-spec-only``, not a render claim."""
+    monkeypatch.setenv(OFFLINE_ENV, "1")
+    payload = _render(tmp_path, "c4d_3d", _PlanOnlyAdapter, monkeypatch)
+    assert payload["extra"]["outcome"] == "job-spec-only", (
+        f"plan-only scene labelled {payload['extra']['outcome']!r}"
+    )
+
+
+def test_plan_only_adapter_outside_offline_is_not_a_render_claim(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Without offline mode the same empty result is ``unavailable``."""
+    monkeypatch.delenv(OFFLINE_ENV, raising=False)
+    payload = _render(tmp_path, "c4d_3d", _PlanOnlyAdapter, monkeypatch)
+    assert payload["extra"]["outcome"] == "unavailable", (
+        f"empty non-offline scene labelled {payload['extra']['outcome']!r}"
+    )
+
+
+def test_plan_only_adapters_declare_the_capability() -> None:
+    """The shipped plan-only adapters must declare what the label relies on."""
+    from melosviz.conductor.registry import _BlenderAdapterShim
+    from melosviz.render.cinema4d_adapter import C4DAdapter
+    from melosviz.render.unreal_adapter import UEAdapter
+
+    for cls in (C4DAdapter, UEAdapter, _BlenderAdapterShim):
+        assert getattr(cls, "offline_emits_plan_only", False) is True, cls.__name__
