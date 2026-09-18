@@ -78,3 +78,9 @@ vite-out.log
 .worktrees/
 .venv/
 *.provenance.json
+
+# Mutation-test backups. backend/tests/test_mutation_engine.py snapshots the file it
+# mutates to <source>.py.mutbak. Ignored so a backup cannot be committed: at
+# 6539d2b a committed .mutbak (and two provenance sidecars) rode along with test
+# output, and the sidecar names alone broke every Windows checkout.
+*.mutbak
