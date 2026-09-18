@@ -161,9 +161,12 @@ tracked tree is never the mutation target, and fail loudly if the source differs
   is no longer labelled unavailable.
 - **`job-spec-only`** — done in `bd581eb` for Cinema 4D, Unreal and the Blender shim,
   measured in §8.6.
-- **`failed`** — **still open.** `motion_graphics_beat_sync`, `davinci_master` and
-  `live_stage` raise `ConductorError`, the orchestrator aborts the scene, and **no
-  provenance sidecar is written at all**, so a failed scene leaves no dated record.
+- **`failed`** — done in `05e343e` for the per-scene adapter failure path. A failing
+  scene now writes `scene_<idx>.provenance.json` inside the output dir with
+  `extra.outcome="failed"`, `error_type` and the error text, and still raises
+  `ConductorError` exactly as before, so rehearsal behaviour is unchanged. The
+  "no adapter registered" and final assembly-step failures are **not** covered and still
+  raise without a record.
 - Rejection/blocking of malformed or zero-duration media — **still open**.
 
 ### 5.4 `collected_paths` is never appended to — observation, intent UNKNOWN
@@ -472,9 +475,20 @@ test doubles, and the scene directory was audited afterwards.
 | unreal_cinematic | none (plan only) | **render** | **job-spec-only** |
 | procedural_3d_animation | none (plan only) | **unavailable** | **job-spec-only** |
 | video_export | melosviz-render.mp4 | **unavailable** | **render** |
-| motion_graphics_beat_sync | none | `ConductorError` (no sidecar) | unchanged |
-| davinci_master | none | `ConductorError` (no sidecar) | unchanged |
-| live_stage | none | `ConductorError` (no sidecar) | unchanged |
+| motion_graphics_beat_sync | none | `ConductorError`, no sidecar | **failed** |
+| davinci_master | none | `ConductorError`, no sidecar | **failed** |
+| live_stage | none | `ConductorError`, no sidecar | **failed** |
+
+All eleven scene types now write a sidecar recording a truthful outcome
+(`offline-placeholder`, `job-spec-only`, `render` or `failed`). A sample failure record:
+
+```
+probe4/live_stage/live_stage/scene_000.provenance.json
+  outcome    : failed
+  error_type : TDRuntimeError
+  error      : TouchDesigner network generation failed: 'dict' object has no attribute 'metadata'
+  artifact_path : ''
+```
 
 Two of those raised for spec-shape reasons rather than defects: `davinci_master` needs
 `segment_paths` (it is an assembly-stage adapter) and `motion_graphics_beat_sync` needs
