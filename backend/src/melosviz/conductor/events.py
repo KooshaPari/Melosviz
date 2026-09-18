@@ -148,7 +148,7 @@ class RenderEventBus:
             progress=progress,
         )
 
-    def emit_done(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", duration_ms: float = 0.0, artifact_path: str = "") -> RenderEvent:
+    def emit_done(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", duration_ms: float = 0.0, artifact_path: str = "", extras: dict[str, Any] | None = None) -> RenderEvent:
         return self.emit(
             job_id=job_id,
             scene_index=scene_index,
@@ -159,6 +159,7 @@ class RenderEventBus:
             duration_ms=duration_ms,
             progress=1.0,
             artifact_path=artifact_path,
+            extras=extras,
         )
 
     def emit_error(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", error: str = "", duration_ms: float = 0.0) -> RenderEvent:

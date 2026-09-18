@@ -666,20 +666,19 @@ class Orchestrator:
                     cached_artifact,
                 )
                 elapsed_ms = 0.0
-                done_evt = RenderEvent(
+                done_evt = bus.emit_done(
                     job_id=job_id,
                     scene_index=scene_idx,
                     scene_name=scene_name,
                     scene_type=scene_type,
-                    state="done",
                     backend=backend_key,
-                    started_at=_now_ms(),
-                    finished_at=_now_ms(),
                     duration_ms=0.0,
                     artifact_path=str(cached_artifact),
-                    extras={"from_cache": True, "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint()},
+                    extras={
+                        "from_cache": True,
+                        "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint(),
+                    },
                 )
-                bus._events.append(done_evt)
                 emitted.append(done_evt)
                 per_scene_results.setdefault(scene_type, {
                     "artifact_path": cached_artifact,
