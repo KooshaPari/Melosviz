@@ -132,6 +132,18 @@ class TDAdapter:
         """
         from melosviz.runtime.touchdesigner.generator import generate_network
 
+        # The conductor passes whatever the caller supplied: a ``RenderSpec``
+        # model, or the plain dict produced by ``model_dump()`` / a CLI JSON
+        # spec (every other registered adapter accepts both — see
+        # ``comfyui_adapter._extract_scenes``). The TD generator only speaks
+        # ``RenderSpec``, so normalise here at the adapter boundary instead of
+        # letting a dict reach ``render_spec.metadata`` and die with
+        # ``'dict' object has no attribute 'metadata'``.
+        if isinstance(render_spec, dict):
+            from melosviz.analysis.models import RenderSpec
+
+            render_spec = RenderSpec.model_validate(render_spec)
+
         output_dir = Path(output_path)
 
         logger.info(
