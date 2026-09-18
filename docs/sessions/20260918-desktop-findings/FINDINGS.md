@@ -346,7 +346,112 @@ The web test step in `.github/workflows/ci.yml` ends with
 build gate today. That is a coverage-honesty gap worth a deliberate decision, not
 something to change unilaterally.
 
-## 8. Handoff backlog status
+## 8. Real-path acceptance evidence
+
+The unit tests in this repo use test doubles, so the fixes above were re-checked
+against the shipped package through its public interfaces on this host. ffmpeg is present
+(ImageMagick's build), so the offline placeholder path runs for real.
+
+### 8.1 Provenance containment, real adapter
+
+`Orchestrator.render` was driven directly with the **real** `ComfyUIAdapter` from
+`ADAPTER_REGISTRY` (no monkeypatching) from a clean CWD, with a deliberately hostile
+scene label:
+
+```
+cwd        = ...\rp1\cwd
+real adapter = melosviz.conductor.registry.ComfyUIAdapter
+done       artifact_path='...\out\comfyui_image\scene_000\clip.mp4'
+
+sidecars inside output dir: 1
+  ...\out\comfyui_image\scene_000\clip.mp4.provenance.json
+    artifact_path = '...\clip.mp4'
+    scene_name    = '../../escape-attempt'
+    outcome       = 'offline-placeholder'
+    contained     = True
+stray sidecars under cwd: 0
+files left in cwd: 0
+```
+
+The label `../../escape-attempt` did not steer the path, and nothing was written
+outside the output directory. `visual-diff.svg`, `visual-diff-frame.png`,
+`workflow.json` and `job_spec.json` all landed beside the clip.
+
+### 8.2 Real CLI, end to end
+
+A 4-second WAV was synthesized (standard library only) and the shipped CLI was run from
+a clean CWD:
+
+```
+viz analyze <track.wav>     -> exit 0, 39,359 bytes of RenderSpec JSON
+viz generate <track.wav> --concept ... --bpm 120 --seed 7 --out <out>
+                            -> exit 0, assembly_ok true,
+                               scenes: comfyui_audio_video_seedance, comfyui_image, comfyui_video
+```
+
+Output audit for that run: 3 provenance sidecars, **all contained** in the output dir,
+**0 sidecars outside**, **0 files left in the CWD**, 12 MP4 artifacts, 3 `job_spec.json`.
+
+### 8.3 A label defect this exposed, found only on the real path
+
+The first CLI run recorded
+
+```
+outcome tally: {'render': 2, 'offline-placeholder': 1}
+```
+
+while the adapter was in offline mode and had touched no network, and all three scene
+directories contained `job_spec.json` plus placeholder MP4s. `ComfyUIAdapter.render`
+branches on offline mode **once, before any scene-type dispatch**
+(`comfyui_adapter.py:611`), and the registry routes seven scene types to that adapter,
+but the orchestrator compared `scene_type` against the single literal `comfyui_image`.
+
+Fixed in `5b20a6f`: the label now asks the serving adapter
+(`emits_offline_placeholders`, declared by `ComfyUIAdapter`, absent elsewhere). Re-running
+the same command with the same seed:
+
+```
+before: {'render': 2, 'offline-placeholder': 1}
+after : {'offline-placeholder': 3}
+```
+
+sidecars still contained 3/3, 0 files in the CWD, `assembly_ok` true. New tests in
+`tests/conductor/test_offline_outcome_scope.py` fail against the old code
+(`offline-produced scene labelled 'render'`) and pass after; conductor 101 passed.
+
+**Still open, and deliberately not labelled:** the Cinema4D, Unreal, After Effects and
+Blender adapters also branch on the same env var (`cinema4d_adapter.py:308`,
+`unreal_adapter.py:296`, `blender_exporter.py:759`). Whether their offline branch emits a
+placeholder clip or only a job spec decides whether they are `offline-placeholder` or
+`job-spec-only`, and that needs its own check. They keep reporting `render` until then.
+
+### 8.4 Render cache: what the real path does today
+
+Driven through the public API with the real adapter, twice per phase:
+
+| Phase | Observation |
+|---|---|
+| **A — shipped default (no `_render_cache` dir)** | `cache entries after first render: 0`; second render `from_cache=False`, artifact suffix `.mp4`; product works, cache inert. |
+| **B — cache dir present** | `cache entries after first render: 1`; second render `from_cache=True`; **the real subscriber received the cache-hit event** (`('done', True)` in the subscriber sequence) and it is in `bus.recent()`; `to_sse()` renders. The hit's `artifact_path` suffix is **`.bin`**. |
+
+Phase B is what `8e546da` repaired and it now works, including the SSE delivery that
+`bus._events` would have swallowed. Phase B also measures why activation stays deferred:
+a hit hands downstream a `_render_cache\<sha>.bin`, not an `.mp4`, and skips provenance
+and the outcome label.
+
+### 8.5 `*.mutbak` guard, real git interface
+
+```
+$ git check-ignore -v backend/src/melosviz/analysis/_probe2.py.mutbak
+.gitignore:86:*.mutbak  backend/src/melosviz/analysis/_probe2.py.mutbak
+$ git add -A && git status --porcelain
+(no output: the backup is not staged)
+```
+
+A mutation backup cannot be committed. `git ls-files` still matches no `*.mutbak`, so the
+rule hides no tracked file.
+
+## 9. Handoff backlog status
 
 | Item | Status |
 |---|---|
@@ -357,7 +462,7 @@ something to change unilaterally.
 | **Item 6** delivery contract docs | Unchanged. `v0.2.0` tag contents and assets remain **UNVERIFIED**. |
 | A1 remainder | Partly advanced (§2 added `unavailable`); see §5.3 for what is left. |
 
-## 9. Resume commands (this host, owner session)
+## 10. Resume commands (this host, owner session)
 
 ```bat
 git clone --branch main --single-branch https://github.com/KooshaPari/Melosviz.git <dir>
@@ -372,7 +477,7 @@ Notes: pass `--basetemp` (pytest's default `pytest-current` symlink cleanup rais
 profile root. `git push` works over HTTPS with the credential manager; `gh` is
 authenticated with `repo` + `workflow` scopes.
 
-## 10. What this session deliberately did not do
+## 11. What this session deliberately did not do
 
 - No force push, no history rewrite: all four commits are fix-forward on `main`
   (`d501aa2`, `f5879a8`, `8e546da`, `f32e282`).
