@@ -61,3 +61,38 @@ def test_done_event_carries_artifact_from_list_returning_adapter(
         "done event must carry a non-empty artifact_path for list-returning adapters"
     )
     assert done[0].artifact_path.endswith("clip.mp4")
+
+
+def test_provenance_outcome_tag_present(tmp_path: Path, monkeypatch) -> None:
+    """Provenance sidecar records outcome=render vs offline-placeholder (A1)."""
+    from melosviz.conductor.provenance import provenance_path_for
+
+    monkeypatch.setitem(
+        registry_mod.ADAPTER_REGISTRY, "comfyui_image", _ListAdapter
+    )
+    orch = Orchestrator(
+        output_dir=tmp_path / "out",
+        skip_assembly=True,
+        auto_offline=False,
+    )
+    spec = {
+        "scene_segments": [
+            {
+                "scene_index": 0,
+                "scene_name": "s0",
+                "scene_type": "comfyui_image",
+            }
+        ]
+    }
+    orch.render(spec)
+    sidecars = list((tmp_path / "out").rglob("*.provenance.json"))
+    assert len(sidecars) == 1, f"expected exactly 1 provenance sidecar: {sidecars}"
+    import json as _json
+
+    d = _json.loads(sidecars[0].read_text(encoding="utf-8"))
+    assert d.get("artifact_path", "").endswith("clip.mp4"), (
+        f"provenance artifact_path empty or wrong: {d.get('artifact_path')!r}"
+    )
+    assert d.get("extra", {}).get("outcome") == "render", (
+        f"provenance extra.outcome missing or wrong: {d.get('extra')!r}"
+    )
