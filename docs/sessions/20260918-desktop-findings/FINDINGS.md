@@ -154,11 +154,17 @@ tracked tree is never the mutation target, and fail loudly if the source differs
 
 ### 5.2 Render cache is still inert — see §3
 
-### 5.3 A1 remainder unchanged
+### 5.3 A1 remainder: partly closed
 
-Still open: machine-readable labels for **job-spec-only**, **unavailable** (partly done
-in `f5879a8` for pathless results), **failed**, and rejection/blocking of malformed or
-zero-duration media so release acceptance cannot silently consume fixture output.
+- **`offline-placeholder`** — done (`f5879a8` scope fix in `5b20a6f`).
+- **`unavailable`** — done, and refined in `bd581eb` so a scene that really wrote media
+  is no longer labelled unavailable.
+- **`job-spec-only`** — done in `bd581eb` for Cinema 4D, Unreal and the Blender shim,
+  measured in §8.6.
+- **`failed`** — **still open.** `motion_graphics_beat_sync`, `davinci_master` and
+  `live_stage` raise `ConductorError`, the orchestrator aborts the scene, and **no
+  provenance sidecar is written at all**, so a failed scene leaves no dated record.
+- Rejection/blocking of malformed or zero-duration media — **still open**.
 
 ### 5.4 `collected_paths` is never appended to — observation, intent UNKNOWN
 
@@ -450,6 +456,63 @@ $ git add -A && git status --porcelain
 
 A mutation backup cannot be committed. `git ls-files` still matches no `*.mutbak`, so the
 rule hides no tracked file.
+
+### 8.6 Sweep of every registered adapter's offline branch
+
+Each scene type was rendered through the public `Orchestrator` in offline mode with no
+test doubles, and the scene directory was audited afterwards.
+
+| scene_type | media written | outcome before | outcome now |
+|---|---|---|---|
+| comfyui_image | clip.mp4 | offline-placeholder | offline-placeholder |
+| comfyui_video | clip.mp4 | **render** | offline-placeholder |
+| comfyui_audio_video_seedance | clip.mp4 | **render** | offline-placeholder |
+| generative_asset | clip.mp4 | **render** | offline-placeholder |
+| c4d_3d | none (plan only) | **render** | **job-spec-only** |
+| unreal_cinematic | none (plan only) | **render** | **job-spec-only** |
+| procedural_3d_animation | none (plan only) | **unavailable** | **job-spec-only** |
+| video_export | melosviz-render.mp4 | **unavailable** | **render** |
+| motion_graphics_beat_sync | none | `ConductorError` (no sidecar) | unchanged |
+| davinci_master | none | `ConductorError` (no sidecar) | unchanged |
+| live_stage | none | `ConductorError` (no sidecar) | unchanged |
+
+Two of those raised for spec-shape reasons rather than defects: `davinci_master` needs
+`segment_paths` (it is an assembly-stage adapter) and `motion_graphics_beat_sync` needs
+`metadata.duration`. `live_stage` is different: it failed with
+`'dict' object has no attribute 'metadata'`, which looks like a real type bug in the
+TouchDesigner path (recorded, not diagnosed).
+
+#### A trap worth remembering: `MagicMock` passes `isinstance(x, os.PathLike)`
+
+Accepting a bare path (needed for `export_video -> Path`) re-opened the original
+repr-as-path defect, because `MagicMock` provides `__fspath__` and resolving it still
+produced a repr-derived string. `tests/conductor/test_provenance_containment.py` failed
+on the first run and named it:
+
+```
+a Mock repr was surfaced as an artifact path: '...\out\video_export\MagicMock\mock().render()\1956943950736'
+```
+
+Path acceptance is now restricted to concrete `str` / `pathlib.Path`, with the reason in
+`_path_like_str`. The lesson: this repo's containment tests are load-bearing for any
+change to artifact extraction, and `isinstance` against a `typing`/`abc` protocol is not
+a Mock-safe check.
+
+### 8.7 TouchDesigner artifacts were refused on Windows (fixed)
+
+`generate_network` wrote `network_spec.json`, `td_bootstrap.py` and the `.toe` stub with
+the platform default encoding. On Windows that is cp1252 and the bootstrap script
+contains a right-arrow, so two tests failed:
+
+```
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192'
+```
+
+Fixed in `fb6c165` (`encoding="utf-8"`); both tests pass. The generated script is meant
+to be pasted into TouchDesigner, so this was corrupting a real deliverable, not just a
+test. Several other modules still call `write_text()` without an explicit encoding, so
+the same failure is possible wherever a non-ASCII payload (an accented prompt, an emoji)
+reaches them on Windows.
 
 ## 9. Handoff backlog status
 
