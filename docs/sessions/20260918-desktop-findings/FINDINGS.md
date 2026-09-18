@@ -32,6 +32,17 @@ MagicMock repr. `<`, `>` and `:` are illegal in Windows paths. Their payloads ca
 `backend=tests.test_coverage_100.MockVideoExport`, so a test wrote provenance into the
 repo root instead of a temp dir.
 
+**This was not only a local problem — it broke the release pipeline.** GitHub's Windows
+runner hit the identical error checking out tag `v0.1.1` (run `35206041272`,
+2026-09-17T09:36:45Z):
+
+```
+##[error]error: invalid path 'backend/<MagicMock name='mock().render().files.__getitem__()' id='4477427152'>.provenance.json'
+```
+
+Both Windows release jobs failed at their **Checkout** step because of it, and
+`Create GitHub Release` was then skipped. See §6.1 for the full job breakdown.
+
 **Note on the earlier partial fix:** `8bee0d4` (same day) added `*.provenance.json` to
 `.gitignore` for exactly these artifacts. Ignoring does not untrack, so the two
 already-tracked files kept breaking every Windows checkout. A green CI on Linux/macOS
@@ -196,6 +207,70 @@ is installable on Windows, and both assets target Apple Silicon macOS. Item 4 th
 needs an arm64 Mac, and the only version available to install there is **v0.1.1**, since
 v0.2.0 has no release. Launch, packaged-frontend load and a basic workflow run remain
 **NOT RUN**.
+
+
+### 6.1 Why no Windows or desktop artifact exists (CI evidence)
+
+The Release workflow (`release.yml`) defines macOS, Linux and Windows build jobs and the
+packaging workflows expect Windows asset names. For the only published release, the run
+at tag `v0.1.1` (`35206041272`, 95 s) ended like this:
+
+| Job | Outcome | Failing step |
+|---|---|---|
+| Release SBOM (CycloneDX) | success | |
+| **Windows — desktop app (Electrobun)** | **failure** | **Checkout** (the illegal-path error in §1) |
+| **macOS — desktop app DMG** | **failure** | **Build desktop app (Electrobun, stable channel)** |
+| Linux — CLI tarball (Rust binaries) | success | |
+| **Windows — CLI zip (Rust binaries)** | **failure** | **Checkout** (same cause) |
+| **Create GitHub Release** | **skipped** | dependencies failed |
+
+Two separate root causes:
+
+1. **Windows jobs:** the illegal provenance paths (§1). Because git refuses those paths on
+   Windows, `actions/checkout` fails before any build starts. `d501aa2` removes the cause,
+   so these jobs can run again.
+2. **Desktop bundle jobs (macOS and Windows):** `bunx electrobun build --env=stable`
+   aborts with
+
+   ```
+   BuildMessage: ModuleNotFound resolving ".../Melosviz/desktop/src/bun/index.ts" (entry point)
+   error: CottontailBuildFailed
+   ```
+
+   `desktop/src/bun/` has **never existed in any branch or tag** (`git log --all -- desktop/src/bun`
+   is empty, and `git ls-tree -r v0.1.1 desktop/src` shows `index.ts`, not `bun/index.ts`).
+   `desktop/electrobun.config.ts:21` still declares the v1-style `entrypoint: "src/index.ts"`,
+   while `desktop/package.json` pins `electrobun: "^2.0.1"` and the log shows 2.0.1 resolving
+   `src/bun/index.ts`. The 1.18.1 → 2.0.1 bump (#218) was not accompanied by the layout
+   migration, so the desktop bundle cannot be built by CI at all.
+
+**Consequence for what is published.** `Create GitHub Release` was skipped, so the release
+that exists for `v0.1.1` was not produced by the pipeline. Its two macOS assets are named
+`0.1.1` while the app inside reports `0.1.0` (§6), which matches the v0.1.1 commit subject
+"reconcile v0.1.0 artifact under new v0.1.1 changelog". The result is one installable
+artifact in existence, for macOS arm64, built as 0.1.0.
+
+**Claim-vs-delivery gaps (item 6 acceptance).**
+
+- `CHANGELOG.md` carries `## [0.2.0] - 2026-07-04`, but no `v0.2.0` release exists: that
+  run (`28702033023`) failed in 7 s with `Create GitHub Release` skipped. The changelog
+  also orders 0.1.1 (2026-09-17) after 0.2.0 (2026-07-04) by date while ranking it lower,
+  against the file's own SemVer statement.
+- `README.md:55` documents a "Native app (macOS .app / Windows .exe)" via `task app`, a
+  source-build instruction rather than a download claim, but that route cannot work while
+  the electrobun entry point is missing.
+- `packaging/winget/...` and `packaging/scoop-bucket/...` templates plus
+  `.github/workflows/winget-pr.yml` and `scoop-bucket.yml` require
+  `melosviz-desktop-windows-x86_64.zip` and `melosviz-cli-windows-x86_64.zip`. Neither
+  exists in the only release, so those workflows cannot succeed as written.
+
+**Why I did not amend the public claims.** `CHANGELOG.md` is generated
+(`1c32005` "regenerate from full git history"), so hand-edits would be overwritten, and
+`desktop/electrobun.config.ts` is one of the 17 uncommitted files owned by another session.
+Rewriting release claims is also a product decision. Recommendation: (a) migrate the
+desktop layout to the electrobun 2.x entry point and prove it with a real
+`build:stable` run, then (b) re-cut a release from the pipeline so asset names, the
+binary's own version, the changelog headings and the winget/scoop manifests agree.
 
 ## 7. Verification and failure attribution
 
