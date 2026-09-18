@@ -239,12 +239,44 @@ user acceptance.
 
 ---
 
+### 7.5 Item 5 was already done; the handoff entry is stale
+
+The handoff (and the docs-5 STATE carry-forward behind it) says
+`FullscreenToggle`, `PlaybackTransport` and `SceneJumpPanel` "exist as spec-first
+tests but are not wired into `App.tsx`", with acceptance "the 3 skipped web tests
+pass". That is no longer true of `main`:
+
+- `390b859` ("resolve all test failures - 243/246 passing (3 skipped spec-first)") is
+  where the 3 skips came from.
+- `d14aa8e` ("wire FullscreenToggle + SceneJumpPanel + PlaybackTransport",
+  2026-09-17 01:45) wired all three into `App.tsx` and added the a11y coverage. Both
+  commits are ancestors of `main`.
+- `web/src/App.tsx` imports and renders all three (state wired through `fullscreen`,
+  `activeSpec`, `playbackT`, `autoPlay`, with `onJumpToKeyframe` / `onSeek` /
+  `onReset` handlers), and `web/src/__tests__/App.a11y.test.tsx` carries the active
+  (not skipped) tests, including "fullscreen toggle exposes aria-pressed and Escape
+  exits".
+
+**Verified on this host:** `npm install --no-audit --no-fund` then `npm test`
+(`vitest run`) -> **27 test files passed, 246 tests passed, 0 skipped, 0 failed**,
+52.26 s. `git status --porcelain` was empty afterwards, so the install changed no
+tracked file (the lockfile included).
+
+**Environment note:** `npm ci` fails on this host with ERESOLVE because
+`@testing-library/react@15` declares `peerOptional @types/react ^18` while the project
+pins `@types/react ^19`; npm 11 rejects it whereas CI's Node 20 / npm 10 accepts the
+tree. CI already runs `npm ci ... || npm install ...`, and `npm install` works here.
+The web test step in `.github/workflows/ci.yml` ends with
+`|| echo "::warning::test failures (advisory)"`, so web test failures do not fail the
+build gate today. That is a coverage-honesty gap worth a deliberate decision, not
+something to change unilaterally.
+
 ## 8. Handoff backlog status
 
 | Item | Status |
 |---|---|
 | **Item 4** clean-machine install smoke | **Step one unblocked** (cloning and checking out now work on Windows). **Still NOT RUN, and not runnable here**: both published assets are macOS arm64, so this needs an arm64 Mac; see §6. |
-| **Item 5** wire the three spec-first web components | Unchanged; 3 web tests still skipped. Desktop-local, no blocker. |
+| **Item 5** wire the three spec-first web components | **Already complete on `main`** (`d14aa8e`, 2026-09-17). The handoff entry is stale; see §7.5. Verified here: web suite 246/246 passed, 0 skipped. |
 | **A2** real creative output | Unchanged; needs the GPU-capable host or a qualified remote renderer. |
 | **A3** installation + comparison qualification | Unchanged. |
 | **Item 6** delivery contract docs | Unchanged. `v0.2.0` tag contents and assets remain **UNVERIFIED**. |
