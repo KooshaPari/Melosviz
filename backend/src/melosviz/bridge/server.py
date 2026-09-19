@@ -279,7 +279,7 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
                         capture_output=True,
                         timeout=120,
                     )
-                    with open(tmp_spec_path) as f:
+                    with open(tmp_spec_path, encoding="utf-8") as f:
                         spec_dict = json.load(f)
                     return spec_dict
                 finally:
@@ -730,7 +730,7 @@ async def studio_storyboard(req: StudioStoryboardRequest, request: Request) -> s
     sb_path = out / "storyboard.json"
     if not sb_path.exists():
         raise HTTPException(status_code=500, detail="storyboard.json was not emitted")
-    return sb_path.read_text()
+    return sb_path.read_text(encoding="utf-8")
 
 
 @app.post("/api/studio/generate", response_class=PlainTextResponse)
@@ -837,7 +837,7 @@ async def studio_master(req: StudioMasterRequest, request: Request) -> str:
 
     master_plan = out / "master_plan.json"
     if master_plan.exists():
-        return master_plan.read_text()
+        return master_plan.read_text(encoding="utf-8")
     # Fallback: emit a tiny summary so the UI always has something to show
     files = sorted(p.name for p in out.iterdir() if p.is_file())
     return json.dumps({"out_dir": str(out), "files": files}, indent=2)
@@ -875,7 +875,7 @@ async def studio_ship(req: StudioShipRequest, request: Request) -> str:
         out["final_zip"] = str(final_zip)
         out["final_zip_bytes"] = final_zip.stat().st_size
     if manifest.exists():
-        out["manifest"] = json.loads(manifest.read_text())
+        out["manifest"] = json.loads(manifest.read_text(encoding="utf-8"))
     return json.dumps(out, indent=2)
 
 
@@ -994,7 +994,7 @@ async def studio_validate(req: "StudioValidateRequest", request: Request):
 
     from melosviz.conductor.validate import validate_storyboard
 
-    payload = json.loads(sb_path.read_text())
+    payload = json.loads(sb_path.read_text(encoding="utf-8"))
     report = validate_storyboard(payload, storyboard_path=str(sb_path))
     return report.to_dict()
 

@@ -25,13 +25,13 @@ def main() -> int:
         print("FAIL: en.json (reference) not found")
         return 1
 
-    ref = json.loads(ref_path.read_text())
+    ref = json.loads(ref_path.read_text(encoding="utf-8"))
     ref_keys = set(ref.keys())
     errors = 0
 
     for lf in locale_files:
         locale = lf.stem
-        data = json.loads(lf.read_text())
+        data = json.loads(lf.read_text(encoding="utf-8"))
         keys = set(data.keys())
 
         # Missing keys

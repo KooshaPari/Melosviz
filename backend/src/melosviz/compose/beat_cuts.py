@@ -289,7 +289,7 @@ def load_storyboard_for_plan(path: Path) -> dict[str, Any]:
     """Load a storyboard.json with a helpful error if the key is missing."""
     if not path.exists():
         raise FileNotFoundError(f"storyboard not found: {path}")
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError(f"storyboard is not a JSON object: {path}")
     return data
