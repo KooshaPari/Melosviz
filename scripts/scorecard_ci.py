@@ -2,8 +2,15 @@
 """
 88-Pillar Scorecard CI Script
 Audits a repository against 88 quality and security pillars.
+
+Two properties matter for this to work as a CI gate:
+
+1. The result must not depend on which directories happen to be present
+   locally. Globs therefore skip dependency trees and build output.
+2. The result must not depend on the host filesystem's case sensitivity.
+   Matching is case-insensitive everywhere.
 """
-import os, sys, json, argparse
+import os, sys, json, argparse, fnmatch
 from pathlib import Path
 
 PILLARS = [
@@ -97,14 +104,117 @@ PILLARS = [
     {"id":88,"name":"RELEASE_NOTES","check":lambda p:any(p.glob("**/*release*note*"))},
 ]
 
+# Dependency trees, build output and caches. Their contents are not part of
+# the repository. Leaving them in made the score depend on whether the
+# machine had run an install: web/node_modules/hls.js/src/utils/logger.ts
+# satisfied LOGGING, utility-types/SUPPORT.md satisfied SUPPORT, and so on.
+EXCLUDED_DIRS = {
+    ".git", "node_modules", "target", ".venv", "venv", "env",
+    "dist", "build", "coverage", "__pycache__", ".mypy_cache",
+    ".pytest_cache", ".ruff_cache", ".turbo", ".next", ".cache",
+    ".idea", ".vscode-test",
+}
+
+
+class RepoView:
+    """Path-like view of a repository.
+
+    Exposes the subset of the pathlib API the pillar checks use -- `/`,
+    `exists()`, `iterdir()`, `glob()` -- with two deliberate differences
+    from `Path`:
+
+    * globs/walks skip EXCLUDED_DIRS, so build and dependency trees cannot
+      satisfy a pillar;
+    * matching is case-insensitive on every platform. pathlib is
+      case-insensitive on Windows and case-sensitive on Linux, which made
+      `**/*privacy*` match the tracked `docs/PRIVACY.md` locally but not
+      in CI.
+    """
+
+    def __init__(self, root, files, dirs, parts=()):
+        self._root = root
+        self._files = files
+        self._dirs = dirs
+        self._parts = parts
+
+    @classmethod
+    def index(cls, root):
+        files, dirs = [], []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in EXCLUDED_DIRS]
+            reldir = os.path.relpath(dirpath, root)
+            reldir = "" if reldir == "." else reldir.replace(os.sep, "/")
+            for d in dirnames:
+                dirs.append((reldir + "/" + d) if reldir else d)
+            for fn in filenames:
+                files.append((reldir + "/" + fn) if reldir else fn)
+        return cls(Path(root), files, dirs)
+
+    def _child(self, parts):
+        return RepoView(self._root, self._files, self._dirs, parts)
+
+    def __truediv__(self, other):
+        return self._child(self._parts + (str(other),))
+
+    def _rel(self):
+        return "/".join(self._parts).lower()
+
+    def exists(self):
+        r = self._rel()
+        return r in self._flc() or r in self._dlc()
+
+    def _flc(self):
+        return self._files_lower_cache
+
+    def _dlc(self):
+        return self._dirs_lower_cache
+
+    def iterdir(self):
+        base = self._rel()
+        prefix = base + "/" if base else ""
+        out = []
+        for c in list(self._files) + list(self._dirs):
+            if not c.lower().startswith(prefix):
+                continue
+            rest = c[len(prefix):]
+            if rest and "/" not in rest:
+                out.append(self._root / c)
+        return out
+
+    def glob(self, pattern):
+        base = self._rel()
+        pat = pattern.lower()
+        out = []
+        for cand in list(self._files) + list(self._dirs):
+            lc = cand.lower()
+            if base:
+                if not lc.startswith(base + "/"):
+                    continue
+                sub = lc[len(base) + 1:]
+            else:
+                sub = lc
+            if fnmatch.fnmatchcase(sub, pat):
+                out.append(self._root / cand)
+            elif pat.startswith("**/") and fnmatch.fnmatchcase(sub, pat[3:]):
+                out.append(self._root / cand)
+        return out
+
+
 def audit_repo(repo_path):
     path = Path(repo_path)
     if not path.is_dir():
         raise ValueError(f"Path {repo_path} is not a directory")
+    view = RepoView.index(repo_path)
+    # cache lowercase lookup sets once; RepoView instances share the lists
+    view._files_lower_cache = {f.lower() for f in view._files}
+    view._dirs_lower_cache = {d.lower() for d in view._dirs}
+    RepoView._files_lower_cache = view._files_lower_cache
+    RepoView._dirs_lower_cache = view._dirs_lower_cache
+
     results, score = [], 0
     for pillar in PILLARS:
         try:
-            passed = pillar["check"](path)
+            passed = pillar["check"](view)
             if isinstance(passed, list): passed = len(passed) > 0
             results.append({"id":pillar["id"],"name":pillar["name"],"passed":bool(passed)})
             if passed: score += 1
@@ -112,32 +222,94 @@ def audit_repo(repo_path):
             results.append({"id":pillar["id"],"name":pillar["name"],"passed":False,"error":str(e)})
     return {"score":score,"total":len(PILLARS),"percentage":(score/len(PILLARS))*100,"results":results}
 
+
+def _load_baseline(path):
+    if not path or not os.path.isfile(path):
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("score")
+
+
 def main():
     parser = argparse.ArgumentParser(description="88-Pillar Scorecard Audit")
     parser.add_argument("path", help="Path to repository")
-    parser.add_argument("--threshold", type=int, default=85)
+    parser.add_argument("--threshold", type=int, default=None,
+                        help="Absolute minimum score. Fails if the score is lower.")
+    parser.add_argument("--baseline", default=None,
+                        help="Baseline JSON file ({\"score\": N}) to compare against.")
+    parser.add_argument("--fail-on-drop", action="store_true",
+                        help="Exit non-zero when the score is below the --baseline score.")
+    parser.add_argument("--update-baseline", action="store_true",
+                        help="Write the current score to --baseline and exit 0.")
     parser.add_argument("--output", choices=["text","json","markdown"], default="text")
-    parser.add_argument("--fail-on-drop", action="store_true")
     args = parser.parse_args()
+
+    if args.fail_on_drop and not args.baseline:
+        print("Error: --fail-on-drop requires --baseline", file=sys.stderr)
+        sys.exit(2)
+
     try:
         report = audit_repo(args.path)
+        baseline = _load_baseline(args.baseline)
+
+        if args.update_baseline:
+            if not args.baseline:
+                print("Error: --update-baseline requires --baseline", file=sys.stderr)
+                sys.exit(2)
+            payload = {"score": report["score"], "total": report["total"],
+                       "percentage": round(report["percentage"], 1)}
+            with open(args.baseline, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+                f.write("\n")
+            print("Baseline written to %s: %d/%d"
+                  % (args.baseline, report["score"], report["total"]))
+            return
+
         if args.output == "json":
-            print(json.dumps(report, indent=2))
+            out = dict(report)
+            out["threshold"] = args.threshold
+            out["baseline"] = baseline
+            print(json.dumps(out, indent=2))
         elif args.output == "markdown":
             print("# 88-Pillar Scorecard Report\n")
             print(f"**Score:** {report['score']}/{report['total']} ({report['percentage']:.1f}%)\n")
-            print(f"**Threshold:** {args.threshold}\n")
-            print(f"**Status:** {'PASS' if report['score'] >= args.threshold else 'FAIL'}\n")
+            if baseline is not None:
+                print(f"**Baseline:** {baseline}\n")
+            if args.threshold is not None:
+                print(f"**Threshold:** {args.threshold}\n")
             print("## Results\n| ID | Pillar | Status |\n|---|--------|--------|")
             for r in report["results"]:
                 print(f"| {r['id']} | {r['name']} | {'PASS' if r['passed'] else 'FAIL'} |")
         else:
             print(f"Scorecard: {report['score']}/{report['total']} ({report['percentage']:.1f}%)")
-            print(f"Threshold: {args.threshold}")
-            print("Status: PASS" if report['score'] >= args.threshold else f"Status: FAIL\nFailed: {', '.join(r['name'] for r in report['results'] if not r['passed'])}")
-        if args.fail_on_drop and report['score'] < args.threshold: sys.exit(1)
+            if baseline is not None:
+                print(f"Baseline: {baseline}")
+            if args.threshold is not None:
+                print(f"Threshold: {args.threshold}")
+            failed = [r["name"] for r in report["results"] if not r["passed"]]
+            print("Failed: " + ", ".join(failed))
+
+        problems = []
+        if args.threshold is not None and report["score"] < args.threshold:
+            problems.append("score %d is below threshold %d"
+                            % (report["score"], args.threshold))
+        if args.fail_on_drop and baseline is not None and report["score"] < baseline:
+            problems.append("score %d dropped below baseline %d"
+                            % (report["score"], baseline))
+        if problems:
+            for p in problems:
+                print("::error::" + p)
+            sys.exit(1)
+
+        if baseline is not None and report["score"] > baseline:
+            print("Score improved from %d to %d; bump the baseline with "
+                  "--update-baseline." % (baseline, report["score"]))
+
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr); sys.exit(2)
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(2)
+
 
 if __name__ == "__main__":
     main()
