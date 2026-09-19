@@ -148,8 +148,8 @@ def _cmd_diff(args: argparse.Namespace) -> int:
             print(t("cli.error.file_not_found", cmd="diff", path=p), file=sys.stderr)
             return 1
 
-    spec_a = RenderSpec.model_validate_json(path_a.read_text())
-    spec_b = RenderSpec.model_validate_json(path_b.read_text())
+    spec_a = RenderSpec.model_validate_json(path_a.read_text(encoding="utf-8"))
+    spec_b = RenderSpec.model_validate_json(path_b.read_text(encoding="utf-8"))
     d_a = spec_a.model_dump()
     d_b = spec_b.model_dump()
 
@@ -243,7 +243,7 @@ def _cmd_apply(args: argparse.Namespace) -> int:
 
     import importlib
 
-    spec = RenderSpec.model_validate_json(spec_path.read_text())
+    spec = RenderSpec.model_validate_json(spec_path.read_text(encoding="utf-8"))
     mod = importlib.import_module(f"melosviz.presets.{preset_name}")
     result = mod.apply(spec)
     print(json.dumps(result.model_dump(), indent=2, default=str))
@@ -391,7 +391,7 @@ def _cmd_direct(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 1
 
-    payload = json.loads(sb_path.read_text())
+    payload = json.loads(sb_path.read_text(encoding="utf-8"))
     scenes = payload.get("scenes") or []
     if not (1 <= args.scene_index <= len(scenes)):
         print(
@@ -566,7 +566,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         if not sb_path.exists():
             print(t("cli.error.file_not_found", cmd="generate", path=sb_path), file=sys.stderr)
             return 1
-        sb = json.loads(sb_path.read_text())
+        sb = json.loads(sb_path.read_text(encoding="utf-8"))
         spec_dict["scene_segments"] = sb.get("scenes", spec_dict.get("scene_segments", []))
         spec_dict.setdefault("director_meta", {})
         spec_dict["director_meta"]["concept"] = sb.get("concept", "")
@@ -808,7 +808,7 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
     sb_dict: dict = {}
     for plan_path in plan_paths:
         try:
-            payload = json.loads(plan_path.read_text())
+            payload = json.loads(plan_path.read_text(encoding="utf-8"))
         except Exception:
             continue
         if isinstance(payload, dict) and isinstance(payload.get("scenes"), list):

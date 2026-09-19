@@ -189,7 +189,7 @@ class RenderCache:
         if src.is_file():
             shutil.copy2(src, target)
         else:
-            target.write_text(src.read_text() if src.exists() else "", encoding="utf-8")
+            target.write_text(src.read_text(encoding="utf-8") if src.exists() else "", encoding="utf-8")
         meta_obj = {
             "fingerprint": key.fingerprint(),
             "stored_at": time.time(),
