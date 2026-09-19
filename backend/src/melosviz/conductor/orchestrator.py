@@ -97,6 +97,55 @@ def _artifact_rejection(artifact: str) -> str | None:
     return None
 
 
+def _record_failed_scene(
+    *,
+    scene_out_dir: Path,
+    scene_index: int,
+    scene_name: str,
+    scene_type: str,
+    backend: str,
+    error: str,
+    error_type: str,
+    render_spec: Any,
+    started_at: float | None = None,
+    finished_at: float | None = None,
+) -> None:
+    """Best-effort provenance record for a scene that did not render (A1).
+
+    A failure used to leave nothing behind, so a scene that failed looked exactly
+    like one that never ran. Deliberately never raises: masking the real failure
+    would be worse than losing the record.
+    """
+    try:
+        now = time.monotonic()
+        write_provenance(
+            ClipProvenance(
+                artifact_path="",
+                scene_index=scene_index,
+                scene_name=scene_name,
+                scene_type=scene_type,
+                backend=backend,
+                render_started_at=started_at if started_at is not None else now,
+                render_finished_at=finished_at,
+                seed=getattr(render_spec, "seed", None) or scene_index,
+                prompt=getattr(render_spec, "prompt", None) or scene_name,
+                width=int(getattr(render_spec, "width", 1920) or 1920),
+                height=int(getattr(render_spec, "height", 1080) or 1080),
+                fps=int(getattr(render_spec, "fps", 24) or 24),
+                extra={
+                    "outcome": "failed",
+                    "error_type": error_type,
+                    "error": error[:500],
+                },
+            ),
+            target=scene_out_dir / f"scene_{scene_index:03d}.provenance.json",
+        )
+    except Exception:  # pragma: no cover - provenance is best-effort
+        logger.debug(
+            "provenance write skipped for failed scene[%d]", scene_index, exc_info=True
+        )
+
+
 def _extract_artifact_path(result: Any) -> str:
     """Return the first artifact path `result` reports, else ``""``.
 
@@ -666,6 +715,16 @@ class Orchestrator:
                     error=f"no adapter registered for scene_type={scene_type!r}",
                 )
                 emitted.append(err_evt)
+                _record_failed_scene(
+                    scene_out_dir=scene_out_dir,
+                    scene_index=scene_idx,
+                    scene_name=scene_name,
+                    scene_type=scene_type,
+                    backend="(no adapter)",
+                    error=f"no adapter registered for scene_type={scene_type!r}",
+                    error_type="NoAdapterRegistered",
+                    render_spec=render_spec,
+                )
                 raise ConductorError(
                     f"Orchestrator: no adapter registered for scene_type={scene_type!r}. "
                     f"Registered types: {list(ADAPTER_REGISTRY.keys())}. "
@@ -794,39 +853,20 @@ class Orchestrator:
                     duration_ms=elapsed_ms,
                 )
                 emitted.append(err_evt)
-                # A scene that failed must still leave a dated record inside the
-                # output dir, otherwise a failed render is indistinguishable from
-                # one that never ran (A1: "rejected or explicitly blocked"). This
-                # is best-effort and must never mask the real failure.
-                try:
-                    write_provenance(
-                        ClipProvenance(
-                            artifact_path="",
-                            scene_index=scene_idx,
-                            scene_name=scene_name,
-                            scene_type=scene_type,
-                            backend=backend_key,
-                            render_started_at=t0,
-                            render_finished_at=t0 + elapsed_ms / 1000.0,
-                            seed=getattr(render_spec, "seed", None) or scene_idx,
-                            prompt=getattr(render_spec, "prompt", None) or scene_name,
-                            width=int(getattr(render_spec, "width", 1920) or 1920),
-                            height=int(getattr(render_spec, "height", 1080) or 1080),
-                            fps=int(getattr(render_spec, "fps", 24) or 24),
-                            extra={
-                                "outcome": "failed",
-                                "error_type": type(exc).__name__,
-                                "error": str(exc)[:500],
-                            },
-                        ),
-                        target=scene_out_dir / f"scene_{scene_idx:03d}.provenance.json",
-                    )
-                except Exception:  # pragma: no cover - provenance is best-effort
-                    logger.debug(
-                        "provenance write skipped for failed scene[%d]",
-                        scene_idx,
-                        exc_info=True,
-                    )
+                # A failed scene must still leave a dated record inside the output
+                # dir (A1: "rejected or explicitly blocked").
+                _record_failed_scene(
+                    scene_out_dir=scene_out_dir,
+                    scene_index=scene_idx,
+                    scene_name=scene_name,
+                    scene_type=scene_type,
+                    backend=backend_key,
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                    render_spec=render_spec,
+                    started_at=t0,
+                    finished_at=t0 + elapsed_ms / 1000.0,
+                )
                 raise ConductorError(
                     f"Orchestrator: adapter for scene_type={scene_type!r} failed: {exc}"
                 ) from exc
