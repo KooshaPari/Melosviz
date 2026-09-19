@@ -7,7 +7,7 @@
 #   jobs:
 #     quality-gate:
 #       needs: backend
-#       uses: ./.github/workflows/reusable/quality-gate.yml
+#       uses: ./.github/workflows/quality-gate-reusable.yml
 #       with:
 #         coverage-artifact-name: backend-coverage-py3.12
 #         coverage-report: backend/coverage/lcov.info
@@ -15,7 +15,7 @@
 #         not-applicable: a11y
 #
 # External repos may call:
-#   uses: KooshaPari/Melosviz/.github/workflows/reusable/quality-gate.yml@main
+#   uses: KooshaPari/Melosviz/.github/workflows/quality-gate-reusable.yml@main
 
 name: quality-gate (reusable)
 

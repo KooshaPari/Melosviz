@@ -31,12 +31,10 @@ on:
 permissions:
   contents: read
 
-# Shared defaults so we can flip the install flag with a clean expression
-# (env values must be strings, not YAML booleans, in workflow `env:`).
-env:
-  PYTHON_VERSION_DEFAULT: "3.12"
-  INSTALL_FFMPEG_DEFAULT: "true"
-
+# Defaults are inlined below: job-level `env:` cannot read the `env`
+# context, and `github.event.inputs` is empty for scheduled runs but
+# holds string values for workflow_dispatch, so the literal fallbacks
+# apply without a top-level env block.
 jobs:
   gpu-smoke:
     runs-on: ubuntu-latest
@@ -44,8 +42,8 @@ jobs:
     env:
       MELOSVIZ_OFFLINE: "1"
       MELOSVIZ_COMFYUI_OFFLINE: "1"
-      PYTHON_VERSION: ${{ inputs.python-version || env.PYTHON_VERSION_DEFAULT }}
-      INSTALL_FFMPEG: ${{ inputs.ffmpeg && 'true' || (inputs.ffmpeg == false && 'false' || env.INSTALL_FFMPEG_DEFAULT) }}
+      PYTHON_VERSION: ${{ github.event.inputs.python-version || '3.12' }}
+      INSTALL_FFMPEG: ${{ github.event.inputs.ffmpeg || 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

@@ -19,8 +19,11 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
-    security:
-      permissions: read-all
+    permissions:
+      security-events: write # upload SARIF to code scanning
+      id-token: write # publish results + fetch badge
+      contents: read
+      actions: read
 
     steps:
       - name: Checkout
