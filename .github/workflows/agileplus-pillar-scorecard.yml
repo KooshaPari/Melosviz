@@ -45,7 +45,8 @@ jobs:
               issue_number="$(gh issue list --state all --search '"AgilePlus Pillar Scorecard" in:title' --limit 1 --json number --jq '.[0].number // empty')"
             fi
             if [[ -z "$issue_number" ]]; then
-              issue_number="$(gh issue create --title 'AgilePlus Pillar Scorecard' --body 'Automated AgilePlus scorecard updates are posted here.' --json number --jq '.number')"
+              issue_url="$(gh issue create --title 'AgilePlus Pillar Scorecard' --body 'Automated AgilePlus scorecard updates are posted here.')"
+              issue_number="${issue_url##*/}"
             fi
             
             gh issue comment "$issue_number" --body-file scorecard.md
