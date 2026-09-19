@@ -152,7 +152,11 @@ tracked tree is never the mutation target, and fail loudly if the source differs
 `HEAD` after the run. Not attempted here: verifying it needs a full mutation run
 (60 mutations × up to 60 s each) that this environment cannot complete.
 
-### 5.2 Render cache is still inert — see §3
+### 5.2 Render cache is activated — see §3 and §8.4
+
+`8a6259f` creates the cache directory (so store no longer dies ENOENT), materialises a hit
+under the artifact's real path (`69d48a3`), records the reuse, and keys entries by scene
+identity. Cache hits restore the artifact where a cold render would have put it.
 
 ### 5.3 A1 remainder: partly closed
 
@@ -219,22 +223,68 @@ app's version will see 0.1.0. Relevant to item 6 (shipped feature set vs release
 The same plist still carries a 2000s-era DTD reference and `LSRequiresCarbon`, both
 stale for a Tauri 2 bundle — recorded as an observation, cause UNKNOWN.
 
-**Signing: the published bundle is not code-signed.** The tarball contains 14 entries and
-none of them is a `_CodeSignature` directory, a `CodeResources` file, or an
-`embedded.provisionprofile`, and the `Info.plist` carries no signing keys. A macOS app
-distributed as a download without a signature is quarantined and refused by Gatekeeper on
-a plain double-click, so a prospective installer should expect to have to override it.
+**Signing — corrected after running it on a Mac.** An earlier note here said the bundle was
+not code-signed, inferred from the tarball having no `_CodeSignature` entry. Running the
+real checks on arm64 macOS 27.0 showed the precise truth:
 
-This is derived from the artifact, not observed on macOS: the bundle was never launched
-(item 4 remains unrunnable here), so treat it as strong evidence of an unsigned build
-rather than a Gatekeeper observation. It directly answers part of item 4's acceptance
-("Report signing/Gatekeeper errors") without a Mac.
+```
+Signature=adhoc | flags=0x20002(adhoc,linker-signed) | TeamIdentifier=not set
+Sealed Resources=none | Internal requirements=none
 
-**Item 4 consequence.** The install smoke cannot run on this desktop: nothing published
-is installable on Windows, and both assets target Apple Silicon macOS. Item 4 therefore
-needs an arm64 Mac, and the only version available to install there is **v0.1.1**, since
-v0.2.0 has no release. Launch, packaged-frontend load and a basic workflow run remain
-**NOT RUN**.
+$ spctl -a -t exec -vvv Melosviz.app
+Melosviz.app: code has no resources but signature indicates they must be present
+spctl_exit=1
+```
+
+So the binary is ad-hoc (linker-)signed, carries no team identifier, and Gatekeeper
+**rejects** the bundle outright with that specific message. A quarantined download would
+therefore be blocked on a normal double-click; the launch test below worked only because
+`curl` downloads carry no `com.apple.quarantine` flag and the binary was executed
+directly rather than through LaunchServices.
+
+**Item 4 — EXECUTED on arm64 macOS (2026-09-19).** The operator's laptop is reachable over
+Tailscale SSH and reports `arm64`, macOS 27.0, so the smoke that this desktop could never
+run was run there. Everything happened under `/tmp/melos-install-smoke`; the repo on that
+host was not touched. Full transcript below.
+
+```
+$ shasum -a 256 art.tar.gz    # .tar.gz
+1c588123e7964a063e2d9358e449b8ff4f6590f031b86216cdce1b067cc45496   # matches published
+$ shasum -a 256 art.dmg       # .dmg
+2946909e4143f112754275ea931568e1f3271791632b8d945df880dd4b1e0d51   # matches published
+
+$ hdiutil attach -nobrowse -readonly art.dmg
+... all CRC checksums verified; /Volumes/Melosviz mounted
+  Melosviz.app  .VolumeIcon.icns  .DS_Store  Applications -> /Applications
+
+$ spctl -a -t exec -vvv /Volumes/Melosviz/Melosviz.app
+code has no resources but signature indicates they must be present   # rejected
+```
+
+Launch behaviour, from the extracted `.app`:
+
+```
+$ ./Melosviz.app/Contents/MacOS/melosviz-desktop &      # still alive after 12s, no output, no crash
+$ lsappinfo list
+  108) "Melosviz" ... pid = 12698 type="Foreground" Version="0.1.0" Arch=ARM64
+  109) "Melosviz Networking"   com.apple.WebKit.Networking
+  110) "Melosviz Graphics and Media"  com.apple.WebKit.GPU
+  111) "Melosviz Web Content"  com.apple.WebKit.WebContent
+```
+
+| Claim | Result |
+|---|---|
+| `.dmg` installs (mounts, drag-install layout, integrity) | **verified** |
+| `.tar.gz` extracts to a valid arm64 app bundle | **verified** |
+| Digest integrity, second machine | **verified** (both assets) |
+| Signed / notarized for distribution | **NO** — ad-hoc, no team id, Gatekeeper rejects |
+| Launches; packaged frontend loads | **verified** — foreground app plus the full WebKit XPC stack (Networking, GPU, WebContent) |
+| A basic workflow runs | **NOT VERIFIED** — the UI was never driven; no Python sidecar was spawned and no listening socket appeared, and window enumeration needs accessibility permission the agent lacks |
+| Declared version of the installed app | **0.1.0** while the release is `v0.1.1` |
+
+Two caveats stated plainly: the laptop is **not** a machine without the repo (it hosts the
+clone), so this is an install smoke on a clean *user* account path but not a clean machine;
+and everything ran under `/tmp`, so nothing was installed into `/Applications`.
 
 
 ### 6.1 Why no Windows or desktop artifact exists (CI evidence)
@@ -633,6 +683,24 @@ explicit encoding. An AST-based scanner (checking call arguments rather than gre
 lines) is the right tool for the next audit; a line-based grep gives false positives on
 multi-line calls and on `json.dumps`.
 
+### 8.11 The activated cache, on the real CLI
+
+With the cache activated (`8a6259f`, `69d48a3`), the shipped CLI was run twice into the
+same output dir with the same seed:
+
+```
+RUN 1 (cold)  cache blobs: 4   three sidecars, from_cache=None, 17s
+RUN 2 (warm)  cache blobs: 4   the SAME three paths, from_cache=True, 3.4s
+              comfyui_image\scene_000\clip.mp4.provenance.json
+                outcome='offline-placeholder'  from_cache=True  suffix='.mp4'
+```
+
+A warm run is indistinguishable from a cold one apart from the honest `from_cache` marker:
+same paths, same `.mp4` suffixes, same recorded mode. Activating the cache also exposed a
+latent collision (`SceneCacheKey` ignored which scene was being rendered, while the offline
+placeholder bakes the scene label into the frame), so two scenes sharing a prompt and
+settings were served identical bytes; the key now includes scene identity.
+
 ## 9. Handoff backlog status
 
 | Item | Status |
@@ -715,7 +783,7 @@ The default branch carries four open alerts. They were triaged via
 | **critical** | anyio | `backend/uv.lock` | GHSA-82r6-8w77-94w6 — TLSStream IDNA 2003 host-name encoding enables TLS certificate spoofing | 4.14.2 |
 | **high** | anyio | `backend/uv.lock` | GHSA-3w57-8xmc-8v26 — `run_process`/`open_process` ignores `extra_groups` | 4.14.2 |
 | medium | anyio | `backend/uv.lock` | GHSA-5p39-cfhj-2xmp — process-pool workers block on undrained stderr | 4.14.2 |
-| medium | glib | `src-tauri/Cargo.lock` | GHSA-wrw7-89jp-8q8g — unsound `Iterator`/`DoubleEndedIterator` impls | 0.20.0 |
+| medium | glib | `src-tauri/Cargo.lock` | GHSA-wrw7-89jp-8q8g — unsound `Iterator`/`DoubleEndedIterator` impls | 0.20.0 (not reachable) |
 
 **anyio: fixed forward in `6707b62`.** The lock pinned 4.14.1;
 `uv lock --upgrade-package anyio` resolved 4.15.1 (a 4-line diff), the venv was
@@ -739,5 +807,41 @@ only when the dependency graph next ingests the manifest. Claiming success in th
 would have been wrong, and the graph version (not the alert list) is the fastest signal
 that GitHub has seen the change.
 
-**glib: blocked.** It needs `>= 0.20.0` in `src-tauri/Cargo.lock`, which requires cargo
-to regenerate; this host has no cargo, so it was not attempted.
+**glib: not fixable at this level, proven rather than assumed.** Cargo does exist here (at
+`~/.cargo/bin`, 1.98.1), so the earlier "needs cargo" note was wrong and the bump was
+actually attempted:
+
+```
+$ cargo update -p glib --precise 0.20.0
+error: failed to select a version for the requirement `glib = "^0.18"`
+required by package `gtk v0.18.2`
+  ... which satisfies dependency `gtk = "^0.18"` (locked to 0.18.2) of package `tauri v2.11.5`
+  ... which satisfies dependency `tauri = "^2"` (locked to 2.11.5) of package `melosviz-desktop v0.1.0`
+```
+
+The chain is **tauri 2.11.5 → gtk ^0.18 → glib ^0.18**, so glib cannot move to 0.20 without
+a Tauri release that depends on gtk-rs 0.20. Overriding it locally would break gtk 0.18's
+expectations and could not be verified without a Linux build.
+
+Exposure is also bounded: `cargo tree -i glib` prints nothing for the host target and only
+resolves under `--target x86_64-unknown-linux-gnu` (glib ← atk ← gtk ← muda/tao/tauri), so
+this is a **Linux desktop** dependency. Both actions are the owner's: wait for the upstream
+Tauri bump, or dismiss the alert with this rationale.
+
+## 14. CI gate: a failing web suite could not fail the build
+
+`.github/workflows/ci.yml`, step `test` in the `typescript` job, ended with
+`npm test 2>&1 || echo "::warning::test failures (advisory)"`, and the job also carried
+`continue-on-error: true`. The aggregate `ci / lint` gate reads `needs.typescript.result`,
+so the echo made the step exit 0, the job always reported success, and a failing web suite
+could never reach the gate.
+
+`31e3bfd` removes both the echo and the job-level `continue-on-error`. `lint` inside the
+same job stays advisory on purpose: ruff and oxlint already report pre-existing findings
+(UP035, F401, F841, UP037 on untouched lines), so making those fatal would break the build
+on unrelated code.
+
+**Evidence state:** the workflow still parses (`yaml.safe_load`; the `typescript` job has no
+`continue-on-error` and its test step is now plain `npm test 2>&1`) and the web suite passes
+246/246 with 0 skipped on this host. It is **not** proven end to end, because GitHub Actions
+cannot be executed from here. The gate's effect will only be observable on the next CI run.
