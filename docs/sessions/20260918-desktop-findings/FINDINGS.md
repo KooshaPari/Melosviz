@@ -219,6 +219,17 @@ app's version will see 0.1.0. Relevant to item 6 (shipped feature set vs release
 The same plist still carries a 2000s-era DTD reference and `LSRequiresCarbon`, both
 stale for a Tauri 2 bundle — recorded as an observation, cause UNKNOWN.
 
+**Signing: the published bundle is not code-signed.** The tarball contains 14 entries and
+none of them is a `_CodeSignature` directory, a `CodeResources` file, or an
+`embedded.provisionprofile`, and the `Info.plist` carries no signing keys. A macOS app
+distributed as a download without a signature is quarantined and refused by Gatekeeper on
+a plain double-click, so a prospective installer should expect to have to override it.
+
+This is derived from the artifact, not observed on macOS: the bundle was never launched
+(item 4 remains unrunnable here), so treat it as strong evidence of an unsigned build
+rather than a Gatekeeper observation. It directly answers part of item 4's acceptance
+("Report signing/Gatekeeper errors") without a Mac.
+
 **Item 4 consequence.** The install smoke cannot run on this desktop: nothing published
 is installable on Windows, and both assets target Apple Silicon macOS. Item 4 therefore
 needs an arm64 Mac, and the only version available to install there is **v0.1.1**, since
@@ -450,6 +461,7 @@ Driven through the public API with the real adapter, twice per phase:
 |---|---|
 | **A — shipped default (no `_render_cache` dir)** | `cache entries after first render: 0`; second render `from_cache=False`, artifact suffix `.mp4`; product works, cache inert. |
 | **B — cache dir present** | `cache entries after first render: 1`; second render `from_cache=True`; **the real subscriber received the cache-hit event** (`('done', True)` in the subscriber sequence) and it is in `bus.recent()`; `to_sse()` renders. The hit's `artifact_path` suffix is **`.bin`**. |
+| **B — sidecar count** | two renders produced **one** sidecar: the hit writes no provenance at all, so a cached render leaves no durable record that it was served from cache (only the transient event). |
 
 Phase B is what `8e546da` repaired and it now works, including the SSE delivery that
 `bus._events` would have swallowed. Phase B also measures why activation stays deferred:
