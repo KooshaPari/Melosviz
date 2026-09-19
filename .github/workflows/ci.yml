@@ -152,7 +152,8 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_typescript == 'true'
     runs-on: ubuntu-latest
-    continue-on-error: true
+    # No continue-on-error: a failing web suite must fail this job so the
+    # aggregate gate can see it. `lint` stays advisory via its own echo.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -166,9 +167,12 @@ jobs:
             npm run lint 2>&1 || echo "::warning::lint issues (advisory)"
           fi
       - name: test
+        # Fatal on purpose: the aggregate gate reads needs.typescript.result, and
+        # the old `|| echo "::warning::..."` made this step exit 0 so a failing web
+        # suite never reached the gate.
         run: |
           if [ -f package.json ] && grep -q '"test"' package.json; then
-            npm test 2>&1 || echo "::warning::test failures (advisory)"
+            npm test 2>&1
           fi
 
   security:
