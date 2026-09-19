@@ -1,5 +1,15 @@
 # Mergify Configuration — Optimized for multi-language monorepos
 # Docs: https://docs.mergify.com/
+#
+# Notes for maintainers:
+#   - Multi-author matches use `or:` per Mergify's condition grammar
+#     (https://docs.mergify.com/conditions/#combining-conditions-using-logical-operators)
+#   - `commit_message_format` replaces the deprecated `commit_message_template`
+#   - `delete_branch` is now a GitHub repository setting, not a Mergify action
+#   - The `age` attribute was removed from Mergify; staleness is not currently
+#     automated in this repo. Add `.github/workflows/stale.yml` (using
+#     actions/stale) if/when that becomes a need.
+#   - `request_reviews` accepts `users` (not `github_accounts`)
 
 pull_request_rules:
   # Auto-merge when all CI checks pass and PR is approved
@@ -16,34 +26,33 @@ pull_request_rules:
     actions:
       merge:
         method: squash
-        commit_message_template: |
-          {{ title }} (#{{ number }})
-          
-          Co-authored-by: {{ author }}
-      post_merge:
-        action: close
+        commit_message_format:
+          title: pr-title
+          body: inherit
 
   # Auto-merge dependabot/Renovate PRs when CI passes
   - name: Auto-merge dependency updates
     conditions:
-      - author=dependabot[bot] | renovate[bot]
+      - or:
+          - author=dependabot[bot]
+          - author=renovate[bot]
       - check-success=ci
       - -conflict
       - -closed
     actions:
       merge:
         method: squash
-        commit_message_template: |
-          {{ title }} (#{{ number }})
-          
-          Co-authored-by: {{ author }}
-      post_merge:
-        action: close
+        commit_message_format:
+          title: pr-title
+          body: inherit
 
   # Auto-merge bot PRs (CI configs, formatting) when CI passes
   - name: Auto-merge bot housekeeping PRs
     conditions:
-      - author=trunk-io[bot] | mergify[bot] | github-actions[bot]
+      - or:
+          - author=trunk-io[bot]
+          - author=mergify[bot]
+          - author=github-actions[bot]
       - check-success=ci
       - check-success=lint
       - -conflict
@@ -59,9 +68,7 @@ pull_request_rules:
       - -draft
     actions:
       request_reviews:
-        teams:
-          - phenotype/core
-        github_accounts:
+        users:
           - KooshaPari
 
   # Label PRs based on changed files
@@ -96,20 +103,6 @@ pull_request_rules:
       label:
         add:
           - typescript
-
-  # Close stale PRs after 30 days
-  - name: Close stale PRs
-    conditions:
-      - -closed
-      - -draft
-      - age>=30d
-      - "#review-requested=0"
-    actions:
-      comment:
-        message: >
-          This PR has been automatically closed after 30 days of inactivity.
-          Feel free to reopen if still relevant.
-      close: {}
 
   # Warn on large PRs
   - name: Warn on large PRs
