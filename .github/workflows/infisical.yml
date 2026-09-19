@@ -11,12 +11,11 @@ on:
     branches: [main, master]
     paths:
       - ".github/workflows/infisical.yml"
-  pull_request:
 
 jobs:
   sync-secrets:
     name: Pull secrets from Infisical
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
