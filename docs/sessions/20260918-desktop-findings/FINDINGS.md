@@ -161,12 +161,14 @@ tracked tree is never the mutation target, and fail loudly if the source differs
   is no longer labelled unavailable.
 - **`job-spec-only`** — done in `bd581eb` for Cinema 4D, Unreal and the Blender shim,
   measured in §8.6.
-- **`failed`** — done in `05e343e` for the per-scene adapter failure path. A failing
-  scene now writes `scene_<idx>.provenance.json` inside the output dir with
-  `extra.outcome="failed"`, `error_type` and the error text, and still raises
-  `ConductorError` exactly as before, so rehearsal behaviour is unchanged. The
-  "no adapter registered" and final assembly-step failures are **not** covered and still
-  raise without a record.
+- **`failed`** — done for both per-scene failure paths: an adapter that throws
+  (`05e343e`) and a scene type with no registered adapter (`6bff240`) now write the same
+  record, `scene_<idx>.provenance.json` inside the output dir with
+  `extra.outcome="failed"`, `error_type` and the error text, via a shared
+  `_record_failed_scene` helper, and both still raise `ConductorError` exactly as
+  before, so rehearsal behaviour is unchanged. A failure of the **final assembly step**
+  is still not covered: it has no scene index or name to key a record by, so it needs its
+  own decision rather than a fabricated entry.
 - Rejection/blocking of **malformed** media — done in `def9d8e`: a zero-byte file, a
   path an adapter never wrote, and a directory are now recorded as `malformed` with a
   reason and are no longer accepted as a `render` (see §8.8).
@@ -684,3 +686,40 @@ and was producing no artifact, so its scope was closed by proving the premise fa
 from 1 moderate to 1 critical, 1 high and 2 moderate on the default branch. Nothing in
 this session's commits caused that; it is recorded so the next session does not assume
 the earlier "1 moderate" figure is current.
+
+## 13. Dependency alerts (Dependabot)
+
+The default branch carries four open alerts. They were triaged via
+`gh api repos/KooshaPari/Melosviz/dependabot/alerts?state=open`:
+
+| Severity | Package | Manifest | Advisory | Fixed in |
+|---|---|---|---|---|
+| **critical** | anyio | `backend/uv.lock` | GHSA-82r6-8w77-94w6 — TLSStream IDNA 2003 host-name encoding enables TLS certificate spoofing | 4.14.2 |
+| **high** | anyio | `backend/uv.lock` | GHSA-3w57-8xmc-8v26 — `run_process`/`open_process` ignores `extra_groups` | 4.14.2 |
+| medium | anyio | `backend/uv.lock` | GHSA-5p39-cfhj-2xmp — process-pool workers block on undrained stderr | 4.14.2 |
+| medium | glib | `src-tauri/Cargo.lock` | GHSA-wrw7-89jp-8q8g — unsound `Iterator`/`DoubleEndedIterator` impls | 0.20.0 |
+
+**anyio: fixed forward in `6707b62`.** The lock pinned 4.14.1;
+`uv lock --upgrade-package anyio` resolved 4.15.1 (a 4-line diff), the venv was
+updated, and `tests/conductor` + `tests/test_coverage_100.py` +
+`tests/test_bridge_http_integration.py` passed 333 with 1 skipped.
+
+**Closure observed, after a delay worth knowing about.** Immediately after the push, and
+again five minutes later, GitHub still listed all four alerts as open and — the decisive
+part — the dependency graph still reported the old version:
+
+```
+T+0min  graph anyio 4.14.1   open alerts 4
+T+5min  graph anyio 4.14.1   open alerts 4
+T+8min  graph anyio 4.15.1   open alerts 1   (only the glib one)
+```
+
+So the fix is confirmed effective: the three anyio alerts closed as soon as the re-scan
+ingested the new lockfile. The lesson is in the timing. A Dependabot alert is not cleared
+because the lockfile changed, and it is not even cleared when the commit lands: it clears
+only when the dependency graph next ingests the manifest. Claiming success in that window
+would have been wrong, and the graph version (not the alert list) is the fastest signal
+that GitHub has seen the change.
+
+**glib: blocked.** It needs `>= 0.20.0` in `src-tauri/Cargo.lock`, which requires cargo
+to regenerate; this host has no cargo, so it was not attempted.
