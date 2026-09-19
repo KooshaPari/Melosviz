@@ -743,7 +743,12 @@ class Orchestrator:
                 })
                 continue
 
-            backend_key = f"{adapter_cls.__module__}.{adapter_cls.__name__}"
+            # Defaulted getattr: a Mock adapter class raises AttributeError for
+            # "__name__" rather than returning anything.
+            backend_key = (
+                f"{getattr(adapter_cls, '__module__', 'unknown')}."
+                f"{getattr(adapter_cls, '__name__', scene_type)}"
+            )
 
             queued_evt = bus.emit_queued(
                 job_id=job_id,
@@ -1008,6 +1013,19 @@ class Orchestrator:
         if not self._skip_assembly:
             me_cls = ADAPTER_REGISTRY.get("assembly_encode")
             if me_cls is None:
+                # Same policy as the per-scene branches: tell the stream before
+                # aborting. scene_index=-1 marks a pipeline-level step, which has
+                # no scene of its own.
+                emitted.append(
+                    bus.emit_error(
+                        job_id=job_id,
+                        scene_index=-1,
+                        scene_name="assembly_encode",
+                        scene_type="assembly_encode",
+                        backend="(no adapter)",
+                        error="'assembly_encode' adapter missing from registry",
+                    )
+                )
                 raise ConductorError(
                     "Orchestrator: 'assembly_encode' adapter missing from registry. "
                     "Wiring error — MEAdapter must be registered."
@@ -1020,6 +1038,7 @@ class Orchestrator:
                 assembly_out,
                 len(collected_paths),
             )
+            _assembly_t0 = time.monotonic()
             try:
                 me_adapter = me_cls()
                 assembly_result = me_adapter.render(
@@ -1028,6 +1047,20 @@ class Orchestrator:
                     segment_paths=collected_paths,
                 )
             except Exception as exc:
+                emitted.append(
+                    bus.emit_error(
+                        job_id=job_id,
+                        scene_index=-1,
+                        scene_name="assembly_encode",
+                        scene_type="assembly_encode",
+                        backend=(
+                            f"{getattr(me_cls, '__module__', 'unknown')}."
+                            f"{getattr(me_cls, '__name__', 'assembly_encode')}"
+                        ),
+                        error=str(exc),
+                        duration_ms=(time.monotonic() - _assembly_t0) * 1000.0,
+                    )
+                )
                 raise ConductorError(
                     f"Orchestrator: final assembly_encode step failed: {exc}"
                 ) from exc
