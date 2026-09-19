@@ -1,5 +1,11 @@
 name: 88-Pillar Scorecard
 on:
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "Absolute minimum score. Leave empty to gate on the baseline instead."
+        required: false
+        default: ""
   push:
     branches: [main, master]
   pull_request:
@@ -13,6 +19,12 @@ permissions:
 jobs:
   scorecard:
     runs-on: ubuntu-latest
+    outputs:
+      score: ${{ steps.audit.outputs.score }}
+      total: ${{ steps.audit.outputs.total }}
+      percentage: ${{ steps.audit.outputs.percentage }}
+      baseline: ${{ steps.audit.outputs.baseline }}
+      passed: ${{ steps.audit.outputs.passed }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,29 +36,52 @@ jobs:
 
       - name: Run 88-Pillar Scorecard Audit
         id: audit
+        env:
+          # gh pr comment requires this; without it the step warns
+          # "set the GH_TOKEN environment variable" and posts nothing.
+          GH_TOKEN: ${{ github.token }}
+          # Passed through the environment rather than interpolated into the
+          # shell script, so the value can never be parsed as shell syntax.
+          THRESHOLD_INPUT: ${{ github.event.inputs.threshold }}
         run: |
-          THRESHOLD=${{ github.event.inputs.threshold || '85' }}
+          set -euo pipefail
 
-          # Run audit in JSON mode
-          python scripts/scorecard_ci.py . --output json --threshold "$THRESHOLD" --fail-on-drop > scorecard-report.json 2> scorecard-stderr.txt || EXIT_CODE=$?
+          # Only set when dispatched with an explicit threshold. The previous
+          # `github.event.inputs.threshold || '85'` was dead code: the workflow
+          # had no workflow_dispatch trigger, so it always evaluated to 85 --
+          # an absolute bar this repository has never met.
+          THRESHOLD="${THRESHOLD_INPUT:-}"
 
-          # Extract score
-          SCORE=$(python -c "import json; r=json.load(open('scorecard-report.json')); print(r['score'])")
-          TOTAL=$(python -c "import json; r=json.load(open('scorecard-report.json')); print(r['total'])")
-          PCT=$(python -c "import json; r=json.load(open('scorecard-report.json')); print(f\"{r['percentage']:.1f}\")")
+          # The baseline path is owned by the script; it is not a CLI option.
+          ARGS=(. --output json --fail-on-drop)
+          if [ -n "$THRESHOLD" ]; then
+            ARGS+=(--threshold "$THRESHOLD")
+          fi
 
-          # Generate markdown summary
+          # The gate lives in the step below; do not fail here so the outputs
+          # and the report artifact are always produced.
+          set +e
+          python scripts/scorecard_ci.py "${ARGS[@]}" \
+            > scorecard-report.json 2> scorecard-stderr.txt
+          EXIT_CODE=$?
+          set -e
+          cat scorecard-stderr.txt >&2 || true
+
+          SCORE=$(python -c "import json; print(json.load(open('scorecard-report.json'))['score'])")
+          TOTAL=$(python -c "import json; print(json.load(open('scorecard-report.json'))['total'])")
+          PCT=$(python -c "import json; print(f\"{json.load(open('scorecard-report.json'))['percentage']:.1f}\")")
+          BASELINE=$(python -c "import json; print(json.load(open('scorecard-report.json')).get('baseline') or 'none')")
+
           echo "## 88-Pillar Scorecard Result" > scorecard-summary.md
           echo "" >> scorecard-summary.md
           echo "| Metric | Value |" >> scorecard-summary.md
           echo "|--------|-------|" >> scorecard-summary.md
           echo "| **Score** | **${SCORE}/${TOTAL}** (${PCT}%) |" >> scorecard-summary.md
-          echo "| **Threshold** | ${THRESHOLD} |" >> scorecard-summary.md
-          echo "| **Status** | $( [ "$SCORE" -ge "$THRESHOLD" ] && echo "PASS" || echo "FAIL" ) |" >> scorecard-summary.md
+          echo "| **Baseline** | ${BASELINE} |" >> scorecard-summary.md
+          echo "| **Status** | $( [ "$EXIT_CODE" -eq 0 ] && echo "PASS" || echo "FAIL" ) |" >> scorecard-summary.md
           echo "" >> scorecard-summary.md
 
-          # List failed pillars
-          if [ "$SCORE" -lt "$THRESHOLD" ]; then
+          if [ "$EXIT_CODE" -ne 0 ]; then
             echo "### Failed Pillars" >> scorecard-summary.md
             echo "" >> scorecard-summary.md
             python -c "
@@ -58,36 +93,27 @@ jobs:
           " >> scorecard-summary.md
           fi
 
-          # Set outputs
           echo "score=${SCORE}" >> "$GITHUB_OUTPUT"
           echo "total=${TOTAL}" >> "$GITHUB_OUTPUT"
           echo "percentage=${PCT}" >> "$GITHUB_OUTPUT"
-          echo "threshold=${THRESHOLD}" >> "$GITHUB_OUTPUT"
-          echo "passed=$( [ "$SCORE" -ge "$THRESHOLD" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "baseline=${BASELINE}" >> "$GITHUB_OUTPUT"
+          echo "passed=$( [ "$EXIT_CODE" -eq 0 ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
-          # Post PR comment if applicable
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            COMMENT=$(cat scorecard-summary.md)
-            # Use GitHub API to post comment
-            if command -v gh &> /dev/null; then
-              gh pr comment "${{ github.event.pull_request.number }}" \
-                --body "$COMMENT" \
-                --repo "${{ github.repository }}" || true
-            fi
+            gh pr comment "${{ github.event.pull_request.number }}" \
+              --body-file scorecard-summary.md \
+              --repo "${{ github.repository }}" || true
           fi
 
-      - name: Update status check
-        if: always()
+      - name: Enforce scorecard gate
         run: |
           SCORE=${{ steps.audit.outputs.score }}
           TOTAL=${{ steps.audit.outputs.total }}
-          THRESHOLD=${{ steps.audit.outputs.threshold }}
-          PASSED=${{ steps.audit.outputs.passed }}
-
-          if [ "$PASSED" = "true" ]; then
-            echo "Scorecard: ${SCORE}/${TOTAL} - PASS (threshold: ${THRESHOLD})"
+          BASELINE=${{ steps.audit.outputs.baseline }}
+          if [ "${{ steps.audit.outputs.passed }}" = "true" ]; then
+            echo "Scorecard: ${SCORE}/${TOTAL} - PASS (baseline: ${BASELINE})"
           else
-            echo "Scorecard: ${SCORE}/${TOTAL} - FAIL (threshold: ${THRESHOLD})"
+            echo "::error::Scorecard ${SCORE}/${TOTAL} is below the gate (baseline: ${BASELINE})"
             exit 1
           fi
 
@@ -100,24 +126,21 @@ jobs:
             scorecard-report.json
             scorecard-summary.md
 
-      - name: Check score threshold
-        if: steps.audit.outputs.passed != 'true'
-        run: |
-          echo "::error::Score ${{ steps.audit.outputs.score }}/${{ steps.audit.outputs.total }} is below threshold ${{ steps.audit.outputs.threshold }}"
-          exit 1
-
   update-badge:
     needs: scorecard
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Update scorecard badge
         run: |
           SCORE=${{ needs.scorecard.outputs.score }}
           TOTAL=${{ needs.scorecard.outputs.total }}
           PCT=${{ needs.scorecard.outputs.percentage }}
 
-          # Generate badge SVG
           if [ "${{ needs.scorecard.outputs.passed }}" = "true" ]; then
             COLOR="brightgreen"
           else
@@ -127,7 +150,6 @@ jobs:
           BADGE_URL="https://img.shields.io/badge/scorecard-${SCORE}%2F${TOTAL}-${COLOR}"
           echo "Badge URL: ${BADGE_URL}"
 
-          # Update README badge if it exists
           if [ -f "README.md" ]; then
             sed -i "s|!\[Scorecard\].*|[![Scorecard](${BADGE_URL})](https://github.com/${{ github.repository }}/actions)|g" README.md || true
           fi
