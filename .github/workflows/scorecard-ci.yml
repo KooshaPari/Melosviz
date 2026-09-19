@@ -40,15 +40,18 @@ jobs:
           # gh pr comment requires this; without it the step warns
           # "set the GH_TOKEN environment variable" and posts nothing.
           GH_TOKEN: ${{ github.token }}
+          # Passed through the environment rather than interpolated into the
+          # shell script, so the value can never be parsed as shell syntax.
+          THRESHOLD_INPUT: ${{ github.event.inputs.threshold }}
         run: |
           set -euo pipefail
 
           BASELINE_FILE=".github/scorecard-baseline.json"
-          # Only set when the workflow is dispatched with an explicit threshold.
-          # The previous `github.event.inputs.threshold || '85'` was dead code:
-          # the workflow had no workflow_dispatch trigger, so it always
-          # evaluated to 85 -- an absolute bar this repository has never met.
-          THRESHOLD="${{ github.event.inputs.threshold }}"
+          # Only set when dispatched with an explicit threshold. The previous
+          # `github.event.inputs.threshold || '85'` was dead code: the workflow
+          # had no workflow_dispatch trigger, so it always evaluated to 85 --
+          # an absolute bar this repository has never met.
+          THRESHOLD="${THRESHOLD_INPUT:-}"
 
           ARGS=(. --output json --baseline "$BASELINE_FILE" --fail-on-drop)
           if [ -n "$THRESHOLD" ]; then

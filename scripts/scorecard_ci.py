@@ -223,8 +223,30 @@ def audit_repo(repo_path):
     return {"score":score,"total":len(PILLARS),"percentage":(score/len(PILLARS))*100,"results":results}
 
 
-def _load_baseline(path):
-    if not path or not os.path.isfile(path):
+def _confine_to_repo(root, candidate):
+    """Validate a caller-supplied path and confine it to the repository.
+
+    `candidate` arrives from the command line, so it is treated as
+    untrusted input. The resolved path must stay inside `root`; anything
+    that escapes is rejected. The baseline is project configuration and
+    belongs in the repository, so there is no case that needs otherwise.
+
+    Returns an absolute path, or None when `candidate` is falsy.
+    """
+    if not candidate:
+        return None
+    root_real = os.path.realpath(root)
+    joined = candidate if os.path.isabs(candidate) else os.path.join(root_real, candidate)
+    resolved = os.path.realpath(joined)
+    if os.path.commonpath([root_real, resolved]) != root_real:
+        raise ValueError(
+            "path escapes the repository root: %r" % candidate)
+    return resolved
+
+
+def _load_baseline(root, candidate):
+    path = _confine_to_repo(root, candidate)
+    if path is None or not os.path.isfile(path):
         return None
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -251,7 +273,7 @@ def main():
 
     try:
         report = audit_repo(args.path)
-        baseline = _load_baseline(args.baseline)
+        baseline = _load_baseline(args.path, args.baseline)
 
         if args.update_baseline:
             if not args.baseline:
@@ -259,7 +281,8 @@ def main():
                 sys.exit(2)
             payload = {"score": report["score"], "total": report["total"],
                        "percentage": round(report["percentage"], 1)}
-            with open(args.baseline, "w", encoding="utf-8") as f:
+            baseline_path = _confine_to_repo(args.path, args.baseline)
+            with open(baseline_path, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2)
                 f.write("\n")
             print("Baseline written to %s: %d/%d"
