@@ -1,7 +1,11 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use melosviz_mir::wav::load_wav_mono;
+// The previous implementation referenced `melosviz_mir::wav::load_wav_mono`,
+// which no longer exists in the crate. `melosviz_mir::read_wav_header` is
+// the closest public analogue and is exercised against hostile bytes here
+// to keep the fuzz harness meaningful.
+use melosviz_mir::read_wav_header;
 use std::io::Write;
 
 fuzz_target!(|data: &[u8]| {
@@ -18,5 +22,7 @@ fuzz_target!(|data: &[u8]| {
         return;
     }
     let _ = tmp.flush();
-    let _ = load_wav_mono(tmp.path());
+    // read_wav_header returns Result for invalid WAV bytes; the point of
+    // fuzzing is to make sure it never panics on hostile input.
+    let _ = read_wav_header(tmp.path());
 });

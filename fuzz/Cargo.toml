@@ -13,6 +13,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 melosviz-mir = { path = "../crates/melosviz-mir" }
+melosviz-sdk = { path = "../sdk/rust" }
 serde_json = "1"
 tempfile = "3"
 
