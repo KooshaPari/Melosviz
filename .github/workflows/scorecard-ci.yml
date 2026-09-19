@@ -36,6 +36,10 @@ jobs:
 
       - name: Run 88-Pillar Scorecard Audit
         id: audit
+        env:
+          # gh pr comment requires this; without it the step warns
+          # "set the GH_TOKEN environment variable" and posts nothing.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
