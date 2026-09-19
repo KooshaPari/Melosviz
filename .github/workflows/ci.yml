@@ -60,8 +60,10 @@ jobs:
             echo "has_go=true" >> $GITHUB_OUTPUT
           fi
 
-          # TypeScript / JS: needs package.json (with type=module or tsconfig or js files)
-          if [ -f "package.json" ]; then
+          # TypeScript / JS: any package.json outside node_modules. The repo keeps
+          # its web studio under web/, so a root-only check never matched and the
+          # whole TS/JS job was always skipped.
+          if find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" 2>/dev/null | head -1 | grep -q .; then
             echo "has_typescript=true" >> $GITHUB_OUTPUT
           fi
 
@@ -152,6 +154,11 @@ jobs:
     needs: detect
     if: needs.detect.outputs.has_typescript == 'true'
     runs-on: ubuntu-latest
+    # All npm commands run in the web studio; there is no root package.json, so at
+    # the repo root the lint/test guards would silently do nothing.
+    defaults:
+      run:
+        working-directory: web
     # No continue-on-error: a failing web suite must fail this job so the
     # aggregate gate can see it. `lint` stays advisory via its own echo.
     steps:
