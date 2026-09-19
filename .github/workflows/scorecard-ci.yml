@@ -46,14 +46,14 @@ jobs:
         run: |
           set -euo pipefail
 
-          BASELINE_FILE=".github/scorecard-baseline.json"
           # Only set when dispatched with an explicit threshold. The previous
           # `github.event.inputs.threshold || '85'` was dead code: the workflow
           # had no workflow_dispatch trigger, so it always evaluated to 85 --
           # an absolute bar this repository has never met.
           THRESHOLD="${THRESHOLD_INPUT:-}"
 
-          ARGS=(. --output json --baseline "$BASELINE_FILE" --fail-on-drop)
+          # The baseline path is owned by the script; it is not a CLI option.
+          ARGS=(. --output json --fail-on-drop)
           if [ -n "$THRESHOLD" ]; then
             ARGS+=(--threshold "$THRESHOLD")
           fi
@@ -70,7 +70,7 @@ jobs:
           SCORE=$(python -c "import json; print(json.load(open('scorecard-report.json'))['score'])")
           TOTAL=$(python -c "import json; print(json.load(open('scorecard-report.json'))['total'])")
           PCT=$(python -c "import json; print(f\"{json.load(open('scorecard-report.json'))['percentage']:.1f}\")")
-          BASELINE=$(python -c "import json,os; p='.github/scorecard-baseline.json'; print(json.load(open(p))['score'] if os.path.isfile(p) else 'none')")
+          BASELINE=$(python -c "import json; print(json.load(open('scorecard-report.json')).get('baseline') or 'none')")
 
           echo "## 88-Pillar Scorecard Result" > scorecard-summary.md
           echo "" >> scorecard-summary.md

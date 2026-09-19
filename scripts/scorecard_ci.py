@@ -223,32 +223,19 @@ def audit_repo(repo_path):
     return {"score":score,"total":len(PILLARS),"percentage":(score/len(PILLARS))*100,"results":results}
 
 
-def _confine_to_repo(root, candidate):
-    """Validate a caller-supplied path and confine it to the repository.
+# The baseline is project configuration that lives at a known path next to
+# this script. It is deliberately not a command line option: a free-form
+# path would add attack surface for no benefit, and every caller wants the
+# one canonical file.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+BASELINE_PATH = REPO_ROOT / ".github" / "scorecard-baseline.json"
 
-    `candidate` arrives from the command line, so it is treated as
-    untrusted input. The resolved path must stay inside `root`; anything
-    that escapes is rejected. The baseline is project configuration and
-    belongs in the repository, so there is no case that needs otherwise.
 
-    Returns an absolute path, or None when `candidate` is falsy.
-    """
-    if not candidate:
+def _load_baseline():
+    """Read the tracked baseline score, or None if none has been recorded."""
+    if not BASELINE_PATH.is_file():
         return None
-    root_real = os.path.realpath(root)
-    joined = candidate if os.path.isabs(candidate) else os.path.join(root_real, candidate)
-    resolved = os.path.realpath(joined)
-    if os.path.commonpath([root_real, resolved]) != root_real:
-        raise ValueError(
-            "path escapes the repository root: %r" % candidate)
-    return resolved
-
-
-def _load_baseline(root, candidate):
-    path = _confine_to_repo(root, candidate)
-    if path is None or not os.path.isfile(path):
-        return None
-    with open(path, "r", encoding="utf-8") as f:
+    with open(BASELINE_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data.get("score")
 
@@ -258,35 +245,25 @@ def main():
     parser.add_argument("path", help="Path to repository")
     parser.add_argument("--threshold", type=int, default=None,
                         help="Absolute minimum score. Fails if the score is lower.")
-    parser.add_argument("--baseline", default=None,
-                        help="Baseline JSON file ({\"score\": N}) to compare against.")
     parser.add_argument("--fail-on-drop", action="store_true",
-                        help="Exit non-zero when the score is below the --baseline score.")
+                        help="Exit non-zero when the score is below the tracked baseline.")
     parser.add_argument("--update-baseline", action="store_true",
-                        help="Write the current score to --baseline and exit 0.")
+                        help="Record the current score as the tracked baseline and exit 0.")
     parser.add_argument("--output", choices=["text","json","markdown"], default="text")
     args = parser.parse_args()
 
-    if args.fail_on_drop and not args.baseline:
-        print("Error: --fail-on-drop requires --baseline", file=sys.stderr)
-        sys.exit(2)
-
     try:
         report = audit_repo(args.path)
-        baseline = _load_baseline(args.path, args.baseline)
+        baseline = _load_baseline()
 
         if args.update_baseline:
-            if not args.baseline:
-                print("Error: --update-baseline requires --baseline", file=sys.stderr)
-                sys.exit(2)
             payload = {"score": report["score"], "total": report["total"],
                        "percentage": round(report["percentage"], 1)}
-            baseline_path = _confine_to_repo(args.path, args.baseline)
-            with open(baseline_path, "w", encoding="utf-8") as f:
+            with open(BASELINE_PATH, "w", encoding="utf-8") as f:
                 json.dump(payload, f, indent=2)
                 f.write("\n")
             print("Baseline written to %s: %d/%d"
-                  % (args.baseline, report["score"], report["total"]))
+                  % (BASELINE_PATH, report["score"], report["total"]))
             return
 
         if args.output == "json":
@@ -322,7 +299,8 @@ def main():
                             % (report["score"], baseline))
         if problems:
             for p in problems:
-                print("::error::" + p)
+                # stderr, so stdout stays valid JSON for --output json
+                print("::error::" + p, file=sys.stderr)
             sys.exit(1)
 
         if baseline is not None and report["score"] > baseline:
