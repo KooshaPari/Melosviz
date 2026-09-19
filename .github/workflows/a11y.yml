@@ -73,10 +73,29 @@ jobs:
           curl -sf http://127.0.0.1:8761/assets/brand/tokens.css >/dev/null
       - name: axe-core CLI
         run: |
+          set -euo pipefail
+          # @axe-core/cli declares `"chromedriver": "latest"`, so npm resolves
+          # the newest published driver (153.0.2 at time of writing) while the
+          # runner image ships an older Chrome (152.0.7977.82). ChromeDriver
+          # only drives its matching major version, so axe aborts before it
+          # audits anything:
+          #   session not created: This version of ChromeDriver only supports
+          #   Chrome version 153 / Current browser version is 152.0.7977.82
+          # Install the driver matching the Chrome that is actually present and
+          # point axe at it explicitly, so this does not break every time the
+          # runner image bumps Chrome.
+          CHROME_MAJOR="$(/opt/google/chrome/chrome --version | grep -oE '[0-9]+' | head -1)"
+          echo "Chrome major: ${CHROME_MAJOR}"
+          DRIVER_DIR="$(mktemp -d)"
+          npm install --no-audit --no-fund --prefix "$DRIVER_DIR" \
+            "chromedriver@~${CHROME_MAJOR}.0.0"
+          CHROMEDRIVER_PATH="$(cd "$DRIVER_DIR" && node -e "process.stdout.write(require('chromedriver').path)")"
+          echo "ChromeDriver: ${CHROMEDRIVER_PATH}"
           npx --yes @axe-core/cli@4.10.1 \
             http://127.0.0.1:8760/fixture.html \
             --exit \
-            --tags wcag2a,wcag2aa
+            --tags wcag2a,wcag2aa \
+            --chromedriver-path "${CHROMEDRIVER_PATH}"
       - name: Playwright screenshot golden
         run: |
           mkdir -p eval/golden/screenshots
