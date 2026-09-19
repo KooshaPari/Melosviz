@@ -100,33 +100,60 @@ def _artifact_rejection(artifact: str) -> str | None:
     return None
 
 
-def _materialise_cached_artifact(blob: Path, scene_out_dir: Path) -> Path | None:
-    """Copy a content-addressed cache blob back under its original name.
-
-    The cache stores bytes as ``<fingerprint>.bin``. Downstream consumers expect
-    the clip's real name, so a hit materialises it next to the scene and the run
-    continues as if the adapter had just produced it. Returns ``None`` when the
-    copy fails, so the caller can fall back to a real render.
-    """
-    name = blob.name
-    meta_path = blob.with_suffix(".json")
+def _artifact_relpath(artifact: str, output_dir: Path) -> str | None:
+    """Return `artifact` relative to `output_dir`, or ``None`` when outside it."""
     try:
-        stored = json.loads(meta_path.read_text(encoding="utf-8"))
-        if isinstance(stored, dict) and stored.get("artifact_name"):
-            name = str(stored["artifact_name"])
+        return str(Path(artifact).resolve().relative_to(output_dir.resolve()))
+    except (ValueError, OSError):
+        return None
+
+
+def _materialise_cached_artifact(
+    blob: Path, output_dir: Path, scene_out_dir: Path
+) -> Path | None:
+    """Copy a content-addressed cache blob back to where the artifact lived.
+
+    The cache stores bytes as ``<fingerprint>.bin``; downstream consumers expect
+    the clip at its real path, so a hit restores it there and the run continues as
+    if the adapter had just produced it. Stored paths are untrusted: a value that
+    would land outside the render output dir is ignored in favour of the artifact's
+    plain name inside the scene dir. Returns ``None`` when the copy fails, so the
+    caller can fall back to a real render.
+    """
+    blob_name = blob.name
+    relpath: str | None = None
+    try:
+        stored = json.loads(blob.with_suffix(".json").read_text(encoding="utf-8"))
+        if isinstance(stored, dict):
+            if stored.get("artifact_relpath"):
+                relpath = str(stored["artifact_relpath"])
+            if stored.get("artifact_name"):
+                blob_name = str(stored["artifact_name"])
     except (OSError, json.JSONDecodeError):
         pass
-    # Never let a stored name escape the scene directory.
-    name = Path(name).name or blob.name
-    target = scene_out_dir / name
+
+    target: Path | None = None
+    if relpath:
+        candidate = (output_dir / relpath).resolve()
+        if candidate.is_relative_to(output_dir.resolve()):
+            target = candidate
+        else:
+            logger.warning(
+                "cached artifact path %r escapes the output dir; using the plain name",
+                relpath,
+            )
+    if target is None:
+        target = scene_out_dir / (Path(blob_name).name or blob.name)
+
     try:
-        scene_out_dir.mkdir(parents=True, exist_ok=True)
+        target.parent.mkdir(parents=True, exist_ok=True)
         if not (target.exists() and target.stat().st_size == blob.stat().st_size):
             shutil.copy2(blob, target)
     except OSError as exc:
         logger.debug("cache materialise failed for %s: %s", blob, exc)
         return None
     return target
+
 
 
 def _record_cached_scene(
@@ -848,7 +875,9 @@ class Orchestrator:
             if cache_root is not None:
                 cached_artifact = scene_render_cached(_seg_for_render, cache_root)
             if cached_artifact is not None and cached_artifact.exists():
-                materialised = _materialise_cached_artifact(cached_artifact, scene_out_dir)
+                materialised = _materialise_cached_artifact(
+                    cached_artifact, self._output_dir, scene_out_dir
+                )
                 if materialised is not None:
                     _cache_key = scene_cache_key(_seg_for_render, cache_root).fingerprint()
                     logger.info(
@@ -1097,6 +1126,9 @@ class Orchestrator:
                             "scene_name": scene_name,
                             "outcome": _outcome,
                             "artifact_name": Path(artifact).name,
+                            "artifact_relpath": _artifact_relpath(
+                                artifact, self._output_dir
+                            ),
                         },
                     )
             except Exception as exc:  # cache store is best-effort

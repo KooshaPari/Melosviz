@@ -1,17 +1,16 @@
 """Tests for the activated render cache.
 
-The cache was previously inert: `RenderCache.store` wrote into a directory the
-orchestrator never created, so every store died ENOENT inside a best-effort
-guard and the fast-path could never hit. These tests pin the activated behaviour:
-the directory exists, a second identical scene is served from cache, the cached
-bytes are materialised under the artifact's real name, the reuse is recorded, and
-a poisoned metadata name cannot escape the scene directory.
+The cache was inert: `RenderCache.store` wrote into a directory the orchestrator
+never created, so every store died ENOENT inside a best-effort guard and the
+fast-path could never hit. These tests pin the activated behaviour: the directory
+exists, a second identical scene is served from cache, a hit restores the artifact
+at the path a cold render would have used, the reuse is recorded, and neither
+poisoned metadata field can make a path escape the render output directory.
 """
 
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from melosviz.conductor.orchestrator import Orchestrator
@@ -44,6 +43,10 @@ def _done(result) -> list:
     return [e for e in result.events if getattr(e, "state", "") == "done"]
 
 
+def _meta_path(out: Path) -> Path:
+    return next((out / "_render_cache").glob("*.json"))
+
+
 def test_cache_dir_is_created_and_store_succeeds(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv(OFFLINE_ENV, "1")
     orch = _orch(tmp_path)
@@ -60,6 +63,8 @@ def test_second_render_is_served_from_cache_and_recorded(tmp_path: Path, monkeyp
     orch = _orch(tmp_path)
     orch.render(_spec())
     out = tmp_path / "out"
+    cold_path = out / "comfyui_image" / "scene_000" / "clip.mp4"
+    assert cold_path.is_file(), "the cold render did not write the artifact"
 
     result = orch.render(_spec())
     done = _done(result)[0]
@@ -69,41 +74,59 @@ def test_second_render_is_served_from_cache_and_recorded(tmp_path: Path, monkeyp
     assert materialised.suffix == ".mp4", (
         f"a cache hit handed downstream a {materialised.suffix!r} artifact: {materialised}"
     )
-    assert materialised.is_file()
-    assert materialised.resolve().is_relative_to(out.resolve())
+    # A hit must restore the artifact where a cold render would have put it.
+    assert materialised.resolve() == cold_path.resolve(), (
+        f"the hit landed at {materialised} instead of {cold_path}"
+    )
 
     sidecars = sorted(out.rglob("*.provenance.json"))
-    assert len(sidecars) == 2, (
-        f"two renders produced {len(sidecars)} provenance records; a cached render "
-        "must be recorded too"
+    assert len(sidecars) == 1, (
+        f"one artifact, one sidecar, but found {len(sidecars)}"
     )
-    hit_payload = json.loads(materialised.with_name(materialised.name + ".provenance.json").read_text(encoding="utf-8"))
-    assert hit_payload["extra"]["from_cache"] is True
-    assert hit_payload["extra"]["outcome"] == "offline-placeholder", (
-        f"the cached scene lost its mode: {hit_payload['extra']!r}"
+    payload = json.loads(sidecars[0].read_text(encoding="utf-8"))
+    assert payload["extra"]["from_cache"] is True, (
+        f"the sidecar does not record the reuse: {payload['extra']!r}"
     )
+    assert payload["extra"]["outcome"] == "offline-placeholder", (
+        f"the cached scene lost its mode: {payload['extra']!r}"
+    )
+    assert Path(payload["artifact_path"]).resolve() == cold_path.resolve()
 
 
-def test_poisoned_cache_metadata_cannot_escape_the_scene_dir(tmp_path: Path, monkeypatch) -> None:
+def test_poisoned_cache_metadata_cannot_escape_the_output_dir(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setenv(OFFLINE_ENV, "1")
     orch = _orch(tmp_path)
     orch.render(_spec())
     out = tmp_path / "out"
+    meta_path = _meta_path(out)
 
-    meta_path = next((out / "_render_cache").glob("*.json"))
+    # (a) a poisoned relative path must be rejected outright
     payload = json.loads(meta_path.read_text(encoding="utf-8"))
-    payload["artifact_name"] = "../../escaped.mp4"
+    payload["artifact_relpath"] = "../../../escaped.mp4"
     meta_path.write_text(json.dumps(payload), encoding="utf-8")
 
     done = _done(orch.render(_spec()))[0]
     assert done.extras.get("from_cache") is True
     materialised = Path(done.artifact_path)
-    assert materialised.name == "escaped.mp4", f"unexpected name: {materialised.name}"
     assert materialised.resolve().is_relative_to(out.resolve()), (
-        f"a stored name escaped the scene dir: {materialised}"
+        f"a stored relative path escaped the output dir: {materialised}"
     )
     assert not (tmp_path / "escaped.mp4").exists()
-    assert not (out / "escaped.mp4").exists()
+
+    # (b) a poisoned plain name cannot climb out either
+    payload["artifact_relpath"] = None
+    payload["artifact_name"] = "../../escaped2.mp4"
+    meta_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    done = _done(orch.render(_spec()))[0]
+    materialised = Path(done.artifact_path)
+    assert materialised.name == "escaped2.mp4", f"unexpected name: {materialised.name}"
+    assert materialised.resolve().is_relative_to(out.resolve()), (
+        f"the stored name escaped the output dir: {materialised}"
+    )
+    assert not (tmp_path / "escaped2.mp4").exists()
 
 
 def test_missing_blob_falls_back_to_a_real_render(tmp_path: Path, monkeypatch) -> None:

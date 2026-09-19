@@ -204,6 +204,7 @@ class RenderCache:
             # Recorded so a hit can restore the artifact's real name and report
             # the mode the scene actually rendered in (A1 truthfulness).
             "artifact_name": (meta or {}).get("artifact_name") or src.name,
+            "artifact_relpath": (meta or {}).get("artifact_relpath"),
             "outcome": (meta or {}).get("outcome"),
         }
         meta_path.write_text(json.dumps(meta_obj, ensure_ascii=False, indent=2), encoding="utf-8")
