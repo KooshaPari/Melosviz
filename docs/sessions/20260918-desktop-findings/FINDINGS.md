@@ -555,6 +555,64 @@ still tests relative-path resolution.
 Zero-*duration* media is deliberately **not** covered: detecting it needs container
 probing and no such helper exists in this repo.
 
+### 8.9 `live_stage` rendered nothing and then lied about it (fixed)
+
+Two defects on one path, both found by running the real registry sweep:
+
+1. **It crashed on the spec shape callers actually pass** (`06a013e`). Every other
+   registered adapter reads scenes with `.get`, so a plain dict is a supported input,
+   but `TDAdapter` forwarded the dict into the generator, which reads
+   `render_spec.metadata`:
+
+   ```
+   ConductorError: adapter for scene_type='live_stage' failed:
+   TouchDesigner network generation failed: 'dict' object has no attribute 'metadata'
+   ```
+
+   The adapter now normalises a dict to `RenderSpec` at its own boundary.
+2. **Then it mislabelled the result** (`d540146`). With the crash gone the scene
+   recorded `outcome="unavailable"` even though the adapter had written
+   `network_spec.json` and a bootstrap script. The TD adapter never produces media, so
+   it declares `emits_plan_only` and such scenes are `job-spec-only`, like Cinema 4D,
+   Unreal and Blender.
+
+#### Mock-safety, twice
+
+The label work exposed a second instance of a trap already recorded in §8.6:
+`getattr(MagicMock(), "any_flag", False)` returns a **truthy Mock**. The capability
+check therefore let a Mock adapter claim the plan-only capability, and the existing
+containment test caught it on the first run:
+
+```
+unexpected outcome label: {'outcome': 'job-spec-only'}
+```
+
+All three capability flags are now compared to `True` explicitly. Between this and
+`isinstance(x, os.PathLike)`, the rule for this codebase is: never use bare truthiness
+or `isinstance` against a protocol to interrogate an adapter that a test may replace
+with a Mock.
+
+### 8.10 Encoding sweep: checked, nothing to fix (negative result)
+
+A delegated sweep of every `write_text` / `open("w")` / `json.dump` site that relies on
+the platform default encoding was **reverted after measurement**, because the premise
+did not survive checking:
+
+- `json.dumps` defaults to `ensure_ascii=True`, so the plan/JSON writers emit **pure
+  ASCII**. A literal em dash at `unreal_adapter.py:313` is written as `\u2014`, which
+  cp1252 handles fine. 19 candidate sites were patched, then reverted unpatched.
+- Every file write that actually emits non-ASCII already passes `encoding="utf-8"`:
+  the four `ensure_ascii=False` writers (`character/registry_io.py`,
+  `conductor/provenance.py`, `conductor/render_cache.py`, `conductor/validate.py`).
+- `runtime/touchdesigner/bridge.py` writes to a socket, not a file.
+
+The one real defect in this class was the TouchDesigner bootstrap script (`fb6c165`),
+which writes raw text containing a literal right-arrow. The live hazard is therefore
+narrow and worth stating: a **new** `ensure_ascii=False` or raw-text write without an
+explicit encoding. An AST-based scanner (checking call arguments rather than grepping
+lines) is the right tool for the next audit; a line-based grep gives false positives on
+multi-line calls and on `json.dumps`.
+
 ## 9. Handoff backlog status
 
 | Item | Status |
@@ -590,24 +648,39 @@ authenticated with `repo` + `workflow` scopes.
 - Did not activate the render cache (§3) or modify the mutation engine (§5.1).
 - Did not restate item 4 as done, and did not create a competing ledger.
 
-## 12. Delegated work in flight (and a spawn hazard worth knowing)
+## 12. Delegated workstreams: outcome
 
 Two workstreams were delegated to swarm workers on the `deepseek-v4.1-flash` route
-(`openai-compatible:opencode-go`), each in its own clone on its own branch, with a
-reproduce command, a red-before/passing-after requirement, exact suite commands to
-report, and an explicit **no-push** instruction so integration stays serial:
+(`openai-compatible:opencode-go`), each in its own clone and branch, with a reproduce
+command, a red-before/passing-after requirement, exact suite commands to report, and an
+explicit **no-push** rule so integration stayed serial. Result:
 
-| Worker | Scope | Clone / branch |
+| Worker | Disposition | Outcome |
 |---|---|---|
-| `nautilus` | root-cause the `live_stage` `'dict' object has no attribute 'metadata'` failure + regression test | `agents/sandbox/melos-worker-a`, `fix/live-stage-type-bug` |
-| `wyvern` | remaining `write_text` / `open("w")` / `json.dump` sites that rely on the platform default encoding, with a non-ASCII round-trip test | `agents/sandbox/melos-worker-b`, `chore/encoding-sweep` |
+| `nautilus` | stopped by the owner at 19 min / 8.7M tok, fix and tests uncommitted | its 12-line fix and both tests were taken over, verified independently (red before, green after) and landed as `06a013e` |
+| `wyvern` | stopped by the owner after 5.8M tok produced four scratch scripts and no edits | work was refuted by measurement instead; see §8.10, nothing to fix |
+| `humpback` | duplicate, stopped immediately | see the spawn hazard below |
 
-**Hazard:** the first `spawn` call returned `Failed to spawn agent: deadline has elapsed`
-but had in fact created a session (`humpback`), and the retry created a second one
-(`nautilus`) pointed at the *same* clone and branch. Two agents writing one working tree
-would have corrupted it. The duplicate was stopped before it wrote anything and
-`melos-worker-a` was verified clean afterwards. Lesson: after a spawn that reports a
-timeout, list the agents before retrying.
+**Neither worker's report was accepted as evidence.** `nautilus` had not committed
+anything, so the owner copied its diff, re-ran the failing test against the unfixed
+tree, re-ran the suite, and only then committed (`06a013e`). `wyvern` claimed nothing
+and was producing no artifact, so its scope was closed by proving the premise false.
 
-Worker claims are not evidence. Each commit still has to be inspected and its acceptance
-command re-run by the owner before integration.
+**Two harness hazards worth remembering:**
+
+1. **A `spawn` that reports `deadline has elapsed` may still have created a session.**
+   That is how `humpback` appeared and ended up pointed at the *same* clone and branch
+   as `nautilus`; two agents in one working tree would have corrupted it. Stopping the
+   duplicate left the clone pristine (verified). `stop` behaves the same way: it
+   returned a timeout error while having taken effect. After any spawn/stop that
+   reports a deadline, list the agents and check the disk before retrying.
+2. **Delegation was not cheaper for mechanical work.** An investigative task with a
+   reproducible failure (`live_stage`) produced a good fix from a worker; a broad,
+   judgement-based sweep (`encoding`) burned 5.8M tokens without converging. Scope
+   delegation by whether the task has a crisp reproduction and a verifiable stopping
+   point, not by whether it sounds mechanical.
+
+**Also observed:** the repository's Dependabot alert count changed during this session
+from 1 moderate to 1 critical, 1 high and 2 moderate on the default branch. Nothing in
+this session's commits caused that; it is recorded so the next session does not assume
+the earlier "1 moderate" figure is current.
