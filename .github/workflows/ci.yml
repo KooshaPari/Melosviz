@@ -167,6 +167,8 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          # There is no root lockfile, so the cache must be told where it is.
+          cache-dependency-path: web/package-lock.json
       - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
       - name: lint
         run: |
