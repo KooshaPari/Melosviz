@@ -21,8 +21,10 @@ Failure policy
 
 from __future__ import annotations
 
+import json
 import logging
 import os
+import shutil
 import time
 import uuid
 from pathlib import Path
@@ -35,6 +37,7 @@ from melosviz.conductor.provenance import ClipProvenance, write_provenance
 from melosviz.conductor.render_cache import (
     RenderCache,
     scene_cache_key,
+    scene_cache_meta,
     scene_render_cached,
 )
 from melosviz.conductor.visual_diff import compute_visual_diff
@@ -95,6 +98,77 @@ def _artifact_rejection(artifact: str) -> str | None:
     except OSError as exc:  # unreadable path/metadata
         return f"artifact could not be inspected: {exc}"
     return None
+
+
+def _materialise_cached_artifact(blob: Path, scene_out_dir: Path) -> Path | None:
+    """Copy a content-addressed cache blob back under its original name.
+
+    The cache stores bytes as ``<fingerprint>.bin``. Downstream consumers expect
+    the clip's real name, so a hit materialises it next to the scene and the run
+    continues as if the adapter had just produced it. Returns ``None`` when the
+    copy fails, so the caller can fall back to a real render.
+    """
+    name = blob.name
+    meta_path = blob.with_suffix(".json")
+    try:
+        stored = json.loads(meta_path.read_text(encoding="utf-8"))
+        if isinstance(stored, dict) and stored.get("artifact_name"):
+            name = str(stored["artifact_name"])
+    except (OSError, json.JSONDecodeError):
+        pass
+    # Never let a stored name escape the scene directory.
+    name = Path(name).name or blob.name
+    target = scene_out_dir / name
+    try:
+        scene_out_dir.mkdir(parents=True, exist_ok=True)
+        if not (target.exists() and target.stat().st_size == blob.stat().st_size):
+            shutil.copy2(blob, target)
+    except OSError as exc:
+        logger.debug("cache materialise failed for %s: %s", blob, exc)
+        return None
+    return target
+
+
+def _record_cached_scene(
+    *,
+    scene_out_dir: Path,
+    scene_index: int,
+    scene_name: str,
+    scene_type: str,
+    backend: str,
+    artifact_path: str,
+    outcome: str | None,
+    render_spec: Any,
+) -> None:
+    """Best-effort provenance record for a scene served from the render cache.
+
+    A cache hit is a real render that was reused, so it keeps the mode the scene
+    originally rendered in and adds ``from_cache``. Writing nothing would make a
+    cached scene indistinguishable from one that never ran.
+    """
+    try:
+        now = time.monotonic()
+        write_provenance(
+            ClipProvenance(
+                artifact_path=artifact_path,
+                scene_index=scene_index,
+                scene_name=scene_name,
+                scene_type=scene_type,
+                backend=backend,
+                render_started_at=now,
+                render_finished_at=now,
+                seed=getattr(render_spec, "seed", None) or scene_index,
+                prompt=getattr(render_spec, "prompt", None) or scene_name,
+                width=int(getattr(render_spec, "width", 1920) or 1920),
+                height=int(getattr(render_spec, "height", 1080) or 1080),
+                fps=int(getattr(render_spec, "fps", 24) or 24),
+                extra={"outcome": outcome or "cache-hit", "from_cache": True},
+            )
+        )
+    except Exception:  # pragma: no cover - provenance is best-effort
+        logger.debug(
+            "provenance write skipped for cached scene[%d]", scene_index, exc_info=True
+        )
 
 
 def _record_failed_scene(
@@ -774,31 +848,46 @@ class Orchestrator:
             if cache_root is not None:
                 cached_artifact = scene_render_cached(_seg_for_render, cache_root)
             if cached_artifact is not None and cached_artifact.exists():
-                logger.info(
-                    "Orchestrator: scene[%d] cache HIT → %s",
+                materialised = _materialise_cached_artifact(cached_artifact, scene_out_dir)
+                if materialised is not None:
+                    _cache_key = scene_cache_key(_seg_for_render, cache_root).fingerprint()
+                    logger.info(
+                        "Orchestrator: scene[%d] cache HIT → %s (materialised as %s)",
+                        scene_idx,
+                        cached_artifact,
+                        materialised,
+                    )
+                    elapsed_ms = 0.0
+                    done_evt = bus.emit_done(
+                        job_id=job_id,
+                        scene_index=scene_idx,
+                        scene_name=scene_name,
+                        scene_type=scene_type,
+                        backend=backend_key,
+                        duration_ms=0.0,
+                        artifact_path=str(materialised),
+                        extras={"from_cache": True, "cache_key": _cache_key},
+                    )
+                    emitted.append(done_evt)
+                    per_scene_results.setdefault(
+                        scene_type,
+                        {"artifact_path": materialised, "cache_key": _cache_key},
+                    )
+                    _record_cached_scene(
+                        scene_out_dir=scene_out_dir,
+                        scene_index=scene_idx,
+                        scene_name=scene_name,
+                        scene_type=scene_type,
+                        backend=backend_key,
+                        artifact_path=str(materialised),
+                        outcome=scene_cache_meta(_seg_for_render, cache_root).get("outcome"),
+                        render_spec=render_spec,
+                    )
+                    continue
+                logger.warning(
+                    "Orchestrator: scene[%d] cache entry unusable; re-rendering",
                     scene_idx,
-                    cached_artifact,
                 )
-                elapsed_ms = 0.0
-                done_evt = bus.emit_done(
-                    job_id=job_id,
-                    scene_index=scene_idx,
-                    scene_name=scene_name,
-                    scene_type=scene_type,
-                    backend=backend_key,
-                    duration_ms=0.0,
-                    artifact_path=str(cached_artifact),
-                    extras={
-                        "from_cache": True,
-                        "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint(),
-                    },
-                )
-                emitted.append(done_evt)
-                per_scene_results.setdefault(scene_type, {
-                    "artifact_path": cached_artifact,
-                    "cache_key": scene_cache_key(_seg_for_render, cache_root).fingerprint(),
-                })
-                continue
 
             t0 = time.monotonic()
             try:
@@ -1003,7 +1092,12 @@ class Orchestrator:
                     self._render_cache.store(
                         cache_key,
                         src_artifact_path=Path(artifact),
-                        meta={"scene_index": scene_idx, "scene_name": scene_name},
+                        meta={
+                            "scene_index": scene_idx,
+                            "scene_name": scene_name,
+                            "outcome": _outcome,
+                            "artifact_name": Path(artifact).name,
+                        },
                     )
             except Exception as exc:  # cache store is best-effort
                 logger.debug("render cache store skipped: %s", exc)

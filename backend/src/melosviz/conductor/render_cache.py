@@ -28,7 +28,7 @@ import json
 import os
 import shutil
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -160,6 +160,12 @@ class RenderCache:
 
     cache_dir: Path
 
+    def __post_init__(self) -> None:
+        # Without this, ``store`` fails ENOENT and the failure is swallowed by a
+        # best-effort guard in the orchestrator, so the cache is never populated
+        # and the fast-path can never hit.
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+
     @staticmethod
     def for_storyboard(storyboard_id: str, root: Path | None = None) -> "RenderCache":
         rid = (storyboard_id or "default").strip() or "default"
@@ -195,9 +201,22 @@ class RenderCache:
             "scene_name": (meta or {}).get("scene_name"),
             "storyboard_id": (meta or {}).get("storyboard_id"),
             "seed": key.seed,
+            # Recorded so a hit can restore the artifact's real name and report
+            # the mode the scene actually rendered in (A1 truthfulness).
+            "artifact_name": (meta or {}).get("artifact_name") or src.name,
+            "outcome": (meta or {}).get("outcome"),
         }
         meta_path.write_text(json.dumps(meta_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         return target
+
+    def meta_for(self, key: SceneCacheKey) -> dict:
+        """Return stored metadata for `key`, or an empty dict when unreadable."""
+        path = self.cache_dir / f"{key.fingerprint()}.json"
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+        return loaded if isinstance(loaded, dict) else {}
 
     def stats(self) -> dict:
         files = list(self.cache_dir.glob("*.bin"))
@@ -226,7 +245,25 @@ def scene_cache_key(seg: dict, cache_root: Path) -> SceneCacheKey:
         "fps": int(seg.get("fps", 24) or 24),
     })()
     backend = str(seg.get("backend") or seg.get("scene_type") or "unknown")
-    return SceneCacheKey.from_scene(seg, backend, spec_proxy)
+    key = SceneCacheKey.from_scene(seg, backend, spec_proxy)
+    # The rendered artifact can depend on *which* scene this is: the offline
+    # placeholder clip draws the scene label and index into the frame. Two scenes
+    # that differ only by name must therefore not share a cache entry.
+    label = seg.get("scene_name") or seg.get("name") or seg.get("label")
+    identity = f"{label if label is not None else ''}#{seg.get('scene_index')}"
+    return replace(key, extra={**key.extra, "_scene_identity": identity})
+
+
+def scene_cache_meta(seg: dict, cache_root: Path | None) -> dict:
+    """Return the stored metadata for `seg` under `cache_root` (empty when absent)."""
+    if cache_root is None:
+        return {}
+    try:
+        return RenderCache(cache_dir=Path(cache_root)).meta_for(
+            scene_cache_key(seg, Path(cache_root))
+        )
+    except Exception:  # pragma: no cover - metadata is best-effort
+        return {}
 
 
 def scene_render_cached(seg: dict, cache_root: Path) -> Path | None:
@@ -247,5 +284,6 @@ __all__ = [
     "RenderCache",
     "SceneCacheKey",
     "scene_cache_key",
+    "scene_cache_meta",
     "scene_render_cached",
 ]
