@@ -17,10 +17,16 @@ pull_request_rules:
     conditions:
       - "#review-requested=0"
       - "#approved-reviews-by>=1"
-      - check-success=ci
-      - check-success=lint
+      - or:
+          - check-success=ci / lint
+          - check-success=ci / test
+      - or:
+          - check-success=lint
+          - check-success=Lint & Format
       - check-success=typecheck
-      - check-success=test
+      - or:
+          - check-success=test
+          - check-success=ci / test
       - -conflict
       - -closed
     actions:
@@ -36,7 +42,9 @@ pull_request_rules:
       - or:
           - author=dependabot[bot]
           - author=renovate[bot]
-      - check-success=ci
+      - or:
+          - check-success=ci / lint
+          - check-success=ci / test
       - -conflict
       - -closed
     actions:
@@ -53,8 +61,12 @@ pull_request_rules:
           - author=trunk-io[bot]
           - author=mergify[bot]
           - author=github-actions[bot]
-      - check-success=ci
-      - check-success=lint
+      - or:
+          - check-success=ci / lint
+          - check-success=ci / test
+      - or:
+          - check-success=lint
+          - check-success=Lint & Format
       - -conflict
       - -closed
     actions:
@@ -121,9 +133,15 @@ pull_request_rules:
     conditions:
       - -closed
       - -draft
-      - check-success=ci
-      - check-success=lint
-      - check-success=test
+      - or:
+          - check-success=ci / lint
+          - check-success=ci / test
+      - or:
+          - check-success=lint
+          - check-success=Lint & Format
+      - or:
+          - check-success=test
+          - check-success=ci / test
       - "#approved-reviews-by>=1"
     actions:
       label:
