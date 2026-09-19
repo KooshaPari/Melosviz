@@ -167,8 +167,10 @@ tracked tree is never the mutation target, and fail loudly if the source differs
   `extra.outcome="failed"`, `error_type` and the error text, via a shared
   `_record_failed_scene` helper, and both still raise `ConductorError` exactly as
   before, so rehearsal behaviour is unchanged. A failure of the **final assembly step**
-  is still not covered: it has no scene index or name to key a record by, so it needs its
-  own decision rather than a fabricated entry.
+  emits an error event too (`6e44d4f`, with `scene_index=-1` as the sentinel for a
+  pipeline-level step), so the live stream sees it; it still writes no provenance sidecar,
+  because a fabricated scene entry would pollute a schema downstream consumers iterate.
+  That residue is a deliberate choice, not an oversight.
 - Rejection/blocking of **malformed** media — done in `def9d8e`: a zero-byte file, a
   path an adapter never wrote, and a directory are now recorded as `malformed` with a
   reason and are no longer accepted as a `render` (see §8.8).
@@ -578,21 +580,25 @@ Two defects on one path, both found by running the real registry sweep:
    it declares `emits_plan_only` and such scenes are `job-spec-only`, like Cinema 4D,
    Unreal and Blender.
 
-#### Mock-safety, twice
+#### Mock-safety, three times in one session
 
-The label work exposed a second instance of a trap already recorded in §8.6:
-`getattr(MagicMock(), "any_flag", False)` returns a **truthy Mock**. The capability
-check therefore let a Mock adapter claim the plan-only capability, and the existing
-containment test caught it on the first run:
+Any read of an adapter that a test may replace with a Mock has now bitten three times,
+each caught by an existing test rather than by review:
 
-```
-unexpected outcome label: {'outcome': 'job-spec-only'}
-```
+1. `isinstance(x, os.PathLike)` is **True** for a `MagicMock` (it provides
+   `__fspath__`), which reopened the repr-as-path defect during the single-path work.
+2. `getattr(mock, "any_flag", False)` is a **truthy Mock**, so a Mock adapter claimed the
+   plan-only capability: `unexpected outcome label: {'outcome': 'job-spec-only'}`.
+3. `getattr(mock, "__name__")` **raises AttributeError** rather than returning
+   anything, because Mock refuses magic names it has not been told about. Building the
+   assembly backend label from `me_cls.__name__` broke
+   `test_assembly_step_failure_raises`.
 
-All three capability flags are now compared to `True` explicitly. Between this and
-`isinstance(x, os.PathLike)`, the rule for this codebase is: never use bare truthiness
-or `isinstance` against a protocol to interrogate an adapter that a test may replace
-with a Mock.
+Capability flags are now compared to `True`, path acceptance is restricted to concrete
+types, and backend labels use a defaulted `getattr`. The rule for this codebase: when
+interrogating an adapter, assume it may be a Mock and use defaulted `getattr` plus a
+concrete-type or exact-value check. Bare truthiness, `isinstance` against a protocol, and
+magic-name attribute access are all unsafe.
 
 ### 8.10 Encoding sweep: checked, nothing to fix (negative result)
 
