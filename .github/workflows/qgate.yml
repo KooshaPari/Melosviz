@@ -20,7 +20,7 @@ on:
     branches: ["main"]
     paths:
       - ".github/workflows/qgate.yml"
-      - ".github/workflows/reusable/quality-gate.yml"
+      - ".github/workflows/quality-gate-reusable.yml"
       - ".qgate.toml"
       - "docs/QGATE_BASELINE.md"
       - "backend/**"
@@ -28,7 +28,7 @@ on:
     branches: ["main"]
     paths:
       - ".github/workflows/qgate.yml"
-      - ".github/workflows/reusable/quality-gate.yml"
+      - ".github/workflows/quality-gate-reusable.yml"
       - ".qgate.toml"
       - "docs/QGATE_BASELINE.md"
       - "backend/**"
@@ -54,7 +54,7 @@ concurrency:
 jobs:
   quality-gate:
     name: qgate — MelosViz baseline
-    uses: ./.github/workflows/reusable/quality-gate.yml
+    uses: ./.github/workflows/quality-gate-reusable.yml
     with:
       coverage-report: backend/coverage/lcov.info
       coverage-format: lcov
