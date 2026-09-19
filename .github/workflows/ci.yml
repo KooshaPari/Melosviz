@@ -165,7 +165,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # jsdom 30 requires Node ^22.22.2 || ^24.15.0 || >=26. Pin 22 so this
+          # matches a11y.yml / publish-sdk-packages.yml, which already run on 22.
+          node-version: "22"
           cache: "npm"
           # There is no root lockfile, so the cache must be told where it is.
           cache-dependency-path: web/package-lock.json
