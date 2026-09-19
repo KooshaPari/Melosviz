@@ -194,6 +194,11 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          # gitleaks-action derives its range as '<sha>^..<sha>'; with the
+          # default fetch-depth of 1 the parent object is absent and git
+          # aborts with "ambiguous argument ... unknown revision".
+          fetch-depth: 0
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v3
         env:
