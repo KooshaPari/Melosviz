@@ -97,6 +97,11 @@ class TDAdapter:
     #: Key used in the conductor adapter registry.
     scene_type: str = "live_stage"
 
+    #: This adapter generates a TD network spec plus a bootstrap script and never
+    #: rendered media, so every scene it serves is ``job-spec-only``. Declared
+    #: unconditionally (not only in offline mode) because it holds either way.
+    emits_plan_only: bool = True
+
     def __init__(
         self,
         scanner_specs: list[ScannerSpec] | None = None,

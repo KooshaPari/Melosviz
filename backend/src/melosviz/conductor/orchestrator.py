@@ -856,18 +856,25 @@ class Orchestrator:
             _offline_env = os.environ.get(
                 "MELOSVIZ_COMFYUI_OFFLINE", ""
             ).strip().lower() in ("1", "true", "yes", "on")
+            # ``getattr(mock, "flag", False)`` is a truthy Mock, so capability
+            # flags are compared to True explicitly rather than used as truthy.
             _offline_placeholder = bool(
                 _offline_env
-                and getattr(adapter, "emits_offline_placeholders", False)
+                and getattr(adapter, "emits_offline_placeholders", False) is True
                 and artifact.endswith(".mp4")
             )
             # Cinema 4D / Unreal / Blender emit a render *plan* offline and no
             # media at all: calling that a render overstates the artifact, and
             # calling it unavailable hides the plan that a reviewer can read.
             _plan_only = bool(
-                _offline_env
-                and not _offline_placeholder
-                and getattr(adapter, "offline_emits_plan_only", False)
+                # Some adapters only emit a plan when offline is forced ...
+                (
+                    _offline_env
+                    and not _offline_placeholder
+                    and getattr(adapter, "offline_emits_plan_only", False) is True
+                )
+                # ... and some never emit media at all, offline or not (TD).
+                or getattr(adapter, "emits_plan_only", False) is True
             )
             # A scene that reported no usable artifact path is neither a render
             # nor a placeholder. Label it so release acceptance can see it.
