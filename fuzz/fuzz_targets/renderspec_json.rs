@@ -1,7 +1,9 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use melosviz_mir::RenderSpec;
+// RenderSpec lives in the Rust SDK (sdk/rust/src/types.rs); the melosviz-mir
+// crate mirrors its JSON shape but does not itself define the struct.
+use melosviz_sdk::RenderSpec;
 
 fuzz_target!(|data: &[u8]| {
     // Never panic on hostile JSON — deserialize must be total for fuzzing.
