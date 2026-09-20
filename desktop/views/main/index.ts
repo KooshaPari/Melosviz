@@ -48,8 +48,8 @@ const rpc = Electroview.defineRPC<
 //
 // This runs at module-eval time, before the DOMContentLoaded handler
 // below, so the transport is always attached before any click handler fires.
-new Electroview({ rpc });
-console.log("[MelosViz UI] Electroview transport attached at module load");
+const _electroviewTransport = new Electroview({ rpc });
+console.log(`[MelosViz UI] ${_electroviewTransport.constructor.name} transport attached at module load`);
 
 // ---------------------------------------------------------------------------
 // State

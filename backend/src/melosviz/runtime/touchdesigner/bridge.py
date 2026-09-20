@@ -242,6 +242,9 @@ class TDBridge:
         self._config = config or BridgeConfig()
         self._osc: _OscTransport | None = None
         self._ws: _WsTransport | None = None
+        # Hold strong refs to fire-and-forget asyncio tasks so they are not
+        # garbage-collected before they complete (S7502).
+        self._ws_pending: set[asyncio.Future[None]] = set()
 
         if self._config.transport in ("osc", "both"):
             self._osc = _OscTransport(self._config.osc_host, self._config.osc_port)
@@ -260,8 +263,11 @@ class TDBridge:
                 loop = asyncio.get_event_loop()
                 loop.run_until_complete(self._ws.send(payload))
             except RuntimeError:
-                # Already in an event loop — fire and forget
-                asyncio.ensure_future(self._ws.send(payload))
+                # Already in an event loop — fire and forget.
+                # Save the task in a set so it is not GC’d before completion.
+                task = asyncio.ensure_future(self._ws.send(payload))
+                self._ws_pending.add(task)
+                task.add_done_callback(self._ws_pending.discard)
 
     def stream_render_spec(
         self,

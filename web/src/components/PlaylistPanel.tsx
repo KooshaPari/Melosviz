@@ -246,7 +246,8 @@ function SortableRow({
         className="text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing text-xs flex-shrink-0"
         title={t("playlist.drag_hint")}
         aria-label={t("playlist.drag_hint")}
-        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         ⠿
       </span>
