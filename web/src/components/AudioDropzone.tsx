@@ -104,6 +104,14 @@ export function AudioDropzone({
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
+        tabIndex={disabled ? -1 : 0}
+        onKeyDown={(e) => {
+          if (disabled) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
         onClick={() => {
           if (!disabled) fileInputRef.current?.click();
         }}

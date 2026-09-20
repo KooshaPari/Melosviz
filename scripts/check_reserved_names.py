@@ -211,7 +211,7 @@ def _cargo_dep_names(text: str) -> set[str]:
     names: set[str] = set()
     # [dependencies] / [dev-dependencies] / [build-dependencies] tables
     for block in re.finditer(
-        r"(?ms)^\[((?:.*\.)?dependencies)\]\n(.*?)(?=^\[|\Z)",
+        r"(?ms)^\[((?:.*\.)?dependencies)\]\n(.*?)(?=(?:^\[)|\Z)",
         text,
     ):
         body = block.group(2)

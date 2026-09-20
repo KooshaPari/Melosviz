@@ -235,7 +235,7 @@ class NarrativeComposer:
         raw: list[float] = []
         for seg in segs:
             e = float(seg.get("energy_mean") or 0.0)
-            if e == 0.0 and energy_traj:
+            if not e and energy_traj:
                 # Interpolate from per-second trajectory at midpoint
                 mid = (float(seg.get("start", 0.0)) + float(seg.get("end", 0.0))) / 2.0
                 idx = min(int(math.floor(mid)), len(energy_traj) - 1)
