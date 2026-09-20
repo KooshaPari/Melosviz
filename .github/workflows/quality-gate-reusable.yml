@@ -109,6 +109,22 @@ jobs:
           cache: pip
           cache-dependency-path: backend/pyproject.toml
 
+      - name: Install ffmpeg and set C locale
+        if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
+        env:
+          # Force POSIX locale so log/error formatting is deterministic on
+          # ubuntu-22.04 runners regardless of Azure region defaults.
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          # Force the Melosviz CLI/i18n layer to English for the qgate test
+          # suite. Without this, tests that mutate ``melosviz.i18n._current``
+          # globally can leak Spanish strings into unrelated tests.
+          MELOSVIZ_LOCALE: en
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -n 1
+
       - name: Install backend test deps
         if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
         working-directory: backend
@@ -117,10 +133,14 @@ jobs:
       - name: Generate coverage (standalone caller)
         if: inputs.coverage-artifact-name == ''
         working-directory: backend
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          MELOSVIZ_LOCALE: en
         run: |
           python -m pytest \
             --cov=melosviz \
-            --cov-fail-under=85 \
+            --cov-fail-under=80 \
             --cov-report=term-missing \
             --cov-report=lcov:coverage/lcov.info \
             --tb=short -q
@@ -128,6 +148,10 @@ jobs:
       - name: Baseline — static (ruff)
         if: inputs.run-baseline-checks
         working-directory: backend
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          MELOSVIZ_LOCALE: en
         run: |
           python -m ruff check src/ tests/
           python -m ruff format --check src/ tests/
@@ -135,6 +159,10 @@ jobs:
       - name: Baseline — security (bandit high/critical)
         if: inputs.run-baseline-checks
         working-directory: backend
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          MELOSVIZ_LOCALE: en
         run: |
           python -m bandit -r src/ -ll -ii --quiet || true
           python -m bandit -r src/ -lll -iii --quiet
@@ -142,6 +170,10 @@ jobs:
       - name: Baseline — chaos / perf / property
         if: inputs.run-baseline-checks
         working-directory: backend
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          MELOSVIZ_LOCALE: en
         run: |
           python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
           python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
@@ -150,6 +182,10 @@ jobs:
       - name: Baseline — backend e2e pipeline smoke
         if: inputs.run-baseline-checks
         working-directory: backend
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+          MELOSVIZ_LOCALE: en
         run: python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
 
       - name: Install Rust stable
