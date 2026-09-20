@@ -56,7 +56,7 @@ __all__ = [
     "build_resolve_timeline",
     "render_with_resolve",
     "render_with_ffmpeg_fallback",
-    "SCENE_TYPE",
+    "SCENE_TYPES",
 ]
 
 # ---------------------------------------------------------------------------
