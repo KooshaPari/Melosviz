@@ -12,10 +12,10 @@
 
 After the ComfyUI / C4D / UE / AE / DaVinci studio pivot landed (PR #234 and following), the qgate granular-recursive per-module coverage gate could not pass at any positive threshold because **two modules were at 0% line coverage**:
 
-| Module | Valid lines | Line rate at 2026-09-20 | Resolution |
-| ------ | ----------- | ------------------------ | ---------- |
-| `src/melosviz/llm/critic/__init__.py` | 226 | 0% | ✅ Tests landed in PR #294 (`backend/tests/test_critic.py`) |
-| `src/melosviz/presets/aspect_ratios.py` | 23 | 0% | ✅ Tests landed in PR #294 (`backend/tests/test_aspect_ratios.py`) |
+| Module                                  | Valid lines | Line rate at 2026-09-20 | Resolution                                                    |
+| --------------------------------------- | ----------- | ------------------------ | ------------------------------------------------------------- |
+| `src/melosviz/llm/critic/__init__.py`   | 226         | 0%                       | ✅ Tests landed in PR #294 (`backend/tests/test_critic.py`)    |
+| `src/melosviz/presets/aspect_ratios.py` | 23          | 0%                       | ✅ Tests landed in PR #294 (`backend/tests/test_aspect_ratios.py`) |
 
 > **Superseded 2026-09-29.** The two 0% gaps this section was written to explain are now closed by PR #294 (`d5a043a`, merged 2026-09-24), which added `test_critic.py` and `test_aspect_ratios.py`. The deferral strategy in PR #278 is still in place in the workflow, but its stated trigger condition no longer holds. Reverting it (re-adding `--coverage-report` and `--cov-report=lcov`) is now a live follow-up rather than a future hypothetical, pending confirmation that both modules report non-zero line rate in the qgate coverage tree.
 
