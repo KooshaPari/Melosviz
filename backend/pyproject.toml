@@ -104,6 +104,11 @@ select = [
 ]
 ignore = [
     "E501",  # line length (handled by formatter)
+    # UP042 suggests ``class X(enum.StrEnum)`` over ``class X(str, Enum)``.
+    # We intentionally use ``(str, Enum)`` because ``requires-python = ">=3.10"``
+    # and the CI test matrix includes Python 3.10, where ``enum.StrEnum``
+    # does not exist (added in 3.11). See PR #277 for context.
+    "UP042",
 ]
 
 [tool.ruff.lint.per-file-ignores]
