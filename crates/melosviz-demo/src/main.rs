@@ -144,7 +144,8 @@ fn print_help() {
 fn run(args: &Args) -> Result<(), String> {
     let started = std::time::Instant::now();
     let out_dir = &args.out_dir;
-    fs::create_dir_all(out_dir).map_err(|e| format!("create_dir_all({}): {e}", out_dir.display()))?;
+    fs::create_dir_all(out_dir)
+        .map_err(|e| format!("create_dir_all({}): {e}", out_dir.display()))?;
 
     let wav_path = out_dir.join("track.wav");
     write_silent_wav(&wav_path, args.duration_secs)?;
@@ -198,12 +199,7 @@ fn run(args: &Args) -> Result<(), String> {
     // Step 3: ship
     let ship_step = run_step(
         "ship",
-        &[
-            "-m",
-            "melosviz.cli.main",
-            "ship",
-            gen_dir.to_str().unwrap(),
-        ],
+        &["-m", "melosviz.cli.main", "ship", gen_dir.to_str().unwrap()],
         &env_offline,
         args.verbose,
     )?;
@@ -215,8 +211,8 @@ fn run(args: &Args) -> Result<(), String> {
         collect_artifacts(&deliverables_dir, &deliverables_dir, &mut deliverables)?;
     }
     let mut final_zip_entry: Option<ArtifactEntry> = None;
-    for entry in fs::read_dir(&gen_dir)
-        .map_err(|e| format!("read_dir({}): {e}", gen_dir.display()))?
+    for entry in
+        fs::read_dir(&gen_dir).map_err(|e| format!("read_dir({}): {e}", gen_dir.display()))?
     {
         let entry = entry.map_err(|e| format!("read_dir entry: {e}"))?;
         let p = entry.path();
@@ -259,7 +255,8 @@ fn write_silent_wav(path: &Path, duration_secs: f32) -> Result<(), String> {
     let block_align = channels * bits_per_sample / 8;
     let data_size = total_samples * u32::from(block_align);
     let chunk_size = 36 + data_size;
-    let mut f = fs::File::create(path).map_err(|e| format!("create wav {}: {e}", path.display()))?;
+    let mut f =
+        fs::File::create(path).map_err(|e| format!("create wav {}: {e}", path.display()))?;
     f.write_all(b"RIFF").map_err(|e| e.to_string())?;
     f.write_all(&chunk_size.to_le_bytes())
         .map_err(|e| e.to_string())?;

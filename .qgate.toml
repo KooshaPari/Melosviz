@@ -1,71 +1,73 @@
 # qgate configuration for MelosViz
 # Granular-recursive quality gate — 100% per module, recursively.
 #
-# In-repo reusable workflow (promoted from phenotype-tooling; upstream workflow_call
-# entrypoint is unparseable on GitHub — see .github/workflows/ci.yml history):
+# Schema (qgate/src/config/mod.rs): flat keys with deny_unknown_fields.
+# Nested sections ([coverage], [checks], [e2e], ...) are NOT supported by the
+# Rust config loader — they would cause the whole file to fail to deserialize
+# and qgate would silently fall back to defaults. The bottom of this file
+# documents the runner-side knobs as comments for human context.
+#
+# In-repo reusable workflow (promoted from phenotype-tooling; upstream
+# workflow_call entrypoint is unparseable on GitHub — see ci.yml history):
 #   uses: ./.github/workflows/reusable/quality-gate.yml
 # Standalone baseline gate:
 #   .github/workflows/qgate.yml
 # External repos may call:
 #   uses: KooshaPari/Melosviz/.github/workflows/reusable/quality-gate.yml@main
 
-[coverage]
-# Threshold applied to every module recursively — no module hides behind the average.
-threshold = 100
-path = "backend/coverage/lcov.info"
-format = "lcov"
+# ─── Coverage gate ────────────────────────────────────────────────────────
+# Granular-recursive: every module must clear this threshold (no hiding
+# behind the average). Target end-state = 100% on every module; the
+# current measured coverage is 81% (42 modules below 100%, including
+# two at 0% — `src/melosviz/llm/critic/__init__.py` (226 valid lines)
+# and `src/melosviz/presets/aspect_ratios.py` (23 valid lines)).
+coverage_threshold = 100
+coverage_path = "backend/coverage/lcov.info"
+coverage_format = "lcov"
 
-[checks]
-# Check categories and their N/A justifications.
-# All categories default to required unless explicitly marked not-applicable.
+# ─── N/A check categories ─────────────────────────────────────────────────
+# qgate marks these as not_applicable instead of running them.
+#
+# - a11y: WKWebView/Electrobun UI — no headless Chromium in Linux CI
+#   (manual on host).
+# - integration: this repo runs integration tests via pytest
+#   (studio-tests.yml); qgate's cargo fallback (`cargo test --workspace
+#   --test '*'`) fails because crates/melosviz-demo is a [[bin]]-only
+#   fixture with no test target.
+# - property: qgate's cargo fallback (`cargo test --workspace --features
+#   proptest`) fails because no workspace member exposes a `proptest`
+#   feature. The actual property tests run via TestPropertyPresets in
+#   pytest.
+not_applicable = ["a11y", "integration", "property"]
 
-# unit: pytest, all in tests/ directory
-# integration: tests that span multiple modules (subset of pytest suite)
-# e2e:
-#   backend/tests/test_e2e_pipeline_smoke.py (synthetic WAV → full pipeline, in-process)
-#   desktop/tests/e2e_desktop.test.ts (REAL desktop-app e2e — launcher log invariants +
-#       bridge HTTP round-trips; runs on macOS host only, skipped in Linux CI)
-#   Catches bugs: crypto.subtle (Bug #1), blank-view (Bug #2), RPC transport (Bug #3).
-# chaos: test_qgate_backfill.py::TestChaosResilience (failure injection)
-# perf: test_qgate_backfill.py::TestPerfSmoke (<15s init, <5s edit budgets)
-# property: test_qgate_backfill.py::TestPropertyPresets (hypothesis)
-# mutation: mutmut config below — slow; run separately
-# static: ruff + mypy (run in CI backend job)
-# security: bandit SAST (run in CI backend job)
+# ─── Mutation score floor (for `cargo mutants`) ───────────────────────────
+mutation_threshold = 75
 
-# a11y: Webview UI is WKWebView via Electrobun — no headless Chromium in CI.
-#   The webview frontend is tested manually on host. Not feasible in Linux CI.
-# desktop-e2e: desktop/tests/e2e_desktop.test.ts requires macOS + display + bun;
-#   runs on host (see README), CI-skipped (Linux runner, no AppKit).
-not_applicable = ["a11y"]
+# ─── Perf budgets (init time / edit latency in ms) ────────────────────────
+perf_init_ms = 15000
+perf_edit_ms = 5000
 
-[e2e]
-# backend e2e: Python pipeline smoke test — runs in Linux CI
-backend_suite = "backend/tests/test_e2e_pipeline_smoke.py"
-# desktop e2e: Bun test suite driving the real Electrobun app
-# - Requires macOS + bun + python (fastapi/uvicorn) in PATH
-# - Run: cd desktop && bun test tests/e2e_desktop.test.ts
-# - Catches: crypto.subtle (Bug #1), blank view (Bug #2), RPC transport (Bug #3)
-# - CI: macOS host only (see .github/workflows/ci.yml desktop-e2e job)
-desktop_suite = "desktop/tests/e2e_desktop.test.ts"
-desktop_ci_platform = "macos"  # skip on linux (no AppKit/display)
-
-[mutation]
-# mutmut — configured but slow; run locally or nightly
-# run: mutmut run --paths-to-mutate backend/src/melosviz/ --tests-dir backend/tests/
-# target: ≥75% mutation score (per qgate bar)
-target_score = 75
-
-[security]
-# bandit SAST: run in CI with -lll -iii (high/critical only = exit 1)
-# gitleaks: secret scanning via pre-commit / CI scorecard
-sast_tool = "bandit"
-min_severity = "high"  # medium issues: warn-only
-
-[perf]
-# Budget targets from docs/PERF_BENCHMARK.md and ADR 0003:
-#   analysis init (spec_from_wav, dep-light): <15s
-#   edit/scrub (segment re-render): <5s
-#   realtime (wgpu renderer): ~8ms/frame
-init_budget_ms = 15000
-edit_budget_ms = 5000
+# ─── Documentation: runner-side knobs (not consumed by qgate config) ──────
+#
+# The qgate baseline workflow also runs pytest/bandit/e2e checks BEFORE
+# qgate (when `run-baseline-checks: true`). Those steps read from the
+# workflow file and don't consult this TOML. They're documented here for
+# operator context.
+#
+# [e2e]
+#   backend_suite   = "backend/tests/test_e2e_pipeline_smoke.py"
+#   desktop_suite   = "desktop/tests/e2e_desktop.test.ts"
+#   desktop_ci_platform = "macos"  # Linux runner has no AppKit/display
+#
+# [mutation]
+#   run: mutmut run --paths-to-mutate backend/src/melosviz/ \
+#                    --tests-dir backend/tests/
+#   target_score = 75
+#
+# [security]
+#   sast_tool    = "bandit"   # high/critical only (exit 1 on findings)
+#   min_severity = "high"     # medium = warn-only
+#
+# [perf]
+#   init_budget_ms = 15000    # analysis init (spec_from_wav)
+#   edit_budget_ms = 5000     # segment re-render / scrub

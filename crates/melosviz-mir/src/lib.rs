@@ -230,29 +230,45 @@ mod tests {
         for k in REQUIRED_METADATA_KEYS {
             assert!(md.contains_key(*k), "missing metadata key: {k}");
         }
-        let kfs = obj.get("dense_keyframes").and_then(|v| v.as_array()).unwrap();
-        assert!(kfs.len() >= 10, "need >=10 dense keyframes, got {}", kfs.len());
+        let kfs = obj
+            .get("dense_keyframes")
+            .and_then(|v| v.as_array())
+            .unwrap();
+        assert!(
+            kfs.len() >= 10,
+            "need >=10 dense keyframes, got {}",
+            kfs.len()
+        );
         for kf in kfs {
             let kf_obj = kf.as_object().expect("dense_keyframe is object");
             for k in REQUIRED_DENSE_KEYS {
                 assert!(kf_obj.contains_key(*k), "missing dense_keyframes key: {k}");
             }
         }
-        let evs = obj.get("timeline_events").and_then(|v| v.as_array()).unwrap();
+        let evs = obj
+            .get("timeline_events")
+            .and_then(|v| v.as_array())
+            .unwrap();
         for ev in evs {
             let ev_obj = ev.as_object().expect("event is object");
             for k in REQUIRED_TIMELINE_KEYS {
                 assert!(ev_obj.contains_key(*k), "missing timeline_events key: {k}");
             }
         }
-        let segs = obj.get("scene_segments").and_then(|v| v.as_array()).unwrap();
+        let segs = obj
+            .get("scene_segments")
+            .and_then(|v| v.as_array())
+            .unwrap();
         for seg in segs {
             let seg_obj = seg.as_object().expect("scene segment is object");
             for k in REQUIRED_SCENE_KEYS {
                 assert!(seg_obj.contains_key(*k), "missing scene_segments key: {k}");
             }
         }
-        let stems = obj.get("stem_channels").and_then(|v| v.as_object()).unwrap();
+        let stems = obj
+            .get("stem_channels")
+            .and_then(|v| v.as_object())
+            .unwrap();
         assert!(!stems.is_empty(), "stem_channels must not be empty");
         for (_name, series) in stems {
             let arr = series.as_array().expect("stem series is array");

@@ -23,7 +23,7 @@ fn bench_analyze(c: &mut Criterion) {
     wav_bytes.extend_from_slice(&(sample_rate * 2).to_le_bytes()); // byte rate
     wav_bytes.extend_from_slice(&2u16.to_le_bytes()); // block align
     wav_bytes.extend_from_slice(&16u16.to_le_bytes()); // bits per sample
-    // data chunk
+                                                       // data chunk
     wav_bytes.extend_from_slice(b"data");
     wav_bytes.extend_from_slice(&(num_samples * 2).to_le_bytes());
     for _ in 0..num_samples {
