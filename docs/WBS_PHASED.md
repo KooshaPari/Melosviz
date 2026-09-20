@@ -37,7 +37,7 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P2.1 | P2 | org | Org GPG / signed-commit branch protection | W-228 · C04 L34 | planned | `CONTRIBUTING.md`; `audit/.lane-c04/C04.md` L34 | human |
 | WBS-P2.2 | P2 | org | Apple notarization + Authenticode signing | W-224 · C11 L112 · C04 | blocked | `docs/SIGNING.md`; `docs/PACKAGING.md` (needs org certs) | human |
 | WBS-P2.3 | P2 | org | IdP (OAuth/SAML) if hosted bridge ever required | C02 L21 | deferred | `audit/.lane-c02/C02.md` L21 (localhost Bearer OK today) | human |
-| WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | done | `.github/workflows/reusable/quality-gate.yml`; `.github/workflows/qgate.yml`; `.github/workflows/ci.yml` (`quality-gate` job); `.qgate.toml`; `docs/QGATE_BASELINE.md` | machine |
+| WBS-P2.4 | P2 | org | qgate reusable workflow promotion | C01 L11 | done | `.github/workflows/reusable/quality-gate.yml`; `.github/workflows/qgate.yml`; `.github/workflows/ci.yml` (`quality-gate` job); `.qgate.toml` (flat-key); `docs/QGATE_BASELINE.md`; **PR #278** (`fix(ci): repoint qgate checkout from KooshaPari/phenotype-tooling to KooshaPari/PhenoShared`) — synthetic cargo workspace, flat-key `.qgate.toml`, `not-applicable: a11y,integration,property`, coverage deferred to pytest (`--cov-fail-under=80`); run 35506900633 qgate gate PASS 12m53s | machine |
 | WBS-P2.5 | P2 | org | Phenotype registry + audit-v38 re-score after P1 | audit spine | planned | `audit/SCORECARD.md`; phenotype-org-audits | human |
 | WBS-P3.1 | P3 | project | Publish npm/crates SDK packages (beyond stubs) | C00 L2 · C11 L116 | in_progress | `docs/sdk/README.md`; `.github/workflows/publish-sdk-packages.yml`; `scripts/publish_sdk_packages.sh`; `scripts/check_sdk_pack_smoke.sh` (npm GH Packages path — PyPI/crates + first publish run still open) | machine |
 | WBS-P3.2 | P3 | project | Design-system package (shared UI package; token SoT closed under WBS-P1.12) | C10 L105 | done | `@melosviz/ui` (`packages/ui`) real component package (`Button`/`EmptyState`/`Skeleton`); `web/src/components/PlaylistPanel.tsx` + `Skeleton.tsx` import it; `web/package.json` `file:../packages/ui` — `audit/.lane-c10/C10.md` L105; `docs/VISUAL_SPEC.md`; `packages/ui/README.md` | machine |
@@ -52,6 +52,8 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | WBS-P4.5 | P4 | org | Cloud KMS/HSM for bridge tokens | C02 L22 · C01 L18 | deferred | `docs/KEY_ROTATION.md` | human |
 | WBS-P4.6 | P4 | org | Licensed real-track eval corpus | C08 | deferred | `docs/EVAL.md`; `audit/.lane-c08/C08.md` (legal) | human |
 | WBS-P4.7 | P4 | project | Global memory-cap enforcement (process RSS ceiling) | C00 L8 · G-C00-04 | done | `backend/src/melosviz/bridge/security.py` (`MemoryCapGuard`); `backend/src/melosviz/bridge/server.py`; `backend/tests/test_bridge_memory_cap.py`; `docs/ENV.md`; `docs/OBSERVABILITY.md` | machine |
+| WBS-P5.1 | P5 | project | 8-PR CI hygiene campaign (merges #208, #251, #254, #264, #265, #269, #270, #271) | C04 · C06 · C08 | done | `.mergify.yml` valid + real check names; 3 workflow files parsed; `codeql-action` v4; `actions/checkout` v7; `actions/download-artifact` v8; scorecard non-empty triggers; infisical runner not on every PR; `docs/sessions/20260920-qgate-ci-hygiene/DOSSIER.md` | machine |
+| WBS-P5.2 | P5 | project | qgate workflow unbreak (PR #278) | C01 L11 | done | `quality-gate-reusable.yml` flat-key override; `qgate.yml` `not-applicable: a11y,integration,property`; `.qgate.toml` flat schema; cargo fmt on melosviz-demo / melosviz-mir; coverage skipped at qgate, enforced by pytest; run 35506900633 PASS | machine |
 
 ## Phase intent
 
@@ -62,9 +64,10 @@ Status enum (closed): `planned` | `in_progress` | `done` | `blocked` | `deferred
 | **P2** | Org governance + certificate-backed distribution + re-audit to lock A+/92%+. |
 | **P3** | Cluster polish to clear remaining B grades (SDK, design-system package, profiler, i18n). |
 | **P4** | Explicitly deferred L-effort / out-of-scope product bets (mobile, full airgap desktop, KMS, licensed corpus); memory-cap (WBS-P4.7) and tray (WBS-P4.2) shipped this wave despite the P4 bucket. |
+| **P5** | Cross-cutting CI hygiene. The 8-PR campaign (#208, #251, #254, #264, #265, #269, #270, #271) repaired mergify, replaced deprecated actions, and made CI honest. The qgate workflow unbreak (PR #278) is the keystone — without it, the granular-recursive quality gate was unable to enforce anything. |
 
 ---
 
-`last_updated`: 2026-07-13 (p1p-qgate-ci)
+`last_updated`: 2026-09-20 (chore/dossier-fwd-wbs; PR #278 keystone landed)
 
 Machine note: `scripts/check_wbs.py` validates that every row’s **Status** is one of `planned|in_progress|done|blocked|deferred`.
