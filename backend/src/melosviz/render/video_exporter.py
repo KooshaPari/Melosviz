@@ -484,7 +484,8 @@ def _export_video_rawvideo_pipe(
         ) from exc
 
     try:
-        assert proc.stdin is not None
+        if proc.stdin is None:
+            raise RuntimeError("ffmpeg subprocess stdin is unexpectedly None")
         for rgb in frame_colors:
             proc.stdin.write(_frame_rgb24_bytes(width, height, rgb))
         proc.stdin.close()
