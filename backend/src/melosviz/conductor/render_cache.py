@@ -20,6 +20,7 @@ Cache directory layout (under .melosviz/render_cache/<storyboard_id>/):
     <fingerprint>.json   # metadata: ts, scene_index, backend, prompt_hash
     <fingerprint>.bin    # symlink or copy of the rendered artifact
 """
+
 from __future__ import annotations
 
 import copy
@@ -28,10 +29,10 @@ import json
 import os
 import shutil
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Mapping
-
+from typing import Any
 
 CACHE_ROOT_DIRNAME = ".melosviz/render_cache"
 
@@ -98,7 +99,7 @@ class SceneCacheKey:
     extra: Mapping[str, Any]
 
     @staticmethod
-    def from_scene(scene: Mapping[str, Any], backend_key: str, render_spec: Any) -> "SceneCacheKey":
+    def from_scene(scene: Mapping[str, Any], backend_key: str, render_spec: Any) -> SceneCacheKey:
         """Build a SceneCacheKey from a storyboard scene + adapter metadata."""
         continuity = scene.get("continuity") or {}
         lyric = scene.get("lyric") or {}
@@ -167,7 +168,7 @@ class RenderCache:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def for_storyboard(storyboard_id: str, root: Path | None = None) -> "RenderCache":
+    def for_storyboard(storyboard_id: str, root: Path | None = None) -> RenderCache:
         rid = (storyboard_id or "default").strip() or "default"
         safe = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in rid)
         base = (root or _cache_root()) / safe
@@ -180,7 +181,9 @@ class RenderCache:
             return target
         return None
 
-    def store(self, key: SceneCacheKey, src_artifact_path: Path, meta: Mapping[str, Any] | None = None) -> Path:
+    def store(
+        self, key: SceneCacheKey, src_artifact_path: Path, meta: Mapping[str, Any] | None = None
+    ) -> Path:
         target = self.cache_dir / f"{key.fingerprint()}.bin"
         meta_path = self.cache_dir / f"{key.fingerprint()}.json"
         src = Path(src_artifact_path)
@@ -189,7 +192,9 @@ class RenderCache:
         if src.is_file():
             shutil.copy2(src, target)
         else:
-            target.write_text(src.read_text(encoding="utf-8") if src.exists() else "", encoding="utf-8")
+            target.write_text(
+                src.read_text(encoding="utf-8") if src.exists() else "", encoding="utf-8"
+            )
         meta_obj = {
             "fingerprint": key.fingerprint(),
             "stored_at": time.time(),
@@ -240,11 +245,15 @@ def scene_cache_key(seg: dict, cache_root: Path) -> SceneCacheKey:
     """
     # Build a thin RenderSpec stand-in for from_scene — only attributes
     # the from_scene factory reads (width / height / fps) are needed.
-    spec_proxy = type("_S", (), {
-        "width": int(seg.get("width", 1920) or 1920),
-        "height": int(seg.get("height", 1080) or 1080),
-        "fps": int(seg.get("fps", 24) or 24),
-    })()
+    spec_proxy = type(
+        "_S",
+        (),
+        {
+            "width": int(seg.get("width", 1920) or 1920),
+            "height": int(seg.get("height", 1080) or 1080),
+            "fps": int(seg.get("fps", 24) or 24),
+        },
+    )()
     backend = str(seg.get("backend") or seg.get("scene_type") or "unknown")
     key = SceneCacheKey.from_scene(seg, backend, spec_proxy)
     # The rendered artifact can depend on *which* scene this is: the offline

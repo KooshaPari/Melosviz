@@ -289,9 +289,7 @@ class TestVideoExporterRemaining:
         from melosviz.render.video_exporter import export_video
 
         # palette=[] triggers the fallback
-        spec = RenderSpec(
-            metadata={"width": 2, "height": 2, "fps": 1, "duration": 0.1}, palette=[]
-        )
+        spec = RenderSpec(metadata={"width": 2, "height": 2, "fps": 1, "duration": 0.1}, palette=[])
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stderr = "error"
@@ -388,9 +386,7 @@ class TestScannerRemaining:
         from melosviz.scene.models import ScannerRotation, ScannerSpec
         from melosviz.scene.scanner import evaluate_pose
 
-        scanner = ScannerSpec(
-            scanner_id="test", rotation=ScannerRotation(bpm_locked=False)
-        )
+        scanner = ScannerSpec(scanner_id="test", rotation=ScannerRotation(bpm_locked=False))
         pose = evaluate_pose(scanner, t=0.5, bpm=120.0, beat_times=[0.0, 0.5, 1.0])
         assert pose.orbit_angle_rad >= 0.0
 
@@ -488,7 +484,7 @@ class TestAdapterRemaining:
 
         mock_bridge = MagicMock()
         mock_bridge.stream_render_spec.side_effect = RuntimeError("streaming error")
-        orig_TDBridge = bridge_mod.TDBridge
+        orig_td_bridge = bridge_mod.TDBridge
         bridge_mod.TDBridge = MagicMock(return_value=mock_bridge)
         t = None
         try:
@@ -508,7 +504,7 @@ class TestAdapterRemaining:
                 adapter = TDAdapter(bridge_config=BridgeConfig(transport="osc"))
                 adapter._start_bridge(spec)
         finally:
-            bridge_mod.TDBridge = orig_TDBridge
+            bridge_mod.TDBridge = orig_td_bridge
 
         # Wait for thread to finish
         if t is not None:
@@ -562,9 +558,7 @@ class TestAEAdapterRemaining:
             dense_keyframes=[
                 {"t": float(i) / 10, "energy": 0.9, "brightness": 0.8} for i in range(5)
             ],
-            scene_segments=[
-                {"label": "drop", "start": 0.0, "end": 0.5, "energy_mean": 0.9}
-            ],
+            scene_segments=[{"label": "drop", "start": 0.0, "end": 0.5, "energy_mean": 0.9}],
         )
         result = adapter.render(spec, output_path=tmp_path)
         assert result is not None
@@ -619,9 +613,10 @@ class TestFireflyAdapterRemaining:
 
 class TestMEAdapterRemaining:
     def test_render_with_segment_paths_non_empty(self, tmp_path):
+        from unittest.mock import patch
+
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.mediaencoder_adapter import MEAdapter
-        from unittest.mock import patch
 
         adapter = MEAdapter()
         spec = RenderSpec(metadata={"duration": 0.1})
@@ -879,9 +874,7 @@ class TestBlenderSceneDict:
             metadata={"duration": 0.2, "fps": 5, "estimated_bpm": 120.0},
             dense_keyframes=[{"t": 0.0, "energy": 0.95, "brightness": 0.9}],
             timeline_events=[{"type": "beat", "t": 0.0}, {"type": "drop", "t": 0.1}],
-            scene_segments=[
-                {"start": 0.0, "end": 0.2, "label": "drop", "energy_mean": 0.9}
-            ],
+            scene_segments=[{"start": 0.0, "end": 0.2, "label": "drop", "energy_mean": 0.9}],
         )
         result = assemble_multi_domain_scene(scanner, scene_spec, [], [], spec)
         assert isinstance(result, list)
@@ -903,9 +896,7 @@ class TestVideoExporterLine316:
         from melosviz.render.video_exporter import _generate_png_frames
 
         frames_dir = tmp_path / "frames2"
-        paths = _generate_png_frames(
-            frames_dir, frame_count=2, width=2, height=2, palette=None
-        )
+        paths = _generate_png_frames(frames_dir, frame_count=2, width=2, height=2, palette=None)
         assert len(paths) == 2
 
 
@@ -940,9 +931,9 @@ class TestBlenderExporterRemainingLines:
         with (
             patch.dict("os.environ", {"MELOSVIZ_BLENDER_BIN": ""}, clear=False),
             patch("shutil.which", return_value=None),
-            patch("melosviz.render.blender_exporter.Path") as MockPath,
+            patch("melosviz.render.blender_exporter.Path") as mock_path,
         ):
-            MockPath.return_value.exists.return_value = False
+            mock_path.return_value.exists.return_value = False
             with pytest.raises(BlenderNotFoundError):
                 _resolve_blender_binary()
 
@@ -1183,17 +1174,17 @@ class TestAudioAnalysisLines:
 
         # Call with a mock librosa that raises in find_peaks
         class MockLibrosa:
-            class beat:
+            class Beat:
                 @staticmethod
                 def beat_track(*a, **kw):
                     return (120.0, [])
 
-            class effects:
+            class Effects:
                 @staticmethod
                 def hpss(y):
                     raise Exception("no scipy")
 
-            class stft:
+            class Stft:
                 pass
 
         # _librosa_segment_boundaries expects librosa and np
@@ -1361,9 +1352,7 @@ class TestFireflyAdapterSpecific:
         adapter = FireflyAdapter()
         spec_dict = {
             "metadata": {"duration": 0.2, "fps": 10},
-            "scene_segments": [
-                {"label": "intro", "start": 0.0, "end": 0.2, "index": 0}
-            ],
+            "scene_segments": [{"label": "intro", "start": 0.0, "end": 0.2, "index": 0}],
         }
         result = adapter.render(spec_dict, output_path=tmp_path)
         assert result is not None
@@ -1479,9 +1468,7 @@ class TestBlenderSceneSpecific:
             metadata={"duration": 0.4, "fps": 5, "estimated_bpm": 120.0},
             dense_keyframes=[{"t": 0.0, "energy": 0.95}],
             timeline_events=[{"type": "beat", "t": 0.0}, {"type": "beat", "t": 0.2}],
-            scene_segments=[
-                {"start": 0.0, "end": 0.4, "label": "drop", "energy_mean": 0.95}
-            ],
+            scene_segments=[{"start": 0.0, "end": 0.4, "label": "drop", "energy_mean": 0.95}],
         )
         result = assemble_multi_domain_scene(scanner, scene_spec, [], [], spec)
         assert isinstance(result, list)
@@ -1610,9 +1597,7 @@ class TestFireflyAdapterDescriptors:
         adapter = FireflyAdapter()
         spec = RenderSpec(
             metadata={"duration": 0.3, "fps": 10},
-            dense_keyframes=[
-                {"t": 0.0, "energy": 0.2, "mood": "not-a-dict"}
-            ],  # lines 192-193
+            dense_keyframes=[{"t": 0.0, "energy": 0.2, "mood": "not-a-dict"}],  # lines 192-193
             scene_segments=[
                 {
                     "label": "intro",
@@ -1685,12 +1670,10 @@ class TestMEAdapterSpecificLines:
             patch.dict("os.environ", {}, clear=False),
             patch("shutil.which") as mock_which,
         ):
-            mock_which.side_effect = lambda name: (
-                "/fake/ame" if "ame" in name.lower() else None
-            )
-            with patch("melosviz.render.mediaencoder_adapter.Path") as MockPath:
+            mock_which.side_effect = lambda name: "/fake/ame" if "ame" in name.lower() else None
+            with patch("melosviz.render.mediaencoder_adapter.Path") as mock_path:
                 # Make env_override path not exist
-                MockPath.return_value.exists.return_value = False
+                mock_path.return_value.exists.return_value = False
                 result = _resolve_ame_binary()
         # Should return the found path or None
         assert result is not None or result is None  # just no crash
@@ -1820,9 +1803,7 @@ class TestVideoExporterLine616:
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.video_exporter import export_video
 
-        spec = RenderSpec(
-            metadata={"duration": 0.1, "fps": 5, "width": 2, "height": 2}, palette=[]
-        )
+        spec = RenderSpec(metadata={"duration": 0.1, "fps": 5, "width": 2, "height": 2}, palette=[])
         mock_result = MagicMock()
         mock_result.returncode = 0
         tmp_path / "out.mp4"
@@ -1871,9 +1852,7 @@ class TestBlenderSceneOnBeat:
             dense_keyframes=[{"t": 0.0, "energy": 0.5}, {"t": 0.05, "energy": 0.8}],
         )
         mock_frame = ChannelMaskFrame(t=0.0, channels={"MESH": 0.9})
-        with patch(
-            "melosviz.scene.blender_scene.evaluate_scanner", return_value=[mock_frame]
-        ):
+        with patch("melosviz.scene.blender_scene.evaluate_scanner", return_value=[mock_frame]):
             # transitions=[], materials=[mat] (correct order per signature)
             result = assemble_multi_domain_scene(scanner, scene_spec, [], [mat], spec)
         assert isinstance(result, list)
@@ -1903,11 +1882,7 @@ class TestBlenderSceneOnBeat:
             "timeline_events": [{"type": "beat", "t": 0.0}],
         }
         mock_frame = ChannelMaskFrame(t=0.0, channels={"MESH": 0.9})
-        with patch(
-            "melosviz.scene.blender_scene.evaluate_scanner", return_value=[mock_frame]
-        ):
+        with patch("melosviz.scene.blender_scene.evaluate_scanner", return_value=[mock_frame]):
             # transitions=[], materials=[mat]
-            result = assemble_multi_domain_scene(
-                scanner, scene_spec, [], [mat], spec_dict
-            )
+            result = assemble_multi_domain_scene(scanner, scene_spec, [], [mat], spec_dict)
         assert isinstance(result, list)

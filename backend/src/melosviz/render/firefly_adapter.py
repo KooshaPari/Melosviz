@@ -272,9 +272,7 @@ def build_firefly_job_specs(
     _height = height if height is not None else int(metadata.get("height", 1080))
 
     if not scene_segments:
-        logger.info(
-            "build_firefly_job_specs: no scene_segments in spec — returning empty list."
-        )
+        logger.info("build_firefly_job_specs: no scene_segments in spec — returning empty list.")
         return []
 
     job_specs: list[dict[str, Any]] = []
@@ -392,9 +390,7 @@ class FireflyAdapter:
 
             vp: pathlib.Path | None = None
             if output_path is not None:
-                vp = export_video(
-                    render_spec, output_dir=pathlib.Path(str(output_path))
-                )
+                vp = export_video(render_spec, output_dir=pathlib.Path(str(output_path)))
             else:
                 vp = export_video(render_spec)
             return FireflyJobResult(
@@ -414,9 +410,7 @@ class FireflyAdapter:
             out_dir = pathlib.Path(str(output_path))
             out_dir.mkdir(parents=True, exist_ok=True)
             job_specs_path = out_dir / "firefly_jobs.json"
-            job_specs_path.write_text(
-                _json.dumps(job_specs, indent=2), encoding="utf-8"
-            )
+            job_specs_path.write_text(_json.dumps(job_specs, indent=2), encoding="utf-8")
             logger.info(
                 "FireflyAdapter.render: wrote %d Firefly job specs → %s",
                 len(job_specs),

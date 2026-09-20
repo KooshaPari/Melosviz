@@ -92,9 +92,7 @@ class TestAnalyzeWithMirOrPythonErrorPaths:
             mock_json_load.side_effect = json.JSONDecodeError("Expecting", "doc", 0)
 
             with patch("melosviz.analysis.audio.spec_from_wav_rich") as mock_spec:
-                mock_spec.return_value = Mock(
-                    model_dump=Mock(return_value={"fallback": True})
-                )
+                mock_spec.return_value = Mock(model_dump=Mock(return_value={"fallback": True}))
 
                 wav_path = Path("/tmp/test.wav")
                 result = _analyze_with_mir_or_python(wav_path)
@@ -141,9 +139,7 @@ class TestAnalyzeWithMirOrPythonErrorPaths:
         """When Python analyzer returns Pydantic model, model_dump is called."""
         with patch.object(Path, "exists", return_value=False):
             mock_spec_obj = Mock()
-            mock_spec_obj.model_dump = Mock(
-                return_value={"duration": 10.5, "peaks": []}
-            )
+            mock_spec_obj.model_dump = Mock(return_value={"duration": 10.5, "peaks": []})
 
             with patch("melosviz.analysis.audio.spec_from_wav_rich") as mock_spec:
                 mock_spec.return_value = mock_spec_obj

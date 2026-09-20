@@ -17,10 +17,7 @@ class ThemePresetRegistry:
                 glow_color="#00F5FF",
                 geometry="angular",
                 mood="gritty",
-                notes=(
-                    "A moody, urban palette with deep purple shadows "
-                    "and cyan neon edges."
-                ),
+                notes=("A moody, urban palette with deep purple shadows and cyan neon edges."),
             ),
             GenreTheme.CLASSY: ThemePreset(
                 id="classy",
@@ -30,8 +27,7 @@ class ThemePresetRegistry:
                 geometry="curves",
                 mood="elegant",
                 notes=(
-                    "Warm champagne accents with smooth spline-like "
-                    "geometry and restrained motion."
+                    "Warm champagne accents with smooth spline-like geometry and restrained motion."
                 ),
             ),
             GenreTheme.ENERGETIC: ThemePreset(
@@ -65,10 +61,7 @@ class ThemePresetRegistry:
                 glow_color="#C8D2E5",
                 geometry="waves",
                 mood="gentle",
-                notes=(
-                    "Lavender, silver and soft motion curves for "
-                    "minimal deep-night sets."
-                ),
+                notes=("Lavender, silver and soft motion curves for minimal deep-night sets."),
             ),
             GenreTheme.RETRO_DISCO: ThemePreset(
                 id="retro_disco",
@@ -89,10 +82,7 @@ class ThemePresetRegistry:
                 glow_color="#CFFF00",
                 geometry="blocky",
                 mood="raw",
-                notes=(
-                    "Charcoal and high-contrast blocks with lime and "
-                    "neon-yellow spikes."
-                ),
+                notes=("Charcoal and high-contrast blocks with lime and neon-yellow spikes."),
             ),
             GenreTheme.EUPHORIA: ThemePreset(
                 id="euphoria",

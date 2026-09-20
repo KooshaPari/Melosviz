@@ -111,7 +111,7 @@ JSON schema overview (renderer-agnostic contract)::
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -134,7 +134,7 @@ class HarmonicResult(BaseModel):
     )
 
 
-class GenreTheme(str, Enum):
+class GenreTheme(StrEnum):
     """Coarse visual style buckets used by the legacy theme registry."""
 
     DARK_STREET = "dark_street"

@@ -49,9 +49,7 @@ json_values = st.recursive(
 
 @settings(max_examples=80, deadline=None)
 @given(
-    metadata=st.dictionaries(
-        st.text(min_size=1, max_size=24), json_values, max_size=10
-    ),
+    metadata=st.dictionaries(st.text(min_size=1, max_size=24), json_values, max_size=10),
     palette=st.lists(st.text(max_size=16), max_size=8),
     dense_keyframes=st.lists(
         st.dictionaries(st.text(min_size=1, max_size=16), json_values, max_size=8),
@@ -127,9 +125,7 @@ def test_wav_analysis_handles_small_valid_wavs_fuzz(
     suppress_health_check=[HealthCheck.function_scoped_fixture],
 )
 @given(payload=st.binary(max_size=512))
-def test_wav_analysis_rejects_malformed_bytes_fuzz(
-    tmp_path: Path, payload: bytes
-) -> None:
+def test_wav_analysis_rejects_malformed_bytes_fuzz(tmp_path: Path, payload: bytes) -> None:
     from melosviz.analysis.audio import analyze_wav
 
     wav = tmp_path / "malformed.wav"
@@ -209,34 +205,26 @@ class TestBridgeSpectrum:
 
 
 class TestChaosSpectrum:
-    def test_ffmpeg_missing_raises_actionable_error(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_ffmpeg_missing_raises_actionable_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from melosviz.render.video_exporter import (
             FFMpegNotFoundError,
             _resolve_ffmpeg_binary,
         )
 
         monkeypatch.delenv("MELOSVIZ_FFMPEG_BIN", raising=False)
-        monkeypatch.setattr(
-            "melosviz.render.video_exporter.shutil.which", lambda _name: None
-        )
+        monkeypatch.setattr("melosviz.render.video_exporter.shutil.which", lambda _name: None)
 
         with pytest.raises(FFMpegNotFoundError, match="ffmpeg"):
             _resolve_ffmpeg_binary()
 
-    def test_blender_missing_raises_actionable_error(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_blender_missing_raises_actionable_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from melosviz.render.blender_exporter import (
             BlenderNotFoundError,
             _resolve_blender_binary,
         )
 
         monkeypatch.delenv("MELOSVIZ_BLENDER_BIN", raising=False)
-        monkeypatch.setattr(
-            "melosviz.render.blender_exporter.shutil.which", lambda _name: None
-        )
+        monkeypatch.setattr("melosviz.render.blender_exporter.shutil.which", lambda _name: None)
         monkeypatch.setattr(Path, "exists", lambda _self: False)
 
         with pytest.raises(BlenderNotFoundError, match="Blender"):
@@ -263,9 +251,7 @@ class TestChaosSpectrum:
         fake.write_text("#!/bin/sh\nexit 1\n")
         fake.chmod(0o755)
         monkeypatch.setenv("MELOSVIZ_FFMPEG_BIN", str(fake))
-        monkeypatch.setattr(
-            "melosviz.render.video_exporter.shutil.which", lambda _name: None
-        )
+        monkeypatch.setattr("melosviz.render.video_exporter.shutil.which", lambda _name: None)
 
         def _boom(*_a, **_k):
             raise subprocess.SubprocessError("boom")

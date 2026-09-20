@@ -5,14 +5,12 @@ from __future__ import annotations
 import pytest
 
 from melosviz.llm.lyrics import (
-    LyricPhrase,
     _score_sentiment,
     align_to_segments,
     is_lyric_mood,
     parse_lrc,
     parse_lyrics_file,
 )
-
 
 # ---------------------------------------------------------------------------
 # Sentiment
@@ -124,11 +122,17 @@ class TestParseLyricsFile:
 
     def test_json_file(self, tmp_path):
         import json
+
         f = tmp_path / "song.json"
-        f.write_text(json.dumps([
-            {"text": "First line", "start": 0.0, "end": 4.0},
-            {"text": "Second line", "start": 4.0, "end": 8.0},
-        ]), encoding="utf-8")
+        f.write_text(
+            json.dumps(
+                [
+                    {"text": "First line", "start": 0.0, "end": 4.0},
+                    {"text": "Second line", "start": 4.0, "end": 8.0},
+                ]
+            ),
+            encoding="utf-8",
+        )
         phrases = parse_lyrics_file(f)
         assert len(phrases) == 2
         assert phrases[1].text == "Second line"
@@ -151,12 +155,9 @@ class TestParseLyricsFile:
 
 class TestAlignToSegments:
     def test_lyrics_snap_into_segments(self):
-        phrases = parse_lrc(
-            "[00:00.00]Line A\n[00:03.00]Line B\n[00:06.00]Line C"
-        )
+        phrases = parse_lrc("[00:00.00]Line A\n[00:03.00]Line B\n[00:06.00]Line C")
         segments = [
-            {"index": 0, "label": "verse", "start": 0.0, "end": 8.0,
-             "energy_mean": 0.5},
+            {"index": 0, "label": "verse", "start": 0.0, "end": 8.0, "energy_mean": 0.5},
         ]
         aligned = align_to_segments(phrases, segments)
         # Each phrase becomes one scene
@@ -166,12 +167,9 @@ class TestAlignToSegments:
         assert aligned[2]["lyric_text"] == "Line C"
 
     def test_short_segments_get_merged(self):
-        phrases = parse_lrc(
-            "[00:00.00]Quick\n[00:01.00]Lines\n[00:02.00]Three\n[00:03.00]Four"
-        )
+        phrases = parse_lrc("[00:00.00]Quick\n[00:01.00]Lines\n[00:02.00]Three\n[00:03.00]Four")
         segments = [
-            {"index": 0, "label": "verse", "start": 0.0, "end": 4.0,
-             "energy_mean": 0.5},
+            {"index": 0, "label": "verse", "start": 0.0, "end": 4.0, "energy_mean": 0.5},
         ]
         aligned = align_to_segments(phrases, segments, min_segment_s=2.5)
         # Lines < 2.5s should merge into their neighbour
@@ -180,15 +178,19 @@ class TestAlignToSegments:
     def test_segments_outside_lyric_window_still_appear(self):
         phrases = parse_lrc("[00:00.00]Only one\n[00:04.00]Line")
         segments = [
-            {"index": 0, "label": "intro",  "start": 0.0,  "end": 2.0},
-            {"index": 1, "label": "verse",  "start": 2.0,  "end": 4.0},
-            {"index": 2, "label": "outro",  "start": 4.0,  "end": 8.0},
+            {"index": 0, "label": "intro", "start": 0.0, "end": 2.0},
+            {"index": 1, "label": "verse", "start": 2.0, "end": 4.0},
+            {"index": 2, "label": "outro", "start": 4.0, "end": 8.0},
         ]
         aligned = align_to_segments(phrases, segments)
         # Every original segment is represented in the output
         labels = {s.get("label") for s in aligned}
-        assert "intro" in labels or any(s.get("lyric_text") for s in aligned if s.get("label") == "intro")
-        assert "outro" in labels or any(s.get("lyric_text") for s in aligned if s.get("label") == "outro")
+        assert "intro" in labels or any(
+            s.get("lyric_text") for s in aligned if s.get("label") == "intro"
+        )
+        assert "outro" in labels or any(
+            s.get("lyric_text") for s in aligned if s.get("label") == "outro"
+        )
 
     def test_segments_without_lyrics_pass_through(self):
         segments = [

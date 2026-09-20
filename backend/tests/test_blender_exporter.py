@@ -256,13 +256,9 @@ class TestApplyFlashSafety:
         values = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0] * 5
         result = apply_flash_safety(values, fps=fps)
         # Count the number of large upward transitions (>0.5 delta) remaining.
-        flash_count = sum(
-            1 for i in range(1, len(result)) if result[i] - result[i - 1] > 0.5
-        )
+        flash_count = sum(1 for i in range(1, len(result)) if result[i] - result[i - 1] > 0.5)
         max_allowed = int(len(result) / fps * FLASH_SAFETY_MAX_HZ) + 2
-        assert flash_count <= max_allowed, (
-            f"Flash count {flash_count} exceeds limit {max_allowed}"
-        )
+        assert flash_count <= max_allowed, f"Flash count {flash_count} exceeds limit {max_allowed}"
 
     def test_empty_input_returns_empty(self) -> None:
         assert apply_flash_safety([], fps=30.0) == []
@@ -550,17 +546,13 @@ class TestExportBlenderOrchestration:
         ):
             export_blender(spec, output_dir=tmp_path)
 
-    def test_no_frames_produced_raises_blender_render_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_no_frames_produced_raises_blender_render_error(self, tmp_path: Path) -> None:
         """When Blender exits 0 but produces no frames, raise BlenderRenderError."""
         spec = _make_spec()
 
         def _no_frames(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
             # Blender returns 0 but writes no frame files.
-            return subprocess.CompletedProcess(
-                args=cmd, returncode=0, stdout="", stderr=""
-            )
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
 
         with (
             patch(
@@ -612,9 +604,7 @@ class TestExportBlenderOrchestration:
         # Script uses aligned assignment: "FPS        = 24"
         assert "FPS" in script and "= 24" in script
 
-    def test_oserror_on_blender_start_raises_blender_render_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_oserror_on_blender_start_raises_blender_render_error(self, tmp_path: Path) -> None:
         spec = _make_spec()
         with (
             patch(

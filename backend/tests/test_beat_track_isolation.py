@@ -75,9 +75,7 @@ class TestNumpyBeatFallback:
 
         tolerance = 0.20 * bpm  # 20 % — autocorrelation may find a harmonic
         # Accept the estimate OR half/double (harmonic octave errors are common)
-        acceptable = any(
-            abs(estimated_bpm * mult - bpm) <= tolerance for mult in (0.5, 1.0, 2.0)
-        )
+        acceptable = any(abs(estimated_bpm * mult - bpm) <= tolerance for mult in (0.5, 1.0, 2.0))
         assert acceptable, (
             f"estimated {estimated_bpm:.1f} BPM (×0.5={estimated_bpm * 0.5:.1f}, "
             f"×2={estimated_bpm * 2:.1f}) not within 20% of {bpm} BPM"
@@ -240,9 +238,7 @@ class TestSafeBeatTrack:
         # because Python's import cache is shared).
         import multiprocessing as _mp
 
-        with mock.patch.object(
-            _mp, "get_context", side_effect=RuntimeError("mock error")
-        ):
+        with mock.patch.object(_mp, "get_context", side_effect=RuntimeError("mock error")):
             tempo, beats = _safe_beat_track(y, sr, librosa)
 
         assert isinstance(tempo, float)
@@ -277,9 +273,7 @@ class TestSpecFromWavRichRegression:
         from melosviz.analysis.audio import _try_import_librosa
 
         if _try_import_librosa() is not None:
-            assert tempo is not None, (
-                "tempo_bpm must be populated when librosa is installed"
-            )
+            assert tempo is not None, "tempo_bpm must be populated when librosa is installed"
             assert 40.0 <= tempo <= 240.0, f"tempo {tempo} out of [40, 240]"
 
     @pytest.mark.skipif(not K_WAV.exists(), reason="k.wav fixture not found")

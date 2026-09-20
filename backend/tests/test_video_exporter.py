@@ -56,9 +56,7 @@ def _make_completed(
     returncode: int = 0, stderr: str = "", stdout: str = ""
 ) -> subprocess.CompletedProcess:
     """Build a ``CompletedProcess`` instance matching what ffmpeg returns."""
-    return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stderr=stderr, stdout=stdout
-    )
+    return subprocess.CompletedProcess(args=[], returncode=returncode, stderr=stderr, stdout=stdout)
 
 
 def _fake_ffmpeg_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:
@@ -383,9 +381,7 @@ def test_export_video_ffmpeg_nonzero_exit_stderr_in_message(
         _patch_resolve(),
         patch(
             "melosviz.render.video_exporter.subprocess.run",
-            side_effect=_fake_ffmpeg_failure(
-                returncode=2, stderr="bad codec\nfake stack trace"
-            ),
+            side_effect=_fake_ffmpeg_failure(returncode=2, stderr="bad codec\nfake stack trace"),
         ),
         pytest.raises(RenderExportError) as excinfo,
     ):
@@ -592,9 +588,7 @@ def test_export_video_large_mp4_uses_rawvideo_pipe(tmp_path: Path) -> None:
     # frame count above threshold so the fast path is chosen
     frame_count = _RAWVIDEO_FRAME_THRESHOLD + 1
     duration = frame_count / 30.0
-    spec = RenderSpec(
-        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
-    )
+    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
     output_path = tmp_path / "melosviz-render.mp4"
 
     mock_proc = _make_popen_mock(returncode=0, output_path=output_path)
@@ -602,9 +596,7 @@ def test_export_video_large_mp4_uses_rawvideo_pipe(tmp_path: Path) -> None:
     with (
         _patch_resolve(),
         patch("melosviz.render.video_exporter.subprocess.run") as mock_run,
-        patch(
-            "melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc
-        ),
+        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
     ):
         result = export_video(spec, format="mp4", output_dir=tmp_path)
 
@@ -619,9 +611,7 @@ def test_export_video_large_mp4_rawvideo_cmd_shape(tmp_path: Path) -> None:
     """The rawvideo pipe ffmpeg command includes the correct demuxer and pixel format flags."""
     frame_count = _RAWVIDEO_FRAME_THRESHOLD + 10
     duration = frame_count / 30.0
-    spec = RenderSpec(
-        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
-    )
+    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
     output_path = tmp_path / "melosviz-render.mp4"
 
     popen_calls: list[list[str]] = []
@@ -743,21 +733,21 @@ def test_png_frame_gen_time_budget() -> None:
 
     from melosviz.render.video_exporter import _write_raw_png_rgb
 
-    BUDGET_MS = 5.0  # per-frame budget in milliseconds
-    WIDTH, HEIGHT = 1280, 720
+    budget_ms = 5.0  # per-frame budget in milliseconds
+    width, height = 1280, 720
 
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
         png_path = Path(f.name)
 
     try:
         t0 = time.perf_counter()
-        _write_raw_png_rgb(png_path, WIDTH, HEIGHT, (0, 245, 255))
+        _write_raw_png_rgb(png_path, width, height, (0, 245, 255))
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
     finally:
         png_path.unlink(missing_ok=True)
 
-    assert elapsed_ms < BUDGET_MS, (
-        f"PNG frame gen took {elapsed_ms:.1f} ms — exceeds {BUDGET_MS} ms budget. "
+    assert elapsed_ms < budget_ms, (
+        f"PNG frame gen took {elapsed_ms:.1f} ms — exceeds {budget_ms} ms budget. "
         f"Check that zlib.compress level is 1, not 9 (level 9 was ~30 ms/frame). "
         f"See docs/PERF_BENCHMARK.md §1b."
     )
@@ -918,9 +908,7 @@ def test_render_video_sigsegv_exit_139_is_documented(tmp_path: Path) -> None:
     """
     frame_count = _RAWVIDEO_FRAME_THRESHOLD + 5
     duration = frame_count / 30.0
-    spec = RenderSpec(
-        metadata={"width": 8, "height": 8, "fps": 30, "duration": duration}
-    )
+    spec = RenderSpec(metadata={"width": 8, "height": 8, "fps": 30, "duration": duration})
 
     # Simulate ffmpeg crashing with SIGSEGV (returncode -11 or 139).
     mock_proc = MagicMock()
@@ -930,11 +918,7 @@ def test_render_video_sigsegv_exit_139_is_documented(tmp_path: Path) -> None:
 
     with (
         _patch_resolve(),
-        patch(
-            "melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc
-        ),
-        pytest.raises(
-            RenderExportError, match="139|SIGSEGV|-11|ffmpeg rawvideo export failed"
-        ),
+        patch("melosviz.render.video_exporter.subprocess.Popen", return_value=mock_proc),
+        pytest.raises(RenderExportError, match="139|SIGSEGV|-11|ffmpeg rawvideo export failed"),
     ):
         export_video(spec, format="mp4", output_dir=tmp_path)

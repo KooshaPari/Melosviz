@@ -41,8 +41,8 @@ from melosviz.character.sheet import (
     CharacterSheet,
 )
 
-
 # ---- Exceptions --------------------------------------------------------------
+
 
 class CharacterIOError(IOError):
     """Raised when a character sheet / registry cannot be read or written.
@@ -63,6 +63,7 @@ DEFAULT_IMAGE_EXTENSIONS: tuple[str, ...] = (".png", ".jpg", ".jpeg", ".webp")
 
 # ---- YAML helper (lazy import) ----------------------------------------------
 
+
 def _yaml() -> Any:
     """Import pyyaml on first use; raises ImportError with a friendly msg.
 
@@ -80,6 +81,7 @@ def _yaml() -> Any:
 
 
 # ---- Sheet-level I/O ---------------------------------------------------------
+
 
 def _read_yaml(path: Path) -> dict[str, Any]:
     yaml = _yaml()
@@ -113,8 +115,7 @@ def _read_sheet_file(path: Path, root: Path) -> CharacterSheet:
         data = _read_json(path)
     else:
         raise CharacterIOError(
-            f"{path}: unsupported sheet extension {suffix!r} "
-            f"(expected .yaml, .yml, or .json)"
+            f"{path}: unsupported sheet extension {suffix!r} (expected .yaml, .yml, or .json)"
         )
     sheet = CharacterSheet.from_dict(data)
     # If the YAML omitted a name, fall back to the file stem. This makes
@@ -127,9 +128,7 @@ def _read_sheet_file(path: Path, root: Path) -> CharacterSheet:
     return sheet
 
 
-def _resolve_reference_paths(
-    sheet: CharacterSheet, *, source: Path, root: Path
-) -> None:
+def _resolve_reference_paths(sheet: CharacterSheet, *, source: Path, root: Path) -> None:
     """Make every ``references[slot]`` path absolute if it isn't already.
 
     Relative paths resolve against ``source.parent`` (the directory the
@@ -154,9 +153,7 @@ def _resolve_reference_paths(
         sheet.references[slot] = str(resolved)
 
 
-def _find_reference_image(
-    char_dir: Path, slot: str, extensions: tuple[str, ...]
-) -> Path | None:
+def _find_reference_image(char_dir: Path, slot: str, extensions: tuple[str, ...]) -> Path | None:
     """Return the first existing image for ``slot`` in ``char_dir``.
 
     Walks the extension list in order so ``front.png`` wins over
@@ -212,6 +209,7 @@ def _scan_directory_layout(
 
 # ---- Public API --------------------------------------------------------------
 
+
 def load_registry(
     root: str | Path,
     *,
@@ -266,14 +264,10 @@ def load_registry(
             # from the directory's images, in case the YAML omitted them.
             existing = registry.get(entry.name)
             if existing is not None:
-                _augment_references_from_dir(
-                    existing, char_dir=entry, extensions=extensions
-                )
+                _augment_references_from_dir(existing, char_dir=entry, extensions=extensions)
                 continue
         # Bare directory: synthesize a sheet from the images.
-        sheet = _scan_directory_layout(
-            entry, root=root_path, extensions=extensions
-        )
+        sheet = _scan_directory_layout(entry, root=root_path, extensions=extensions)
         if sheet.is_complete or any(sheet.references.values()):
             registry.add(sheet)
 
@@ -312,18 +306,14 @@ def save_sheet(
         raise CharacterIOError("CharacterSheet.name is required to save a sheet")
     fmt = fmt.lower().lstrip(".")
     if fmt not in ("yaml", "yml", "json"):
-        raise CharacterIOError(
-            f"unsupported format {fmt!r} (expected yaml, yml, or json)"
-        )
+        raise CharacterIOError(f"unsupported format {fmt!r} (expected yaml, yml, or json)")
 
     root_path = Path(root).expanduser()
     root_path.mkdir(parents=True, exist_ok=True)
 
     target = root_path / f"{sheet.name}.{fmt}"
     if target.exists() and not overwrite:
-        raise CharacterIOError(
-            f"{target}: file already exists (pass overwrite=True to replace)"
-        )
+        raise CharacterIOError(f"{target}: file already exists (pass overwrite=True to replace)")
 
     data = sheet.to_dict()
     if fmt in ("yaml", "yml"):
@@ -352,9 +342,7 @@ def save_registry(
     """
     written: list[Path] = []
     for sheet in registry:
-        written.append(
-            save_sheet(sheet, root, fmt=fmt, overwrite=overwrite)
-        )
+        written.append(save_sheet(sheet, root, fmt=fmt, overwrite=overwrite))
     return written
 
 

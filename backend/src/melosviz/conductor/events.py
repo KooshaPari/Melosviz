@@ -23,13 +23,14 @@ can tail or attach a UI to.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import threading
 import time
 from collections import deque
+from collections.abc import Callable, Iterator
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Deque, Iterator
-
+from typing import Any
 
 # Event states
 STATE_QUEUED = "queued"
@@ -79,7 +80,7 @@ class RenderEventBus:
     """Thread-safe in-process pub/sub for :class:`RenderEvent` records."""
 
     def __init__(self, *, buffer_size: int = 256, buffer_seconds: float = 60.0) -> None:
-        self._buffer: Deque[RenderEvent] = deque(maxlen=buffer_size)
+        self._buffer: deque[RenderEvent] = deque(maxlen=buffer_size)
         self._subscribers: list[Callable[[RenderEvent], None]] = []
         self._lock = threading.Lock()
         self._buffer_seconds = buffer_seconds
@@ -120,13 +121,15 @@ class RenderEventBus:
             self._buffer.append(evt)
             subs = list(self._subscribers)
         for sub in subs:
-            try:
+            with contextlib.suppress(
+                Exception
+            ):  # pragma: no cover - subscriber errors must not break the bus
                 sub(evt)
-            except Exception:  # pragma: no cover - subscriber errors must not break the bus
-                pass
         return evt
 
-    def emit_queued(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "") -> RenderEvent:
+    def emit_queued(
+        self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = ""
+    ) -> RenderEvent:
         return self.emit(
             job_id=job_id,
             scene_index=scene_index,
@@ -137,7 +140,16 @@ class RenderEventBus:
             progress=0.0,
         )
 
-    def emit_rendering(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", progress: float = 0.05) -> RenderEvent:
+    def emit_rendering(
+        self,
+        *,
+        job_id: str,
+        scene_index: int,
+        scene_name: str,
+        scene_type: str,
+        backend: str = "",
+        progress: float = 0.05,
+    ) -> RenderEvent:
         return self.emit(
             job_id=job_id,
             scene_index=scene_index,
@@ -148,7 +160,18 @@ class RenderEventBus:
             progress=progress,
         )
 
-    def emit_done(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", duration_ms: float = 0.0, artifact_path: str = "", extras: dict[str, Any] | None = None) -> RenderEvent:
+    def emit_done(
+        self,
+        *,
+        job_id: str,
+        scene_index: int,
+        scene_name: str,
+        scene_type: str,
+        backend: str = "",
+        duration_ms: float = 0.0,
+        artifact_path: str = "",
+        extras: dict[str, Any] | None = None,
+    ) -> RenderEvent:
         return self.emit(
             job_id=job_id,
             scene_index=scene_index,
@@ -162,7 +185,17 @@ class RenderEventBus:
             extras=extras,
         )
 
-    def emit_error(self, *, job_id: str, scene_index: int, scene_name: str, scene_type: str, backend: str = "", error: str = "", duration_ms: float = 0.0) -> RenderEvent:
+    def emit_error(
+        self,
+        *,
+        job_id: str,
+        scene_index: int,
+        scene_name: str,
+        scene_type: str,
+        backend: str = "",
+        error: str = "",
+        duration_ms: float = 0.0,
+    ) -> RenderEvent:
         return self.emit(
             job_id=job_id,
             scene_index=scene_index,
@@ -181,12 +214,11 @@ class RenderEventBus:
         """Register a callback; returns an unsubscribe function."""
         with self._lock:
             self._subscribers.append(callback)
+
         def _unsub() -> None:
-            with self._lock:
-                try:
-                    self._subscribers.remove(callback)
-                except ValueError:
-                    pass
+            with self._lock, contextlib.suppress(ValueError):
+                self._subscribers.remove(callback)
+
         return _unsub
 
     # --- replay ---------------------------------------------------------

@@ -9,13 +9,9 @@ plus a sibling ``<fingerprint>.json`` with the render metadata.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
-import pytest
-
 from melosviz.conductor.render_cache import (
-    CACHE_ROOT_DIRNAME,
     RenderCache,
     SceneCacheKey,
 )
@@ -23,8 +19,10 @@ from melosviz.conductor.render_cache import (
 
 def _render_spec_stub(width: int = 1920, height: int = 1080, fps: int = 24):
     """Minimal stand-in for an analysis.models.RenderSpec."""
+
     class _RS:
         pass
+
     rs = _RS()
     rs.width = width
     rs.height = height
@@ -68,6 +66,7 @@ def _make_artifact(tmp_path: Path, scene_index: int, payload: str = "rendered-by
 # SceneCacheKey
 # ---------------------------------------------------------------------------
 
+
 def test_scene_cache_key_is_stable_for_same_scene():
     spec = _render_spec_stub()
     s = _make_scene()
@@ -92,8 +91,12 @@ def test_scene_cache_key_changes_when_camera_changes():
 
 def test_scene_cache_key_changes_when_palette_changes():
     spec = _render_spec_stub()
-    k1 = SceneCacheKey.from_scene(_make_scene(palette=["#0d0d10", "#ff2bd6"]), "comfyui_image", spec)
-    k2 = SceneCacheKey.from_scene(_make_scene(palette=["#0d0d10", "#22d3ee"]), "comfyui_image", spec)
+    k1 = SceneCacheKey.from_scene(
+        _make_scene(palette=["#0d0d10", "#ff2bd6"]), "comfyui_image", spec
+    )
+    k2 = SceneCacheKey.from_scene(
+        _make_scene(palette=["#0d0d10", "#22d3ee"]), "comfyui_image", spec
+    )
     assert k1.fingerprint() != k2.fingerprint()
 
 
@@ -114,11 +117,15 @@ def test_scene_cache_key_changes_when_backend_changes():
 def test_scene_cache_key_changes_when_resolution_changes():
     spec = _render_spec_stub()
     s1 = _make_scene()
-    s1.pop("width", None); s1.pop("height", None); s1.pop("fps", None)
+    s1.pop("width", None)
+    s1.pop("height", None)
+    s1.pop("fps", None)
     k1 = SceneCacheKey.from_scene(s1, "comfyui_image", spec)
     spec2 = _render_spec_stub(width=3840, height=2160, fps=30)
     s2 = _make_scene()
-    s2.pop("width", None); s2.pop("height", None); s2.pop("fps", None)
+    s2.pop("width", None)
+    s2.pop("height", None)
+    s2.pop("fps", None)
     k2 = SceneCacheKey.from_scene(s2, "comfyui_image", spec2)
     assert k1.fingerprint() != k2.fingerprint()
 
@@ -143,6 +150,7 @@ def test_scene_cache_key_handles_missing_seed():
 # RenderCache
 # ---------------------------------------------------------------------------
 
+
 def test_render_cache_for_storyboard_creates_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("MELOSVIZ_RENDER_CACHE_ROOT", str(tmp_path))
     cache = RenderCache.for_storyboard("neon-tide")
@@ -165,7 +173,9 @@ def test_render_cache_store_then_lookup_hits(tmp_path, monkeypatch):
 
     src = _make_artifact(tmp_path, 0)
     key = SceneCacheKey.from_scene(_make_scene(), "comfyui_image", spec)
-    stored = cache.store(key, src, meta={"scene_index": 0, "scene_name": "intro", "storyboard_id": "neon-tide"})
+    stored = cache.store(
+        key, src, meta={"scene_index": 0, "scene_name": "intro", "storyboard_id": "neon-tide"}
+    )
 
     assert stored.exists()
     assert stored.read_text() == "rendered-bytes"
@@ -180,10 +190,13 @@ def test_render_cache_sibling_metadata_json(tmp_path, monkeypatch):
     spec = _render_spec_stub()
     src = _make_artifact(tmp_path, 0)
     key = SceneCacheKey.from_scene(_make_scene(seed=7), "comfyui_image", spec)
-    stored = cache.store(key, src, meta={"scene_index": 0, "scene_name": "intro", "storyboard_id": "neon-tide"})
+    stored = cache.store(
+        key, src, meta={"scene_index": 0, "scene_name": "intro", "storyboard_id": "neon-tide"}
+    )
     meta_path = stored.with_suffix(".json")
     assert meta_path.exists()
     import json
+
     meta = json.loads(meta_path.read_text())
     assert meta["fingerprint"] == key.fingerprint()
     assert meta["seed"] == 7
@@ -199,7 +212,9 @@ def test_render_cache_stats(tmp_path, monkeypatch):
     for i in range(3):
         src = _make_artifact(tmp_path, i, payload=f"bytes-{i}")
         # Vary the prompt per index so each SceneCacheKey is distinct
-        key = SceneCacheKey.from_scene(_make_scene(index=i, prompt=f"neon underwater city {i}"), "comfyui_image", spec)
+        key = SceneCacheKey.from_scene(
+            _make_scene(index=i, prompt=f"neon underwater city {i}"), "comfyui_image", spec
+        )
         cache.store(key, src, meta={"scene_index": i})
     stats = cache.stats()
     assert stats["stored"] == 3

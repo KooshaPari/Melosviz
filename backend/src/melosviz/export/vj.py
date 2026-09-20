@@ -16,18 +16,19 @@ VJ software compatibility
   numbers so the DJ can sync their set to the exact beats baked into
   the visuals.
 """
+
 from __future__ import annotations
 
 import html
 import json
-import math
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Iterable, Sequence
 
 
 def _json_files(root: Path) -> list[Path]:
     return sorted(
-        path for path in root.rglob("*.json")
+        path
+        for path in root.rglob("*.json")
         if "deliverables" not in path.parts and "vj" not in path.parts
     )
 
@@ -48,15 +49,8 @@ def _normalize_shot(raw: dict, fallback_index: int) -> dict:
     extra = raw.get("extra") if isinstance(raw.get("extra"), dict) else {}
     scene_index = int(raw.get("scene_index", raw.get("index", fallback_index)))
     shot_index = int(raw.get("shot_index", 0))
-    start = float(
-        raw.get("start")
-        or raw.get("start_seconds")
-        or extra.get("start_seconds")
-        or 0.0
-    )
-    duration = float(
-        raw.get("duration_s") or raw.get("duration") or extra.get("duration_s") or 0.0
-    )
+    start = float(raw.get("start") or raw.get("start_seconds") or extra.get("start_seconds") or 0.0)
+    duration = float(raw.get("duration_s") or raw.get("duration") or extra.get("duration_s") or 0.0)
     if duration <= 0 and raw.get("end") is not None:
         duration = max(0.0, float(raw["end"]) - start)
     if duration <= 0 and extra.get("end_seconds") is not None:
@@ -116,7 +110,7 @@ def discover_shots(job_dir: Path, media_paths: Sequence[Path]) -> list[dict]:
             values = payload.get(key)
             if not (isinstance(values, list) and values):
                 continue
-            for index, value in enumerate(values):
+            for _index, value in enumerate(values):
                 if not isinstance(value, dict):
                     continue
                 shot = _normalize_shot(value, len(candidates))
@@ -128,8 +122,7 @@ def discover_shots(job_dir: Path, media_paths: Sequence[Path]) -> list[dict]:
     if candidates:
         return candidates
     provenance = [
-        payload for payload in objects
-        if "artifact_path" in payload and "scene_index" in payload
+        payload for payload in objects if "artifact_path" in payload and "scene_index" in payload
     ]
     if provenance:
         for index, value in enumerate(provenance):
@@ -141,9 +134,7 @@ def discover_shots(job_dir: Path, media_paths: Sequence[Path]) -> list[dict]:
             candidates.append(shot)
         if candidates:
             return candidates
-    for index, path in enumerate(
-        sorted(media_paths, key=lambda p: p.as_posix())
-    ):
+    for index, path in enumerate(sorted(media_paths, key=lambda p: p.as_posix())):
         shot = _normalize_shot({"index": index, "label": path.stem}, index)
         candidates.append(shot)
     return candidates
@@ -160,9 +151,7 @@ def _svg(shot: dict) -> str:
     for beat in shot["beats"]:
         relative = (beat - shot["start"]) / duration
         x = 64 + round(max(0.0, min(1.0, relative)) * 832, 3)
-        beat_lines.append(
-            f'<line x1="{x}" y1="455" x2="{x}" y2="500" stroke="#ffffff" />'
-        )
+        beat_lines.append(f'<line x1="{x}" y1="455" x2="{x}" y2="500" stroke="#ffffff" />')
     swatches = "".join(
         f'<rect x="{64 + index * 96}" y="300" width="80" height="80" '
         f'fill="{html.escape(color, quote=True)}" />'
@@ -177,9 +166,9 @@ def _svg(shot: dict) -> str:
         f'<text x="64" y="176" fill="#ffffff" font-size="20">{prompt}</text>\n'
         f"{swatches}\n"
         '<line x1="64" y1="480" x2="896" y2="480" stroke="#888899" />\n'
-        f'{"".join(beat_lines)}\n'
+        f"{''.join(beat_lines)}\n"
         f'<text x="64" y="525" fill="#ccccd8" font-size="16">'
-        f'{shot["start"]:.3f}s + {duration:.3f}s</text>\n'
+        f"{shot['start']:.3f}s + {duration:.3f}s</text>\n"
         "</svg>\n"
     )
 
@@ -204,7 +193,7 @@ def _lottie(shot: dict) -> dict:
     markers.append({"tm": frames, "cm": "shot-end", "dr": 0})
     color = (shot["palette"] or ["#7c6af7"])[0]
     rgb = (
-        [int(color[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        [int(color[i : i + 2], 16) / 255 for i in (1, 3, 5)]
         if len(color) == 7 and color.startswith("#")
         else [0.486, 0.416, 0.969]
     )
@@ -215,7 +204,7 @@ def _lottie(shot: dict) -> dict:
         "op": frames,
         "w": shot["width"],
         "h": shot["height"],
-        "nm": f'shot-{shot["scene_index"]:04d}-{shot["shot_index"]:02d}',
+        "nm": f"shot-{shot['scene_index']:04d}-{shot['shot_index']:02d}",
         "ddd": 0,
         "assets": [],
         "layers": [
@@ -232,13 +221,15 @@ def _lottie(shot: dict) -> dict:
                     "a": {"a": 0, "k": [0, 0, 0]},
                     "s": {"a": 0, "k": [100, 100, 100]},
                 },
-                "shapes": [{
-                    "ty": "fl",
-                    "c": {"a": 0, "k": [*rgb, 1]},
-                    "o": {"a": 0, "k": 100},
-                    "r": 1,
-                    "nm": "palette-fill",
-                }],
+                "shapes": [
+                    {
+                        "ty": "fl",
+                        "c": {"a": 0, "k": [*rgb, 1]},
+                        "o": {"a": 0, "k": 100},
+                        "r": 1,
+                        "nm": "palette-fill",
+                    }
+                ],
                 "ip": 0,
                 "op": frames,
                 "st": 0,
@@ -258,21 +249,25 @@ def _lottie(shot: dict) -> dict:
                     "s": {"a": 0, "k": [100, 100, 100]},
                 },
                 "t": {
-                    "d": {"k": [{
-                        "s": {
-                            "sz": [shot["width"] - 128, 180],
-                            "ps": [0, 0],
-                            "s": 48,
-                            "f": "Arial",
-                            "t": shot["label"][:80],
-                            "j": 0,
-                            "tr": 0,
-                            "lh": 58,
-                            "ls": 0,
-                            "fc": [1, 1, 1],
-                        },
-                        "t": 0,
-                    }]},
+                    "d": {
+                        "k": [
+                            {
+                                "s": {
+                                    "sz": [shot["width"] - 128, 180],
+                                    "ps": [0, 0],
+                                    "s": 48,
+                                    "f": "Arial",
+                                    "t": shot["label"][:80],
+                                    "j": 0,
+                                    "tr": 0,
+                                    "lh": 58,
+                                    "ls": 0,
+                                    "fc": [1, 1, 1],
+                                },
+                                "t": 0,
+                            }
+                        ]
+                    },
                     "p": {},
                     "m": {"g": 1, "a": {"a": 0, "k": [0, 0]}},
                 },
@@ -295,21 +290,25 @@ def _lottie(shot: dict) -> dict:
                     "s": {"a": 0, "k": [100, 100, 100]},
                 },
                 "t": {
-                    "d": {"k": [{
-                        "s": {
-                            "sz": [shot["width"] - 128, 280],
-                            "ps": [0, 0],
-                            "s": 28,
-                            "f": "Arial",
-                            "t": " ".join(shot["prompt"].split())[:180],
-                            "j": 0,
-                            "tr": 0,
-                            "lh": 36,
-                            "ls": 0,
-                            "fc": [1, 1, 1],
-                        },
-                        "t": 0,
-                    }]},
+                    "d": {
+                        "k": [
+                            {
+                                "s": {
+                                    "sz": [shot["width"] - 128, 280],
+                                    "ps": [0, 0],
+                                    "s": 28,
+                                    "f": "Arial",
+                                    "t": " ".join(shot["prompt"].split())[:180],
+                                    "j": 0,
+                                    "tr": 0,
+                                    "lh": 36,
+                                    "ls": 0,
+                                    "fc": [1, 1, 1],
+                                },
+                                "t": 0,
+                            }
+                        ]
+                    },
                     "p": {},
                     "m": {"g": 1, "a": {"a": 0, "k": [0, 0]}},
                 },
@@ -355,13 +354,10 @@ def export_vj_cues(shots: Iterable[dict], output_dir: Path) -> list[Path]:
     used_stems: dict[str, int] = {}
     for raw in shots:
         shot = _normalize_shot(raw, len(written))
-        stem = f'shot-{shot["scene_index"]:04d}-{shot["shot_index"]:02d}'
+        stem = f"shot-{shot['scene_index']:04d}-{shot['shot_index']:02d}"
         count = used_stems.get(stem, 0)
         used_stems[stem] = count + 1
-        if count == 0:
-            disk_stem = stem
-        else:
-            disk_stem = f"{stem}-{count:02d}"
+        disk_stem = stem if count == 0 else f"{stem}-{count:02d}"
         svg_path = output_dir / f"{disk_stem}.svg"
         lottie_path = output_dir / f"{disk_stem}.lottie.json"
         svg_path.write_text(_svg(shot), encoding="utf-8")
@@ -372,11 +368,16 @@ def export_vj_cues(shots: Iterable[dict], output_dir: Path) -> list[Path]:
         written.extend([svg_path, lottie_path])
     manifest = output_dir / "manifest.json"
     manifest.write_text(
-        json.dumps({
-            "schema_version": "1.0",
-            "cue_count": len(written) // 2,
-            "files": [p.name for p in written],
-        }, sort_keys=True, indent=2) + "\n",
+        json.dumps(
+            {
+                "schema_version": "1.0",
+                "cue_count": len(written) // 2,
+                "files": [p.name for p in written],
+            },
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     written.append(manifest)

@@ -23,18 +23,14 @@ from melosviz.analysis.models import RenderSpec
 
 # ---- shared strategies (keep leaf sizes small for CI speed) ---------------
 
-_finite = st.floats(
-    min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False
-)
+_finite = st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False)
 _unit = st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False)
 _hex_color = st.from_regex(r"#[0-9a-fA-F]{6}", fullmatch=True)
 _easing = st.sampled_from(["linear", "ease_in", "ease_out", "ease_in_out"])
 _scene_label = st.sampled_from(
     ["intro", "verse", "chorus", "drop", "bridge", "breakdown", "outro", "unknown"]
 )
-_camera_language = st.sampled_from(
-    ["steady_cam", "slow_push", "orbit_drift", "cut_frenzy"]
-)
+_camera_language = st.sampled_from(["steady_cam", "slow_push", "orbit_drift", "cut_frenzy"])
 
 
 @st.composite
@@ -103,11 +99,7 @@ def scene_segments(draw: st.DrawFn) -> list[dict[str, object]]:
     segs: list[dict[str, object]] = []
     t = 0.0
     for i in range(n):
-        dur = draw(
-            st.floats(
-                min_value=0.1, max_value=32.0, allow_nan=False, allow_infinity=False
-            )
-        )
+        dur = draw(st.floats(min_value=0.1, max_value=32.0, allow_nan=False, allow_infinity=False))
         end = t + dur
         segs.append(
             {
@@ -118,9 +110,7 @@ def scene_segments(draw: st.DrawFn) -> list[dict[str, object]]:
                 "energy_mean": draw(_unit),
                 "brightness_mean": draw(_unit),
                 "mood": {"valence": draw(_unit), "arousal": draw(_unit)},
-                "dominant_stem": draw(
-                    st.sampled_from(["drums", "bass", "vocals", "other"])
-                ),
+                "dominant_stem": draw(st.sampled_from(["drums", "bass", "vocals", "other"])),
                 "camera_language": draw(_camera_language),
             }
         )
@@ -170,13 +160,9 @@ def camera_path(draw: st.DrawFn) -> list[dict[str, object]]:
 
 
 @given(
-    duration=st.floats(
-        min_value=0.1, max_value=600, allow_nan=False, allow_infinity=False
-    ),
+    duration=st.floats(min_value=0.1, max_value=600, allow_nan=False, allow_infinity=False),
     fps=st.integers(min_value=1, max_value=120),
-    bpm=st.floats(
-        min_value=40.0, max_value=240.0, allow_nan=False, allow_infinity=False
-    ),
+    bpm=st.floats(min_value=40.0, max_value=240.0, allow_nan=False, allow_infinity=False),
     palette=st.lists(_hex_color, min_size=0, max_size=8),
 )
 @settings(max_examples=40, deadline=None)

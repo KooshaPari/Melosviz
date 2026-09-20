@@ -36,11 +36,14 @@ The bridge ships with five defense layers installed by default:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
+import json as _json
 import os
 import sys
 import uuid
 from pathlib import Path
+from typing import Annotated
 
 # ---------------------------------------------------------------------------
 # Attempt FastAPI import; if absent, print a helpful message and exit so the
@@ -52,9 +55,7 @@ try:
     from fastapi import FastAPI, File, HTTPException, Request, UploadFile
     from fastapi.responses import PlainTextResponse
     from pydantic import BaseModel, model_validator
-except (
-    ImportError
-):  # pragma: no cover — only reachable without [bridge] extras installed
+except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
         "Install with:  pip install 'melosviz[bridge]'\n"
@@ -142,7 +143,7 @@ class AnalyzeRequest(BaseModel):
     audio_path: str | None = None
 
     @model_validator(mode="after")
-    def _require_audio_path(self) -> "AnalyzeRequest":
+    def _require_audio_path(self) -> AnalyzeRequest:
         if not self.wav_path and not self.audio_path:
             raise ValueError("Either wav_path or audio_path is required")
         return self
@@ -249,22 +250,14 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
     """
     # Attempt Rust MIR first — look in standard cargo build output locations
     mir_candidates = [
-        Path(__file__).parent.parent.parent.parent
-        / "target"
-        / "release"
-        / "melosviz-mir",
-        Path(__file__).parent.parent.parent.parent
-        / "target"
-        / "debug"
-        / "melosviz-mir",
+        Path(__file__).parent.parent.parent.parent / "target" / "release" / "melosviz-mir",
+        Path(__file__).parent.parent.parent.parent / "target" / "debug" / "melosviz-mir",
     ]
 
     for mir_binary in mir_candidates:
         if mir_binary.exists():
             try:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".json", delete=False
-                ) as tmp:
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
                     tmp_spec_path = tmp.name
                 try:
                     subprocess.run(
@@ -294,9 +287,7 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
                 # Log but continue to Python fallback
                 import logging
 
-                logging.warning(
-                    f"[MelosViz] Rust MIR failed: {e}; using Python fallback"
-                )
+                logging.warning(f"[MelosViz] Rust MIR failed: {e}; using Python fallback")
                 continue
 
     # Fallback to Python analyzer (rich MIR path when librosa available)
@@ -323,11 +314,7 @@ def _analyze_with_mir_or_python(wav_path: Path) -> dict:
 
     # beat_times: extract from timeline_events where type == "beat"
     data["beat_times"] = sorted(
-        [
-            float(ev["t"])
-            for ev in data.get("timeline_events", [])
-            if ev.get("type") == "beat"
-        ]
+        [float(ev["t"]) for ev in data.get("timeline_events", []) if ev.get("type") == "beat"]
     )
 
     return data
@@ -378,9 +365,7 @@ def _check_inside(path_str: str) -> Path:
     except (OSError, RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=f"invalid path: {exc}") from exc
     # Legacy desktop mode: auth off AND no explicit allowed-dir override.
-    legacy = not security.auth_required() and not os.environ.get(
-        "MELOSVIZ_BRIDGE_ALLOWED_DIR"
-    )
+    legacy = not security.auth_required() and not os.environ.get("MELOSVIZ_BRIDGE_ALLOWED_DIR")
     if legacy:
         return target
     if not security.is_path_allowed(target):
@@ -401,7 +386,7 @@ def _enforce_memory_cap(request: Request) -> None:
     """
     try:
         memory_cap.check()
-    except security.MemoryCapExceeded as exc:
+    except security.MemoryCapExceededError as exc:
         status = 503 if exc.tier == "hard" else 429
         ip = request.client.host if request.client else "unknown"
         security.append_audit(
@@ -420,9 +405,7 @@ def _enforce_memory_cap(request: Request) -> None:
             }
         )
         headers = {"Retry-After": "30"} if status == 429 else None
-        raise HTTPException(
-            status_code=status, detail=str(exc), headers=headers
-        ) from exc
+        raise HTTPException(status_code=status, detail=str(exc), headers=headers) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -452,9 +435,7 @@ async def metrics() -> str:
         lines.append("# HELP melosviz_memory_rss_mb Current bridge process RSS (MiB)")
         lines.append("# TYPE melosviz_memory_rss_mb gauge")
         lines.append(f"melosviz_memory_rss_mb {rss:.1f}")
-    lines.append(
-        "# HELP melosviz_memory_cap_mb Configured hard memory cap (MiB); 0 = disabled"
-    )
+    lines.append("# HELP melosviz_memory_cap_mb Configured hard memory cap (MiB); 0 = disabled")
     lines.append("# TYPE melosviz_memory_cap_mb gauge")
     lines.append(f"melosviz_memory_cap_mb {max(memory_cap.hard_cap_mb, 0)}")
     return "\n".join(lines) + "\n"
@@ -501,7 +482,7 @@ async def analyze(req: AnalyzeRequest, request: Request) -> str:
         tp = None  # request-scoped traceparent already applied by middleware
         with render_quota.slot(), obs.span("analyze", traceparent=tp, wav=str(wav)):
             data = _guarded_analyze(wav)
-    except security.QuotaExceeded as exc:
+    except security.QuotaExceededError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
@@ -515,9 +496,7 @@ _UPLOAD_SUFFIXES = frozenset({".wav", ".wave", ".mp3", ".flac", ".ogg", ".m4a", 
 
 
 @app.post("/upload")
-async def upload_audio(
-    request: Request, file: UploadFile = File(...)
-) -> dict[str, str]:
+async def upload_audio(request: Request, file: Annotated[UploadFile, File()]) -> dict[str, str]:
     """Stream a browser-uploaded audio file into the allowed data directory.
 
     Returns ``{"wav_path": "<absolute path>"}`` for use with ``POST /analyze``.
@@ -580,7 +559,7 @@ async def build(req: BuildRequest, request: Request) -> str:
             # assemble_render_plan expects a RenderSpec object, not a dict
             # For now, we'll pass the dict directly and let assemble_render_plan handle it
             plan = assemble_render_plan(spec_data, mock_adapters=True)
-    except security.QuotaExceeded as exc:
+    except security.QuotaExceededError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
@@ -612,7 +591,7 @@ async def render(req: RenderRequest, request: Request) -> str:
             # Use mock_adapters=False to attempt real adapters; they fail-open to mocks
             # if Blender / TouchDesigner are absent.
             plan = assemble_render_plan(spec_data, mock_adapters=False)
-    except security.QuotaExceeded as exc:
+    except security.QuotaExceededError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except HTTPException:
         raise
@@ -703,11 +682,16 @@ async def studio_storyboard(req: StudioStoryboardRequest, request: Request) -> s
         os.environ["MELOSVIZ_DIRECTOR_DISABLE"] = "1"
 
     cmd: list[str] = [
-        "storyboard", str(wav),
-        "--concept", req.concept,
-        "--bpm", str(req.bpm),
-        "--palette", req.palette,
-        "--out", str(out),
+        "storyboard",
+        str(wav),
+        "--concept",
+        req.concept,
+        "--bpm",
+        str(req.bpm),
+        "--palette",
+        req.palette,
+        "--out",
+        str(out),
     ]
     if req.aspect_ratio:
         cmd += ["--aspect-ratio", req.aspect_ratio]
@@ -759,9 +743,12 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
     # so every per-scene event the orchestrator emits lands under that job_id and
     # the Director's Console SSE stream can subscribe to per-pipeline progress.
     cli_args: list[str] = [
-        "generate", str(wav),
-        "--storyboard", str(sb),
-        "--out", str(out),
+        "generate",
+        str(wav),
+        "--storyboard",
+        str(sb),
+        "--out",
+        str(out),
     ]
     if req.job_id:
         cli_args += ["--job-id", req.job_id]
@@ -885,7 +872,7 @@ async def studio_ship(req: StudioShipRequest, request: Request) -> str:
 
 
 @app.post("/api/studio/direct")
-async def studio_direct(req: "StudioDirectRequest", request: Request):
+async def studio_direct(req: StudioDirectRequest, request: Request):
     """Edit one scene's prompt / camera / name and (optionally) re-render.
 
     Body:
@@ -974,7 +961,7 @@ async def studio_direct(req: "StudioDirectRequest", request: Request):
 
 
 @app.post("/api/studio/validate")
-async def studio_validate(req: "StudioValidateRequest", request: Request):
+async def studio_validate(req: StudioValidateRequest, request: Request):
     """Validate a storyboard JSON for completeness and consistency.
 
     Returns ``StoryboardValidationReport`` JSON:
@@ -1002,9 +989,6 @@ async def studio_validate(req: "StudioValidateRequest", request: Request):
 # ---------------------------------------------------------------------------
 # SSE — live render queue events (queued / rendering / done / error per scene)
 # ---------------------------------------------------------------------------
-
-import asyncio
-import json as _json
 
 
 @app.get("/api/render/events")
@@ -1055,9 +1039,7 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
 
 
 @app.get("/api/render/events/recent")
-async def render_events_recent(
-    job_id: str | None = None, since_ms: int = 0
-) -> dict[str, object]:
+async def render_events_recent(job_id: str | None = None, since_ms: int = 0) -> dict[str, object]:
     """JSON snapshot of buffered events for clients that don't want SSE.
 
     Returns the same shape the SSE stream emits, in a single response. Useful

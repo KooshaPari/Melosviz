@@ -28,23 +28,13 @@ packages are installed; the dep-light stdlib path is always available.
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import os
-import shlex
-import shutil
-import subprocess
 import sys
 import time
 from pathlib import Path
-
-from melosviz.cli.partial_rerender import (
-    DEFAULT_NEIGHBORS,
-    MAX_NEIGHBORS,
-    parse_neighbor_policy,
-    resolve_only_scenes,
-)
-from typing import Optional
 
 
 class _CliReferenceImageError(RuntimeError):
@@ -57,7 +47,7 @@ class _CliReferenceImageError(RuntimeError):
     """
 
 
-def _resolve_reference_image(args: argparse.Namespace, *, cmd: str) -> Optional[Path]:
+def _resolve_reference_image(args: argparse.Namespace, *, cmd: str) -> Path | None:
     """Validate ``--reference-image`` on the CLI and return an expanded Path.
 
     Implements the v2 (WBS-2) validation rule for the
@@ -267,7 +257,7 @@ def _cmd_storyboard(args: argparse.Namespace) -> int:
     # typo'd path aborts the command instead of silently threading a
     # broken path through every scene.
     try:
-        ref_path = _resolve_reference_image(args, cmd="storyboard")
+        _resolve_reference_image(args, cmd="storyboard")
     except _CliReferenceImageError as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -286,7 +276,10 @@ def _cmd_storyboard(args: argparse.Namespace) -> int:
         try:
             lyrics = parse_lyrics_file(args.lyrics)
         except Exception as exc:
-            print(t("cli.error.lyrics_parse_failed", path=args.lyrics, error=str(exc)), file=sys.stderr)
+            print(
+                t("cli.error.lyrics_parse_failed", path=args.lyrics, error=str(exc)),
+                file=sys.stderr,
+            )
             return 1
 
     # Optional mood board — extract palette + style from 1-5 reference
@@ -358,7 +351,10 @@ def _cmd_storyboard(args: argparse.Namespace) -> int:
             target = out_path / "storyboard.json"
             target.write_text(out)
             out_path = target
-        print(t("cli.msg.storyboard_written", path=out_path, scenes=len(board.scenes)), file=sys.stderr)
+        print(
+            t("cli.msg.storyboard_written", path=out_path, scenes=len(board.scenes)),
+            file=sys.stderr,
+        )
     else:
         print(out)
     return 0
@@ -451,8 +447,8 @@ def _cmd_direct(args: argparse.Namespace) -> int:
     # that scene (plus any neighbor scenes the conductor is configured to
     # re-derive from the edit).
     re_render_invoked = False
-    re_render_cmd: Optional[str] = None
-    re_render_output: Optional[str] = None
+    re_render_cmd: str | None = None
+    re_render_output: str | None = None
     if getattr(args, "re_render", False):
         wav = getattr(args, "wav", None)
         if not wav:
@@ -529,13 +525,9 @@ def _cmd_direct(args: argparse.Namespace) -> int:
     }
     if re_render_invoked:
         summary["re_render_output"] = re_render_output
-        summary["orchestrator_envelope"] = (
-            orchestrator_envelope
-            if "orchestrator_envelope" in locals()
-            else None
-        )
     print(json.dumps(summary, indent=2, default=str))
     return 0
+
 
 def _cmd_generate(args: argparse.Namespace) -> int:
     """Run ComfyUI / C4D / Unreal / AE per scene based on a storyboard."""
@@ -616,10 +608,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     # dispatching to adapters. CLI overrides take precedence over
     # storyboard-level forwards, then the storyboard forwards take
     # precedence over spec defaults.
-    char_root = (
-        getattr(args, "character_root", None)
-        or spec_dict.get("character_root")
-    )
+    char_root = getattr(args, "character_root", None) or spec_dict.get("character_root")
     char_names = getattr(args, "character", None) or spec_dict.get("characters")
     if char_root:
         spec_dict["character_root"] = str(Path(char_root).expanduser())
@@ -629,6 +618,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     # Re-validate spec via the v2 schema if possible
     try:
         from melosviz.analysis.models import RenderSpec
+
         spec = RenderSpec.model_validate(spec_dict)
     except Exception:
         spec = type("Spec", (), {"model_dump": lambda self: spec_dict, "__iter__": iter(())})
@@ -638,16 +628,12 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     # Parse --only-scenes "1,3,5" -> {1,3,5}
     only_scenes = None
     if getattr(args, "only_scenes", None):
-        only_scenes = {
-            int(tok.strip()) for tok in args.only_scenes.split(",") if tok.strip()
-        }
+        only_scenes = {int(tok.strip()) for tok in args.only_scenes.split(",") if tok.strip()}
     orchestrator = Orchestrator(
         output_dir=out_dir,
         job_id=job_id,
         only_scenes=only_scenes,
-        character_root=(
-            Path(char_root).expanduser() if char_root else None
-        ),
+        character_root=(Path(char_root).expanduser() if char_root else None),
     )
     if char_names:
         orchestrator.set_active_characters(tuple(char_names))
@@ -678,10 +664,10 @@ def _cmd_character(args: argparse.Namespace) -> int:
     given).
     """
     from melosviz.character import (
+        REFERENCE_SLOTS,
         CharacterSheet,
         load_registry,
         save_sheet,
-        REFERENCE_SLOTS,
     )
     from melosviz.i18n import t
 
@@ -760,7 +746,6 @@ def _cmd_character(args: argparse.Namespace) -> int:
 
 def _cmd_assemble(args: argparse.Namespace) -> int:
     """Concat per-scene clips into a master timeline via MediaEncoder / ffmpeg."""
-    import os
 
     from melosviz.i18n import t
 
@@ -804,7 +789,6 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         build_assemble_effects_plan,
     )
 
-    sb_path: Path | None = None
     sb_dict: dict = {}
     for plan_path in plan_paths:
         try:
@@ -812,7 +796,6 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         except Exception:
             continue
         if isinstance(payload, dict) and isinstance(payload.get("scenes"), list):
-            sb_path = plan_path
             sb_dict = payload
             break
 
@@ -831,6 +814,7 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         InterpolationEngine,
         build_interpolation_bridge_for_assemble,
     )
+
     try:
         scene_paths: dict[str, Path] = {}
         for p in segment_paths:
@@ -849,7 +833,7 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         else:
             InterpolationEngine(out_dir=interp_dir)
     except Exception as _exc:
-        LOG.debug("interpolation bridge step skipped: %s", _exc)
+        print(f"interpolation bridge step skipped: {_exc}", file=sys.stderr)
 
     # ---- Offline mode: just emit an assembly plan ------------------------
     if os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == "1" or not segment_paths:
@@ -857,16 +841,14 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
             "assembler": "ffmpeg_concat",
             "mode": "offline" if os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == "1" else "stub",
             "output_dir": str(target),
-            "expected_inputs": [
-                {"scene": p.parent.name, "plan": str(p)} for p in plan_paths
-            ],
+            "expected_inputs": [{"scene": p.parent.name, "plan": str(p)} for p in plan_paths],
             "segment_count": len(segment_paths),
             "rendered_segment_count": len(segment_paths),
             "effects_plan": str(effects_path),
             "ffmpeg_cmd": (
-                'ffmpeg -f concat -safe 0 '
-                '-i <segments.txt> -c copy -shortest '
-                f'{target}/rough_cut.mp4'
+                "ffmpeg -f concat -safe 0 "
+                "-i <segments.txt> -c copy -shortest "
+                f"{target}/rough_cut.mp4"
             ),
             "next_steps": [
                 "Install ComfyUI / Cinema 4D / After Effects and run without offline mode to produce real clips.",
@@ -879,6 +861,7 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         return 0
 
     from melosviz.render.mediaencoder_adapter import MEAdapter
+
     adapter = MEAdapter()
     try:
         result = adapter.render(None, output_path=target.parent, segment_paths=segment_paths)  # type: ignore[arg-type]
@@ -886,13 +869,18 @@ def _cmd_assemble(args: argparse.Namespace) -> int:
         print(t("cli.error.assemble_failed", error=str(exc)), file=sys.stderr)
         return 1
 
-    print(json.dumps({"rough_cut": str(target / "rough_cut.mp4"), "adapter_result": str(result)}, indent=2, default=str))
+    print(
+        json.dumps(
+            {"rough_cut": str(target / "rough_cut.mp4"), "adapter_result": str(result)},
+            indent=2,
+            default=str,
+        )
+    )
     return 0
 
 
 def _cmd_master(args: argparse.Namespace) -> int:
     """DaVinci Resolve colour + audio mix + master encode."""
-    import os
 
     from melosviz.i18n import t
 
@@ -922,10 +910,18 @@ def _cmd_master(args: argparse.Namespace) -> int:
         plan.setdefault(
             "deliverables_planned",
             [
-                {"path": str(out_dir / "festival_prores.mov"), "codec": "ProRes 422 HQ", "use": "festival"},
+                {
+                    "path": str(out_dir / "festival_prores.mov"),
+                    "codec": "ProRes 422 HQ",
+                    "use": "festival",
+                },
                 {"path": str(out_dir / "club_h264.mp4"), "codec": "H.264", "use": "club screens"},
                 {"path": str(out_dir / "youtube_h264.mp4"), "codec": "H.264", "use": "YouTube"},
-                {"path": str(out_dir / "audio_master.wav"), "codec": "PCM 24-bit 48k", "use": "audio stems"},
+                {
+                    "path": str(out_dir / "audio_master.wav"),
+                    "codec": "PCM 24-bit 48k",
+                    "use": "audio stems",
+                },
                 {"path": str(out_dir / "captions.srt"), "codec": "SRT", "use": "captions"},
             ],
         )
@@ -981,9 +977,7 @@ def _cmd_master(args: argparse.Namespace) -> int:
             "deliverables": [deliverable],
             "log": match.log,
         }
-        (out_dir / "master_plan.json").write_text(
-            json.dumps(plan, indent=2, default=str)
-        )
+        (out_dir / "master_plan.json").write_text(json.dumps(plan, indent=2, default=str))
         print(json.dumps(plan, indent=2, default=str))
         print(
             t(
@@ -1003,7 +997,8 @@ def _cmd_master(args: argparse.Namespace) -> int:
 
     # ---- Online: ffmpeg loudnorm + stems (when available), else Resolve ----
     try:
-        from melosviz.render.audio_finishing import ffmpeg_available, run_master as run_master_ffmpeg
+        from melosviz.render.audio_finishing import ffmpeg_available
+        from melosviz.render.audio_finishing import run_master as run_master_ffmpeg
 
         if ffmpeg_available() and (lufs_target or export_stems_flag):
             plan = run_master_ffmpeg(
@@ -1138,8 +1133,13 @@ def main(argv: list[str] | None = None) -> None:
     p_sb.add_argument(
         "--aspect-ratio",
         choices=[
-            "festival_16x9_4k", "youtube_16x9_1080p", "club_9x16",
-            "ig_9x16", "instagram_1x1", "cinema_21x9", "vertical_4x5",
+            "festival_16x9_4k",
+            "youtube_16x9_1080p",
+            "club_9x16",
+            "ig_9x16",
+            "instagram_1x1",
+            "cinema_21x9",
+            "vertical_4x5",
         ],
         default=None,
         help=t("cli.arg.aspect_ratio.help"),
@@ -1161,8 +1161,11 @@ def main(argv: list[str] | None = None) -> None:
         help=t("cli.arg.reference_image.help"),
     )
     p_sb.add_argument(
-        "--mood-board", nargs="*", metavar="IMG",
-        default=None, help=t("cli.arg.moodboard.help"),
+        "--mood-board",
+        nargs="*",
+        metavar="IMG",
+        default=None,
+        help=t("cli.arg.moodboard.help"),
     )
     p_sb.add_argument(
         "--character-root",
@@ -1193,8 +1196,9 @@ def main(argv: list[str] | None = None) -> None:
     p_gen = sub.add_parser("generate", help=t("cli.generate.help"))
     p_gen.add_argument("wav", help=t("cli.arg.wav.help"))
     p_gen.add_argument("--concept", default="abstract music visual", help=t("cli.arg.concept.help"))
-    p_gen.add_argument("--storyboard", metavar="FILE", default=None,
-                       help=t("cli.arg.storyboard.help"))
+    p_gen.add_argument(
+        "--storyboard", metavar="FILE", default=None, help=t("cli.arg.storyboard.help")
+    )
     p_gen.add_argument("--bpm", type=float, default=None, help=t("cli.arg.bpm.help"))
     p_gen.add_argument("--key", default=None, help=t("cli.arg.key.help"))
     p_gen.add_argument("--seed", type=int, default=None, help=t("cli.arg.seed.help"))
@@ -1354,10 +1358,8 @@ def main(argv: list[str] | None = None) -> None:
     # ---- melosviz ship --------------------------------------------------------
     p_ship = sub.add_parser("ship", help=t("cli.ship.help"))
     p_ship.add_argument("job_dir", help=t("cli.arg.job_dir.help"))
-    p_ship.add_argument("--bundle-name", default=None,
-                        help=t("cli.ship.arg.bundle_name.help"))
-    p_ship.add_argument("--bundle-output", default=None,
-                        help=t("cli.ship.arg.bundle_output.help"))
+    p_ship.add_argument("--bundle-name", default=None, help=t("cli.ship.arg.bundle_name.help"))
+    p_ship.add_argument("--bundle-output", default=None, help=t("cli.ship.arg.bundle_output.help"))
 
     # ---- melosviz direct (art-director single-scene edit) ---------------------
     p_direct = sub.add_parser(
@@ -1366,24 +1368,27 @@ def main(argv: list[str] | None = None) -> None:
         description=t("cli.direct.description"),
     )
     p_direct.add_argument("storyboard", help=t("cli.direct.arg.storyboard.help"))
-    p_direct.add_argument("--scene-index", type=int, required=True,
-                          help=t("cli.direct.arg.scene_index.help"))
-    p_direct.add_argument("--replace-prompt", default=None,
-                          help=t("cli.direct.arg.replace_prompt.help"))
-    p_direct.add_argument("--replace-camera", default=None,
-                          help=t("cli.direct.arg.replace_camera.help"))
-    p_direct.add_argument("--replace-name", default=None,
-                          help=t("cli.direct.arg.replace_name.help"))
-    p_direct.add_argument("--re-render", action="store_true",
-                          help=t("cli.direct.arg.re_render.help"))
-    p_direct.add_argument("--render-out", default=None,
-                          help=t("cli.direct.arg.render_out.help"))
-    p_direct.add_argument("--render-offline", action="store_true",
-                          help=t("cli.direct.arg.render_offline.help"))
-    p_direct.add_argument("--wav", default=None,
-                          help=t("cli.direct.arg.wav.help"))
-    p_direct.add_argument("--out", default=None,
-                          help=t("cli.direct.arg.out.help"))
+    p_direct.add_argument(
+        "--scene-index", type=int, required=True, help=t("cli.direct.arg.scene_index.help")
+    )
+    p_direct.add_argument(
+        "--replace-prompt", default=None, help=t("cli.direct.arg.replace_prompt.help")
+    )
+    p_direct.add_argument(
+        "--replace-camera", default=None, help=t("cli.direct.arg.replace_camera.help")
+    )
+    p_direct.add_argument(
+        "--replace-name", default=None, help=t("cli.direct.arg.replace_name.help")
+    )
+    p_direct.add_argument(
+        "--re-render", action="store_true", help=t("cli.direct.arg.re_render.help")
+    )
+    p_direct.add_argument("--render-out", default=None, help=t("cli.direct.arg.render_out.help"))
+    p_direct.add_argument(
+        "--render-offline", action="store_true", help=t("cli.direct.arg.render_offline.help")
+    )
+    p_direct.add_argument("--wav", default=None, help=t("cli.direct.arg.wav.help"))
+    p_direct.add_argument("--out", default=None, help=t("cli.direct.arg.out.help"))
     p_direct.add_argument(
         "--reference-image",
         metavar="PATH",

@@ -1,4 +1,5 @@
 """Tests for the VJ export module (SVG cues + Lottie markers)."""
+
 from __future__ import annotations
 
 import json
@@ -8,18 +9,24 @@ from melosviz.export.vj import discover_shots, export_vj_cues
 
 
 def test_discover_shots_prefers_multi_shot_plan(tmp_path: Path) -> None:
-    (tmp_path / "plan.json").write_text(json.dumps({
-        "shots": [{
-            "scene_index": 2,
-            "shot_index": 1,
-            "duration_s": 4.0,
-            "prompt": "hero <wide>",
-            "camera_motion": "orbit",
-        }]
-    }))
-    (tmp_path / "storyboard.json").write_text(json.dumps({
-        "scenes": [{"index": 9, "duration": 8.0, "prompt": "fallback"}]
-    }))
+    (tmp_path / "plan.json").write_text(
+        json.dumps(
+            {
+                "shots": [
+                    {
+                        "scene_index": 2,
+                        "shot_index": 1,
+                        "duration_s": 4.0,
+                        "prompt": "hero <wide>",
+                        "camera_motion": "orbit",
+                    }
+                ]
+            }
+        )
+    )
+    (tmp_path / "storyboard.json").write_text(
+        json.dumps({"scenes": [{"index": 9, "duration": 8.0, "prompt": "fallback"}]})
+    )
     shots = discover_shots(tmp_path, [])
     # Multi-shot plan entries come first; storyboard scenes are appended
     # so no shots are silently dropped.
@@ -37,17 +44,25 @@ def test_discover_shots_aggregates_across_multiple_plan_files(
     unique (scene_index, shot_index) is preserved, with the earlier
     source winning on collision."""
 
-    (tmp_path / "plan_a.json").write_text(json.dumps({
-        "shots": [
-            {"scene_index": 1, "shot_index": 0, "prompt": "alpha"},
-            {"scene_index": 1, "shot_index": 1, "prompt": "beta"},
-        ]
-    }))
-    (tmp_path / "plan_b.json").write_text(json.dumps({
-        "shots": [
-            {"scene_index": 2, "shot_index": 0, "prompt": "gamma"},
-        ]
-    }))
+    (tmp_path / "plan_a.json").write_text(
+        json.dumps(
+            {
+                "shots": [
+                    {"scene_index": 1, "shot_index": 0, "prompt": "alpha"},
+                    {"scene_index": 1, "shot_index": 1, "prompt": "beta"},
+                ]
+            }
+        )
+    )
+    (tmp_path / "plan_b.json").write_text(
+        json.dumps(
+            {
+                "shots": [
+                    {"scene_index": 2, "shot_index": 0, "prompt": "gamma"},
+                ]
+            }
+        )
+    )
     shots = discover_shots(tmp_path, [])
     prompts = [shot["prompt"] for shot in shots]
     assert "alpha" in prompts
@@ -63,41 +78,65 @@ def test_export_vj_cues_deduplicates_colliding_keys(tmp_path: Path) -> None:
     cue lands on disk."""
 
     shots = [
-        {"scene_index": 1, "shot_index": 0, "start": 0.0, "duration_s": 2.0,
-         "label": "first", "prompt": "a", "camera_motion": "static",
-         "palette": ["#ff00aa"], "beats": [0.0], "width": 1920,
-         "height": 1080, "fps": 24},
-        {"scene_index": 1, "shot_index": 0, "start": 2.0, "duration_s": 2.0,
-         "label": "second", "prompt": "b", "camera_motion": "static",
-         "palette": ["#00ffee"], "beats": [2.0], "width": 1920,
-         "height": 1080, "fps": 24},
+        {
+            "scene_index": 1,
+            "shot_index": 0,
+            "start": 0.0,
+            "duration_s": 2.0,
+            "label": "first",
+            "prompt": "a",
+            "camera_motion": "static",
+            "palette": ["#ff00aa"],
+            "beats": [0.0],
+            "width": 1920,
+            "height": 1080,
+            "fps": 24,
+        },
+        {
+            "scene_index": 1,
+            "shot_index": 0,
+            "start": 2.0,
+            "duration_s": 2.0,
+            "label": "second",
+            "prompt": "b",
+            "camera_motion": "static",
+            "palette": ["#00ffee"],
+            "beats": [2.0],
+            "width": 1920,
+            "height": 1080,
+            "fps": 24,
+        },
     ]
     paths = export_vj_cues(shots, tmp_path / "vj")
     names = sorted(p.name for p in paths if p.name != "manifest.json")
     # First keeps the canonical stem; second gets a -01 suffix.
-    assert names == sorted([
-        "shot-0001-00-01.lottie.json",
-        "shot-0001-00-01.svg",
-        "shot-0001-00.lottie.json",
-        "shot-0001-00.svg",
-    ])
+    assert names == sorted(
+        [
+            "shot-0001-00-01.lottie.json",
+            "shot-0001-00-01.svg",
+            "shot-0001-00.lottie.json",
+            "shot-0001-00.svg",
+        ]
+    )
 
 
 def test_export_vj_cues_writes_deterministic_svg_and_lottie(tmp_path: Path) -> None:
-    shots = [{
-        "scene_index": 1,
-        "shot_index": 2,
-        "start": 10.0,
-        "duration_s": 4.0,
-        "label": "chorus & drop",
-        "prompt": "hero <wide>",
-        "camera_motion": "orbit",
-        "palette": ["#ff00aa", "#00ffee"],
-        "beats": [10.0, 12.0, 14.0],
-        "width": 1920,
-        "height": 1080,
-        "fps": 24,
-    }]
+    shots = [
+        {
+            "scene_index": 1,
+            "shot_index": 2,
+            "start": 10.0,
+            "duration_s": 4.0,
+            "label": "chorus & drop",
+            "prompt": "hero <wide>",
+            "camera_motion": "orbit",
+            "palette": ["#ff00aa", "#00ffee"],
+            "beats": [10.0, 12.0, 14.0],
+            "width": 1920,
+            "height": 1080,
+            "fps": 24,
+        }
+    ]
     first = export_vj_cues(shots, tmp_path / "vj")
     svg_path = tmp_path / "vj" / "shot-0001-02.svg"
     lottie_path = tmp_path / "vj" / "shot-0001-02.lottie.json"
@@ -113,35 +152,41 @@ def test_export_vj_cues_writes_deterministic_svg_and_lottie(tmp_path: Path) -> N
     assert lottie["op"] == 96
     assert {layer["ty"] for layer in lottie["layers"]} == {4, 5}
     assert any(
-        layer.get("t", {}).get("d", {}).get("k", [{}])[0].get("s", {}).get("t")
-        == "chorus & drop"
+        layer.get("t", {}).get("d", {}).get("k", [{}])[0].get("s", {}).get("t") == "chorus & drop"
         for layer in lottie["layers"]
         if layer["ty"] == 5
     )
     assert any(
-        layer.get("t", {}).get("d", {}).get("k", [{}])[0].get("s", {}).get("t")
-        == "hero <wide>"
+        layer.get("t", {}).get("d", {}).get("k", [{}])[0].get("s", {}).get("t") == "hero <wide>"
         for layer in lottie["layers"]
         if layer["ty"] == 5
     )
     assert [marker["cm"] for marker in lottie["markers"]] == [
-        "shot-start", "beat-000", "beat-001", "beat-002", "shot-end"
+        "shot-start",
+        "beat-000",
+        "beat-001",
+        "beat-002",
+        "shot-end",
     ]
 
 
 def test_discover_shots_reads_provenance_timing(tmp_path: Path) -> None:
     sidecar = tmp_path / "clip.mp4.provenance.json"
-    sidecar.write_text(json.dumps({
-        "artifact_path": str(tmp_path / "clip.mp4"),
-        "scene_index": 3,
-        "scene_name": "bridge",
-        "prompt": "type morph",
-        "extra": {
-            "start_seconds": 12.0,
-            "end_seconds": 16.0,
-            "beat_seconds": [12.0, 14.0, 16.0],
-        },
-    }))
+    sidecar.write_text(
+        json.dumps(
+            {
+                "artifact_path": str(tmp_path / "clip.mp4"),
+                "scene_index": 3,
+                "scene_name": "bridge",
+                "prompt": "type morph",
+                "extra": {
+                    "start_seconds": 12.0,
+                    "end_seconds": 16.0,
+                    "beat_seconds": [12.0, 14.0, 16.0],
+                },
+            }
+        )
+    )
     shots = discover_shots(tmp_path, [])
     assert len(shots) == 1
     assert shots[0]["scene_index"] == 3

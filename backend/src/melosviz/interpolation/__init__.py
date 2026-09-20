@@ -1,4 +1,5 @@
 """Interpolation engine — fluid scene-to-scene cuts via RIFE / FILM / FlowMatching + ffmpeg minterpolate fallback."""
+
 from .engine import (
     INTERPOLATION_PRIORITY,
     InterpolationBackend,

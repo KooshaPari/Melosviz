@@ -212,9 +212,7 @@ class TestDepLightAmplitudeEnvelope:
             "the dep-light path must compute real RMS, not return [0.5]*n"
         )
 
-    def test_segment_energy_varies_across_segments_dep_light(
-        self, tmp_path: Path
-    ) -> None:
+    def test_segment_energy_varies_across_segments_dep_light(self, tmp_path: Path) -> None:
         """test_segment_energy_varies_across_segments must pass WITHOUT librosa."""
         from melosviz.analysis.audio import analyze_wav_rich
 

@@ -63,9 +63,7 @@ class TestRemapSceneSegments:
     def test_cinematic_differs_from_default(self) -> None:
         default = remap_scene_segments(_sample_segments())
         cinematic = remap_scene_segments(_sample_segments(), preset_name="cinematic")
-        assert [s["scene_template"] for s in default] != [
-            s["scene_template"] for s in cinematic
-        ]
+        assert [s["scene_template"] for s in default] != [s["scene_template"] for s in cinematic]
 
 
 class TestBuildShotKeyframes:

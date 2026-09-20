@@ -125,9 +125,7 @@ def resolve_render_binary() -> str:
     if env_bin:
         env_path = Path(env_bin)
         if env_path.is_file() and os.access(env_path, os.X_OK):
-            logger.info(
-                "melosviz-render resolved from %s: %s", WGPU_BINARY_ENV_VAR, env_bin
-            )
+            logger.info("melosviz-render resolved from %s: %s", WGPU_BINARY_ENV_VAR, env_bin)
             return str(env_path)
         raise WgpuNotAvailableError(
             f"{WGPU_BINARY_ENV_VAR} is set to {env_bin!r} but the file does not "
@@ -308,8 +306,7 @@ def render_frame_bytes(
                 )
             raise WgpuExportError(
                 f"melosviz-render export-frame failed (exit code {result.returncode}) "
-                f"for frame {frame_index}.\nstderr:\n"
-                + "\n".join(stderr_text.splitlines()[-10:])
+                f"for frame {frame_index}.\nstderr:\n" + "\n".join(stderr_text.splitlines()[-10:])
             )
 
         rgba_bytes = result.stdout

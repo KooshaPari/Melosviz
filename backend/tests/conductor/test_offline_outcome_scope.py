@@ -49,39 +49,25 @@ class _NoOfflineBranchAdapter:
 
 def _render(tmp_path: Path, scene_type: str, adapter: Any, monkeypatch) -> dict:
     monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, scene_type, adapter)
-    spec = {
-        "scene_segments": [
-            {"scene_index": 0, "scene_name": "s0", "scene_type": scene_type}
-        ]
-    }
-    orch = Orchestrator(
-        output_dir=tmp_path / "out", skip_assembly=True, auto_offline=False
-    )
+    spec = {"scene_segments": [{"scene_index": 0, "scene_name": "s0", "scene_type": scene_type}]}
+    orch = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True, auto_offline=False)
     orch.render(spec)
     sidecar = next((tmp_path / "out").rglob("*.provenance.json"))
     return json.loads(sidecar.read_text(encoding="utf-8"))
 
 
-def test_non_image_comfyui_scene_is_labelled_offline(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_non_image_comfyui_scene_is_labelled_offline(tmp_path: Path, monkeypatch) -> None:
     """Regression: comfyui_video offline was reported as a real render."""
     monkeypatch.setenv(OFFLINE_ENV, "1")
-    payload = _render(
-        tmp_path, "comfyui_video", _OfflineCapableAdapter, monkeypatch
-    )
+    payload = _render(tmp_path, "comfyui_video", _OfflineCapableAdapter, monkeypatch)
     assert payload["extra"]["outcome"] == "offline-placeholder", (
         f"offline-produced scene labelled {payload['extra']['outcome']!r}"
     )
 
 
-def test_adapter_without_offline_branch_still_reports_render(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_adapter_without_offline_branch_still_reports_render(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv(OFFLINE_ENV, "1")
-    payload = _render(
-        tmp_path, "video_export", _NoOfflineBranchAdapter, monkeypatch
-    )
+    payload = _render(tmp_path, "video_export", _NoOfflineBranchAdapter, monkeypatch)
     assert payload["extra"]["outcome"] == "render", (
         f"adapter without an offline branch labelled {payload['extra']['outcome']!r}"
     )
@@ -132,9 +118,7 @@ def test_single_path_result_is_surfaced_not_labelled_unavailable(
     )
 
 
-def test_plan_only_adapter_is_labelled_job_spec_only(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_plan_only_adapter_is_labelled_job_spec_only(tmp_path: Path, monkeypatch) -> None:
     """A plan with no media is ``job-spec-only``, not a render claim."""
     monkeypatch.setenv(OFFLINE_ENV, "1")
     payload = _render(tmp_path, "c4d_3d", _PlanOnlyAdapter, monkeypatch)

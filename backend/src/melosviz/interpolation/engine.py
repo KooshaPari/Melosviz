@@ -11,16 +11,17 @@ Writes a per-scene-pair manifest JSON when only the fallback is used, so
 the operator can rerun the interpolation step with a real AI backend once
 it's installed.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import shutil
 import subprocess
-from dataclasses import dataclass, field, asdict
-from enum import Enum
+from collections.abc import Sequence
+from dataclasses import asdict, dataclass, field
+from enum import StrEnum
 from pathlib import Path
-from typing import Sequence
 
 LOG = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ INTERPOLATION_PRIORITY: list[str] = [
 ]
 
 
-class InterpolationMethod(str, Enum):
+class InterpolationMethod(StrEnum):
     """Available interpolation backends."""
 
     RIFE = "rife"
@@ -43,7 +44,7 @@ class InterpolationMethod(str, Enum):
     FFMPEG_MINTERPOLATE = "ffmpeg_minterpolate"
 
 
-class InterpolationBackend(str, Enum):
+class InterpolationBackend(StrEnum):
     """Alias for InterpolationMethod (some tests import both names)."""
 
     RIFE = "rife"
@@ -96,6 +97,7 @@ class InterpolationSchedule:
 # Backend detection
 # ---------------------------------------------------------------------------
 
+
 def _has_rife() -> bool:
     return shutil.which("rife-ncnn-vulkan") is not None
 
@@ -103,6 +105,7 @@ def _has_rife() -> bool:
 def _has_film() -> bool:
     try:
         import film_net  # noqa: F401
+
         return True
     except Exception:
         return shutil.which("film-interpolate") is not None
@@ -155,16 +158,16 @@ def list_backends() -> list[str]:
     out: list[str] = []
     seen: set[str] = set()
     for name in INTERPOLATION_PRIORITY:
-        if name == "rife" and _has_rife():
-            out.append(name)
-            seen.add(name)
-        elif name == "film" and _has_film():
-            out.append(name)
-            seen.add(name)
-        elif name == "flow_matching" and _has_flow_matching():
-            out.append(name)
-            seen.add(name)
-        elif name == "ffmpeg_minterpolate" and _has_ffmpeg():
+        if (
+            name == "rife"
+            and _has_rife()
+            or name == "film"
+            and _has_film()
+            or name == "flow_matching"
+            and _has_flow_matching()
+            or name == "ffmpeg_minterpolate"
+            and _has_ffmpeg()
+        ):
             out.append(name)
             seen.add(name)
     # De-dup while preserving priority order.
@@ -174,6 +177,7 @@ def list_backends() -> list[str]:
 # ---------------------------------------------------------------------------
 # Schedule builder
 # ---------------------------------------------------------------------------
+
 
 def build_interpolation_schedule(
     scene_names: Sequence[str],
@@ -201,15 +205,14 @@ def build_interpolation_schedule(
         return []
     if len(scene_names) < 2:
         raise ValueError(
-            "build_interpolation_schedule requires at least 2 scene names when "
-            "insertion_count > 0 (got %d scenes, count=%d)"
-            % (len(scene_names), insertion_count)
+            f"build_interpolation_schedule requires at least 2 scene names when "
+            f"insertion_count > 0 (got {len(scene_names)} scenes, count={insertion_count})"
         )
 
     pairs: list[ScenePair] = []
     if insertion_position == "before" and scene_names:
         first = scene_names[0]
-        for i in range(insertion_count):
+        for _i in range(insertion_count):
             pairs.append(
                 ScenePair(
                     from_scene=first,
@@ -222,7 +225,7 @@ def build_interpolation_schedule(
             )
     for i in range(len(scene_names) - 1):
         a, b = scene_names[i], scene_names[i + 1]
-        for j in range(insertion_count):
+        for _j in range(insertion_count):
             pairs.append(
                 ScenePair(
                     from_scene=a,
@@ -236,7 +239,7 @@ def build_interpolation_schedule(
     if insertion_position == "after" and scene_names:
         last = scene_names[-1]
         last_idx = len(scene_names) - 1
-        for i in range(insertion_count):
+        for _i in range(insertion_count):
             pairs.append(
                 ScenePair(
                     from_scene=last,
@@ -254,6 +257,7 @@ def build_interpolation_schedule(
 # Per-pair renderer (ffmpeg minterpolate fallback + manifest fallback)
 # ---------------------------------------------------------------------------
 
+
 def _ffmpeg_minterpolate_cmd(
     ffmpeg_bin: str,
     from_path: Path,
@@ -263,10 +267,9 @@ def _ffmpeg_minterpolate_cmd(
     fps: int = 24,
 ) -> list[str]:
     """Build the ffmpeg argv for motion-compensated minterpolate."""
-    mi_frames = max(1, int(frames_to_insert))
+    max(1, int(frames_to_insert))
     filter_chain = (
-        f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:"
-        f"me=epzs:vsbmc=1[outv]"
+        f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1[outv]"
     )
     return [
         ffmpeg_bin,
@@ -418,9 +421,7 @@ def interpolate_pair(
             "manifest": str(manifest),
         }
 
-    cmd = _ffmpeg_minterpolate_cmd(
-        ffmpeg_bin, from_path, to_path, out_mp4, frames_to_insert, fps
-    )
+    cmd = _ffmpeg_minterpolate_cmd(ffmpeg_bin, from_path, to_path, out_mp4, frames_to_insert, fps)
     LOG.debug("ffmpeg minterpolate: %s", " ".join(cmd))
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -433,9 +434,7 @@ def interpolate_pair(
             "output_path": None,
         }
     if proc.returncode != 0:
-        LOG.warning(
-            "ffmpeg returned %d: %s", proc.returncode, proc.stderr[-400:]
-        )
+        LOG.warning("ffmpeg returned %d: %s", proc.returncode, proc.stderr[-400:])
         return {
             "status": "error",
             "stderr": proc.stderr[-400:],
@@ -447,15 +446,14 @@ def interpolate_pair(
         "backend": "ffmpeg_minterpolate",
         "frames_inserted": frames_to_insert,
         "output_path": str(out_mp4),
-        "ffmpeg_filter": (
-            "minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc".format(fps=fps)
-        ),
+        "ffmpeg_filter": (f"minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc"),
     }
 
 
 # ---------------------------------------------------------------------------
 # Orchestrator-class wrapper
 # ---------------------------------------------------------------------------
+
 
 class InterpolationEngine:
     """Stateful wrapper holding the output dir + chosen backend."""
@@ -497,9 +495,7 @@ class InterpolationEngine:
         """
         out: list[dict] = []
         for i, pair in enumerate(pairs):
-            pair_dir = self.out_dir / (
-                f"pair_{i:03d}_{pair.from_scene}_to_{pair.to_scene}"
-            )
+            pair_dir = self.out_dir / (f"pair_{i:03d}_{pair.from_scene}_to_{pair.to_scene}")
             from_p = pair.from_path
             to_p = pair.to_path
             if scene_paths is not None:
@@ -523,6 +519,7 @@ class InterpolationEngine:
 # ---------------------------------------------------------------------------
 # CLI integration entrypoint
 # ---------------------------------------------------------------------------
+
 
 def build_interpolation_bridge_for_assemble(
     out_dir: Path,

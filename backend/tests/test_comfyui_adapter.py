@@ -85,6 +85,7 @@ class TestAdapterHasRequiredMethods:
 
     def test_module_has_is_comfyui_available(self):
         from melosviz.render.comfyui_adapter import is_comfyui_available
+
         assert callable(is_comfyui_available)
 
     def test_module_has_render_image_and_render_video(self):
@@ -97,6 +98,7 @@ class TestAdapterHasRequiredMethods:
 
     def test_adapter_accepts_all_known_scene_types(self):
         from melosviz.render.comfyui_adapter import SCENE_TYPES
+
         for st in SCENE_TYPES:
             adapter = ComfyUIAdapter(st)
             assert adapter.scene_type == st
@@ -132,9 +134,7 @@ class TestOfflineModeProducesClip:
         with open(clip, "rb") as fh:
             header = fh.read(32)
         # ftyp box: bytes 4-7 should be 'ftyp'
-        assert header[4:8] == b"ftyp", (
-            f"Expected 'ftyp' box in MP4 header, got {header[4:8]!r}"
-        )
+        assert header[4:8] == b"ftyp", f"Expected 'ftyp' box in MP4 header, got {header[4:8]!r}"
 
 
 # ---------------------------------------------------------------------------
@@ -196,8 +196,9 @@ class TestSubmitWorkflowReturnsJobId:
         fake_response = json.dumps({"prompt_id": "abc-123-def"}).encode()
         mock_resp = _make_http_response(fake_response)
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    return_value=mock_resp) as mock_urlopen:
+        with patch(
+            "melosviz.render.comfyui_adapter.urllib.request.urlopen", return_value=mock_resp
+        ) as mock_urlopen:
             result = _submit_workflow(
                 {"3": {"class_type": "KSampler", "inputs": {}}},
                 base_url="http://fake:8188",
@@ -216,12 +217,11 @@ class TestSubmitWorkflowReturnsJobId:
         fake_response = json.dumps({"error": "queue full"}).encode()
         mock_resp = _make_http_response(fake_response)
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    return_value=mock_resp):
-            with pytest.raises(ComfyUIError, match="no prompt_id"):
-                _submit_workflow(
-                    {}, base_url="http://fake:8188", client_id="test"
-                )
+        with (
+            patch("melosviz.render.comfyui_adapter.urllib.request.urlopen", return_value=mock_resp),
+            pytest.raises(ComfyUIError, match="no prompt_id"),
+        ):
+            _submit_workflow({}, base_url="http://fake:8188", client_id="test")
 
 
 # ---------------------------------------------------------------------------
@@ -236,28 +236,36 @@ class TestPollStatusHandlesRetryableErrors:
         """A URLError during poll should become ComfyUIUnavailableError."""
         from melosviz.render.comfyui_adapter import _await_workflow
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    side_effect=urllib.error.URLError("Connection refused")):
-            with pytest.raises(ComfyUIUnavailableError, match="history poll failed"):
-                _await_workflow(
-                    "prompt-xyz",
-                    base_url="http://fake:8188",
-                    timeout_s=2,
-                    poll_s=0.1,
-                )
+        with (
+            patch(
+                "melosviz.render.comfyui_adapter.urllib.request.urlopen",
+                side_effect=urllib.error.URLError("Connection refused"),
+            ),
+            pytest.raises(ComfyUIUnavailableError, match="history poll failed"),
+        ):
+            _await_workflow(
+                "prompt-xyz",
+                base_url="http://fake:8188",
+                timeout_s=2,
+                poll_s=0.1,
+            )
 
     def test_poll_propagates_timeout_error(self):
         from melosviz.render.comfyui_adapter import _await_workflow
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    side_effect=TimeoutError("timed out")):
-            with pytest.raises(ComfyUIUnavailableError, match="history poll failed"):
-                _await_workflow(
-                    "prompt-xyz",
-                    base_url="http://fake:8188",
-                    timeout_s=2,
-                    poll_s=0.1,
-                )
+        with (
+            patch(
+                "melosviz.render.comfyui_adapter.urllib.request.urlopen",
+                side_effect=TimeoutError("timed out"),
+            ),
+            pytest.raises(ComfyUIUnavailableError, match="history poll failed"),
+        ):
+            _await_workflow(
+                "prompt-xyz",
+                base_url="http://fake:8188",
+                timeout_s=2,
+                poll_s=0.1,
+            )
 
     def test_poll_times_out_when_workflow_never_completes(self):
         """If the workflow never completes, _await_workflow raises ComfyUIError."""
@@ -269,15 +277,19 @@ class TestPollStatusHandlesRetryableErrors:
         def _poll_side_effect(*args, **kwargs):
             return _make_http_response(empty_resp)
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    side_effect=_poll_side_effect):
-            with pytest.raises(ComfyUIError, match="did not finish"):
-                _await_workflow(
-                    "prompt-xyz",
-                    base_url="http://fake:8188",
-                    timeout_s=2,
-                    poll_s=0.1,
-                )
+        with (
+            patch(
+                "melosviz.render.comfyui_adapter.urllib.request.urlopen",
+                side_effect=_poll_side_effect,
+            ),
+            pytest.raises(ComfyUIError, match="did not finish"),
+        ):
+            _await_workflow(
+                "prompt-xyz",
+                base_url="http://fake:8188",
+                timeout_s=2,
+                poll_s=0.1,
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -293,8 +305,9 @@ class TestDownloadOutputWritesFile:
         mock_resp = _make_http_response(content)
 
         dest = tmp_path / "output_image.png"
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    return_value=mock_resp):
+        with patch(
+            "melosviz.render.comfyui_adapter.urllib.request.urlopen", return_value=mock_resp
+        ):
             result = _http_download("http://fake/view?filename=x", dest)
 
         assert result == dest
@@ -320,8 +333,9 @@ class TestDownloadOutputWritesFile:
         def _fake_open(*args, **kwargs):
             return _make_http_response(fake_bytes)
 
-        with patch("melosviz.render.comfyui_adapter.urllib.request.urlopen",
-                    side_effect=_fake_open):
+        with patch(
+            "melosviz.render.comfyui_adapter.urllib.request.urlopen", side_effect=_fake_open
+        ):
             files = _collect_outputs(
                 history_entry, base_url="http://fake:8188", output_dir=tmp_path
             )
@@ -354,12 +368,18 @@ class TestPlaceholderClipValidDuration:
         """Use ffprobe to get the duration of a video file."""
         result = subprocess.run(
             [
-                "ffprobe", "-v", "quiet",
-                "-show_entries", "format=duration",
-                "-of", "csv=p=0",
+                "ffprobe",
+                "-v",
+                "quiet",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "csv=p=0",
                 str(clip_path),
             ],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         return float(result.stdout.strip())
 
@@ -399,13 +419,20 @@ class TestPlaceholderClipValidCodec:
         """Use ffprobe to get the video codec name."""
         result = subprocess.run(
             [
-                "ffprobe", "-v", "quiet",
-                "-show_entries", "stream=codec_name",
-                "-select_streams", "v:0",
-                "-of", "csv=p=0",
+                "ffprobe",
+                "-v",
+                "quiet",
+                "-show_entries",
+                "stream=codec_name",
+                "-select_streams",
+                "v:0",
+                "-of",
+                "csv=p=0",
                 str(clip_path),
             ],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         return result.stdout.strip()
 
@@ -427,13 +454,20 @@ class TestPlaceholderClipValidCodec:
 
         result = subprocess.run(
             [
-                "ffprobe", "-v", "quiet",
-                "-show_entries", "stream=pix_fmt",
-                "-select_streams", "v:0",
-                "-of", "csv=p=0",
+                "ffprobe",
+                "-v",
+                "quiet",
+                "-show_entries",
+                "stream=pix_fmt",
+                "-select_streams",
+                "v:0",
+                "-of",
+                "csv=p=0",
                 str(clip),
             ],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         pix_fmt = result.stdout.strip()
         assert pix_fmt == "yuv420p", f"Expected yuv420p, got {pix_fmt!r}"

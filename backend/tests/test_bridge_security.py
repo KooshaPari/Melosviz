@@ -127,9 +127,7 @@ class TestLoopbackAssertion:
                 )
             },
         ) as _run:
-            monkeypatch.setattr(
-                "sys.argv", ["server", "--host", "0.0.0.0", "--port", "9123"]
-            )
+            monkeypatch.setattr("sys.argv", ["server", "--host", "0.0.0.0", "--port", "9123"])
             server.main()
 
         assert called["host"] == "0.0.0.0"
@@ -147,10 +145,7 @@ class TestAuth:
         resp = client.post("/analyze", json={"wav_path": "/tmp/x.wav"})
         assert resp.status_code == 401
         body = resp.json()
-        assert (
-            "WWW-Authenticate" in resp.headers
-            or "auth" in body.get("detail", "").lower()
-        )
+        assert "WWW-Authenticate" in resp.headers or "auth" in body.get("detail", "").lower()
 
     def test_analyze_rejects_wrong_token(self, bridge_env):
         client, _ = _client(bridge_env)
@@ -228,11 +223,7 @@ class TestAuditLog:
 
         audit_path = data_dir / "audit" / "bridge.jsonl"
         assert audit_path.exists(), f"audit log missing at {audit_path}"
-        rows = [
-            json.loads(line)
-            for line in audit_path.read_text().splitlines()
-            if line.strip()
-        ]
+        rows = [json.loads(line) for line in audit_path.read_text().splitlines() if line.strip()]
         assert len(rows) >= 2
         # Required fields per row.
         for row in rows:
@@ -282,9 +273,7 @@ class TestPathContainment:
             or "path" in resp.json().get("detail", "").lower()
         )
 
-    def test_inside_allowed_dir_is_accepted_or_400_not_403(
-        self, bridge_env, tmp_path: Path
-    ):
+    def test_inside_allowed_dir_is_accepted_or_400_not_403(self, bridge_env, tmp_path: Path):
         client, _ = _client(bridge_env)
         headers = {"Authorization": "Bearer test-token-aaa"}
         wav = bridge_env / "song.wav"
@@ -332,9 +321,7 @@ class TestAuditRetention:
             security.append_audit({"n": i, "path": "/health", "status": 200})
 
         path = security.audit_path()
-        lines = [
-            ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()
-        ]
+        lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
         # After crossing 10 lines, prune keeps ~80% of the then-current set.
         assert len(lines) <= 10
         assert len(lines) >= 8
@@ -374,11 +361,11 @@ class TestRenderQuota:
         assert q.inflight == 0
 
     def test_slot_context_raises_quota_exceeded(self):
-        from melosviz.bridge.security import QuotaExceeded, RenderQuota
+        from melosviz.bridge.security import QuotaExceededError, RenderQuota
 
         q = RenderQuota(max_concurrent=1, max_rss_mb=0)
         assert q.try_acquire() is True
-        with pytest.raises(QuotaExceeded), q.slot():
+        with pytest.raises(QuotaExceededError), q.slot():
             pass
         q.release()
         with q.slot():

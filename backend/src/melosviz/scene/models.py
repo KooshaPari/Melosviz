@@ -20,7 +20,7 @@ Design
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -66,7 +66,7 @@ class SplatAssetSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SemanticLabel(str, Enum):
+class SemanticLabel(StrEnum):
     """Semantic classes the scanner can prefer when targeting regions.
 
     These map to segmentation categories in the scene.  The evaluator
@@ -150,7 +150,7 @@ class SemanticScannerSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class Domain(str, Enum):
+class Domain(StrEnum):
     """Representation domains the scene can switch/blend between."""
 
     PHOTO = "photo"  # equirect 360 / projected video
@@ -160,7 +160,7 @@ class Domain(str, Enum):
     FX = "fx"  # particles / edge maps / stylized shader
 
 
-class ScannerType(str, Enum):
+class ScannerType(StrEnum):
     """Scanner geometry type."""
 
     ROTATING_CONE = "rotating_cone"
@@ -168,7 +168,7 @@ class ScannerType(str, Enum):
     SPLINE = "spline"
 
 
-class FalloffType(str, Enum):
+class FalloffType(StrEnum):
     """Edge falloff shape for the scanner mask."""
 
     LINEAR = "linear"
@@ -176,7 +176,7 @@ class FalloffType(str, Enum):
     COSINE = "cosine"
 
 
-class OcclusionMode(str, Enum):
+class OcclusionMode(StrEnum):
     """How the scanner handles scene depth/occlusion."""
 
     NONE = "none"  # no occlusion — mask ignores depth
@@ -317,7 +317,7 @@ class SceneSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class DomainMaterialLook(str, Enum):
+class DomainMaterialLook(StrEnum):
     """Named material look families for each domain.
 
     These map to shader presets in the Blender adapter.
@@ -455,9 +455,7 @@ class TransitionSpec(BaseModel):
     material_override: DomainMaterialLook | None = None
     material_override_domain: Domain | None = None
 
-    def evaluate_opacities(
-        self, channel_values: dict[str, float]
-    ) -> dict[Domain, float]:
+    def evaluate_opacities(self, channel_values: dict[str, float]) -> dict[Domain, float]:
         """Compute per-domain opacities given current write-channel values.
 
         Args:
@@ -478,6 +476,4 @@ class TransitionSpec(BaseModel):
         """Return True if all conditions are satisfied."""
         if not self.conditions:
             return True
-        return all(
-            channel_values.get(c.channel, 0.0) > c.threshold for c in self.conditions
-        )
+        return all(channel_values.get(c.channel, 0.0) > c.threshold for c in self.conditions)

@@ -298,11 +298,7 @@ def match_reference(
             f"TP={achieved.true_peak_dbtp:.2f}"
         )
 
-        if (
-            abs(err_lufs) <= tol_lufs
-            and abs(err_lra) <= tol_lra
-            and abs(err_tp) <= tol_true_peak
-        ):
+        if abs(err_lufs) <= tol_lufs and abs(err_lra) <= tol_lra and abs(err_tp) <= tol_true_peak:
             result.converged = True
             result.log.append(f"converged after {iteration} pass(es)")
             break

@@ -28,16 +28,12 @@ class _ExplodingAdapter:
 
 def _spec() -> dict[str, Any]:
     return {
-        "scene_segments": [
-            {"scene_index": 0, "scene_name": "s0", "scene_type": "video_export"}
-        ]
+        "scene_segments": [{"scene_index": 0, "scene_name": "s0", "scene_type": "video_export"}]
     }
 
 
 def test_failed_scene_writes_a_traceable_sidecar(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setitem(
-        registry_mod.ADAPTER_REGISTRY, "video_export", _ExplodingAdapter
-    )
+    monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "video_export", _ExplodingAdapter)
     out = tmp_path / "out"
     orch = Orchestrator(output_dir=out, skip_assembly=True, auto_offline=False)
 
@@ -65,9 +61,7 @@ def test_failed_scene_writes_a_traceable_sidecar(tmp_path: Path, monkeypatch) ->
 
 
 def test_failure_sidecar_stays_out_of_cwd(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setitem(
-        registry_mod.ADAPTER_REGISTRY, "video_export", _ExplodingAdapter
-    )
+    monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "video_export", _ExplodingAdapter)
     out = tmp_path / "out"
     orch = Orchestrator(output_dir=out, skip_assembly=True, auto_offline=False)
     with pytest.raises(ConductorError):

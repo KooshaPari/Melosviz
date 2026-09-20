@@ -132,9 +132,7 @@ def assemble_render_plan(
 
     # ---- Unpack spec ---------------------------------------------------------
     spec_dict = (
-        render_spec.model_dump()
-        if hasattr(render_spec, "model_dump")
-        else dict(render_spec)
+        render_spec.model_dump() if hasattr(render_spec, "model_dump") else dict(render_spec)
     )
     scene_segments: list[dict[str, Any]] = list(spec_dict.get("scene_segments") or [])
     mir: dict[str, Any] = dict(spec_dict.get("mir") or {})

@@ -214,9 +214,7 @@ class FakeClock:
 
 def test_rate_window_delays_second_attempt() -> None:
     clock = FakeClock()
-    config = LLMAdmissionConfig.from_env(
-        _env(MELOSVIZ_LLM_REQUESTS_PER_MINUTE="1")
-    )
+    config = LLMAdmissionConfig.from_env(_env(MELOSVIZ_LLM_REQUESTS_PER_MINUTE="1"))
     gate = LLMAdmissionGate(config, clock=clock, sleeper=clock.sleep)
     reservation = gate.reserve(config.estimate(b"x"))
     with reservation.attempt():
@@ -275,9 +273,7 @@ def test_failed_attempt_removes_queued_ticket(
 
 
 def test_attempts_enter_in_fifo_order() -> None:
-    config = LLMAdmissionConfig.from_env(
-        _env(MELOSVIZ_LLM_MAX_CONCURRENCY="1")
-    )
+    config = LLMAdmissionConfig.from_env(_env(MELOSVIZ_LLM_MAX_CONCURRENCY="1"))
     gate = LLMAdmissionGate(config)
     order: list[int] = []
     first_entered = threading.Event()

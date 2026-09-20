@@ -10,7 +10,6 @@ from pathlib import Path
 
 from .vj import discover_shots, export_vj_cues
 
-
 MEDIA_PATTERNS = ("*.mp4", "*.mov", "*.wav", "*.aif", "*.srt", "*.vtt", "*.edl")
 FIXED_ZIP_TIME = (2020, 1, 1, 0, 0, 0)
 EXCLUDED_PATH_PARTS = frozenset(
@@ -114,9 +113,7 @@ def build_delivery_package(
         "job_dir": str(manifest_root),
         "mode": mode,
         "count": len(copied),
-        "deliverables": [
-            path.relative_to(deliverables).as_posix() for path in copied
-        ],
+        "deliverables": [path.relative_to(deliverables).as_posix() for path in copied],
         "vj": [path.relative_to(deliverables).as_posix() for path in vj_files],
     }
     if mode == "offline":

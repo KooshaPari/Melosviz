@@ -47,12 +47,11 @@ import logging
 import os
 import shutil
 import subprocess
-import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from melosviz.analysis.models import RenderSpec
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -226,23 +225,25 @@ def scaffold_driver(path: Path | str) -> Path:
 # ---------------------------------------------------------------------------
 
 
-def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
-                 project: Path | None = None,
-                 driver: Path | None = None) -> list[Path]:
+def render_scene(
+    scene: dict[str, Any],
+    *,
+    output_dir: Path | str,
+    project: Path | None = None,
+    driver: Path | None = None,
+) -> list[Path]:
     """Render one UE scene; returns list of output frame paths."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     bin_ = _ue_bin()
     if bin_ is None:
         raise UENotFoundError(
-            "UnrealEditor-Cmd not found on $PATH. "
-            f"Set ${_UE_BIN_ENV} to your UE install."
+            f"UnrealEditor-Cmd not found on $PATH. Set ${_UE_BIN_ENV} to your UE install."
         )
     proj = project or _ue_project()
     if proj is None:
         raise UENotFoundError(
-            "No UE project (.uproject) given. "
-            f"Set ${_UE_PROJECT_ENV} or pass project=..."
+            f"No UE project (.uproject) given. Set ${_UE_PROJECT_ENV} or pass project=..."
         )
     driver_path = scaffold_driver(driver or _ue_driver())
 
@@ -250,13 +251,16 @@ def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
     scene_payload.write_text(json.dumps(scene, indent=2), encoding="utf-8")
 
     cmd = [
-        bin_, str(proj),
+        bin_,
+        str(proj),
         "-run=pythonscript",
         f"-script={driver_path}",
         # The driver reads scene + out via argv
         f'"{scene_payload}"',
         f'"{out}"',
-        "-unattended", "-nopause", "-nosplash",
+        "-unattended",
+        "-nopause",
+        "-nosplash",
     ]
     timeout = _ue_timeout_s()
     logger.info("UE: invoking %s", " ".join(cmd))
@@ -291,11 +295,8 @@ class UEAdapter:
 
     scene_type: str = "unreal_cinematic"
 
-    def render(self, render_spec: Any, *, output_path: Any = None,
-               **kwargs: Any) -> list[Path]:
-        out_dir = Path(str(output_path)) if output_path is not None else Path(
-            "/tmp/melosviz-ue"
-        )
+    def render(self, render_spec: Any, *, output_path: Any = None, **kwargs: Any) -> list[Path]:
+        out_dir = Path(str(output_path)) if output_path is not None else Path("/tmp/melosviz-ue")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # ---- Offline mode: write job-spec JSON, do NOT invoke UE -----------
@@ -336,9 +337,7 @@ class UEAdapter:
                 scene_out = out_dir / f"scene_{i:03d}"
                 scene_out.mkdir(parents=True, exist_ok=True)
                 (scene_out / "_ue_render.py").write_text(_DRIVER_TEMPLATE, encoding="utf-8")
-                (scene_out / "scene.json").write_text(
-                    json.dumps(scene, indent=2), encoding="utf-8"
-                )
+                (scene_out / "scene.json").write_text(json.dumps(scene, indent=2), encoding="utf-8")
             logger.info("UEAdapter: offline mode → wrote %s", plan_path)
             return [plan_path]
 
@@ -356,7 +355,8 @@ class UEAdapter:
             scene_out.mkdir(parents=True, exist_ok=True)
             try:
                 frames = render_scene(
-                    scene, output_dir=scene_out,
+                    scene,
+                    output_dir=scene_out,
                     project=kwargs.get("project"),
                     driver=kwargs.get("driver"),
                 )

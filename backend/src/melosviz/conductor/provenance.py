@@ -33,14 +33,13 @@ Schema (v1):
       "extra": dict
     }
 """
+
 from __future__ import annotations
 
 import json
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
-
+from typing import Any
 
 PROVENANCE_SCHEMA_VERSION = "1.0"
 

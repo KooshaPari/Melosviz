@@ -24,11 +24,9 @@ on every spec) and returns an :class:`AssembleEffectsPlan` with:
 from __future__ import annotations
 
 import json
-import math
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
-
+from typing import Any
 
 # ----------------------------- types ----------------------------- #
 
@@ -37,12 +35,12 @@ from typing import Any, Iterable
 class TransitionAtBoundary:
     """How to cut from scene i to scene i + 1."""
 
-    at_scene: int               # index of the scene we're leaving
-    at_time: float              # absolute seconds in the timeline
-    kind: str                   # "hard_cut" / "whip_pan" / "dip_to_black" / "crossfade"
-    nearest_beat: float         # closest beat-grid timestamp
-    beat_offset_ms: float       # signed distance to nearest beat (negative = landed early)
-    rational: str               # human-readable explanation ("on downbeat", "0.18 s after beat")
+    at_scene: int  # index of the scene we're leaving
+    at_time: float  # absolute seconds in the timeline
+    kind: str  # "hard_cut" / "whip_pan" / "dip_to_black" / "crossfade"
+    nearest_beat: float  # closest beat-grid timestamp
+    beat_offset_ms: float  # signed distance to nearest beat (negative = landed early)
+    rational: str  # human-readable explanation ("on downbeat", "0.18 s after beat")
 
 
 @dataclass
@@ -145,10 +143,14 @@ def _nearest(beats: list[float], t: float) -> tuple[float, float]:
 # --------------------------- core plan ---------------------------- #
 
 
-def _pick_transition(scene_a: dict[str, Any], scene_b: dict[str, Any], beat_off_ms: float) -> tuple[str, str]:
+def _pick_transition(
+    scene_a: dict[str, Any], scene_b: dict[str, Any], beat_off_ms: float
+) -> tuple[str, str]:
     """Choose transition kind + rationale between two consecutive scenes."""
     cam_a = (scene_a.get("camera") or scene_a.get("camera_motion") or "").lower()
-    cam_b = (scene_b.get("camera_b") or scene_b.get("camera") or scene_b.get("camera_motion") or "").lower()
+    cam_b = (
+        scene_b.get("camera_b") or scene_b.get("camera") or scene_b.get("camera_motion") or ""
+    ).lower()
 
     on_beat = abs(beat_off_ms) <= 60.0
 
@@ -161,7 +163,11 @@ def _pick_transition(scene_a: dict[str, Any], scene_b: dict[str, Any], beat_off_
         return "whip_pan", "whip pan camera → whip-pan transition"
 
     # Drop / chorus boundary → dip to black
-    mood = (scene_b.get("lyric", {}) or {}).get("mood_label") if isinstance(scene_b.get("lyric"), dict) else None
+    mood = (
+        (scene_b.get("lyric", {}) or {}).get("mood_label")
+        if isinstance(scene_b.get("lyric"), dict)
+        else None
+    )
     if mood in ("drop", "chorus") or "drop" in (scene_b.get("name", "") or "").lower():
         return "dip_to_black", "drop / chorus boundary → 0.4s dip to black"
 
@@ -257,10 +263,13 @@ def build_assemble_effects_plan(
         kinds = [t.kind for t in plan.transitions]
         plan.risk_report.append(
             "Transition mix: "
-            + ", ".join(f"{k}:{v}" for k, v in sorted(
-                ((k, kinds.count(k)) for k in set(kinds)),
-                key=lambda kv: -kv[1],
-            ))
+            + ", ".join(
+                f"{k}:{v}"
+                for k, v in sorted(
+                    ((k, kinds.count(k)) for k in set(kinds)),
+                    key=lambda kv: -kv[1],
+                )
+            )
         )
 
     return plan
@@ -271,10 +280,10 @@ def build_assemble_effects_plan(
 
 def plan_to_ffmpeg_filter(plan: AssembleEffectsPlan) -> str:
     """Return a human-readable ffmpeg concat+xfade filter sketch."""
-    parts = ["ffmpeg -f concat -safe 0 -i list.txt -filter_complex \"[0:v]"]
+    parts = ['ffmpeg -f concat -safe 0 -i list.txt -filter_complex "[0:v]']
     if any(t.kind == "crossfade" for t in plan.transitions):
         parts.append("xfade=transition=fade:duration=0.25")
-    parts.append("\" -c:v libx264 -preset fast out.mp4")
+    parts.append('" -c:v libx264 -preset fast out.mp4')
     return "".join(parts)
 
 

@@ -54,10 +54,7 @@ def _write_synthetic_wav(path: Path, duration_sec: float = 4.0) -> None:
 
     import math
 
-    samples = [
-        int(32767 * math.sin(2 * math.pi * freq * i / sample_rate))
-        for i in range(n_frames)
-    ]
+    samples = [int(32767 * math.sin(2 * math.pi * freq * i / sample_rate)) for i in range(n_frames)]
     raw = struct.pack(f"<{n_frames}h", *samples)
 
     with wave.open(str(path), "wb") as wf:
@@ -213,9 +210,7 @@ class TestPipelineSmoke:
         data = spec.model_dump()
         assert "metadata" in data
         # spec_from_wav stores duration under key "duration" (v1 compat)
-        duration = data["metadata"].get("duration_sec") or data["metadata"].get(
-            "duration"
-        )
+        duration = data["metadata"].get("duration_sec") or data["metadata"].get("duration")
         assert duration == pytest.approx(4.0, abs=0.1)
 
     # ------------------------------------------------------------------
@@ -312,9 +307,7 @@ class TestPipelineSmoke:
 class TestCLISmoke:
     """Smoke-test the viz CLI entry-point (no subprocess — direct import)."""
 
-    def test_cli_analyze_exits_0(
-        self, synthetic_wav: Path, capsys: pytest.CaptureFixture
-    ) -> None:  # type: ignore[type-arg]
+    def test_cli_analyze_exits_0(self, synthetic_wav: Path, capsys: pytest.CaptureFixture) -> None:  # type: ignore[type-arg]
         import argparse
 
         from melosviz.cli.main import _cmd_analyze
@@ -328,9 +321,7 @@ class TestCLISmoke:
         data = json.loads(captured.out)
         assert "metadata" in data
 
-    def test_cli_analyze_missing_file_exits_1(
-        self, capsys: pytest.CaptureFixture
-    ) -> None:  # type: ignore[type-arg]
+    def test_cli_analyze_missing_file_exits_1(self, capsys: pytest.CaptureFixture) -> None:  # type: ignore[type-arg]
         import argparse
 
         from melosviz.cli.main import _cmd_analyze

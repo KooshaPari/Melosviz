@@ -18,8 +18,8 @@ ComfyUI server) so that ``render`` always succeeds in CI.
 from __future__ import annotations
 
 import json
-import wave
 import struct
+import wave
 from pathlib import Path
 from typing import Any
 
@@ -101,7 +101,7 @@ def test_registry_covers_new_adapters() -> None:
 
 
 def test_comfyui_adapter_scene_type() -> None:
-    from melosviz.render.comfyui_adapter import ComfyUIAdapter, SCENE_TYPES
+    from melosviz.render.comfyui_adapter import SCENE_TYPES, ComfyUIAdapter
 
     assert ComfyUIAdapter.scene_type in SCENE_TYPES
 
@@ -118,7 +118,7 @@ def test_comfyui_offline_mode_emits_job_spec_without_network(
 
     adapter = mod.ComfyUIAdapter(scene_type="comfyui_image")
     out = tmp_path / "comfyui"
-    result = adapter.render(_minimal_spec(), output_path=out)
+    adapter.render(_minimal_spec(), output_path=out)
     # Each scene gets a per-scene workflow.json + a manifest
     assert any(out.rglob("workflow.json"))
     manifest = out / "job_spec.json"
@@ -335,8 +335,7 @@ def test_storyboard_subcommand_emits_json_for_synthetic_wav(
     from melosviz.cli.main import main
 
     with pytest.raises(SystemExit) as exc:
-        main(argv=["storyboard", str(wav), "--concept", "neon festival",
-                  "--out", str(tmp_path)])
+        main(argv=["storyboard", str(wav), "--concept", "neon festival", "--out", str(tmp_path)])
     assert exc.value.code == 0
     payload = json.loads((tmp_path / "storyboard.json").read_text())
     assert payload["concept"] == "neon festival"

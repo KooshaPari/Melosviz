@@ -86,8 +86,7 @@ def build_shot_keyframes(
         start = float(seg.get("start", 0.0))
         template = str(seg.get("scene_template", "torus_flow"))
         scene_name = str(
-            seg.get("scene")
-            or TEMPLATE_DISPLAY_NAMES.get(template, seg.get("label", "Scene"))
+            seg.get("scene") or TEMPLATE_DISPLAY_NAMES.get(template, seg.get("label", "Scene"))
         )
         t_norm = min(1.0, max(0.0, start / duration_sec))
         seg_len = max(
@@ -116,15 +115,10 @@ def build_shot_keyframes(
         keyframes.append(
             {
                 "t": 1.0,
-                "scene": str(
-                    last.get("scene")
-                    or TEMPLATE_DISPLAY_NAMES.get(template, "Outro")
-                ),
+                "scene": str(last.get("scene") or TEMPLATE_DISPLAY_NAMES.get(template, "Outro")),
                 "scene_template": template,
                 "camera": _camera_for_segment(last, template),
-                "color": _colors_for_segment(
-                    last, colors_palette, len(scene_segments) - 1
-                ),
+                "color": _colors_for_segment(last, colors_palette, len(scene_segments) - 1),
                 "transition_secs": 0.0,
                 "segment_index": int(last.get("index", len(scene_segments) - 1)),
                 "label": str(last.get("label", "outro")),
@@ -146,9 +140,8 @@ def tag_dense_keyframes_with_scenes(
     seg_idx = 0
     for kf in dense_keyframes:
         t = float(kf.get("t", 0.0))
-        while (
-            seg_idx < len(scene_segments) - 1
-            and t >= float(scene_segments[seg_idx].get("end", 0.0))
+        while seg_idx < len(scene_segments) - 1 and t >= float(
+            scene_segments[seg_idx].get("end", 0.0)
         ):
             seg_idx += 1
         seg = scene_segments[seg_idx]
@@ -200,9 +193,7 @@ def enrich_render_spec_for_web(
         data["bpm"] = mir.get("tempo_bpm") or meta.get("estimated_bpm")
     if not data.get("beat_times") and data.get("timeline_events"):
         data["beat_times"] = sorted(
-            float(ev["t"])
-            for ev in data["timeline_events"]
-            if ev.get("type") == "beat"
+            float(ev["t"]) for ev in data["timeline_events"] if ev.get("type") == "beat"
         )
 
     meta["web_spec_version"] = 1

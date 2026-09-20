@@ -14,12 +14,11 @@ The test is marked ``pytest.mark.slow`` so it doesn't run on every
 ``pytest`` invocation. Run with ``pytest -m slow tests/cli/test_gpu_smoke.py``
 or ``--no-header -m slow test_gpu_smoke.py``.
 """
+
 from __future__ import annotations
 
-import math
 import os
 import shutil
-import struct
 import subprocess
 import sys
 import wave
@@ -53,11 +52,7 @@ def _synth_wav(path: Path, dur_s: float = 6.0, bpm: int = 120) -> None:
 
 
 def _write_lrc(path: Path) -> None:
-    path.write_text(
-        "[00:00.00]Test line one\n"
-        "[00:02.00]Test line two\n"
-        "[00:04.00]Test line three\n"
-    )
+    path.write_text("[00:00.00]Test line one\n[00:02.00]Test line two\n[00:04.00]Test line three\n")
 
 
 def _run_cli(args: list[str], cwd: Path, env: dict) -> None:
@@ -97,9 +92,7 @@ def test_studio_pipeline_offline_mode_produces_artifact_topology(tmp_path: Path)
     # Point the CLI subprocess at the repo's backend/src so melosviz is
     # importable. parents[3] of this file lands at the repo root, so
     # /backend/src/ there is the editable source tree.
-    env["PYTHONPATH"] = str(
-        (Path(__file__).resolve().parents[3] / "backend" / "src")
-    )
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[3] / "backend" / "src")
 
     # 2. Storyboard.
     sb_path = WORKDIR / "storyboard.json"

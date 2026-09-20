@@ -73,7 +73,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from melosviz.analysis.models import RenderSpec
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +102,9 @@ DEFAULT_WORKFLOWS_DIRNAME = "workflows"
 
 #: Scene-type strings the conductor routes to this adapter.
 SCENE_TYPES: tuple[str, ...] = (
-    "comfyui_image",       # single-frame stills (album-art, intro cards)
-    "comfyui_video",       # short clips (Wan 2.1 / LTX / Hunyuan / AnimateDiff)
-    "generative_asset",    # legacy alias for Firefly → ComfyUI rewire
+    "comfyui_image",  # single-frame stills (album-art, intro cards)
+    "comfyui_video",  # short clips (Wan 2.1 / LTX / Hunyuan / AnimateDiff)
+    "generative_asset",  # legacy alias for Firefly → ComfyUI rewire
     # WBS-107, WBS-108: native-audio video workflows. Director routes
     # drop → comfyui_audio_video_wan, chorus (with character) →
     # comfyui_audio_video_seedance; scenes carry audio_path + motion
@@ -171,7 +171,10 @@ def _comfyui_offline() -> bool:
     network and instead emits a job-spec JSON per scene. Useful in CI and
     when the operator wants to review prompts before spending GPU time."""
     return os.environ.get("MELOSVIZ_COMFYUI_OFFLINE", "").strip().lower() in (
-        "1", "true", "yes", "on"
+        "1",
+        "true",
+        "yes",
+        "on",
     )
 
 
@@ -249,12 +252,16 @@ def _generate_placeholder_clip(
         )
 
     duration = _scene_duration(scene)
-    label = scene.get("label", scene.get("name", f"scene_{scene_index:03d}"))
+    scene.get("label", scene.get("name", f"scene_{scene_index:03d}"))
     # Pick colour from palette or cycle defaults.
     palette = scene.get("palette", [])
     if isinstance(palette, str):
         palette = [palette]
-    hex_color = palette[scene_index % len(palette)] if palette else _PLACEHOLDER_PALETTE[scene_index % len(_PLACEHOLDER_PALETTE)]
+    hex_color = (
+        palette[scene_index % len(palette)]
+        if palette
+        else _PLACEHOLDER_PALETTE[scene_index % len(_PLACEHOLDER_PALETTE)]
+    )
     r, g, b = _hex_to_rgb(str(hex_color))
     ffmpeg_color = f"0x{r:02x}{g:02x}{b:02x}"
 
@@ -262,17 +269,21 @@ def _generate_placeholder_clip(
 
     # FFmpeg: solid colour clip.  No text overlay (drawtext requires
     # libfreetype which is not guaranteed in minimal FFmpeg builds).
-    filter_graph = (
-        f"color=c={ffmpeg_color}:s={width}x{height}:d={duration}:r={fps}"
-    )
+    filter_graph = f"color=c={ffmpeg_color}:s={width}x{height}:d={duration}:r={fps}"
 
     cmd = [
-        ffmpeg, "-y",
-        "-f", "lavfi",
-        "-i", filter_graph,
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        "-t", str(duration),
+        ffmpeg,
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        filter_graph,
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-t",
+        str(duration),
         str(out_path),
     ]
     try:
@@ -284,16 +295,17 @@ def _generate_placeholder_clip(
             check=True,
         )
     except (subprocess.CalledProcessError, OSError) as exc:
-        raise ComfyUIError(
-            f"Placeholder clip FFmpeg failed: {exc}"
-        ) from exc
+        raise ComfyUIError(f"Placeholder clip FFmpeg failed: {exc}") from exc
 
     if not out_path.exists() or out_path.stat().st_size == 0:
         raise ComfyUIError(f"Placeholder clip missing or empty: {out_path}")
 
     logger.info(
         "ComfyUIAdapter: offline placeholder clip → %s (%.1fs, %dx%d)",
-        out_path, duration, width, height,
+        out_path,
+        duration,
+        width,
+        height,
     )
     return out_path
 
@@ -307,8 +319,7 @@ def _workflows_dir() -> Path:
     return (here.parent.parent.parent.parent / DEFAULT_WORKFLOWS_DIRNAME).resolve()
 
 
-def _http_json(method: str, url: str, *, body: dict | None = None,
-               timeout_s: int = 30) -> dict:
+def _http_json(method: str, url: str, *, body: dict | None = None, timeout_s: int = 30) -> dict:
     """Tiny stdlib HTTP client — keeps the adapter dep-free."""
     data = None
     headers = {"Accept": "application/json"}
@@ -341,8 +352,9 @@ def is_comfyui_available(base_url: str | None = None) -> bool:
         return False
 
 
-def _build_workflow(scene_type: str, scene: dict[str, Any],
-                    *, model_override: str | None = None) -> dict:
+def _build_workflow(
+    scene_type: str, scene: dict[str, Any], *, model_override: str | None = None
+) -> dict:
     """Render the workflow JSON for one scene from its on-disk template."""
     templates = _workflows_dir()
     tpl_name = DEFAULT_WORKFLOWS.get(scene_type)
@@ -355,6 +367,7 @@ def _build_workflow(scene_type: str, scene: dict[str, Any],
             f"Set ${_COMFYUI_ENV_WORKFLOWS} or ship the file."
         )
     raw = tpl_path.read_text(encoding="utf-8")
+
     # The templates use ``"text": "{prompt}"`` where {prompt} is already
     # wrapped in JSON quotes. We need to JSON-escape the value (so an
     # internal quote like ``depicts: "City lights"`` becomes
@@ -363,65 +376,66 @@ def _build_workflow(scene_type: str, scene: dict[str, Any],
     # ``json.dumps(s)[1:-1]``.
     def _esc(s: object) -> str:
         return json.dumps(s, ensure_ascii=False)[1:-1]
-    safe = _SafeDict({
-        "prompt": _esc(scene.get("prompt", "")),
-        "negative": _esc(scene.get("negative", "lowres, blurry, watermark")),
-        "seed": int(scene.get("seed", 0)),
-        "steps": int(scene.get("steps", 28)),
-        "cfg": float(scene.get("cfg", 5.5)),
-        "sampler": _esc(scene.get("sampler", "euler_ancestral")),
-        "scheduler": _esc(scene.get("scheduler", "normal")),
-        "width": int(scene.get("width", 1280)),
-        "height": int(scene.get("height", 720)),
-        "frames": int(scene.get("frames", 48)),
-        "fps": int(scene.get("fps", 24)),
-        "model": _esc(model_override or os.environ.get(_COMFYUI_ENV_MODEL, "")),
-        "lora": _esc(scene.get("lora", "")),
-        # v2 (WBS-2): ``ip_adapter_image`` is the on-wire name for the
-        # ``ContinuityAnchor.reference_image`` path on most ComfyUI
-        # IP-Adapter / Wan / ControlNet templates. The orchestrator
-        # stamps the validated path from
-        # ``spec_dict["continuity"]["reference_image"]`` onto every scene
-        # before dispatch (see ``orchestrator.py``), so templates that
-        # declare ``{ip_adapter_image}`` get it, and templates that
-        # don't are left untouched — the placeholder is safe in either
-        # case (it falls back to ``""`` when the scene has no IP-Adapter).
-        "ip_adapter_image": _esc(scene.get("ip_adapter_image", "")),
-        # v2 (WBS-2): ``reference_image`` + ``reference_image_strength``
-        # are the explicit ContinuityAnchor v2 field names — workflow
-        # templates that prefer the canonical schema name can use these
-        # placeholders directly. ``reference_image_strength`` defaults to
-        # ``0.65`` (a sensible "style leans reference" value for
-        # IP-Adapter) and is overridable per scene via
-        # ``scene["reference_image_strength"]`` or globally via the
-        # orchestrator's ``reference_image_strength`` kwarg.
-        "reference_image": _esc(scene.get("reference_image", "")),
-        "reference_image_strength": _esc(
-            scene.get("reference_image_strength", 0.65)
-        ),
-        "controlnet_image": _esc(scene.get("controlnet_image", "")),
-        # WBS-101..106 character-consistency reference slots. Templates that
-        # don't reference these are left untouched (the SafeDict swallows
-        # them). Defaults are empty strings so legacy templates still
-        # substitute safely without our character scene-stamping.
-        "character_front": _esc(scene.get("character_front", "")),
-        "character_three_quarter": _esc(scene.get("character_three_quarter", "")),
-        "character_profile": _esc(scene.get("character_profile", "")),
-        "character_full_body": _esc(scene.get("character_full_body", "")),
-        "character_style_ref": _esc(scene.get("character_style_ref", "")),
-        "character_face_weight": _esc(scene.get("character_face_weight", "")),
-        "character_style_weight": _esc(scene.get("character_style_weight", "")),
-        "character_engine": _esc(scene.get("character_engine", "")),
-        # WBS-107..109 (2026-08): Native-audio video workflows. The
-        # orchestrator stamps audio_path / motion_strength / audio_influence
-        # from the SceneSegment onto every audio-conditioned scene. Defaults
-        # keep non-audio templates untouched — _SafeDict leaves unknown keys
-        # literal, so these placeholders land on the audio-conditioned
-        # templates only (``wan_s2v_audio.json`` / ``seedance_a2v.json``).
-        "audio_path": _esc(scene.get("audio_path", "")),
-        "motion_strength": _esc(scene.get("motion_strength", 1.0)),
-        "audio_influence": _esc(scene.get("audio_influence", 0.8)),
-    })
+
+    safe = _SafeDict(
+        {
+            "prompt": _esc(scene.get("prompt", "")),
+            "negative": _esc(scene.get("negative", "lowres, blurry, watermark")),
+            "seed": int(scene.get("seed", 0)),
+            "steps": int(scene.get("steps", 28)),
+            "cfg": float(scene.get("cfg", 5.5)),
+            "sampler": _esc(scene.get("sampler", "euler_ancestral")),
+            "scheduler": _esc(scene.get("scheduler", "normal")),
+            "width": int(scene.get("width", 1280)),
+            "height": int(scene.get("height", 720)),
+            "frames": int(scene.get("frames", 48)),
+            "fps": int(scene.get("fps", 24)),
+            "model": _esc(model_override or os.environ.get(_COMFYUI_ENV_MODEL, "")),
+            "lora": _esc(scene.get("lora", "")),
+            # v2 (WBS-2): ``ip_adapter_image`` is the on-wire name for the
+            # ``ContinuityAnchor.reference_image`` path on most ComfyUI
+            # IP-Adapter / Wan / ControlNet templates. The orchestrator
+            # stamps the validated path from
+            # ``spec_dict["continuity"]["reference_image"]`` onto every scene
+            # before dispatch (see ``orchestrator.py``), so templates that
+            # declare ``{ip_adapter_image}`` get it, and templates that
+            # don't are left untouched — the placeholder is safe in either
+            # case (it falls back to ``""`` when the scene has no IP-Adapter).
+            "ip_adapter_image": _esc(scene.get("ip_adapter_image", "")),
+            # v2 (WBS-2): ``reference_image`` + ``reference_image_strength``
+            # are the explicit ContinuityAnchor v2 field names — workflow
+            # templates that prefer the canonical schema name can use these
+            # placeholders directly. ``reference_image_strength`` defaults to
+            # ``0.65`` (a sensible "style leans reference" value for
+            # IP-Adapter) and is overridable per scene via
+            # ``scene["reference_image_strength"]`` or globally via the
+            # orchestrator's ``reference_image_strength`` kwarg.
+            "reference_image": _esc(scene.get("reference_image", "")),
+            "reference_image_strength": _esc(scene.get("reference_image_strength", 0.65)),
+            "controlnet_image": _esc(scene.get("controlnet_image", "")),
+            # WBS-101..106 character-consistency reference slots. Templates that
+            # don't reference these are left untouched (the SafeDict swallows
+            # them). Defaults are empty strings so legacy templates still
+            # substitute safely without our character scene-stamping.
+            "character_front": _esc(scene.get("character_front", "")),
+            "character_three_quarter": _esc(scene.get("character_three_quarter", "")),
+            "character_profile": _esc(scene.get("character_profile", "")),
+            "character_full_body": _esc(scene.get("character_full_body", "")),
+            "character_style_ref": _esc(scene.get("character_style_ref", "")),
+            "character_face_weight": _esc(scene.get("character_face_weight", "")),
+            "character_style_weight": _esc(scene.get("character_style_weight", "")),
+            "character_engine": _esc(scene.get("character_engine", "")),
+            # WBS-107..109 (2026-08): Native-audio video workflows. The
+            # orchestrator stamps audio_path / motion_strength / audio_influence
+            # from the SceneSegment onto every audio-conditioned scene. Defaults
+            # keep non-audio templates untouched — _SafeDict leaves unknown keys
+            # literal, so these placeholders land on the audio-conditioned
+            # templates only (``wan_s2v_audio.json`` / ``seedance_a2v.json``).
+            "audio_path": _esc(scene.get("audio_path", "")),
+            "motion_strength": _esc(scene.get("motion_strength", 1.0)),
+            "audio_influence": _esc(scene.get("audio_influence", 0.8)),
+        }
+    )
     return json.loads(_safe_format(raw, safe))
 
 
@@ -430,9 +444,10 @@ def _safe_format(template: str, mapping: dict[str, Any]) -> str:
     without recursing into the substituted value (unlike ``str.format_map``).
     Missing keys are left as the literal ``"{key}"`` token."""
     import re as _re
+
     pattern = _re.compile(r"\{([a-zA-Z_][a-zA-Z0-9_]*)\}")
 
-    def _sub(match: "_re.Match[str]") -> str:
+    def _sub(match: _re.Match[str]) -> str:
         key = match.group(1)
         if key in mapping:
             return str(mapping[key])
@@ -443,12 +458,12 @@ def _safe_format(template: str, mapping: dict[str, Any]) -> str:
 
 class _SafeDict(dict):
     """dict that returns ``"{key}"`` for missing keys instead of raising."""
+
     def __missing__(self, key: str) -> str:  # type: ignore[override]
         return "{" + key + "}"
 
 
-def _submit_workflow(workflow: dict, *, base_url: str,
-                     client_id: str) -> str:
+def _submit_workflow(workflow: dict, *, base_url: str, client_id: str) -> str:
     body = {"prompt": workflow, "client_id": client_id}
     resp = _http_json("POST", base_url + "/prompt", body=body, timeout_s=30)
     pid = resp.get("prompt_id")
@@ -457,20 +472,15 @@ def _submit_workflow(workflow: dict, *, base_url: str,
     return pid
 
 
-def _await_workflow(prompt_id: str, *, base_url: str,
-                    timeout_s: int, poll_s: float = 1.5) -> dict:
+def _await_workflow(prompt_id: str, *, base_url: str, timeout_s: int, poll_s: float = 1.5) -> dict:
     """Block until the prompt finishes, returns the history entry."""
     deadline = time.monotonic() + timeout_s
     last_status: dict | None = None
     while time.monotonic() < deadline:
         try:
-            hist = _http_json(
-                "GET", f"{base_url}/history/{prompt_id}", timeout_s=10
-            )
+            hist = _http_json("GET", f"{base_url}/history/{prompt_id}", timeout_s=10)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise ComfyUIUnavailableError(
-                f"ComfyUI history poll failed: {exc}"
-            ) from exc
+            raise ComfyUIUnavailableError(f"ComfyUI history poll failed: {exc}") from exc
         entry = hist.get(prompt_id) if isinstance(hist, dict) else None
         if entry:
             status = entry.get("status") or {}
@@ -485,8 +495,7 @@ def _await_workflow(prompt_id: str, *, base_url: str,
     )
 
 
-def _collect_outputs(history_entry: dict, *, base_url: str,
-                     output_dir: Path) -> list[Path]:
+def _collect_outputs(history_entry: dict, *, base_url: str, output_dir: Path) -> list[Path]:
     """Download every image/video the workflow produced to ``output_dir``."""
     outputs_section = history_entry.get("outputs") or {}
     files: list[Path] = []
@@ -505,9 +514,7 @@ def _collect_outputs(history_entry: dict, *, base_url: str,
                 _http_download(url, dest)
                 files.append(dest)
     if not files:
-        raise ComfyUIError(
-            "ComfyUI workflow completed but produced no images/videos."
-        )
+        raise ComfyUIError("ComfyUI workflow completed but produced no images/videos.")
     return files
 
 
@@ -516,29 +523,44 @@ def _collect_outputs(history_entry: dict, *, base_url: str,
 # ---------------------------------------------------------------------------
 
 
-def render_image(scene: dict[str, Any], *, output_dir: Path | str,
-                 base_url: str | None = None,
-                 timeout_s: int | None = None) -> list[Path]:
+def render_image(
+    scene: dict[str, Any],
+    *,
+    output_dir: Path | str,
+    base_url: str | None = None,
+    timeout_s: int | None = None,
+) -> list[Path]:
     """Render one image-scene via ComfyUI; returns list of output file paths."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    return _dispatch_scene("comfyui_image", scene, output_dir=out,
-                           base_url=base_url, timeout_s=timeout_s)
+    return _dispatch_scene(
+        "comfyui_image", scene, output_dir=out, base_url=base_url, timeout_s=timeout_s
+    )
 
 
-def render_video(scene: dict[str, Any], *, output_dir: Path | str,
-                 base_url: str | None = None,
-                 timeout_s: int | None = None) -> list[Path]:
+def render_video(
+    scene: dict[str, Any],
+    *,
+    output_dir: Path | str,
+    base_url: str | None = None,
+    timeout_s: int | None = None,
+) -> list[Path]:
     """Render one short video clip via ComfyUI (Wan 2.1 / LTX / Hunyuan)."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    return _dispatch_scene("comfyui_video", scene, output_dir=out,
-                           base_url=base_url, timeout_s=timeout_s)
+    return _dispatch_scene(
+        "comfyui_video", scene, output_dir=out, base_url=base_url, timeout_s=timeout_s
+    )
 
 
-def _dispatch_scene(scene_type: str, scene: dict[str, Any], *,
-                    output_dir: Path, base_url: str | None,
-                    timeout_s: int | None) -> list[Path]:
+def _dispatch_scene(
+    scene_type: str,
+    scene: dict[str, Any],
+    *,
+    output_dir: Path,
+    base_url: str | None,
+    timeout_s: int | None,
+) -> list[Path]:
     base = (base_url or _comfyui_url()).rstrip("/")
     if not is_comfyui_available(base):
         raise ComfyUIUnavailableError(
@@ -589,8 +611,7 @@ class ComfyUIAdapter:
     # ------------------------------------------------------------------
     # AdapterProtocol.render
     # ------------------------------------------------------------------
-    def render(self, render_spec: Any, *, output_path: Any = None,
-               **kwargs: Any) -> list[Path]:
+    def render(self, render_spec: Any, *, output_path: Any = None, **kwargs: Any) -> list[Path]:
         """Render every scene of ``render_spec`` through ComfyUI.
 
         ComfyUI is the **primary generative renderer** of the pipeline, so
@@ -599,8 +620,8 @@ class ComfyUIAdapter:
         based on each scene's ``scene_type``. Other adapters (C4D, UE, …)
         may re-route individual scenes later for specific finishing work.
         """
-        out_dir = Path(str(output_path)) if output_path is not None else Path(
-            "/tmp/melosviz-comfyui"
+        out_dir = (
+            Path(str(output_path)) if output_path is not None else Path("/tmp/melosviz-comfyui")
         )
         out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -634,7 +655,8 @@ class ComfyUIAdapter:
                 clip_path = scene_out / "clip.mp4"
                 try:
                     _generate_placeholder_clip(
-                        scene, clip_path,
+                        scene,
+                        clip_path,
                         width=int(scene.get("width", 1280)),
                         height=int(scene.get("height", 720)),
                         fps=int(scene.get("fps", 30)),
@@ -646,19 +668,22 @@ class ComfyUIAdapter:
                     # so the pipeline doesn't hard-fail in minimal envs.
                     logger.warning(
                         "ComfyUIAdapter: placeholder clip failed (%s); "
-                        "returning workflow JSON instead.", exc,
+                        "returning workflow JSON instead.",
+                        exc,
                     )
                     results.append(spec_path)
-                job_spec["scenes"].append({
-                    "index": i,
-                    "scene_type": wf_type,
-                    "label": scene.get("label", f"scene_{i}"),
-                    "prompt": scene.get("prompt", ""),
-                    "negative": scene.get("negative", ""),
-                    "seed": scene.get("seed", 0),
-                    "workflow_json": str(spec_path),
-                    "placeholder_clip": str(clip_path) if clip_path.exists() else None,
-                })
+                job_spec["scenes"].append(
+                    {
+                        "index": i,
+                        "scene_type": wf_type,
+                        "label": scene.get("label", f"scene_{i}"),
+                        "prompt": scene.get("prompt", ""),
+                        "negative": scene.get("negative", ""),
+                        "seed": scene.get("seed", 0),
+                        "workflow_json": str(spec_path),
+                        "placeholder_clip": str(clip_path) if clip_path.exists() else None,
+                    }
+                )
             manifest = out_dir / "job_spec.json"
             manifest.write_text(json.dumps(job_spec, indent=2), encoding="utf-8")
             return results
@@ -669,7 +694,9 @@ class ComfyUIAdapter:
             wf_type = _resolve_workflow_for_scene(scene)
             try:
                 files = _dispatch_scene(
-                    wf_type, scene, output_dir=scene_out,
+                    wf_type,
+                    scene,
+                    output_dir=scene_out,
                     base_url=kwargs.get("base_url"),
                     timeout_s=kwargs.get("timeout_s"),
                 )
@@ -703,8 +730,7 @@ def _extract_scenes(render_spec: Any, *, scene_type: str | None = None) -> list[
     return out
 
 
-def _resolve_character_sheet(scene: dict[str, Any],
-                            registry: Any | None) -> dict[str, Any] | None:
+def _resolve_character_sheet(scene: dict[str, Any], registry: Any | None) -> dict[str, Any] | None:
     """Return the first character sheet referenced by ``scene``.
 
     Accepts either ``scene["character"]`` (str) or ``scene["characters"]``
@@ -741,8 +767,7 @@ def _resolve_character_sheet(scene: dict[str, Any],
     return None
 
 
-def _resolve_workflow_for_scene(scene: dict[str, Any],
-                                *, registry: Any | None = None) -> str:
+def _resolve_workflow_for_scene(scene: dict[str, Any], *, registry: Any | None = None) -> str:
     """Pick the ComfyUI workflow type for ``scene``.
 
     Explicit ``ipadapter_character`` / ``pulid_character`` scene_types
@@ -773,8 +798,7 @@ def _resolve_workflow_for_scene(scene: dict[str, Any],
     return "comfyui_image"
 
 
-def _stamp_character_fields(scene: dict[str, Any],
-                            *, registry: Any | None) -> dict[str, Any]:
+def _stamp_character_fields(scene: dict[str, Any], *, registry: Any | None) -> dict[str, Any]:
     """Return a copy of ``scene`` populated with ``character_*`` fields.
 
     Looks up the named character in ``registry`` (dict or registry

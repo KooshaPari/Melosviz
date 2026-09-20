@@ -20,7 +20,9 @@ class TestCatalogParity:
     def test_en_and_es_share_keys(self) -> None:
         en = _load_catalog("en")
         es = _load_catalog("es")
-        assert set(en) == set(es), f"key mismatch: en-only={set(en)-set(es)} es-only={set(es)-set(en)}"
+        assert set(en) == set(es), (
+            f"key mismatch: en-only={set(en) - set(es)} es-only={set(es) - set(en)}"
+        )
 
 
 class TestTranslate:

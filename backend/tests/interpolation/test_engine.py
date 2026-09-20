@@ -3,9 +3,9 @@
 Covers: backend detection, fallback ordering, ffmpeg minterpolate fallback,
 scene-pair schedule building, JSON-only manifest emission, and edge cases.
 """
+
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -15,16 +15,16 @@ import pytest
 
 def _import_engine():
     from melosviz.interpolation.engine import (
-        InterpolationEngine,
-        InterpolationBackend,
-        InterpolationMethod,
-        ScenePair,
-        InterpolationSchedule,
-        detect_backend,
-        list_backends,
-        interpolate_pair,
-        build_interpolation_schedule,
         INTERPOLATION_PRIORITY,
+        InterpolationBackend,
+        InterpolationEngine,
+        InterpolationMethod,
+        InterpolationSchedule,
+        ScenePair,
+        build_interpolation_schedule,
+        detect_backend,
+        interpolate_pair,
+        list_backends,
     )
 
     return (
@@ -43,15 +43,25 @@ def _import_engine():
 
 # 1. Backend detection ---------------------------------------------------
 
+
 def test_interpolation_priority_order():
     (
-        _, _, _, _, _, _, _, _, _, INTERPOLATION_PRIORITY,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        interpolation_priority,
     ) = _import_engine()
     # AI backends first, ffmpeg minterpolate last.
-    assert INTERPOLATION_PRIORITY[0] == "rife"
-    assert INTERPOLATION_PRIORITY[1] == "film"
-    assert INTERPOLATION_PRIORITY[2] == "flow_matching"
-    assert "ffmpeg_minterpolate" in INTERPOLATION_PRIORITY
+    assert interpolation_priority[0] == "rife"
+    assert interpolation_priority[1] == "film"
+    assert interpolation_priority[2] == "flow_matching"
+    assert "ffmpeg_minterpolate" in interpolation_priority
 
 
 def test_detect_backend_returns_string_or_none():
@@ -81,6 +91,7 @@ def test_detect_backend_prefer_override():
 
 
 # 2. Scene pair schedule -------------------------------------------------
+
 
 def test_build_interpolation_schedule_minimal():
     build_interpolation_schedule = _import_engine()[8]
@@ -125,9 +136,10 @@ def test_build_interpolation_schedule_position_at_start():
 
 # 3. ScenePair + InterpolationSchedule data classes ----------------------
 
+
 def test_scene_pair_defaults():
-    ScenePair = _import_engine()[3]
-    pair = ScenePair(
+    scene_pair_cls = _import_engine()[3]
+    pair = scene_pair_cls(
         from_scene="a",
         to_scene="b",
         from_path=Path("/tmp/a.mp4"),
@@ -139,8 +151,8 @@ def test_scene_pair_defaults():
 
 
 def test_scene_pair_to_dict():
-    ScenePair = _import_engine()[3]
-    pair = ScenePair(
+    scene_pair_cls = _import_engine()[3]
+    pair = scene_pair_cls(
         from_scene="a",
         to_scene="b",
         from_path=Path("/tmp/a.mp4"),
@@ -154,6 +166,7 @@ def test_scene_pair_to_dict():
 
 
 # 4. interpolate_pair (ffmpeg_minterpolate fallback) ---------------------
+
 
 def test_interpolate_pair_emits_manifest_when_backend_missing(tmp_path: Path):
     """When no AI backend is installed, interpolate_pair must:
@@ -244,20 +257,39 @@ def test_interpolate_pair_falls_back_to_ffmpeg_minterpolate(tmp_path: Path):
 
 # 5. InterpolationEngine class ---------------------------------------------
 
+
 def test_engine_init_default(tmp_path: Path):
     (
-        InterpolationEngine, _, _, _, _, _, _, _, _, _,
+        interpolation_engine,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
     ) = _import_engine()
-    engine = InterpolationEngine(out_dir=tmp_path / "out")
+    engine = interpolation_engine(out_dir=tmp_path / "out")
     assert engine is not None
     assert engine.out_dir.exists()
 
 
 def test_engine_init_explicit_backend(tmp_path: Path):
     (
-        InterpolationEngine, _, _, _, _, _, _, _, _, _,
+        interpolation_engine,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
     ) = _import_engine()
-    engine = InterpolationEngine(
+    engine = interpolation_engine(
         out_dir=tmp_path / "out",
         backend="ffmpeg_minterpolate",
     )
@@ -266,9 +298,18 @@ def test_engine_init_explicit_backend(tmp_path: Path):
 
 def test_engine_build_schedule_method():
     (
-        InterpolationEngine, _, _, _, _, _, _, _, _, _,
+        interpolation_engine,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
     ) = _import_engine()
-    engine = InterpolationEngine(out_dir=Path("/tmp"))
+    engine = interpolation_engine(out_dir=Path("/tmp"))
     schedule = engine.build_schedule(
         scene_names=["a", "b", "c"],
         insertion_count=2,
@@ -277,6 +318,7 @@ def test_engine_build_schedule_method():
 
 
 # 6. CLI / import smoke ---------------------------------------------------
+
 
 def test_module_imports():
     sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -289,8 +331,8 @@ def test_module_imports():
 
 
 def test_interpolation_method_enum():
-    _, _, InterpolationMethod, _, _, _, _, _, _, _ = _import_engine()
-    members = {m.value for m in InterpolationMethod}
+    _, _, interpolation_method, _, _, _, _, _, _, _ = _import_engine()
+    members = {m.value for m in interpolation_method}
     assert "ffmpeg_minterpolate" in members
     # RIFE / FILM / FlowMatching are AI members.
     assert "rife" in members

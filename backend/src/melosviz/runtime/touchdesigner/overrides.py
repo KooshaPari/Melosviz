@@ -142,9 +142,7 @@ def _coerce_scalar(s: str) -> Any:
     except ValueError:
         pass
     # Strip surrounding quotes
-    if (s.startswith('"') and s.endswith('"')) or (
-        s.startswith("'") and s.endswith("'")
-    ):
+    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
         return s[1:-1]
     return s
 
@@ -207,9 +205,7 @@ def apply_overrides(
     import copy
 
     result = copy.deepcopy(network_dict)
-    group_index: dict[str, dict[str, Any]] = {
-        g["name"]: g for g in result.get("groups", [])
-    }
+    group_index: dict[str, dict[str, Any]] = {g["name"]: g for g in result.get("groups", [])}
 
     for key, value in overrides.items():
         parts = key.split(".")
@@ -267,9 +263,7 @@ def diff_overrides(
         Keys absent from the canonical spec are included with
         ``canonical: None``.
     """
-    group_index: dict[str, dict[str, Any]] = {
-        g["name"]: g for g in network_dict.get("groups", [])
-    }
+    group_index: dict[str, dict[str, Any]] = {g["name"]: g for g in network_dict.get("groups", [])}
     diff: dict[OverrideKey, dict[str, Any]] = {}
 
     for key, override_val in overrides.items():

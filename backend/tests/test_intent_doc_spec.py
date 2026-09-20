@@ -114,10 +114,7 @@ def test_intent_doc_min_loc(non_empty_lines: list[str]) -> None:
 @pytest.mark.parametrize(
     "section_num,section_name,_pattern",
     REQUIRED_SECTIONS,
-    ids=[
-        f"section-{n}-{name.lower().replace(' ', '-')}"
-        for n, name, _ in REQUIRED_SECTIONS
-    ],
+    ids=[f"section-{n}-{name.lower().replace(' ', '-')}" for n, name, _ in REQUIRED_SECTIONS],
 )
 def test_intent_doc_has_section(
     intent_text: str, section_num: int, section_name: str, _pattern: re.Pattern[str]

@@ -1,14 +1,12 @@
 """Tests for MultiShotDirector — 3-pass planning: outline -> scenes -> shots."""
+
 from __future__ import annotations
-import json
 
 import pytest
 
 from melosviz.llm.director import (
     DirectorRequest,
     MultiShotDirector,
-    Shot,
-    StoryOutline,
 )
 
 
@@ -26,11 +24,6 @@ def _req() -> DirectorRequest:
             {"start": 60.0, "end": 90.0, "scene_type": "comfyui_video", "label": "outro"},
         ],
     )
-    d = so.to_dict()
-    assert d["title"] == "Neon Tide"
-    assert d["acts"][0]["name"] == "intro"
-    assert d["emotional_arc"] == ["wonder", "joy"]
-    json.dumps(d)
 
 
 def test_plan_outline_has_4_acts_and_arc():
@@ -43,7 +36,9 @@ def test_plan_outline_has_4_acts_and_arc():
     assert len(d.emotional_arc) >= 4
     # climax lands somewhere in the peak act
     peak_idx = next(i for i, a in enumerate(d.acts) if a["name"] == "peak")
-    peak_scene = max(0, min(len(d.emotional_arc) - 1, int(len(d.emotional_arc) * (peak_idx + 1) / len(d.acts))))
+    peak_scene = max(
+        0, min(len(d.emotional_arc) - 1, int(len(d.emotional_arc) * (peak_idx + 1) / len(d.acts)))
+    )
     assert d.emotional_arc[peak_scene] == "ecstasy"
     assert len(d.palette_arc) == len(d.emotional_arc)
     assert all(len(pa) == 2 for pa in d.palette_arc)
@@ -87,7 +82,7 @@ def test_plan_three_pass_is_seed_deterministic():
     r2 = MultiShotDirector(seed=123).plan_three_pass(_req())
     assert r1["outline"] == r2["outline"]
     # shots are dicts; compare camera_motion + kind per (scene,shot)
-    for s1, s2 in zip(r1["shots"], r2["shots"]):
+    for s1, s2 in zip(r1["shots"], r2["shots"], strict=False):
         assert s1["camera_motion"] == s2["camera_motion"]
         assert s1["kind"] == s2["kind"]
 

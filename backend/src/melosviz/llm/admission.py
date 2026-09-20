@@ -43,9 +43,7 @@ class LLMAdmissionConfig:
     max_output_tokens: int
 
     @classmethod
-    def from_env(
-        cls, env: Mapping[str, str] | None = None
-    ) -> LLMAdmissionConfig:
+    def from_env(cls, env: Mapping[str, str] | None = None) -> LLMAdmissionConfig:
         """Build a config from ``MELOSVIZ_LLM_*`` environment variables.
 
         Falls back to ``(30, 2, 32, 3, 1.00)`` for the numeric fields. Pricing
@@ -78,24 +76,14 @@ class LLMAdmissionConfig:
             return value
 
         return cls(
-            requests_per_minute=positive_int(
-                "MELOSVIZ_LLM_REQUESTS_PER_MINUTE", "30"
-            ),
+            requests_per_minute=positive_int("MELOSVIZ_LLM_REQUESTS_PER_MINUTE", "30"),
             max_concurrency=positive_int("MELOSVIZ_LLM_MAX_CONCURRENCY", "2"),
             max_queue=positive_int("MELOSVIZ_LLM_MAX_QUEUE", "32"),
             max_retries=positive_int("MELOSVIZ_LLM_MAX_RETRIES", "3"),
-            cost_cap_usd=non_negative_decimal(
-                "MELOSVIZ_LLM_COST_CAP_USD", "1.00"
-            ),
-            input_usd_per_million=non_negative_decimal(
-                "MELOSVIZ_LLM_INPUT_USD_PER_MILLION"
-            ),
-            output_usd_per_million=non_negative_decimal(
-                "MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION"
-            ),
-            max_output_tokens=positive_int(
-                "MELOSVIZ_LLM_MAX_OUTPUT_TOKENS", "2048"
-            ),
+            cost_cap_usd=non_negative_decimal("MELOSVIZ_LLM_COST_CAP_USD", "1.00"),
+            input_usd_per_million=non_negative_decimal("MELOSVIZ_LLM_INPUT_USD_PER_MILLION"),
+            output_usd_per_million=non_negative_decimal("MELOSVIZ_LLM_OUTPUT_USD_PER_MILLION"),
+            max_output_tokens=positive_int("MELOSVIZ_LLM_MAX_OUTPUT_TOKENS", "2048"),
         )
 
     def estimate(self, payload: bytes) -> LLMCostEstimate:
@@ -120,9 +108,7 @@ class LLMAdmissionConfig:
 class LLMReservation(AbstractContextManager["LLMReservation"]):
     """A reserved budget slot for one logical LLM call (potentially retried)."""
 
-    def __init__(
-        self, gate: LLMAdmissionGate, estimate: LLMCostEstimate
-    ) -> None:
+    def __init__(self, gate: LLMAdmissionGate, estimate: LLMCostEstimate) -> None:
         """Record the reservation against the gate's budget ledger."""
         self._gate = gate
         self.estimate = estimate
@@ -205,9 +191,7 @@ class LLMReservation(AbstractContextManager["LLMReservation"]):
 class LLMAttempt(AbstractContextManager["LLMAttempt"]):
     """A single attempt to enter the queue and call the LLM once."""
 
-    def __init__(
-        self, gate: LLMAdmissionGate, reservation: LLMReservation
-    ) -> None:
+    def __init__(self, gate: LLMAdmissionGate, reservation: LLMReservation) -> None:
         """Bind the attempt to its gate and reservation."""
         self._gate = gate
         self._reservation = reservation
@@ -293,8 +277,7 @@ class LLMAdmissionGate:
             projected = self._spent + self._reserved + estimate.usd
             if projected > self.config.cost_cap_usd:
                 raise LLMAdmissionError(
-                    f"Director LLM cost cap exceeded: {projected} > "
-                    f"{self.config.cost_cap_usd}"
+                    f"Director LLM cost cap exceeded: {projected} > {self.config.cost_cap_usd}"
                 )
             self._reserved += estimate.usd
         return LLMReservation(self, estimate)

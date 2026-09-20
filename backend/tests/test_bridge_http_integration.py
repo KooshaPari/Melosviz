@@ -94,9 +94,7 @@ class TestAnalyzeEndpoint:
         self, client, mock_wav_file, mock_render_spec, reset_security
     ):
         """Valid WAV file request returns RenderSpec JSON."""
-        with patch(
-            "melosviz.bridge.server._analyze_with_mir_or_python"
-        ) as mock_analyze:
+        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -132,9 +130,7 @@ class TestAnalyzeEndpoint:
         bad_wav = tmp_path / "bad.wav"
         bad_wav.write_bytes(b"INVALID")
 
-        with patch(
-            "melosviz.bridge.server._analyze_with_mir_or_python"
-        ) as mock_analyze:
+        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
             mock_analyze.side_effect = ValueError("invalid WAV header")
 
             response = client.post(
@@ -149,9 +145,7 @@ class TestAnalyzeEndpoint:
         self, client, mock_wav_file, mock_render_spec, reset_security
     ):
         """Analyzer falls back to Python when Rust MIR fails."""
-        with patch(
-            "melosviz.bridge.server._analyze_with_mir_or_python"
-        ) as mock_analyze:
+        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -328,9 +322,7 @@ class TestResponseSchema:
         self, client, mock_wav_file, mock_render_spec, reset_security
     ):
         """Analyze response is plaintext JSON (not application/json)."""
-        with patch(
-            "melosviz.bridge.server._analyze_with_mir_or_python"
-        ) as mock_analyze:
+        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
             mock_analyze.return_value = mock_render_spec
 
             response = client.post(
@@ -416,9 +408,7 @@ class TestErrorRecovery:
 
     def test_analyze_timeout_returns_400(self, client, mock_wav_file, reset_security):
         """Analyzer timeout returns 400 error."""
-        with patch(
-            "melosviz.bridge.server._analyze_with_mir_or_python"
-        ) as mock_analyze:
+        with patch("melosviz.bridge.server._analyze_with_mir_or_python") as mock_analyze:
             mock_analyze.side_effect = TimeoutError("analyzer timeout")
 
             response = client.post(

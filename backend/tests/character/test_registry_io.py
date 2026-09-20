@@ -84,6 +84,7 @@ def test_save_sheet_writes_yaml_or_json(tmp_path: Path):
     # And the content can be parsed back.
     if out_path.suffix in {".yaml", ".yml"}:
         import yaml
+
         data = yaml.safe_load(text)
     else:
         data = json.loads(text)

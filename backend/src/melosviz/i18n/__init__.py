@@ -47,7 +47,7 @@ def get_locale() -> Locale:
 def t(key: str, fallback: str | None = None, **fmt: object) -> str:
     """Look up *key* in the active catalog; fall back to en, then *fallback*/key.
 
-  Optional ``fmt`` kwargs are applied via :meth:`str.format` when present.
+    Optional ``fmt`` kwargs are applied via :meth:`str.format` when present.
     """
     locale = get_locale()
     catalog = _load(locale)
@@ -55,7 +55,7 @@ def t(key: str, fallback: str | None = None, **fmt: object) -> str:
         text = catalog[key]
     elif locale != "en":
         en = _load("en")
-        text = en[key] if key in en else (fallback if fallback is not None else key)
+        text = en.get(key, fallback if fallback is not None else key)
     else:
         text = fallback if fallback is not None else key
     if fmt:

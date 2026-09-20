@@ -302,9 +302,7 @@ class TestRegistryMotionGraphics:
         adapter = adapter_cls()
         assert adapter is not None
 
-    def test_motion_graphics_adapter_render_does_not_raise(
-        self, tmp_path: Path
-    ) -> None:
+    def test_motion_graphics_adapter_render_does_not_raise(self, tmp_path: Path) -> None:
         from melosviz.conductor.registry import ADAPTER_REGISTRY
 
         adapter = ADAPTER_REGISTRY["motion_graphics_beat_sync"]()
@@ -373,8 +371,9 @@ class TestMEAdapter:
         assert clips[1]["label"] == "drop"
 
     def test_me_adapter_render_writes_job_spec(self, tmp_path: Path) -> None:
-        from melosviz.render.mediaencoder_adapter import MEAdapter
         from unittest.mock import patch
+
+        from melosviz.render.mediaencoder_adapter import MEAdapter
 
         # Create a dummy segment path (need at least one to build a valid spec)
         seg = tmp_path / "seg0.mp4"
@@ -412,9 +411,7 @@ class TestMEAdapter:
         import contextlib
 
         with (
-            caplog.at_level(
-                logging.WARNING, logger="melosviz.render.mediaencoder_adapter"
-            ),
+            caplog.at_level(logging.WARNING, logger="melosviz.render.mediaencoder_adapter"),
             contextlib.suppress(Exception),
         ):
             assemble_with_ffmpeg([tmp_path / "fake.mp4"], tmp_path / "out.mp4")
@@ -510,31 +507,24 @@ class TestFireflyAdapter:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        intro_spec = next(
-            s for s in specs if s["melosviz_meta"]["segment_label"] == "intro"
-        )
+        intro_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "intro")
         assert "intro" in intro_spec["prompt"].lower()
 
     def test_prompt_contains_mood_descriptor(self) -> None:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        drop_spec = next(
-            s for s in specs if s["melosviz_meta"]["segment_label"] == "drop"
-        )
+        drop_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "drop")
         # drop has arousal=0.95 → should include energetic/vibrant descriptor
         assert any(
-            word in drop_spec["prompt"].lower()
-            for word in ("energetic", "vibrant", "intense")
+            word in drop_spec["prompt"].lower() for word in ("energetic", "vibrant", "intense")
         )
 
     def test_styles_match_segment_label(self) -> None:
         from melosviz.render.firefly_adapter import build_firefly_job_specs
 
         specs = build_firefly_job_specs(_minimal_spec())
-        drop_spec = next(
-            s for s in specs if s["melosviz_meta"]["segment_label"] == "drop"
-        )
+        drop_spec = next(s for s in specs if s["melosviz_meta"]["segment_label"] == "drop")
         assert "synthwave" in drop_spec["styles"]
 
     def test_each_spec_has_unique_seed(self) -> None:
@@ -587,9 +577,7 @@ class TestFireflyAdapter:
             return_value=stub_out,
         ):
             adapter = FireflyAdapter()
-            with caplog.at_level(
-                logging.WARNING, logger="melosviz.render.firefly_adapter"
-            ):
+            with caplog.at_level(logging.WARNING, logger="melosviz.render.firefly_adapter"):
                 result = adapter.render(
                     _minimal_spec(), output_path=tmp_path, force_video_export=True
                 )
@@ -622,9 +610,7 @@ class TestOrchestrator:
         orch = Orchestrator(output_dir=tmp_path)
         assert orch is not None
 
-    def test_orchestrator_render_with_explicit_scene_types(
-        self, tmp_path: Path
-    ) -> None:
+    def test_orchestrator_render_with_explicit_scene_types(self, tmp_path: Path) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
@@ -634,9 +620,7 @@ class TestOrchestrator:
         )
         assert "motion_graphics_beat_sync" in result.per_scene_results
 
-    def test_orchestrator_assembly_result_present_when_not_skipped(
-        self, tmp_path: Path
-    ) -> None:
+    def test_orchestrator_assembly_result_present_when_not_skipped(self, tmp_path: Path) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=False)
@@ -698,9 +682,7 @@ class TestRegistryCoverage:
         ):
             adapter_cls = ADAPTER_REGISTRY[scene_type]
             inst = adapter_cls()
-            assert hasattr(inst, "scene_type"), (
-                f"{scene_type} adapter missing scene_type attribute"
-            )
+            assert hasattr(inst, "scene_type"), f"{scene_type} adapter missing scene_type attribute"
             assert inst.scene_type == scene_type or adapter_cls.scene_type == scene_type
 
     def test_live_stage_adapter_wired(self) -> None:

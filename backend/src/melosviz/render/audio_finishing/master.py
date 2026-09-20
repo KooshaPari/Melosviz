@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ._proc import run
 from .loudness import analyze_loudness, normalize_loudness, resolve_lufs_target
 from .stems import detect_stem_backend, export_stems, list_stem_backends
 
@@ -21,19 +20,31 @@ logger = logging.getLogger(__name__)
 def build_offline_master_plan(
     master_dir: Path,
     *,
-    lufs_target: Optional[str] = None,
+    lufs_target: str | None = None,
     export_stems_flag: bool = False,
-    audio_wav: Optional[Path] = None,
-) -> Dict[str, Any]:
+    audio_wav: Path | None = None,
+) -> dict[str, Any]:
     """Emit a JSON plan describing what the master pass *would* do."""
-    plan: Dict[str, Any] = {
+    plan: dict[str, Any] = {
         "finishing": "ffmpeg_loudnorm",
         "mode": "offline",
         "master_dir": str(master_dir),
         "deliverables_planned": [
-            {"path": str(master_dir / "festival_prores.mov"), "codec": "ProRes 422 HQ", "use": "festival"},
-            {"path": str(master_dir / "club_h264.mp4"), "codec": "H.264 yuv420p", "use": "club screens"},
-            {"path": str(master_dir / "youtube_h264.mp4"), "codec": "H.264 yuv420p", "use": "YouTube"},
+            {
+                "path": str(master_dir / "festival_prores.mov"),
+                "codec": "ProRes 422 HQ",
+                "use": "festival",
+            },
+            {
+                "path": str(master_dir / "club_h264.mp4"),
+                "codec": "H.264 yuv420p",
+                "use": "club screens",
+            },
+            {
+                "path": str(master_dir / "youtube_h264.mp4"),
+                "codec": "H.264 yuv420p",
+                "use": "YouTube",
+            },
             {"path": str(master_dir / "captions.srt"), "codec": "SRT", "use": "captions"},
         ],
         "next_steps": [
@@ -93,15 +104,15 @@ def run_master(
     edit_path: Path,
     out_dir: Path,
     *,
-    lufs_target: Optional[str] = None,
+    lufs_target: str | None = None,
     export_stems_flag: bool = False,
-    audio_wav: Optional[Path] = None,
+    audio_wav: Path | None = None,
     overwrite: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute the master pass: loudness normalize + stem export."""
     out_dir.mkdir(parents=True, exist_ok=True)
-    log: List[str] = []
-    deliverables: List[Dict[str, Any]] = []
+    log: list[str] = []
+    deliverables: list[dict[str, Any]] = []
 
     target_meta = resolve_lufs_target(lufs_target) if lufs_target else None
     if target_meta is not None:
@@ -126,7 +137,9 @@ def run_master(
                 }
             )
         else:
-            log.append(f"lufs_target={lufs_target} requested but no audio_wav supplied; skipping normalization")
+            log.append(
+                f"lufs_target={lufs_target} requested but no audio_wav supplied; skipping normalization"
+            )
 
     if export_stems_flag:
         if audio_wav is not None and audio_wav.exists():
@@ -155,5 +168,3 @@ def run_master(
     }
     plan_path.write_text(json.dumps(plan, indent=2, default=str))
     return plan
-
-

@@ -34,8 +34,7 @@ def _tone(freq_hz: float) -> SampleGen:
         if freq_hz <= 0:
             return [0] * n
         return [
-            int(32767 * 0.8 * math.sin(2 * math.pi * freq_hz * i / sample_rate))
-            for i in range(n)
+            int(32767 * 0.8 * math.sin(2 * math.pi * freq_hz * i / sample_rate)) for i in range(n)
         ]
 
     return gen
@@ -53,12 +52,7 @@ def _kick_pattern() -> SampleGen:
             if (phase % 1.0) < (pulse_len / sample_rate) * pulse_hz:
                 local = int((phase % 1.0) * sample_rate / pulse_hz)
                 env = math.exp(-local / (0.03 * sample_rate))
-                out[i] = int(
-                    32767
-                    * 0.9
-                    * env
-                    * math.sin(2 * math.pi * 55.0 * local / sample_rate)
-                )
+                out[i] = int(32767 * 0.9 * env * math.sin(2 * math.pi * 55.0 * local / sample_rate))
         return out
 
     return gen
@@ -72,9 +66,7 @@ def _chord_cmaj() -> SampleGen:
     def gen(n: int, sample_rate: int) -> list[int]:
         out: list[int] = []
         for i in range(n):
-            s = sum(math.sin(2 * math.pi * f * i / sample_rate) for f in freqs) / len(
-                freqs
-            )
+            s = sum(math.sin(2 * math.pi * f * i / sample_rate) for f in freqs) / len(freqs)
             out.append(int(32767 * 0.7 * s))
         return out
 
@@ -103,9 +95,7 @@ CASES: tuple[tuple[str, float, SampleGen], ...] = (
 )
 
 
-def _write_wav(
-    path: Path, duration_s: float, gen: SampleGen, sample_rate: int = 44100
-) -> Path:
+def _write_wav(path: Path, duration_s: float, gen: SampleGen, sample_rate: int = 44100) -> Path:
     n = int(duration_s * sample_rate)
     samples = gen(n, sample_rate)
     assert len(samples) == n
@@ -176,9 +166,7 @@ def _dump(spec: Any) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("name,duration,gen", CASES, ids=[c[0] for c in CASES])
-def test_golden_renderspec(
-    name: str, duration: float, gen: SampleGen, tmp_path: Path
-) -> None:
+def test_golden_renderspec(name: str, duration: float, gen: SampleGen, tmp_path: Path) -> None:
     from melosviz.analysis.audio import spec_from_wav
 
     wav = _write_wav(WAV_DIR / f"{name}.wav", duration, gen)
@@ -190,9 +178,7 @@ def test_golden_renderspec(
     expected_path = EXPECTED_DIR / f"{name}.json"
     if os.environ.get("UPDATE_GOLDEN") in ("1", "true", "True"):
         EXPECTED_DIR.mkdir(parents=True, exist_ok=True)
-        expected_path.write_text(
-            json.dumps(got, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        expected_path.write_text(json.dumps(got, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         pytest.skip(f"updated golden {expected_path.relative_to(REPO_ROOT)}")
 
     assert expected_path.is_file(), (

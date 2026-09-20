@@ -9,9 +9,9 @@ from __future__ import annotations
 import pytest
 
 from melosviz.llm.director import (
+    DIRECTOR_SCENE_TYPES,
     Director,
     DirectorRequest,
-    DIRECTOR_SCENE_TYPES,
 )
 
 
@@ -23,13 +23,15 @@ def _make_segments(count: int, total_duration: float = 120.0) -> list[dict]:
     for i in range(count):
         start = i * step
         end = (i + 1) * step if i < count - 1 else total_duration
-        segs.append({
-            "index": i,
-            "label": labels[i % len(labels)],
-            "start": start,
-            "end": end,
-            "energy_mean": 0.3 + 0.05 * (i % 10),
-        })
+        segs.append(
+            {
+                "index": i,
+                "label": labels[i % len(labels)],
+                "start": start,
+                "end": end,
+                "energy_mean": 0.3 + 0.05 * (i % 10),
+            }
+        )
     return segs
 
 
@@ -78,9 +80,7 @@ class TestStoryLengthEnforcement:
         for i in range(1, len(board.scenes)):
             prev = board.scenes[i - 1].scene_type
             curr = board.scenes[i].scene_type
-            assert prev != curr, (
-                f"adjacent duplicate at scenes {i-1}/{i}: {prev}"
-            )
+            assert prev != curr, f"adjacent duplicate at scenes {i - 1}/{i}: {prev}"
 
     def test_all_scene_types_are_valid(self) -> None:
         """Every generated scene_type must be in the DIRECTOR_SCENE_TYPES set."""
