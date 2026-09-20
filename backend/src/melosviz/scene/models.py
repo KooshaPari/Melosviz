@@ -20,7 +20,7 @@ Design
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -66,7 +66,7 @@ class SplatAssetSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class SemanticLabel(StrEnum):
+class SemanticLabel(str, Enum):
     """Semantic classes the scanner can prefer when targeting regions.
 
     These map to segmentation categories in the scene.  The evaluator
@@ -150,7 +150,7 @@ class SemanticScannerSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class Domain(StrEnum):
+class Domain(str, Enum):
     """Representation domains the scene can switch/blend between."""
 
     PHOTO = "photo"  # equirect 360 / projected video
@@ -160,7 +160,7 @@ class Domain(StrEnum):
     FX = "fx"  # particles / edge maps / stylized shader
 
 
-class ScannerType(StrEnum):
+class ScannerType(str, Enum):
     """Scanner geometry type."""
 
     ROTATING_CONE = "rotating_cone"
@@ -168,7 +168,7 @@ class ScannerType(StrEnum):
     SPLINE = "spline"
 
 
-class FalloffType(StrEnum):
+class FalloffType(str, Enum):
     """Edge falloff shape for the scanner mask."""
 
     LINEAR = "linear"
@@ -176,7 +176,7 @@ class FalloffType(StrEnum):
     COSINE = "cosine"
 
 
-class OcclusionMode(StrEnum):
+class OcclusionMode(str, Enum):
     """How the scanner handles scene depth/occlusion."""
 
     NONE = "none"  # no occlusion — mask ignores depth
@@ -317,7 +317,7 @@ class SceneSpec(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class DomainMaterialLook(StrEnum):
+class DomainMaterialLook(str, Enum):
     """Named material look families for each domain.
 
     These map to shader presets in the Blender adapter.

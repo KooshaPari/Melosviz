@@ -39,7 +39,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 LOG = logging.getLogger(__name__)
@@ -50,13 +50,13 @@ LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class CritiqueVerdict(StrEnum):
+class CritiqueVerdict(str, Enum):
     APPROVE = "approve"
     REVISE = "revise"
     REJECT = "reject"
 
 
-class CritiqueSeverity(StrEnum):
+class CritiqueSeverity(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"

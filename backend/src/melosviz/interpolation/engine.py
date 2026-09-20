@@ -20,7 +20,7 @@ import shutil
 import subprocess
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from enum import StrEnum
+from enum import Enum
 from pathlib import Path
 
 LOG = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ INTERPOLATION_PRIORITY: list[str] = [
 ]
 
 
-class InterpolationMethod(StrEnum):
+class InterpolationMethod(str, Enum):
     """Available interpolation backends."""
 
     RIFE = "rife"
@@ -44,7 +44,7 @@ class InterpolationMethod(StrEnum):
     FFMPEG_MINTERPOLATE = "ffmpeg_minterpolate"
 
 
-class InterpolationBackend(StrEnum):
+class InterpolationBackend(str, Enum):
     """Alias for InterpolationMethod (some tests import both names)."""
 
     RIFE = "rife"
