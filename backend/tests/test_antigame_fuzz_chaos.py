@@ -53,7 +53,6 @@ except ImportError:  # pragma: no cover — handled below
 
 from melosviz.analysis.models import RenderSpec  # noqa: E402
 
-
 if HAVE_HYPOTHESIS:
 
     class TestRenderSpecFuzz:
@@ -85,9 +84,7 @@ if HAVE_HYPOTHESIS:
                 max_size=8,
             ),
         )
-        @settings(
-            max_examples=50, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
-        )
+        @settings(max_examples=50, deadline=2000, suppress_health_check=[HealthCheck.too_slow])
         def test_metadata_never_crashes(self, metadata: dict) -> None:
             try:
                 spec = RenderSpec(metadata=metadata)
@@ -108,9 +105,7 @@ if HAVE_HYPOTHESIS:
         @given(
             payload=st.binary(min_size=0, max_size=512),
         )
-        @settings(
-            max_examples=40, deadline=2000, suppress_health_check=[HealthCheck.too_slow]
-        )
+        @settings(max_examples=40, deadline=2000, suppress_health_check=[HealthCheck.too_slow])
         def test_garbage_bytes_to_renderspec(self, payload: bytes) -> None:
             """Random byte strings should never hang or crash; they should
             either round-trip to a default spec or raise ValidationError."""
@@ -154,17 +149,14 @@ else:
 # ===========================================================================
 
 
-def _write_wav(
-    path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440
-) -> Path:
+def _write_wav(path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440) -> Path:
     n = int(seconds * sr)
     with wave.open(str(path), "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(sr)
         frames = b"".join(
-            struct.pack("<h", int(32767 * math.sin(2 * math.pi * freq * i / sr)))
-            for i in range(n)
+            struct.pack("<h", int(32767 * math.sin(2 * math.pi * freq * i / sr))) for i in range(n)
         )
         wf.writeframes(frames)
     return path
@@ -244,9 +236,7 @@ class TestBridgeHttpFuzz:
             from fastapi.testclient import TestClient
 
             from melosviz.bridge.server import app
-        except (
-            ImportError
-        ):  # pragma: no cover — only when [bridge] extras not installed
+        except ImportError:  # pragma: no cover — only when [bridge] extras not installed
             pytest.skip("fastapi/uvicorn not installed")
         return TestClient(app)
 
@@ -312,9 +302,7 @@ class TestChaosResilience:
         wav = _write_wav(tmp_path / "ok.wav", seconds=0.25)
         # Simulate the bridge process dying after a successful analysis by
         # replacing one of the downstream functions to raise SystemExit.
-        with patch(
-            "melosviz.compose.assemble.assemble_render_plan", side_effect=SystemExit(1)
-        ):
+        with patch("melosviz.compose.assemble.assemble_render_plan", side_effect=SystemExit(1)):
             from melosviz.compose.assemble import assemble_render_plan
 
             spec = spec_from_wav(wav)

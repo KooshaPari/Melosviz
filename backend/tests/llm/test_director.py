@@ -13,10 +13,10 @@ import pytest
 from melosviz.llm.admission import LLMAdmissionConfig, LLMAdmissionGate
 from melosviz.llm.director import (
     CONTINUITY_ANCHOR_VERSION,
+    DIRECTOR_SCENE_TYPES,
     ContinuityAnchor,
     Director,
     DirectorRequest,
-    DIRECTOR_SCENE_TYPES,
 )
 from melosviz.llm.lyrics import parse_lrc
 
@@ -24,11 +24,11 @@ from melosviz.llm.lyrics import parse_lrc
 def _sample_segments() -> list[dict]:
     # 60-second simple structure: intro / verse / chorus / bridge / outro
     return [
-        {"index": 0, "label": "intro",   "start": 0.0,  "end": 8.0,  "energy_mean": 0.3},
-        {"index": 1, "label": "verse",   "start": 8.0,  "end": 20.0, "energy_mean": 0.5},
-        {"index": 2, "label": "chorus",  "start": 20.0, "end": 36.0, "energy_mean": 0.85},
-        {"index": 3, "label": "bridge",  "start": 36.0, "end": 48.0, "energy_mean": 0.6},
-        {"index": 4, "label": "outro",   "start": 48.0, "end": 60.0, "energy_mean": 0.25},
+        {"index": 0, "label": "intro", "start": 0.0, "end": 8.0, "energy_mean": 0.3},
+        {"index": 1, "label": "verse", "start": 8.0, "end": 20.0, "energy_mean": 0.5},
+        {"index": 2, "label": "chorus", "start": 20.0, "end": 36.0, "energy_mean": 0.85},
+        {"index": 3, "label": "bridge", "start": 36.0, "end": 48.0, "energy_mean": 0.6},
+        {"index": 4, "label": "outro", "start": 48.0, "end": 60.0, "energy_mean": 0.25},
     ]
 
 
@@ -58,7 +58,7 @@ def test_scene_types_are_valid_and_no_adjacent_duplicates() -> None:
     board = director.storyboard(req)
     for s in board.scenes:
         assert s.scene_type in DIRECTOR_SCENE_TYPES
-    for prev, nxt in zip(board.scenes, board.scenes[1:]):
+    for prev, nxt in zip(board.scenes, board.scenes[1:], strict=False):
         # Anti-repeat is soft — we only require that two adjacent scenes
         # are not *identical* "intro" or "outro" placeholders, which
         # the static archetype map already enforces.
@@ -142,6 +142,7 @@ def test_determinism_same_seed_same_storyboard() -> None:
 
 def test_storyboard_to_dict_is_json_serialisable() -> None:
     import json
+
     director = Director(seed=2)
     req = DirectorRequest(
         concept="abstract neon",
@@ -178,7 +179,7 @@ def test_lyrics_snap_scenes_to_phrase_boundaries() -> None:
     # Each phrase becomes its own scene
     assert len(board.scenes) == len(phrases)
     # Each scene's notes mention the lyric
-    for scene, phrase in zip(board.scenes, phrases):
+    for scene, phrase in zip(board.scenes, phrases, strict=False):
         assert phrase.text[:40] in scene.notes
 
 
@@ -230,7 +231,8 @@ def _solid_png(rgb: tuple[int, int, int]) -> bytes:
     def chunk(tag: bytes, data: bytes) -> bytes:
         return (
             struct.pack(">I", len(data))
-            + tag + data
+            + tag
+            + data
             + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
         )
 
@@ -282,8 +284,13 @@ def test_mood_board_style_inlined_into_prompt(tmp_path) -> None:
     )
     board = Director(seed=42).storyboard(req)
     prompt_tokens = (
-        "low-key", "grain", "high-key", "saturation",
-        "naturalistic", "clean digital", "punchy",
+        "low-key",
+        "grain",
+        "high-key",
+        "saturation",
+        "naturalistic",
+        "clean digital",
+        "punchy",
     )
     assert any(token in board.scenes[0].prompt.lower() for token in prompt_tokens)
 
@@ -416,6 +423,7 @@ def test_drop_archetype_routes_to_audio_video_wan() -> None:
     director.storyboard(req)
     # Drop scene type defined in _ARCHETYPE_DEFAULTS regardless of segments.
     from melosviz.llm.director import _ARCHETYPE_DEFAULTS
+
     assert _ARCHETYPE_DEFAULTS["drop"].get("audio_video_scene_type") == "comfyui_audio_video_wan"
 
 
@@ -453,7 +461,7 @@ class FakeResponse:
     def __init__(self, payload: dict) -> None:
         self._body = json.dumps(payload).encode()
 
-    def __enter__(self) -> "FakeResponse":
+    def __enter__(self) -> FakeResponse:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:
@@ -510,12 +518,20 @@ def test_llm_429_honors_retry_after_and_keeps_model(monkeypatch) -> None:
         urllib.error.HTTPError(
             "https://llm.invalid", 429, "rate limited", {"Retry-After": "2"}, io.BytesIO()
         ),
-        FakeResponse({
-            "choices": [{"message": {"content": json.dumps({
-                "rewrites": [{"index": 0, "prompt": "refined prompt"}]
-            })}}],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
-        }),
+        FakeResponse(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {"rewrites": [{"index": 0, "prompt": "refined prompt"}]}
+                            )
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            }
+        ),
     ]
 
     def opener(request, timeout):
@@ -525,9 +541,9 @@ def test_llm_429_honors_retry_after_and_keeps_model(monkeypatch) -> None:
             raise response
         return response
 
-    board = Director(
-        seed=1, llm_opener=opener, llm_sleeper=sleeps.append
-    ).storyboard(_single_scene_request())
+    board = Director(seed=1, llm_opener=opener, llm_sleeper=sleeps.append).storyboard(
+        _single_scene_request()
+    )
     assert board.scenes[0].prompt == "refined prompt"
     assert sleeps == [2.0]
     assert [request["model"] for request in requests] == ["fixed-model", "fixed-model"]
@@ -541,9 +557,7 @@ def test_llm_non_retryable_400_attempts_once(monkeypatch) -> None:
     def opener(request, timeout):
         nonlocal calls
         calls += 1
-        raise urllib.error.HTTPError(
-            request.full_url, 400, "bad request", {}, io.BytesIO()
-        )
+        raise urllib.error.HTTPError(request.full_url, 400, "bad request", {}, io.BytesIO())
 
     board = Director(seed=1, llm_opener=opener).storyboard(_single_scene_request())
     assert calls == 1
@@ -559,25 +573,27 @@ def test_llm_records_actual_cost_in_gate(monkeypatch) -> None:
     estimate = config.estimate(b"x")
 
     def opener(request, timeout):
-        return FakeResponse({
-            "choices": [{"message": {"content": json.dumps({
-                "rewrites": [{"index": 0, "prompt": "ok"}]
-            })}}],
-            "usage": {"prompt_tokens": 4, "completion_tokens": 2},
-        })
+        return FakeResponse(
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps({"rewrites": [{"index": 0, "prompt": "ok"}]})
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 4, "completion_tokens": 2},
+            }
+        )
 
-    board = Director(
-        seed=1, llm_gate=gate, llm_opener=opener
-    ).storyboard(_single_scene_request())
+    board = Director(seed=1, llm_gate=gate, llm_opener=opener).storyboard(_single_scene_request())
     assert board.scenes[0].prompt == "ok"
     expected_actual = config.actual_cost(4, 2)
     assert gate.spent_usd == expected_actual
     assert gate.spent_usd != estimate.usd
 
 
-def test_llm_malformed_payload_falls_back_to_templates(
-    monkeypatch, caplog
-) -> None:
+def test_llm_malformed_payload_falls_back_to_templates(monkeypatch, caplog) -> None:
     """Malformed LLM payloads (empty choices, missing message key, None
     message) must not crash the Director — fall back to templates and log
     a warning instead. Regression test for IndexError / AttributeError
@@ -600,8 +616,10 @@ def test_llm_malformed_payload_falls_back_to_templates(
         # message value is None
         {"choices": [{"message": None}], "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
         # content not a string
-        {"choices": [{"message": {"content": 12345}}],
-         "usage": {"prompt_tokens": 1, "completion_tokens": 1}},
+        {
+            "choices": [{"message": {"content": 12345}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        },
     ]
     for i, payload in enumerate(malformed_payloads):
 
@@ -609,9 +627,7 @@ def test_llm_malformed_payload_falls_back_to_templates(
             return FakeResponse(p)
 
         with caplog.at_level(logging.WARNING, logger="melosviz.llm.director"):
-            board = Director(seed=i, llm_opener=opener).storyboard(
-                _single_scene_request()
-            )
+            board = Director(seed=i, llm_opener=opener).storyboard(_single_scene_request())
         assert "scene verse" in board.scenes[0].prompt, f"case {i}: templates not used"
         assert "refinement skipped" in caplog.text, f"case {i}: no warning logged"
         caplog.clear()

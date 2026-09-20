@@ -33,9 +33,7 @@ class _ListAdapter:
 def test_done_event_carries_artifact_from_list_returning_adapter(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.setitem(
-        registry_mod.ADAPTER_REGISTRY, "comfyui_image", _ListAdapter
-    )
+    monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "comfyui_image", _ListAdapter)
     orch = Orchestrator(
         output_dir=tmp_path / "out",
         skip_assembly=True,
@@ -65,11 +63,8 @@ def test_done_event_carries_artifact_from_list_returning_adapter(
 
 def test_provenance_outcome_tag_present(tmp_path: Path, monkeypatch) -> None:
     """Provenance sidecar records outcome=render vs offline-placeholder (A1)."""
-    from melosviz.conductor.provenance import provenance_path_for
 
-    monkeypatch.setitem(
-        registry_mod.ADAPTER_REGISTRY, "comfyui_image", _ListAdapter
-    )
+    monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "comfyui_image", _ListAdapter)
     orch = Orchestrator(
         output_dir=tmp_path / "out",
         skip_assembly=True,

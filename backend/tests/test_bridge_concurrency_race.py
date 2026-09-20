@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pytest
 
-from melosviz.bridge.security import QuotaExceeded, RateLimiter, RenderQuota
+from melosviz.bridge.security import QuotaExceededError, RateLimiter, RenderQuota
 
 
 def test_rate_limiter_no_over_admit_under_race() -> None:
@@ -111,7 +111,7 @@ def test_render_quota_slot_context_race_safe() -> None:
                     successes += 1
                     assert q.inflight <= ceiling
                 time.sleep(0.02)
-        except QuotaExceeded:
+        except QuotaExceededError:
             with lock:
                 quota_hits += 1
 

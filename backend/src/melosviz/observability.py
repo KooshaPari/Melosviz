@@ -70,9 +70,7 @@ def configure_logging(level: int = logging.INFO) -> None:
     if os.environ.get("MELOSVIZ_LOG_JSON", "1") not in ("0", "false", "False"):
         handler.setFormatter(JsonFormatter())
     else:
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(level)
@@ -143,9 +141,7 @@ def metrics_prometheus() -> str:
     ]
     for path, stats in snap["paths"].items():
         safe = path.replace('"', "")
-        lines.append(
-            f'melosviz_http_requests_total{{path="{safe}"}} {stats["requests"]}'
-        )
+        lines.append(f'melosviz_http_requests_total{{path="{safe}"}} {stats["requests"]}')
     lines.append("# HELP melosviz_http_errors_total HTTP 4xx/5xx by path")
     lines.append("# TYPE melosviz_http_errors_total counter")
     for path, stats in snap["paths"].items():
@@ -155,9 +151,7 @@ def metrics_prometheus() -> str:
     lines.append("# TYPE melosviz_http_latency_ms_avg gauge")
     for path, stats in snap["paths"].items():
         safe = path.replace('"', "")
-        lines.append(
-            f'melosviz_http_latency_ms_avg{{path="{safe}"}} {stats["avg_latency_ms"]}'
-        )
+        lines.append(f'melosviz_http_latency_ms_avg{{path="{safe}"}} {stats["avg_latency_ms"]}')
     return "\n".join(lines) + "\n"
 
 

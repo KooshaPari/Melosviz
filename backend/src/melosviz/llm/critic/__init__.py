@@ -26,6 +26,7 @@ Designed to plug into the orchestrator after each scene render: the
 critic's verdict drives whether to re-render that scene with the
 suggested prompt patch.
 """
+
 from __future__ import annotations
 
 import base64
@@ -33,14 +34,13 @@ import json
 import logging
 import os
 import re
-import subprocess
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, Iterable, Sequence
 
 LOG = logging.getLogger(__name__)
 
@@ -50,13 +50,13 @@ LOG = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class CritiqueVerdict(str, Enum):
+class CritiqueVerdict(StrEnum):
     APPROVE = "approve"
     REVISE = "revise"
     REJECT = "reject"
 
 
-class CritiqueSeverity(str, Enum):
+class CritiqueSeverity(StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -65,8 +65,8 @@ class CritiqueSeverity(str, Enum):
 
 @dataclass
 class CritiqueIssue:
-    category: str            # composition | palette | mood | continuity | quality
-    severity: str            # low | medium | high | critical
+    category: str  # composition | palette | mood | continuity | quality
+    severity: str  # low | medium | high | critical
     note: str
 
     def to_dict(self) -> dict:
@@ -75,8 +75,8 @@ class CritiqueIssue:
 
 @dataclass
 class CritiqueResult:
-    score: float                          # 0..10
-    verdict: str                          # approve | revise | reject
+    score: float  # 0..10
+    verdict: str  # approve | revise | reject
     issues: list[CritiqueIssue]
     suggested_prompt_patch: str | None
     model_used: str
@@ -107,7 +107,7 @@ class CriticRound:
 class AutoCriticReport:
     scene_index: int
     scene_name: str
-    rounds: list[CritiqueRound] = field(default_factory=list)
+    rounds: list[CriticRound] = field(default_factory=list)
     final_score: float = 0.0
     final_verdict: str = "reject"
     final_prompt: str = ""
@@ -156,8 +156,16 @@ def detect_provider() -> str:
 # ---------------------------------------------------------------------------
 
 
-_KEYWORDS_QUALITY = ("blurry", "low-quality", "warped", "artifact", "deformed",
-                      "extra fingers", "uncanny", "lowres")
+_KEYWORDS_QUALITY = (
+    "blurry",
+    "low-quality",
+    "warped",
+    "artifact",
+    "deformed",
+    "extra fingers",
+    "uncanny",
+    "lowres",
+)
 _KEYWORDS_PALETTE = ("off-palette", "wrong colors", "too bright", "washed out")
 _KEYWORDS_CONTINUITY = ("character drift", "wardrobe change", "env mismatch")
 _KEYWORDS_MOOD = ("doesn't match mood", "wrong tone", "feels static")
@@ -177,53 +185,65 @@ def _heuristic_critique(image_path: Path | None, prompt: str) -> CritiqueResult:
     pl = prompt.lower()
 
     if any(kw in pl for kw in _KEYWORDS_QUALITY):
-        issues.append(CritiqueIssue(
-            category="quality",
-            severity=CritiqueSeverity.HIGH.value,
-            note="Prompt mentions quality concerns; re-render with stricter negatives.",
-        ))
+        issues.append(
+            CritiqueIssue(
+                category="quality",
+                severity=CritiqueSeverity.HIGH.value,
+                note="Prompt mentions quality concerns; re-render with stricter negatives.",
+            )
+        )
         score -= 1.5
 
     if any(kw in pl for kw in _KEYWORDS_PALETTE):
-        issues.append(CritiqueIssue(
-            category="palette",
-            severity=CritiqueSeverity.MEDIUM.value,
-            note="Prompt mentions palette drift; re-pin to the storyboard palette.",
-        ))
+        issues.append(
+            CritiqueIssue(
+                category="palette",
+                severity=CritiqueSeverity.MEDIUM.value,
+                note="Prompt mentions palette drift; re-pin to the storyboard palette.",
+            )
+        )
         score -= 1.0
 
     if any(kw in pl for kw in _KEYWORDS_CONTINUITY):
-        issues.append(CritiqueIssue(
-            category="continuity",
-            severity=CritiqueSeverity.CRITICAL.value,
-            note="Prompt mentions character/wardrobe/env drift; lock continuity anchors.",
-        ))
+        issues.append(
+            CritiqueIssue(
+                category="continuity",
+                severity=CritiqueSeverity.CRITICAL.value,
+                note="Prompt mentions character/wardrobe/env drift; lock continuity anchors.",
+            )
+        )
         score -= 2.0
 
     if any(kw in pl for kw in _KEYWORDS_MOOD):
-        issues.append(CritiqueIssue(
-            category="mood",
-            severity=CritiqueSeverity.MEDIUM.value,
-            note="Prompt mentions mood mismatch; align with outline's emotional_arc.",
-        ))
+        issues.append(
+            CritiqueIssue(
+                category="mood",
+                severity=CritiqueSeverity.MEDIUM.value,
+                note="Prompt mentions mood mismatch; align with outline's emotional_arc.",
+            )
+        )
         score -= 1.0
 
     # Image presence check (file exists, > 1 KB).
     if image_path is not None and image_path.exists():
         size = image_path.stat().st_size
         if size < 1024:
-            issues.append(CritiqueIssue(
-                category="quality",
-                severity=CritiqueSeverity.CRITICAL.value,
-                note=f"Rendered frame is suspiciously small ({size} bytes); likely empty.",
-            ))
+            issues.append(
+                CritiqueIssue(
+                    category="quality",
+                    severity=CritiqueSeverity.CRITICAL.value,
+                    note=f"Rendered frame is suspiciously small ({size} bytes); likely empty.",
+                )
+            )
             score -= 2.0
     else:
-        issues.append(CritiqueIssue(
-            category="quality",
-            severity=CritiqueSeverity.HIGH.value,
-            note="No rendered frame on disk; orchestrator likely skipped or failed.",
-        ))
+        issues.append(
+            CritiqueIssue(
+                category="quality",
+                severity=CritiqueSeverity.HIGH.value,
+                note="No rendered frame on disk; orchestrator likely skipped or failed.",
+            )
+        )
         score -= 1.5
 
     score = max(0.0, min(10.0, round(score, 2)))
@@ -255,17 +275,25 @@ def _suggest_prompt_patch(prompt: str, issues: Sequence[CritiqueIssue]) -> str:
     cats = {i.category for i in issues}
     suffixes: list[str] = []
     if "quality" in cats:
-        suffixes.append("35mm film grain, sharp focus, no artifacts, no extra fingers, "
-                        "physically plausible anatomy")
+        suffixes.append(
+            "35mm film grain, sharp focus, no artifacts, no extra fingers, "
+            "physically plausible anatomy"
+        )
     if "palette" in cats:
-        suffixes.append("strictly within the storyboard palette, no off-hue colors, "
-                        "balanced contrast, no clipping")
+        suffixes.append(
+            "strictly within the storyboard palette, no off-hue colors, "
+            "balanced contrast, no clipping"
+        )
     if "continuity" in cats:
-        suffixes.append("character continuity locked: same face, same wardrobe, "
-                        "same environment as previous scenes")
+        suffixes.append(
+            "character continuity locked: same face, same wardrobe, "
+            "same environment as previous scenes"
+        )
     if "mood" in cats:
-        suffixes.append("mood matches the current scene's emotional_arc label, "
-                        "controlled lighting, no jarring tonal shifts")
+        suffixes.append(
+            "mood matches the current scene's emotional_arc label, "
+            "controlled lighting, no jarring tonal shifts"
+        )
     if not suffixes:
         return prompt
     return f"{prompt.rstrip('. ')}. " + " ; ".join(suffixes)
@@ -281,27 +309,32 @@ def _openai_critique(image_path: Path, prompt: str) -> CritiqueResult:
     image_b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
     body = {
         "model": os.environ.get("MELOSVIZ_CRITIC_MODEL", "gpt-4o"),
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "text",
-                 "text": f"Critique this rendered scene for a music video.\n"
-                         f"Scene prompt: {prompt}\n\n"
-                         f"Respond ONLY with JSON matching this schema:\n"
-                         f"{{\"score\": 0-10, \"verdict\": \"approve|revise|reject\", "
-                         f"\"issues\": [{{\"category\": \"...\", \"severity\": \"...\", \"note\": \"...\"}}], "
-                         f"\"suggested_prompt_patch\": \"...\" or null}}"},
-                {"type": "image_url",
-                 "image_url": {"url": f"data:image/png;base64,{image_b64}"}},
-            ],
-        }],
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Critique this rendered scene for a music video.\n"
+                        f"Scene prompt: {prompt}\n\n"
+                        f"Respond ONLY with JSON matching this schema:\n"
+                        f'{{"score": 0-10, "verdict": "approve|revise|reject", '
+                        f'"issues": [{{"category": "...", "severity": "...", "note": "..."}}], '
+                        f'"suggested_prompt_patch": "..." or null}}',
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                    },
+                ],
+            }
+        ],
         "response_format": {"type": "json_object"},
     }
     req = urllib.request.Request(
         "https://api.openai.com/v1/chat/completions",
         data=json.dumps(body).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}",
-                 "Content-Type": "application/json"},
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
     )
     t0 = time.time()
     with urllib.request.urlopen(req, timeout=60) as resp:
@@ -309,14 +342,17 @@ def _openai_critique(image_path: Path, prompt: str) -> CritiqueResult:
     latency_ms = int((time.time() - t0) * 1000)
     content = payload["choices"][0]["message"]["content"]
     parsed = json.loads(content)
-    return _dict_to_critique(parsed, model_used=body["model"], latency_ms=latency_ms,
-                            cost_usd=_openai_cost(payload))
+    return _dict_to_critique(
+        parsed, model_used=body["model"], latency_ms=latency_ms, cost_usd=_openai_cost(payload)
+    )
 
 
 def _openai_cost(payload: dict) -> float:
     usage = payload.get("usage", {})
-    return float(usage.get("prompt_tokens", 0)) / 1000.0 * 0.005 + \
-           float(usage.get("completion_tokens", 0)) / 1000.0 * 0.015
+    return (
+        float(usage.get("prompt_tokens", 0)) / 1000.0 * 0.005
+        + float(usage.get("completion_tokens", 0)) / 1000.0 * 0.015
+    )
 
 
 def _anthropic_critique(image_path: Path, prompt: str) -> CritiqueResult:
@@ -325,37 +361,53 @@ def _anthropic_critique(image_path: Path, prompt: str) -> CritiqueResult:
     body = {
         "model": os.environ.get("MELOSVIZ_CRITIC_MODEL", "claude-3-5-sonnet-20240620"),
         "max_tokens": 600,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "image",
-                 "source": {"type": "base64", "media_type": "image/png", "data": image_b64}},
-                {"type": "text",
-                 "text": f"Scene prompt: {prompt}\n\n"
-                         f"Critique as JSON: {{score 0-10, verdict, issues, suggested_prompt_patch}}"},
-            ],
-        }],
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": "image/png", "data": image_b64},
+                    },
+                    {
+                        "type": "text",
+                        "text": f"Scene prompt: {prompt}\n\n"
+                        f"Critique as JSON: {{score 0-10, verdict, issues, suggested_prompt_patch}}",
+                    },
+                ],
+            }
+        ],
     }
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(body).encode("utf-8"),
-        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
-                 "content-type": "application/json"},
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
     )
     t0 = time.time()
     with urllib.request.urlopen(req, timeout=60) as resp:
         payload = json.loads(resp.read())
     latency_ms = int((time.time() - t0) * 1000)
-    content = "".join(b.get("text", "")
-                       for b in payload.get("content", []) if b.get("type") == "text")
-    return _dict_to_critique(_extract_json(content), model_used=body["model"],
-                            latency_ms=latency_ms, cost_usd=_anthropic_cost(payload))
+    content = "".join(
+        b.get("text", "") for b in payload.get("content", []) if b.get("type") == "text"
+    )
+    return _dict_to_critique(
+        _extract_json(content),
+        model_used=body["model"],
+        latency_ms=latency_ms,
+        cost_usd=_anthropic_cost(payload),
+    )
 
 
 def _anthropic_cost(payload: dict) -> float:
     usage = payload.get("usage", {})
-    return float(usage.get("input_tokens", 0)) / 1000.0 * 0.003 + \
-           float(usage.get("output_tokens", 0)) / 1000.0 * 0.015
+    return (
+        float(usage.get("input_tokens", 0)) / 1000.0 * 0.003
+        + float(usage.get("output_tokens", 0)) / 1000.0 * 0.015
+    )
 
 
 def _google_critique(image_path: Path, prompt: str) -> CritiqueResult:
@@ -363,17 +415,22 @@ def _google_critique(image_path: Path, prompt: str) -> CritiqueResult:
     image_b64 = base64.b64encode(image_path.read_bytes()).decode("ascii")
     model = os.environ.get("MELOSVIZ_CRITIC_MODEL", "gemini-1.5-pro")
     body = {
-        "contents": [{
-            "parts": [
-                {"inline_data": {"mime_type": "image/png", "data": image_b64}},
-                {"text": f"Critique this scene.\nPrompt: {prompt}\n\n"
-                         f"Respond with JSON only: {{score, verdict, issues, suggested_prompt_patch}}"},
-            ],
-        }],
+        "contents": [
+            {
+                "parts": [
+                    {"inline_data": {"mime_type": "image/png", "data": image_b64}},
+                    {
+                        "text": f"Critique this scene.\nPrompt: {prompt}\n\n"
+                        f"Respond with JSON only: {{score, verdict, issues, suggested_prompt_patch}}"
+                    },
+                ],
+            }
+        ],
     }
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     req = urllib.request.Request(
-        url, data=json.dumps(body).encode("utf-8"),
+        url,
+        data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json"},
     )
     t0 = time.time()
@@ -381,8 +438,9 @@ def _google_critique(image_path: Path, prompt: str) -> CritiqueResult:
         payload = json.loads(resp.read())
     latency_ms = int((time.time() - t0) * 1000)
     text = payload["candidates"][0]["content"]["parts"][0]["text"]
-    return _dict_to_critique(_extract_json(text), model_used=model,
-                            latency_ms=latency_ms, cost_usd=0.0)
+    return _dict_to_critique(
+        _extract_json(text), model_used=model, latency_ms=latency_ms, cost_usd=0.0
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -398,16 +456,20 @@ def _extract_json(text: str) -> dict:
     return json.loads(m.group(0))
 
 
-def _dict_to_critique(d: dict, *, model_used: str, latency_ms: int,
-                      cost_usd: float) -> CritiqueResult:
+def _dict_to_critique(
+    d: dict, *, model_used: str, latency_ms: int, cost_usd: float
+) -> CritiqueResult:
     return CritiqueResult(
         score=float(d.get("score", 0.0)),
         verdict=str(d.get("verdict", "reject")),
-        issues=[CritiqueIssue(
-            category=str(i.get("category", "quality")),
-            severity=str(i.get("severity", "low")),
-            note=str(i.get("note", "")),
-        ) for i in d.get("issues", [])],
+        issues=[
+            CritiqueIssue(
+                category=str(i.get("category", "quality")),
+                severity=str(i.get("severity", "low")),
+                note=str(i.get("note", "")),
+            )
+            for i in d.get("issues", [])
+        ],
         suggested_prompt_patch=d.get("suggested_prompt_patch"),
         model_used=model_used,
         latency_ms=latency_ms,
@@ -415,8 +477,7 @@ def _dict_to_critique(d: dict, *, model_used: str, latency_ms: int,
     )
 
 
-def critique_scene(image_path: Path, prompt: str,
-                   provider: str | None = None) -> CritiqueResult:
+def critique_scene(image_path: Path, prompt: str, provider: str | None = None) -> CritiqueResult:
     """One-shot critique of one rendered scene.
 
     Tries the requested `provider` first; falls back to heuristic if the
@@ -431,7 +492,12 @@ def critique_scene(image_path: Path, prompt: str,
                 return _anthropic_critique(image_path, prompt)
             if chosen == "google":
                 return _google_critique(image_path, prompt)
-        except (KeyError, urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
+        except (
+            KeyError,
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            json.JSONDecodeError,
+        ) as exc:
             LOG.warning("Vision LLM %s failed (%s); falling back to heuristic.", chosen, exc)
     return _heuristic_critique(image_path if image_path.exists() else None, prompt)
 
@@ -452,15 +518,14 @@ def auto_critic_loop(
     between rounds. The final report contains every round + the final
     accepted prompt.
     """
-    report = AutoCriticReport(scene_index=scene_index, scene_name=scene_name,
-                              final_prompt=prompt)
+    report = AutoCriticReport(scene_index=scene_index, scene_name=scene_name, final_prompt=prompt)
     current = prompt
     for i in range(max_rounds):
         result = critique_scene(image_path, current, provider=provider)
-        accepted = result.verdict == CritiqueVerdict.APPROVE.value \
-                  or result.score >= approve_threshold
-        report.rounds.append(CriticRound(round_index=i, result=result,
-                                         accepted=accepted))
+        accepted = (
+            result.verdict == CritiqueVerdict.APPROVE.value or result.score >= approve_threshold
+        )
+        report.rounds.append(CriticRound(round_index=i, result=result, accepted=accepted))
         if accepted:
             break
         if result.suggested_prompt_patch:
@@ -482,6 +547,7 @@ def auto_critic_loop(
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
+
     parser = argparse.ArgumentParser(description="Auto-critic for one music-video scene")
     parser.add_argument("image", type=Path, help="Rendered scene frame (PNG/JPG)")
     parser.add_argument("prompt", type=str, help="Scene prompt")
@@ -489,10 +555,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scene-name", type=str, default="")
     parser.add_argument("--max-rounds", type=int, default=3)
     parser.add_argument("--approve-threshold", type=float, default=7.5)
-    parser.add_argument("--provider", type=str, default=None,
-                        choices=_CRITIC_PROVIDERS)
-    parser.add_argument("--out", type=Path, default=None,
-                        help="Write the AutoCriticReport JSON here")
+    parser.add_argument("--provider", type=str, default=None, choices=_CRITIC_PROVIDERS)
+    parser.add_argument(
+        "--out", type=Path, default=None, help="Write the AutoCriticReport JSON here"
+    )
     args = parser.parse_args(argv)
 
     report = auto_critic_loop(

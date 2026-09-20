@@ -24,7 +24,8 @@ def _png_bytes(rgb: tuple[int, int, int], size: int = 32) -> bytes:
     def _chunk(tag: bytes, data: bytes) -> bytes:
         return (
             struct.pack(">I", len(data))
-            + tag + data
+            + tag
+            + data
             + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
         )
 

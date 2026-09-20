@@ -15,16 +15,22 @@ from melosviz.export.package import build_delivery_package
 def test_online_package_contains_media_manifest_and_vj(tmp_path: Path) -> None:
     media = tmp_path / "festival_master.mov"
     media.write_bytes(b"movie")
-    (tmp_path / "storyboard.json").write_text(json.dumps({
-        "scenes": [{
-            "index": 0,
-            "label": "intro",
-            "start": 0.0,
-            "duration": 4.0,
-            "prompt": "neon intro",
-            "beats_in_segment": [0.0, 2.0, 4.0],
-        }]
-    }))
+    (tmp_path / "storyboard.json").write_text(
+        json.dumps(
+            {
+                "scenes": [
+                    {
+                        "index": 0,
+                        "label": "intro",
+                        "start": 0.0,
+                        "duration": 4.0,
+                        "prompt": "neon intro",
+                        "beats_in_segment": [0.0, 2.0, 4.0],
+                    }
+                ]
+            }
+        )
+    )
     result = build_delivery_package(tmp_path)
     assert result["mode"] == "online"
     assert Path(result["final_zip"]).is_file()

@@ -420,9 +420,7 @@ def build_ae_job_spec(
     onsets_csv = build_onsets_csv(dense_keyframes)
     segment_csv = build_segment_csv(scene_segments)
 
-    beat_count = sum(
-        1 for kf in dense_keyframes if float(kf.get("beat_strength", 0.0)) > 0.0
-    )
+    beat_count = sum(1 for kf in dense_keyframes if float(kf.get("beat_strength", 0.0)) > 0.0)
 
     # ---- Build MOGRT param map ---------------------------------------------
     mogrt_params = build_mogrt_param_map(scene_segments, palette, mir)
@@ -602,27 +600,15 @@ class AEAdapter:
 
         # Extract CSV data from embedded assets
         beats_csv = next(
-            (
-                a["data"]
-                for a in job_spec["assets"]
-                if a.get("layerName") == "beat_data"
-            ),
+            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "beat_data"),
             "",
         )
         onsets_csv = next(
-            (
-                a["data"]
-                for a in job_spec["assets"]
-                if a.get("layerName") == "onset_data"
-            ),
+            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "onset_data"),
             "",
         )
         segment_csv = next(
-            (
-                a["data"]
-                for a in job_spec["assets"]
-                if a.get("layerName") == "segment_data"
-            ),
+            (a["data"] for a in job_spec["assets"] if a.get("layerName") == "segment_data"),
             "",
         )
 

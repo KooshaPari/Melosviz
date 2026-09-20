@@ -52,14 +52,22 @@ def test_character_add_then_list_round_trips(tmp_path: Path):
     # 1) add
     front = tmp_path / "alice_front.png"
     front.write_bytes(b"\x89PNG\r\n\x1a\nfake")
-    rc, out, err = _run_cli([
-        "character", "add",
-        "--root", str(tmp_path),
-        "--name", "alice",
-        "--description", "lead dancer",
-        "--engine", "ipadapter",
-        "--front", str(front),
-    ])
+    rc, out, err = _run_cli(
+        [
+            "character",
+            "add",
+            "--root",
+            str(tmp_path),
+            "--name",
+            "alice",
+            "--description",
+            "lead dancer",
+            "--engine",
+            "ipadapter",
+            "--front",
+            str(front),
+        ]
+    )
     assert rc == 0, err
     add_payload = json.loads(out)
     assert add_payload["name"] == "alice"

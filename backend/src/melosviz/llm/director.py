@@ -60,14 +60,15 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any
 
 from .admission import (
     LLMAdmissionConfig,
     LLMAdmissionError,
+    LLMAdmissionGate,
     get_shared_gate,
 )
-from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -100,16 +101,20 @@ __all__ = [
 # basic API surface is used (e.g. in unit tests of unrelated modules).
 # ---------------------------------------------------------------------------
 
+
 def _lyrics_align(phrases, segments, **kw):
     """Thin wrapper around ``lyrics.align_to_segments`` so director stays import-safe."""
     from .lyrics import align_to_segments
+
     return align_to_segments(phrases, segments, **kw)
 
 
 def _mood_board(paths):
     """Thin wrapper around ``moodboard.mood_board_summary`` for import safety."""
     from .moodboard import mood_board_summary
+
     return mood_board_summary(paths)
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -133,8 +138,8 @@ DIRECTOR_SCENE_TYPES: tuple[str, ...] = (
     "unreal_cinematic",
     "motion_graphics_beat_sync",
     "generative_asset",  # legacy alias → maps to comfyui_image
-    "comfyui_audio_video_wan",        # WBS-107: Wan S2V audio-conditioned
-    "comfyui_audio_video_seedance",   # WBS-107: Seedance A2V audio-conditioned
+    "comfyui_audio_video_wan",  # WBS-107: Wan S2V audio-conditioned
+    "comfyui_audio_video_seedance",  # WBS-107: Seedance A2V audio-conditioned
 )
 
 #: Archetype → default (scene_type, prompt suffix, camera move) palette.
@@ -144,30 +149,63 @@ DIRECTOR_SCENE_TYPES: tuple[str, ...] = (
 #: only switches to Seedance A2V when an anchor subject token is present
 #: (or the user explicitly opts in via ``--audio-conditioned-video``).
 _ARCHETYPE_DEFAULTS: dict[str, dict[str, Any]] = {
-    "intro":     {"scene_type": "comfyui_image",        "camera": "slow_dolly_in",     "prompt_tail": "title card, cinematic letterbox, breathing room"},
-    "verse":     {"scene_type": "comfyui_video",        "camera": "handheld_orbit",    "prompt_tail": "intimate close-ups, naturalistic light, subtle motion"},
-    "chorus":    {"scene_type": "comfyui_video",        "camera": "whip_pan_burst",    "prompt_tail": "wide vista, saturated palette, hero pose, dynamic camera",
-                  "audio_video_scene_type": "comfyui_audio_video_seedance", "audio_video_requires_character": True},
-    "drop":      {"scene_type": "unreal_cinematic",     "camera": "impact_punch_in",   "prompt_tail": "kinetic impact frame, hyper-detailed, lens flare, pyro",
-                  "audio_video_scene_type": "comfyui_audio_video_wan"},
-    "bridge":    {"scene_type": "motion_graphics_beat_sync", "camera": "parallax_scroll", "prompt_tail": "type-led transition, geometry morph, beat-synced type reveal"},
-    "breakdown": {"scene_type": "comfyui_video",        "camera": "slow_push_in",      "prompt_tail": "long take, soft focus, dreamlike, ambient texture"},
-    "outro":     {"scene_type": "comfyui_image",        "camera": "slow_pull_back",    "prompt_tail": "fade to black, end credits plate, restrained motion"},
-    "unknown":   {"scene_type": "comfyui_image",        "camera": "static_hero",       "prompt_tail": "balanced framing, neutral light"},
+    "intro": {
+        "scene_type": "comfyui_image",
+        "camera": "slow_dolly_in",
+        "prompt_tail": "title card, cinematic letterbox, breathing room",
+    },
+    "verse": {
+        "scene_type": "comfyui_video",
+        "camera": "handheld_orbit",
+        "prompt_tail": "intimate close-ups, naturalistic light, subtle motion",
+    },
+    "chorus": {
+        "scene_type": "comfyui_video",
+        "camera": "whip_pan_burst",
+        "prompt_tail": "wide vista, saturated palette, hero pose, dynamic camera",
+        "audio_video_scene_type": "comfyui_audio_video_seedance",
+        "audio_video_requires_character": True,
+    },
+    "drop": {
+        "scene_type": "unreal_cinematic",
+        "camera": "impact_punch_in",
+        "prompt_tail": "kinetic impact frame, hyper-detailed, lens flare, pyro",
+        "audio_video_scene_type": "comfyui_audio_video_wan",
+    },
+    "bridge": {
+        "scene_type": "motion_graphics_beat_sync",
+        "camera": "parallax_scroll",
+        "prompt_tail": "type-led transition, geometry morph, beat-synced type reveal",
+    },
+    "breakdown": {
+        "scene_type": "comfyui_video",
+        "camera": "slow_push_in",
+        "prompt_tail": "long take, soft focus, dreamlike, ambient texture",
+    },
+    "outro": {
+        "scene_type": "comfyui_image",
+        "camera": "slow_pull_back",
+        "prompt_tail": "fade to black, end credits plate, restrained motion",
+    },
+    "unknown": {
+        "scene_type": "comfyui_image",
+        "camera": "static_hero",
+        "prompt_tail": "balanced framing, neutral light",
+    },
 }
 
 #: Concept keyword → lighting / palette bias (multiplicative on palette).
 _CONCEPT_KEYWORD_BIAS: dict[str, dict[str, str]] = {
-    "neon":         {"lighting": "neon noir",   "palette_suffix": "magenta+cyan"},
-    "city":         {"lighting": "urban night", "palette_suffix": "amber+teal"},
-    "forest":       {"lighting": "dappled",     "palette_suffix": "moss+sunbeam"},
-    "underwater":   {"lighting": "caustic",     "palette_suffix": "aqua+indigo"},
-    "desert":       {"lighting": "harsh sun",   "palette_suffix": "ochre+sienna"},
-    "space":        {"lighting": "rim light",   "palette_suffix": "violet+gold"},
-    "dance":        {"lighting": "strobe",      "palette_suffix": "magenta+white"},
-    "love":         {"lighting": "soft warm",   "palette_suffix": "rose+cream"},
-    "loss":         {"lighting": "cold blue",   "palette_suffix": "steel+ash"},
-    "festival":     {"lighting": "festival",    "palette_suffix": "fuchsia+lime"},
+    "neon": {"lighting": "neon noir", "palette_suffix": "magenta+cyan"},
+    "city": {"lighting": "urban night", "palette_suffix": "amber+teal"},
+    "forest": {"lighting": "dappled", "palette_suffix": "moss+sunbeam"},
+    "underwater": {"lighting": "caustic", "palette_suffix": "aqua+indigo"},
+    "desert": {"lighting": "harsh sun", "palette_suffix": "ochre+sienna"},
+    "space": {"lighting": "rim light", "palette_suffix": "violet+gold"},
+    "dance": {"lighting": "strobe", "palette_suffix": "magenta+white"},
+    "love": {"lighting": "soft warm", "palette_suffix": "rose+cream"},
+    "loss": {"lighting": "cold blue", "palette_suffix": "steel+ash"},
+    "festival": {"lighting": "festival", "palette_suffix": "fuchsia+lime"},
 }
 
 
@@ -199,9 +237,10 @@ class ContinuityAnchor:
         file-path string will be coerced via :class:`pathlib.Path` and
         validated for existence.
     """
-    subject_token: str = ""        # e.g. ``"a young woman with bioluminescent tattoos"``
-    env_token: str = ""            # e.g. ``"underwater city, coral archways"``
-    palette_token: str = ""        # e.g. ``"deep teal, magenta, bone white"``
+
+    subject_token: str = ""  # e.g. ``"a young woman with bioluminescent tattoos"``
+    env_token: str = ""  # e.g. ``"underwater city, coral archways"``
+    palette_token: str = ""  # e.g. ``"deep teal, magenta, bone white"``
     #: Path to an IP-Adapter / style reference image. ``None`` means
     #: "no reference attached" (v2). The path is validated for existence
     #: by :meth:`from_concept` and the orchestrator; missing files are
@@ -218,9 +257,7 @@ class ContinuityAnchor:
         """
         return {
             **asdict(self),
-            "reference_image": (
-                str(self.reference_image) if self.reference_image else None
-            ),
+            "reference_image": (str(self.reference_image) if self.reference_image else None),
             "_version": CONTINUITY_ANCHOR_VERSION,
         }
 
@@ -230,7 +267,7 @@ class ContinuityAnchor:
         concept: str,
         *,
         reference_image: Path | None = None,
-    ) -> "ContinuityAnchor":
+    ) -> ContinuityAnchor:
         """Best-effort anchor derivation from a free-form concept string.
 
         Args:
@@ -271,8 +308,7 @@ class ContinuityAnchor:
             p = value if isinstance(value, Path) else Path(str(value))
         except (TypeError, ValueError) as exc:
             logger.warning(
-                "ContinuityAnchor: could not coerce %r to Path (%s); "
-                "reference_image dropped.",
+                "ContinuityAnchor: could not coerce %r to Path (%s); reference_image dropped.",
                 value,
                 exc,
             )
@@ -294,13 +330,14 @@ class StoryboardScene:
     Mirrors a RenderSpec scene-segment dict but adds Director-level fields
     so the orchestrator knows which tool to dispatch and how to time it.
     """
+
     index: int
-    label: str                    # intro / verse / chorus / drop / …
-    start: float                  # seconds in source track
+    label: str  # intro / verse / chorus / drop / …
+    start: float  # seconds in source track
     end: float
     duration: float
-    scene_type: str               # a DIRECTOR_SCENE_TYPES value
-    prompt: str                   # full diffusion / 3-D prompt
+    scene_type: str  # a DIRECTOR_SCENE_TYPES value
+    prompt: str  # full diffusion / 3-D prompt
     negative: str = ""
     camera: str = "static_hero"
     beats_in_segment: list[float] = field(default_factory=list)
@@ -328,6 +365,7 @@ class StoryboardScene:
 @dataclass
 class Storyboard:
     """The full output of :meth:`Director.storyboard`."""
+
     concept: str
     duration_s: float
     bpm: float
@@ -363,13 +401,13 @@ class Storyboard:
 #: matrix and the human-readable descriptions used by ``melosviz apply``.
 DEFAULT_ASPECT_RATIO = "youtube_1080"
 _ASPECT_RATIOS: dict[str, tuple[str, int, int, int]] = {
-    "festival_4k":      ("3840x2160 16:9 24fps — festival/VJ screen",     3840, 2160, 24),
-    "youtube_1080":     ("1920x1080 16:9 24fps — YouTube / Vimeo",       1920, 1080, 24),
-    "youtube_4k":       ("3840x2160 16:9 30fps — YouTube 4K",            3840, 2160, 30),
-    "club_portrait":    ("1080x1920  9:16 30fps — club floor portrait",   1080, 1920, 30),
-    "social_vertical":  ("1080x1920  9:16 30fps — IG Reels / TikTok",     1080, 1920, 30),
-    "cinema_letterbox": ("2048x858  ~2.39:1 24fps — DCP letterbox",      2048,  858, 24),
-    "square_social":    ("1080x1080  1:1 30fps — IG square / SoundCloud", 1080, 1080, 30),
+    "festival_4k": ("3840x2160 16:9 24fps — festival/VJ screen", 3840, 2160, 24),
+    "youtube_1080": ("1920x1080 16:9 24fps — YouTube / Vimeo", 1920, 1080, 24),
+    "youtube_4k": ("3840x2160 16:9 30fps — YouTube 4K", 3840, 2160, 30),
+    "club_portrait": ("1080x1920  9:16 30fps — club floor portrait", 1080, 1920, 30),
+    "social_vertical": ("1080x1920  9:16 30fps — IG Reels / TikTok", 1080, 1920, 30),
+    "cinema_letterbox": ("2048x858  ~2.39:1 24fps — DCP letterbox", 2048, 858, 24),
+    "square_social": ("1080x1080  1:1 30fps — IG square / SoundCloud", 1080, 1080, 30),
 }
 
 
@@ -389,6 +427,7 @@ def resolve_aspect_ratio(name: str) -> tuple[str, int, int, int]:
 @dataclass
 class DirectorRequest:
     """Inputs to :meth:`Director.storyboard`."""
+
     concept: str
     duration_s: float
     bpm: float
@@ -426,7 +465,7 @@ class Director:
         self,
         *,
         seed: int | None = None,
-        llm_gate: "LLMAdmissionGate | None" = None,
+        llm_gate: LLMAdmissionGate | None = None,
         llm_opener=None,
         llm_sleeper=None,
     ) -> None:
@@ -451,12 +490,24 @@ class Director:
             mb_style = mb.get("style") or ""
             if mb_palette:
                 req = DirectorRequest(
-                    **{**req.__dict__, "palette": mb_palette[: len(req.palette) or 5] or req.palette}
+                    **{
+                        **req.__dict__,
+                        "palette": mb_palette[: len(req.palette) or 5] or req.palette,
+                    }
                 )
 
-        base_palette = list(req.palette) if req.palette else [
-            "#0d0d10", "#7c6af7", "#f472b6", "#22d3ee", "#c084fc", "#f0f0f8",
-        ]
+        base_palette = (
+            list(req.palette)
+            if req.palette
+            else [
+                "#0d0d10",
+                "#7c6af7",
+                "#f472b6",
+                "#22d3ee",
+                "#c084fc",
+                "#f0f0f8",
+            ]
+        )
         palette = self._apply_concept_bias(req.concept, base_palette)
 
         segments = list(req.segments) or _synthetic_segments(req.duration_s, req.bpm)
@@ -466,7 +517,9 @@ class Director:
             try:
                 segments = _lyrics_align(req.lyrics, segments)
             except Exception as exc:
-                logger.warning("Director: lyric alignment failed (%s) — using beat-only segments", exc)
+                logger.warning(
+                    "Director: lyric alignment failed (%s) — using beat-only segments", exc
+                )
 
         scenes: list[StoryboardScene] = []
         last_scene_type: str | None = None
@@ -500,8 +553,7 @@ class Director:
             last_scene_type = scene_type
 
             bar_count = max(1, round(duration * req.bpm / 60.0))
-            beats_in_seg = [start + (b * 60.0 / max(1.0, req.bpm))
-                            for b in range(bar_count + 1)]
+            beats_in_seg = [start + (b * 60.0 / max(1.0, req.bpm)) for b in range(bar_count + 1)]
 
             # Lyric overrides (when this scene was aligned to a phrase)
             lyric_text = str(seg.get("lyric_text", "")).strip()
@@ -530,22 +582,24 @@ class Director:
             if lyric_mood:
                 notes_parts.append(f"mood={lyric_mood}")
 
-            scenes.append(StoryboardScene(
-                index=i,
-                label=label,
-                start=start,
-                end=end,
-                duration=duration,
-                scene_type=scene_type,
-                prompt=prompt,
-                negative=_default_negative(scene_type),
-                camera=camera,
-                beats_in_segment=beats_in_seg,
-                bar_count=bar_count,
-                palette_override=palette,
-                seed=seed,
-                notes=", ".join(notes_parts),
-            ))
+            scenes.append(
+                StoryboardScene(
+                    index=i,
+                    label=label,
+                    start=start,
+                    end=end,
+                    duration=duration,
+                    scene_type=scene_type,
+                    prompt=prompt,
+                    negative=_default_negative(scene_type),
+                    camera=camera,
+                    beats_in_segment=beats_in_seg,
+                    bar_count=bar_count,
+                    palette_override=palette,
+                    seed=seed,
+                    notes=", ".join(notes_parts),
+                )
+            )
 
         # Optional LLM refinement — never changes timing or tool choice.
         scenes = self._maybe_refine_with_llm(scenes, req)
@@ -595,11 +649,19 @@ class Director:
         return (palette + accents)[: max(6, len(palette))]
 
     def _compose_prompt(
-        self, *, concept: str, label: str, scene_type: str,
-        prompt_tail: str, key: str, seed: int, index: int,
-        lyric_text: str = "", lyric_mood: str = "",
+        self,
+        *,
+        concept: str,
+        label: str,
+        scene_type: str,
+        prompt_tail: str,
+        key: str,
+        seed: int,
+        index: int,
+        lyric_text: str = "",
+        lyric_mood: str = "",
         mood_board_style: str = "",
-        continuity: "ContinuityAnchor | None" = None,
+        continuity: ContinuityAnchor | None = None,
     ) -> str:
         """Compose a deterministic per-scene prompt string from concept + archetype."""
         bias = _match_bias(concept)
@@ -615,7 +677,7 @@ class Director:
             pieces.append(f"look: {mood_board_style}")
         if lyric_text:
             # Inline the lyric as the emotional seed for the prompt.
-            pieces.append(f"depicts: \"{lyric_text[:120]}\"")
+            pieces.append(f'depicts: "{lyric_text[:120]}"')
         if lyric_mood and lyric_mood != "neutral":
             pieces.append(f"mood: {lyric_mood}")
         if continuity is not None:
@@ -640,7 +702,7 @@ class Director:
                 return max(0.0, min(30.0, float(retry_after)))
             except (TypeError, ValueError):
                 pass
-        return float(min(30, 2 ** attempt))
+        return float(min(30, 2**attempt))
 
     @staticmethod
     def _is_retryable_http(exc: urllib.error.HTTPError) -> bool:
@@ -648,7 +710,9 @@ class Director:
         return exc.code == 429 or exc.code in {500, 502, 503, 504}
 
     def _maybe_refine_with_llm(
-        self, scenes: list[StoryboardScene], req: DirectorRequest,
+        self,
+        scenes: list[StoryboardScene],
+        req: DirectorRequest,
     ) -> list[StoryboardScene]:
         """Optionally rewrite scene prompts via the configured LLM.
 
@@ -676,14 +740,21 @@ class Director:
                 },
                 {
                     "role": "user",
-                    "content": json.dumps({
-                        "concept": req.concept,
-                        "scenes": [
-                            {"index": s.index, "label": s.label, "scene_type": s.scene_type,
-                             "camera": s.camera, "prompt": s.prompt}
-                            for s in scenes
-                        ],
-                    }),
+                    "content": json.dumps(
+                        {
+                            "concept": req.concept,
+                            "scenes": [
+                                {
+                                    "index": s.index,
+                                    "label": s.label,
+                                    "scene_type": s.scene_type,
+                                    "camera": s.camera,
+                                    "prompt": s.prompt,
+                                }
+                                for s in scenes
+                            ],
+                        }
+                    ),
                 },
             ],
             "response_format": {"type": "json_object"},
@@ -714,15 +785,14 @@ class Director:
                         },
                     )
                     try:
-                        with reservation.attempt():
-                            with self._llm_opener(req_obj, timeout=timeout) as resp:
-                                payload = json.loads(resp.read().decode("utf-8"))
+                        with (
+                            reservation.attempt(),
+                            self._llm_opener(req_obj, timeout=timeout) as resp,
+                        ):
+                            payload = json.loads(resp.read().decode("utf-8"))
                         break
                     except urllib.error.HTTPError as exc:
-                        if (
-                            not self._is_retryable_http(exc)
-                            or attempt >= config.max_retries
-                        ):
+                        if not self._is_retryable_http(exc) or attempt >= config.max_retries:
                             raise
                         self._llm_sleeper(self._retry_delay(exc, attempt))
 
@@ -731,10 +801,12 @@ class Director:
 
                 usage = payload.get("usage") or {}
                 if "prompt_tokens" in usage and "completion_tokens" in usage:
-                    reservation.settle(config.actual_cost(
-                        int(usage["prompt_tokens"]),
-                        int(usage["completion_tokens"]),
-                    ))
+                    reservation.settle(
+                        config.actual_cost(
+                            int(usage["prompt_tokens"]),
+                            int(usage["completion_tokens"]),
+                        )
+                    )
 
                 text = payload["choices"][0]["message"]["content"]
                 rewrites = json.loads(text).get("rewrites") or []
@@ -744,7 +816,8 @@ class Director:
                         s.prompt = by_index[s.index]
                 logger.info(
                     "Director: LLM rewrote %d/%d scene prompts",
-                    len(by_index), len(scenes),
+                    len(by_index),
+                    len(scenes),
                 )
         except (
             LLMAdmissionError,
@@ -787,16 +860,16 @@ def _match_bias(concept: str) -> dict[str, str] | None:
 def _accent_colors(suffix: str) -> list[str]:
     """Look up the accent hex pairs for a palette-bias suffix."""
     table = {
-        "magenta+cyan":      ["#ff2bd6", "#22d3ee"],
-        "amber+teal":        ["#ffb347", "#1ec8c8"],
-        "moss+sunbeam":      ["#4f7942", "#fff59d"],
-        "aqua+indigo":       ["#56e1ff", "#3f37c9"],
-        "ochre+sienna":      ["#d4a017", "#a0522d"],
-        "violet+gold":       ["#7c3aed", "#ffd166"],
-        "magenta+white":     ["#ff2bd6", "#ffffff"],
-        "rose+cream":        ["#ff8fa3", "#fff1e6"],
-        "steel+ash":         ["#708090", "#cfd8dc"],
-        "fuchsia+lime":      ["#ff2bd6", "#b6ff5c"],
+        "magenta+cyan": ["#ff2bd6", "#22d3ee"],
+        "amber+teal": ["#ffb347", "#1ec8c8"],
+        "moss+sunbeam": ["#4f7942", "#fff59d"],
+        "aqua+indigo": ["#56e1ff", "#3f37c9"],
+        "ochre+sienna": ["#d4a017", "#a0522d"],
+        "violet+gold": ["#7c3aed", "#ffd166"],
+        "magenta+white": ["#ff2bd6", "#ffffff"],
+        "rose+cream": ["#ff8fa3", "#fff1e6"],
+        "steel+ash": ["#708090", "#cfd8dc"],
+        "fuchsia+lime": ["#ff2bd6", "#b6ff5c"],
     }
     return table.get(suffix, ["#ffffff"])
 
@@ -822,21 +895,30 @@ def _synthetic_segments(duration_s: float, bpm: float) -> list[dict[str, Any]]:
     bar_dur = 60.0 / bpm * 4.0  # 4/4
     n_bars = max(1, int(duration_s / bar_dur))
     # Coarse: intro (1 bar) + verses/chorus alternating + outro (1 bar)
-    pattern = ["intro"] + (["verse", "chorus", "verse", "chorus", "bridge", "chorus"]
-                          if n_bars > 24 else ["verse", "chorus", "verse"]) + ["outro"]
+    pattern = (
+        ["intro"]
+        + (
+            ["verse", "chorus", "verse", "chorus", "bridge", "chorus"]
+            if n_bars > 24
+            else ["verse", "chorus", "verse"]
+        )
+        + ["outro"]
+    )
     segments: list[dict[str, Any]] = []
     t = 0.0
     bars_per_segment = max(2, n_bars // max(1, len(pattern)))
     for i, label in enumerate(pattern):
         start = t
         end = min(duration_s, start + bars_per_segment * bar_dur)
-        segments.append({
-            "index": i,
-            "label": label,
-            "start": start,
-            "end": end,
-            "energy_mean": 0.4 + 0.1 * i,
-        })
+        segments.append(
+            {
+                "index": i,
+                "label": label,
+                "start": start,
+                "end": end,
+                "energy_mean": 0.4 + 0.1 * i,
+            }
+        )
         t = end
         if t >= duration_s:
             break
@@ -850,15 +932,16 @@ def _synthetic_segments(duration_s: float, bpm: float) -> list[dict[str, Any]]:
 # Multi-shot Director (3-pass planning: outline -> scenes -> shots)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class StoryOutline:
     """Top-level outline of a music video — act structure, emotional arc."""
 
     title: str
     concept: str
-    acts: list[dict]            # [{name, start, end, intent}]
-    emotional_arc: list[str]    # one word per scene index (joy / dread / ...)
-    palette_arc: list[list[str]] # palette per scene
+    acts: list[dict]  # [{name, start, end, intent}]
+    emotional_arc: list[str]  # one word per scene index (joy / dread / ...)
+    palette_arc: list[list[str]]  # palette per scene
     total_scenes: int
 
     def to_dict(self) -> dict:
@@ -878,8 +961,8 @@ class Shot:
     """One shot — the smallest unit of the director's plan."""
 
     scene_index: int
-    shot_index: int             # 0-based within scene
-    kind: str                    # wide | medium | closeup | insert | cutaway
+    shot_index: int  # 0-based within scene
+    kind: str  # wide | medium | closeup | insert | cutaway
     camera_motion: str
     subject_token: str | None
     duration_s: float
@@ -937,17 +1020,27 @@ class MultiShotDirector:
         boundaries = [0.0, total * 0.15, total * 0.55, total * 0.85, total]
         act_names = ["intro", "build", "peak", "outro"]
         for i, name in enumerate(act_names):
-            acts.append({
-                "name": name,
-                "start": round(boundaries[i], 2),
-                "end": round(boundaries[i + 1], 2),
-                "intent": _ACT_INTENT[name],
-            })
+            acts.append(
+                {
+                    "name": name,
+                    "start": round(boundaries[i], 2),
+                    "end": round(boundaries[i + 1], 2),
+                    "intent": _ACT_INTENT[name],
+                }
+            )
 
         # Emotional arc: cool -> warm -> hot -> cool (cinematic classic).
         arc_names = [
-            "wonder", "longing", "tension", "joy", "ecstasy",
-            "release", "triumph", "awe", "stillness", "memory",
+            "wonder",
+            "longing",
+            "tension",
+            "joy",
+            "ecstasy",
+            "release",
+            "triumph",
+            "awe",
+            "stillness",
+            "memory",
         ]
         rng = random.Random(self._seed ^ _seed_from_str(req.concept))
         n_arc = max(4, sum(1 for _ in req.segments) or 6)
@@ -959,9 +1052,18 @@ class MultiShotDirector:
 
         # Palette arc: cold -> warm -> monochrome (per-act base color).
         palette_arc = []
-        palette = list(req.palette) if req.palette else [
-            "#0d0d10", "#7c6af7", "#f472b6", "#22d3ee", "#c084fc", "#f0f0f8",
-        ]
+        palette = (
+            list(req.palette)
+            if req.palette
+            else [
+                "#0d0d10",
+                "#7c6af7",
+                "#f472b6",
+                "#22d3ee",
+                "#c084fc",
+                "#f0f0f8",
+            ]
+        )
         for i in range(n_arc):
             base = palette[i % len(palette)]
             palette_arc.append([base, palette[(i + 2) % len(palette)]])
@@ -1002,8 +1104,12 @@ class MultiShotDirector:
         rng = random.Random(self._seed ^ 0x5EED)
         shot_kinds = ["wide", "medium", "closeup", "insert", "cutaway"]
         camera_motions = [
-            "slow_dolly_in", "slow_pull_back", "whip_pan_burst",
-            "handheld_drift", "static_locked_off", "orbit_half",
+            "slow_dolly_in",
+            "slow_pull_back",
+            "whip_pan_burst",
+            "handheld_drift",
+            "static_locked_off",
+            "orbit_half",
         ]
         for i, scene in enumerate(sb.scenes):
             subject = (
@@ -1013,23 +1119,25 @@ class MultiShotDirector:
             )
             # Per-scene shot breakdown: alternate wide / medium / closeup.
             chosen_kinds = ["wide", "medium"]
-            for j in range(self._shots_per_scene - 2):
+            for _j in range(self._shots_per_scene - 2):
                 chosen_kinds.append(rng.choice(shot_kinds))
             chosen_kinds = chosen_kinds[: self._shots_per_scene]
             per_shot = max(scene.duration / self._shots_per_scene, 1.5)
             for k, kind in enumerate(chosen_kinds):
                 camera = scene.camera if k == 0 else rng.choice(camera_motions)
                 shot_prompt = scene.prompt + f" ({kind} framing, {camera} motion)"
-                shots.append(Shot(
-                    scene_index=i,
-                    shot_index=k,
-                    kind=kind,
-                    camera_motion=camera,
-                    subject_token=subject,
-                    duration_s=round(per_shot, 2),
-                    prompt=shot_prompt,
-                    notes=f"act={scene.label}",
-                ))
+                shots.append(
+                    Shot(
+                        scene_index=i,
+                        shot_index=k,
+                        kind=kind,
+                        camera_motion=camera,
+                        subject_token=subject,
+                        duration_s=round(per_shot, 2),
+                        prompt=shot_prompt,
+                        notes=f"act={scene.label}",
+                    )
+                )
         return shots
 
     # ------------------------------------------------------------------

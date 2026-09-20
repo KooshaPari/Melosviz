@@ -116,13 +116,9 @@ def test_studio_storyboard_dispatches_cli_with_expected_args(
     _write_test_wav(wav)
     out_dir = tmp_path / "studio"
     out_dir.mkdir()
-    (out_dir / "storyboard.json").write_text(
-        json.dumps({"scenes": [{"name": "x"}]})
-    )
+    (out_dir / "storyboard.json").write_text(json.dumps({"scenes": [{"name": "x"}]}))
 
-    with patch.object(
-        server, "_run_studio_subprocess", return_value={"returncode": 0}
-    ) as mock_run:
+    with patch.object(server, "_run_studio_subprocess", return_value={"returncode": 0}) as mock_run:
         client.post(
             "/api/studio/storyboard",
             json={
@@ -373,8 +369,15 @@ def test_render_events_emitter_helper_validates_state() -> None:
     e1 = bus.emit_queued(job_id="j", scene_index=0, scene_name="x", scene_type="comfyui_image")
     e2 = bus.emit_rendering(job_id="j", scene_index=0, scene_name="x", scene_type="comfyui_image")
     e3 = bus.emit_done(job_id="j", scene_index=0, scene_name="x", scene_type="comfyui_image")
-    e4 = bus.emit_error(job_id="j", scene_index=0, scene_name="x", scene_type="comfyui_image", error="boom")
-    assert (e1.state, e2.state, e3.state, e4.state) == (STATE_QUEUED, STATE_RENDERING, STATE_DONE, "error")
+    e4 = bus.emit_error(
+        job_id="j", scene_index=0, scene_name="x", scene_type="comfyui_image", error="boom"
+    )
+    assert (e1.state, e2.state, e3.state, e4.state) == (
+        STATE_QUEUED,
+        STATE_RENDERING,
+        STATE_DONE,
+        "error",
+    )
     assert e4.error == "boom"
 
 
@@ -417,8 +420,22 @@ def test_studio_direct_returns_edit_summary(tmp_path, monkeypatch) -> None:
         "concept": "neon noir",
         "bpm": 124,
         "scenes": [
-            {"name": "intro", "start": 0.0, "end": 10.0, "duration": 10.0, "prompt": "x", "camera": "slow_dolly_in"},
-            {"name": "verse", "start": 10.0, "end": 30.0, "duration": 20.0, "prompt": "y", "camera": "slow_pull_back"},
+            {
+                "name": "intro",
+                "start": 0.0,
+                "end": 10.0,
+                "duration": 10.0,
+                "prompt": "x",
+                "camera": "slow_dolly_in",
+            },
+            {
+                "name": "verse",
+                "start": 10.0,
+                "end": 30.0,
+                "duration": 20.0,
+                "prompt": "y",
+                "camera": "slow_pull_back",
+            },
         ],
     }
     sb_path = tmp_path / "sb.json"
@@ -479,8 +496,24 @@ def test_studio_validate_returns_severity_breakdown(tmp_path) -> None:
         "concept": "neon noir test",
         "bpm": 124,
         "scenes": [
-            {"name": "intro", "start": 0.0, "end": 5.0, "duration": 5.0, "prompt": "x", "camera": "slow_dolly_in", "palette": ["#0d0d10"]},
-            {"name": "verse", "start": 5.0, "end": 10.0, "duration": 5.0, "prompt": "y", "camera": "slow_pull_back", "palette": ["#0d0d10"]},
+            {
+                "name": "intro",
+                "start": 0.0,
+                "end": 5.0,
+                "duration": 5.0,
+                "prompt": "x",
+                "camera": "slow_dolly_in",
+                "palette": ["#0d0d10"],
+            },
+            {
+                "name": "verse",
+                "start": 5.0,
+                "end": 10.0,
+                "duration": 5.0,
+                "prompt": "y",
+                "camera": "slow_pull_back",
+                "palette": ["#0d0d10"],
+            },
         ],
     }
     sb_path = tmp_path / "sb.json"
@@ -506,8 +539,24 @@ def test_studio_validate_reports_overlap_issue(tmp_path) -> None:
         "concept": "overlap test",
         "bpm": 124,
         "scenes": [
-            {"name": "a", "start": 0.0, "end": 12.0, "duration": 12.0, "prompt": "x", "camera": "slow_dolly_in", "palette": ["#0d0d10"]},
-            {"name": "b", "start": 10.0, "end": 20.0, "duration": 10.0, "prompt": "y", "camera": "slow_pull_back", "palette": ["#0d0d10"]},
+            {
+                "name": "a",
+                "start": 0.0,
+                "end": 12.0,
+                "duration": 12.0,
+                "prompt": "x",
+                "camera": "slow_dolly_in",
+                "palette": ["#0d0d10"],
+            },
+            {
+                "name": "b",
+                "start": 10.0,
+                "end": 20.0,
+                "duration": 10.0,
+                "prompt": "y",
+                "camera": "slow_pull_back",
+                "palette": ["#0d0d10"],
+            },
         ],
     }
     sb_path = tmp_path / "sb.json"

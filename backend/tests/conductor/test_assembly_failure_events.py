@@ -30,9 +30,7 @@ def _spec() -> dict:
 
 
 def test_assembly_failure_emits_an_error_event(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setitem(
-        registry_mod.ADAPTER_REGISTRY, "assembly_encode", _ExplodingEncoder
-    )
+    monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "assembly_encode", _ExplodingEncoder)
     reset_bus()
     seen: list = []
     get_bus().subscribe(lambda e: seen.append(e))
@@ -50,9 +48,7 @@ def test_assembly_failure_emits_an_error_event(tmp_path: Path, monkeypatch) -> N
     assert "encoder exploded on purpose" in errors[0].error
 
 
-def test_missing_assembly_adapter_emits_an_error_event(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_missing_assembly_adapter_emits_an_error_event(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "assembly_encode", None)
     reset_bus()
     seen: list = []

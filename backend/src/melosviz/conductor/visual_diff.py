@@ -41,7 +41,6 @@ import subprocess
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
-
 FrameExtractor = Callable[[Path, Path], bool]
 
 
@@ -132,9 +131,7 @@ def _timeline_svg(
     for beat in beat_seconds:
         position = min(1.0, max(0.0, (float(beat) - start_seconds) / duration))
         x = 48 + round(position * 864, 3)
-        ticks.append(
-            f'<line x1="{x}" y1="470" x2="{x}" y2="504" stroke="#ffffff" />'
-        )
+        ticks.append(f'<line x1="{x}" y1="470" x2="{x}" y2="504" stroke="#ffffff" />')
     color = palette[0] if palette and str(palette[0]).startswith("#") else "#202033"
     preview = (
         '<image href="visual-diff-frame.png" x="48" y="72" width="864" '
@@ -149,14 +146,14 @@ def _timeline_svg(
         '<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" '
         'viewBox="0 0 960 540">\n'
         '<rect width="960" height="540" fill="#0d0d10" />\n'
-        f'{preview}\n'
+        f"{preview}\n"
         f'<text x="48" y="40" fill="#ffffff" font-size="24">{safe_name}</text>\n'
         f'<text x="48" y="438" fill="#ffffff" font-size="18">{safe_prompt}</text>\n'
         '<line x1="48" y1="487" x2="912" y2="487" stroke="#888899" />\n'
-        f'{tick_markup}\n'
+        f"{tick_markup}\n"
         f'<text x="48" y="526" fill="#ccccd8" font-size="16">'
-        f'{start_seconds:.3f}s - {end_seconds:.3f}s</text>\n'
-        '</svg>\n'
+        f"{start_seconds:.3f}s - {end_seconds:.3f}s</text>\n"
+        "</svg>\n"
     )
 
 

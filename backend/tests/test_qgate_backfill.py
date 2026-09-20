@@ -45,8 +45,7 @@ def _make_wav(path: Path, duration_s: float = 1.0, sample_rate: int = 44100) -> 
     import math
 
     samples = [
-        int(32767 * math.sin(2 * math.pi * 440 * i / sample_rate))
-        for i in range(num_frames)
+        int(32767 * math.sin(2 * math.pi * 440 * i / sample_rate)) for i in range(num_frames)
     ]
     with wave.open(str(path), "w") as wf:
         wf.setnchannels(1)
@@ -99,9 +98,7 @@ class TestBridgeServer:
         assert resp.status_code == 400
 
     def test_render_missing_file_returns_400(self, client, tmp_path) -> None:
-        resp = client.post(
-            "/render", json={"wav_path": "/no/such.wav", "out_dir": str(tmp_path)}
-        )
+        resp = client.post("/render", json={"wav_path": "/no/such.wav", "out_dir": str(tmp_path)})
         assert resp.status_code == 400
 
     def test_analyze_real_wav(self, client, tmp_path) -> None:
@@ -211,9 +208,7 @@ class TestCLICommands:
     def test_cmd_diff_missing_file(self, tmp_path) -> None:
         from melosviz.cli.main import _cmd_diff
 
-        args = SimpleNamespace(
-            spec_a=str(tmp_path / "a.json"), spec_b=str(tmp_path / "b.json")
-        )
+        args = SimpleNamespace(spec_a=str(tmp_path / "a.json"), spec_b=str(tmp_path / "b.json"))
         rc = _cmd_diff(args)
         assert rc == 1
 
@@ -560,9 +555,7 @@ class TestOrchestrator:
         # _output_dir defaults to /tmp/melosviz-conductor when not given
         assert orch._output_dir is not None
 
-    def test_orchestrator_adapter_error_wraps_as_conductor_error(
-        self, tmp_path
-    ) -> None:
+    def test_orchestrator_adapter_error_wraps_as_conductor_error(self, tmp_path) -> None:
         from melosviz.analysis.models import RenderSpec
         from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
@@ -649,9 +642,7 @@ class TestTDAdapter:
 
         adapter = TDAdapter()
         # live_mode=True: bridge start failure must not crash render (best-effort)
-        result = adapter.render(
-            _minimal_render_spec(), output_path=tmp_path, live_mode=True
-        )
+        result = adapter.render(_minimal_render_spec(), output_path=tmp_path, live_mode=True)
         assert isinstance(result, TDRenderResult)
         # On CI without TD running: live_mode in result may be False (bridge failed)
         assert isinstance(result.live_mode, bool)
@@ -875,13 +866,9 @@ except ImportError:  # pragma: no cover
 @pytest.mark.skipif(not HAS_HYPOTHESIS, reason="hypothesis not installed")
 class TestPropertyPresets:
     @given(
-        bpm=st.floats(
-            min_value=60.0, max_value=200.0, allow_nan=False, allow_infinity=False
-        ),
+        bpm=st.floats(min_value=60.0, max_value=200.0, allow_nan=False, allow_infinity=False),
         fps=st.integers(min_value=1, max_value=60),
-        duration=st.floats(
-            min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False
-        ),
+        duration=st.floats(min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False),
     )
     @settings(max_examples=30)
     def test_cinematic_apply_always_sets_palette(

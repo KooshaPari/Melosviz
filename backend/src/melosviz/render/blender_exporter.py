@@ -646,9 +646,7 @@ def _resolve_ffmpeg_binary() -> str:
     try:
         return _vx_resolve()
     except FFMpegNotFoundError as exc:
-        raise BlenderRenderError(
-            f"ffmpeg required for muxing but not found: {exc}"
-        ) from exc
+        raise BlenderRenderError(f"ffmpeg required for muxing but not found: {exc}") from exc
 
 
 def _mux_sequence_to_mp4(
@@ -688,9 +686,7 @@ def _mux_sequence_to_mp4(
 
     if completed.returncode != 0:
         tail = "\n".join((completed.stderr or "").strip().splitlines()[-5:])
-        raise BlenderRenderError(
-            f"ffmpeg mux returned rc={completed.returncode}. Tail:\n{tail}"
-        )
+        raise BlenderRenderError(f"ffmpeg mux returned rc={completed.returncode}. Tail:\n{tail}")
 
 
 # ---------------------------------------------------------------------------
@@ -759,7 +755,9 @@ def export_blender(
     if os.environ.get("MELOSVIZ_COMFYUI_OFFLINE") == "1":
         plan_path = output_dir / "blender_render_plan.json"
         spec_dict: dict[str, Any] = (
-            spec.model_dump() if hasattr(spec, "model_dump") else (spec if isinstance(spec, dict) else {})
+            spec.model_dump()
+            if hasattr(spec, "model_dump")
+            else (spec if isinstance(spec, dict) else {})
         )
         plan = {
             "renderer": "blender",
@@ -850,9 +848,7 @@ def export_blender(
                 timeout=600,
             )
         except OSError as exc:
-            raise BlenderRenderError(
-                f"Failed to start Blender at {blender!r}: {exc}"
-            ) from exc
+            raise BlenderRenderError(f"Failed to start Blender at {blender!r}: {exc}") from exc
 
         if result.returncode != 0:
             tail = "\n".join((result.stderr or "").strip().splitlines()[-10:])
@@ -877,9 +873,7 @@ def export_blender(
     if (
         not output_mp4.exists() or output_mp4.stat().st_size == 0
     ):  # pragma: no cover — defensive post-mux guard
-        raise BlenderRenderError(
-            f"MP4 mux reported success but no output at {output_mp4}."
-        )
+        raise BlenderRenderError(f"MP4 mux reported success but no output at {output_mp4}.")
 
     logger.info(
         "export_blender: wrote %s (%d bytes)",

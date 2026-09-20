@@ -24,10 +24,10 @@ Rules covered (deterministic, no LLM dependency)
 A report is written next to the storyboard (``storyboard.report.json``)
 and also returned for the CLI / bridge.
 """
+
 from __future__ import annotations
 
 import json
-from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -133,9 +133,7 @@ def validate_storyboard(
 
     schema = storyboard.get("schema_version")
     if not schema:
-        report.issues.append(
-            Issue("error", "schema_missing", "storyboard has no schema_version")
-        )
+        report.issues.append(Issue("error", "schema_missing", "storyboard has no schema_version"))
         report.summary["error"] += 1
     elif schema not in SUPPORTED_SCHEMA_VERSIONS:
         report.issues.append(
@@ -144,9 +142,7 @@ def validate_storyboard(
         report.summary["error"] += 1
 
     if report.scene_count == 0:
-        report.issues.append(
-            Issue("error", "scenes_empty", "storyboard has zero scenes")
-        )
+        report.issues.append(Issue("error", "scenes_empty", "storyboard has zero scenes"))
         report.summary["error"] += 1
         return report
 
@@ -195,7 +191,7 @@ def validate_storyboard(
                 Issue(
                     "warning",
                     "scene_duration_mismatch",
-                    f"scene {idx} duration {duration} != end-start {end-start}",
+                    f"scene {idx} duration {duration} != end-start {end - start}",
                     scene_index=idx,
                 )
             )
@@ -226,7 +222,9 @@ def validate_storyboard(
 
         if not prompt:
             report.issues.append(
-                Issue("warning", "scene_prompt_empty", f"scene {idx} has no prompt", scene_index=idx)
+                Issue(
+                    "warning", "scene_prompt_empty", f"scene {idx} has no prompt", scene_index=idx
+                )
             )
             report.summary["warning"] += 1
         if camera:
@@ -244,7 +242,9 @@ def validate_storyboard(
                 report.summary["warning"] += 1
         else:
             report.issues.append(
-                Issue("warning", "scene_camera_empty", f"scene {idx} has no camera", scene_index=idx)
+                Issue(
+                    "warning", "scene_camera_empty", f"scene {idx} has no camera", scene_index=idx
+                )
             )
             report.summary["warning"] += 1
 
@@ -264,7 +264,9 @@ def validate_storyboard(
 
         if not palette:
             report.issues.append(
-                Issue("warning", "scene_palette_empty", f"scene {idx} has no palette", scene_index=idx)
+                Issue(
+                    "warning", "scene_palette_empty", f"scene {idx} has no palette", scene_index=idx
+                )
             )
             report.summary["warning"] += 1
         else:
@@ -340,7 +342,9 @@ def validate_storyboard(
         report.summary["warning"] += 1
 
     lyrics_in_storyboard = storyboard.get("lyrics", []) or []
-    lyric_ids_in_storyboard = {l.get("id") for l in lyrics_in_storyboard if isinstance(l, dict)}
+    lyric_ids_in_storyboard = {
+        lyric.get("id") for lyric in lyrics_in_storyboard if isinstance(lyric, dict)
+    }
     for lid in lyric_ids - lyric_ids_in_storyboard:
         if lid is not None:
             report.issues.append(

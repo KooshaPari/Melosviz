@@ -361,9 +361,7 @@ class TestSemanticScanner:
         audio_ctx = {"stems": {}, "onsets": {"hat": 0.7}}
         ch_low = evaluate_semantic_rules(spec_low, audio_ctx, base_cone_influence=0.5)
         ch_high = evaluate_semantic_rules(spec_high, audio_ctx, base_cone_influence=0.5)
-        assert ch_high.get("boost_reflective", 0.0) > ch_low.get(
-            "boost_reflective", 0.0
-        )
+        assert ch_high.get("boost_reflective", 0.0) > ch_low.get("boost_reflective", 0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -708,12 +706,8 @@ class TestP8Integration:
             if abs(photo_opacities[i] - photo_opacities[i - 1]) > 0.4:
                 transitions_count += 1
         duration_secs = len(assemblies) / fps
-        flash_hz = transitions_count / (
-            2.0 * max(duration_secs, 1.0)
-        )  # transitions/2 = cycles
-        assert (
-            flash_hz <= FLASH_SAFETY_MAX_HZ + 0.5
-        )  # 0.5 tolerance for test discretisation
+        flash_hz = transitions_count / (2.0 * max(duration_secs, 1.0))  # transitions/2 = cycles
+        assert flash_hz <= FLASH_SAFETY_MAX_HZ + 0.5  # 0.5 tolerance for test discretisation
 
     def test_camera_path_integrates_with_compose_pipeline(self) -> None:
         """generate_camera_path produces keyframes usable in the compose assembler."""

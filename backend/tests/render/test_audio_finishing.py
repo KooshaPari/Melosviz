@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import json
-import wave
-import struct
 import math
-import shutil
+import struct
+import wave
 from pathlib import Path
 
 import pytest
@@ -25,13 +23,14 @@ from melosviz.render.audio_finishing import (
     resolve_lufs_target,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
 
-def _synthesize_wav(path: Path, dur_s: float = 5.0, sr: int = 22050, freq_hz: float = 440.0) -> Path:
+def _synthesize_wav(
+    path: Path, dur_s: float = 5.0, sr: int = 22050, freq_hz: float = 440.0
+) -> Path:
     """Synthesize a simple sine-wave WAV for tests."""
     n = int(sr * dur_s)
     with wave.open(str(path), "wb") as w:
@@ -104,7 +103,7 @@ def test_normalize_loudness_writes_output_and_changes_lufs(tmp_path, small_wav):
     """Normalizing to a different target should change the integrated loudness."""
     # First normalize at YouTube (-14 LUFS) — verify pass 1 + pass 2 work
     out = tmp_path / "loudnorm.wav"
-    report = normalize_loudness(small_wav, out, resolve_lufs_target("youtube"))
+    normalize_loudness(small_wav, out, resolve_lufs_target("youtube"))
     assert out.exists(), "loudnorm did not produce output WAV"
     assert out.stat().st_size > 0
 
@@ -213,35 +212,19 @@ def test_detect_stem_backend_prefer_unknown_warns_and_falls_back(caplog):
 
 def test_detect_stem_backend_prefer_uses_requested_when_available(monkeypatch):
     """prefer='demucs' when demucs is on PATH should return 'demucs'."""
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_demucs", lambda: True
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_spleeter", lambda: False
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True
-    )
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_demucs", lambda: True)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_spleeter", lambda: False)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True)
     assert detect_stem_backend(prefer="demucs") == "demucs"
 
 
 def test_detect_stem_backend_uses_priority_chain(monkeypatch):
     """Without prefer, demucs beats spleeter beats three-band fallback."""
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_demucs", lambda: False
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems._has_spleeter", lambda: True
-    )
-    monkeypatch.setattr(
-        "melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True
-    )
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_demucs", lambda: False)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_audio_separator", lambda: False)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems._has_spleeter", lambda: True)
+    monkeypatch.setattr("melosviz.render.audio_finishing.stems.ffmpeg_available", lambda: True)
     assert detect_stem_backend() == "spleeter"
 
 
@@ -280,9 +263,9 @@ def test_offline_plan_stems_export_surfaces_available_backends(tmp_path):
     plan = build_offline_master_plan(tmp_path, export_stems_flag=True)
     assert "stems_export" in plan
     assert "available_backends" in plan["stems_export"]
-    assert {
-        row["name"] for row in plan["stems_export"]["available_backends"]
-    } == set(STEM_BACKEND_PRIORITY)
+    assert {row["name"] for row in plan["stems_export"]["available_backends"]} == set(
+        STEM_BACKEND_PRIORITY
+    )
     # Method must be one of the priority chain (not a hardcoded literal)
     assert plan["stems_export"]["method"] in STEM_BACKEND_PRIORITY
 
@@ -290,18 +273,19 @@ def test_offline_plan_stems_export_surfaces_available_backends(tmp_path):
 def test_python_stem_backend_imports_and_fallback():
     """has_python_stem_backend() reports correctly + all 3 Python-import wrappers
     return gracefully when the package isn't installed (instead of raising)."""
-    from melosviz.render.audio_finishing import (
-        _try_import_demucs,
-        _try_import_spleeter,
-        _try_import_audio_separator,
-        has_python_stem_backend,
-        demucs_python_stems,
-        spleeter_python_stems,
-        audio_separator_python_stems,
-        export_stems_python_first,
-    )
     import tempfile
     from pathlib import Path
+
+    from melosviz.render.audio_finishing import (
+        _try_import_audio_separator,
+        _try_import_demucs,
+        _try_import_spleeter,
+        audio_separator_python_stems,
+        demucs_python_stems,
+        export_stems_python_first,
+        has_python_stem_backend,
+        spleeter_python_stems,
+    )
 
     # 1. The import probes must return either the class or None — never raise.
     for fn in (_try_import_demucs, _try_import_spleeter, _try_import_audio_separator):
@@ -335,4 +319,3 @@ def test_python_stem_backend_imports_and_fallback():
         assert callable(export_stems_python_first)
         # The return type at runtime is StemExportResult with .method / .stems / .logs.
         # We don't run it here — that's covered by the end-to-end test in tests/cli/.
-

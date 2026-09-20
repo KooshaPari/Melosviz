@@ -1,4 +1,5 @@
 """Tests for the deterministic visual-diff builder."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,7 +9,6 @@ from pathlib import Path
 from melosviz.conductor.visual_diff import (
     build_visual_diff,
     compute_visual_diff,
-    extract_preview_frame,
 )
 
 
@@ -27,12 +27,8 @@ def test_visual_diff_hashes_artifact_and_prompt(tmp_path: Path) -> None:
         palette=["#112233"],
         frame_extractor=lambda source, target: False,
     )
-    assert payload["rendered"]["sha256"] == hashlib.sha256(
-        b"rendered-bytes"
-    ).hexdigest()
-    assert payload["prompt"]["sha256"] == hashlib.sha256(
-        b"neon & rain"
-    ).hexdigest()
+    assert payload["rendered"]["sha256"] == hashlib.sha256(b"rendered-bytes").hexdigest()
+    assert payload["prompt"]["sha256"] == hashlib.sha256(b"neon & rain").hexdigest()
     # No preview was extracted -> preview_* keys are None.
     assert payload["rendered"]["preview_path"] is None
     assert payload["rendered"]["preview_sha256"] is None
@@ -85,9 +81,7 @@ def test_visual_diff_records_extracted_preview(tmp_path: Path) -> None:
         frame_extractor=extractor,
     )
     assert payload["rendered"]["preview_path"] == "visual-diff-frame.png"
-    assert payload["rendered"]["preview_sha256"] == hashlib.sha256(
-        b"png"
-    ).hexdigest()
+    assert payload["rendered"]["preview_sha256"] == hashlib.sha256(b"png").hexdigest()
     # SVG references the preview file when extraction succeeded.
     assert 'href="visual-diff-frame.png"' in (tmp_path / "visual-diff.svg").read_text()
 
@@ -113,9 +107,7 @@ def test_compute_visual_diff_zero_length_clip_preserves_zero_end(
 
     artifact = tmp_path / "scene.png"
     artifact.write_bytes(b"x")
-    payload = compute_visual_diff(
-        artifact, "test", start_seconds=0.0, end_seconds=0.0
-    )
+    payload = compute_visual_diff(artifact, "test", start_seconds=0.0, end_seconds=0.0)
     assert payload["timeline_thumbnail"]["start_seconds"] == 0.0
     assert payload["timeline_thumbnail"]["end_seconds"] == 0.0
 

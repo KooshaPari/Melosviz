@@ -18,11 +18,11 @@ Env var: `MELOSVIZ_DIRECT_NEIGHBORS`
 Pure functions, no I/O. CLI + bridge import this to resolve the
 `--only-scenes` flag before invoking the orchestrator.
 """
+
 from __future__ import annotations
 
 import os
-from typing import Mapping, Sequence
-
+from collections.abc import Mapping, Sequence
 
 MAX_NEIGHBORS: int = 5
 DEFAULT_NEIGHBORS: int = 1

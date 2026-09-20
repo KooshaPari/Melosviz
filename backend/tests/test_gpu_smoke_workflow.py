@@ -11,6 +11,7 @@ If any of these contracts are broken (workflow_dispatch removed,
 schedule cron edited, env defaults dropped) the tests will fail and the
 PR will be blocked.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -194,9 +194,7 @@ class NarrativeComposer:
             start = float(seg.get("start", 0.0))
             end = float(seg.get("end", 0.0))
 
-            scene_type, material = self._pick_varied(
-                rng, scene_pool, material_pool, prev_pair
-            )
+            scene_type, material = self._pick_varied(rng, scene_pool, material_pool, prev_pair)
             camera_language = self._camera_language(intensity)
 
             assignment = SegmentAssignment(

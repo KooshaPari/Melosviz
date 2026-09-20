@@ -27,8 +27,9 @@ import os
 import shutil
 import time
 import uuid
+from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
     from melosviz.analysis.models import RenderSpec
@@ -108,9 +109,7 @@ def _artifact_relpath(artifact: str, output_dir: Path) -> str | None:
         return None
 
 
-def _materialise_cached_artifact(
-    blob: Path, output_dir: Path, scene_out_dir: Path
-) -> Path | None:
+def _materialise_cached_artifact(blob: Path, output_dir: Path, scene_out_dir: Path) -> Path | None:
     """Copy a content-addressed cache blob back to where the artifact lived.
 
     The cache stores bytes as ``<fingerprint>.bin``; downstream consumers expect
@@ -155,7 +154,6 @@ def _materialise_cached_artifact(
     return target
 
 
-
 def _record_cached_scene(
     *,
     scene_out_dir: Path,
@@ -193,9 +191,7 @@ def _record_cached_scene(
             )
         )
     except Exception:  # pragma: no cover - provenance is best-effort
-        logger.debug(
-            "provenance write skipped for cached scene[%d]", scene_index, exc_info=True
-        )
+        logger.debug("provenance write skipped for cached scene[%d]", scene_index, exc_info=True)
 
 
 def _record_failed_scene(
@@ -242,9 +238,7 @@ def _record_failed_scene(
             target=scene_out_dir / f"scene_{scene_index:03d}.provenance.json",
         )
     except Exception:  # pragma: no cover - provenance is best-effort
-        logger.debug(
-            "provenance write skipped for failed scene[%d]", scene_index, exc_info=True
-        )
+        logger.debug("provenance write skipped for failed scene[%d]", scene_index, exc_info=True)
 
 
 def _extract_artifact_path(result: Any) -> str:
@@ -362,25 +356,19 @@ class Orchestrator:
                 stamped onto them.
         """
         self._output_dir = (
-            Path(output_dir)
-            if output_dir is not None
-            else Path("/tmp/melosviz-conductor")
+            Path(output_dir) if output_dir is not None else Path("/tmp/melosviz-conductor")
         )
         self._skip_assembly = skip_assembly
         self._auto_offline = auto_offline
         self._job_id = job_id
-        self._only_scenes: tuple[int, ...] | None = (
-            tuple(only_scenes) if only_scenes else None
-        )
+        self._only_scenes: tuple[int, ...] | None = tuple(only_scenes) if only_scenes else None
         # WBS-101..106 — character consistency wiring. Lazy-import the
         # character module so the conductor's import graph stays light for
         # callers that don't use characters. ``character_root`` may be a
         # path that doesn't yet exist on disk; we record it but only
         # attempt to load it if a scene actually references a character.
         self._character_root: Path | None = (
-            Path(character_root).expanduser().resolve()
-            if character_root is not None
-            else None
+            Path(character_root).expanduser().resolve() if character_root is not None else None
         )
         self._character_registry: Any = None  # CharacterRegistry instance
         self._active_characters: tuple[str, ...] = ()  # names opted in via CLI
@@ -395,9 +383,7 @@ class Orchestrator:
         # NAMES matter — render() reads self._render_cache.cache_dir and
         # self._provenance_records, so renaming either would silently
         # break the cache fast-path at runtime.
-        self._render_cache: RenderCache = RenderCache(
-            self._output_dir / "_render_cache"
-        )
+        self._render_cache: RenderCache = RenderCache(self._output_dir / "_render_cache")
         self._provenance_records: list[ClipProvenance] = []
         # Offline detection: if the operator hasn't explicitly set
         # ``MELOSVIZ_COMFYUI_OFFLINE`` and ComfyUI is unreachable, surface a
@@ -441,7 +427,8 @@ class Orchestrator:
             logger.warning(
                 "Orchestrator: character_root=%s does not exist or is "
                 "not a directory; character scenes will render without "
-                "identity references.", root,
+                "identity references.",
+                root,
             )
             self._character_registry = CharacterRegistry()
             return
@@ -449,13 +436,15 @@ class Orchestrator:
             self._character_registry = load_registry(root)
             logger.info(
                 "Orchestrator: loaded %d character sheet(s) from %s",
-                len(self._character_registry.names()), root,
+                len(self._character_registry.names()),
+                root,
             )
         except Exception as exc:
             logger.warning(
                 "Orchestrator: failed to load character_root=%s (%s); "
                 "character scenes will render without identity references.",
-                root, exc,
+                root,
+                exc,
             )
             self._character_registry = CharacterRegistry()
 
@@ -557,11 +546,7 @@ class Orchestrator:
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
         # ---- Resolve scene types from spec ---------------------------------
-        spec_dict = (
-            render_spec.model_dump()
-            if hasattr(render_spec, "model_dump")
-            else render_spec
-        )
+        spec_dict = render_spec.model_dump() if hasattr(render_spec, "model_dump") else render_spec
         segs = spec_dict.get("scene_segments") or []
 
         # audio_path resolution: prefer explicit kwarg, fall back to the
@@ -596,11 +581,7 @@ class Orchestrator:
         # hard requirement).
         _continuity_ref: str | None = None
         _continuity_strength: float = 0.65
-        _continuity = (
-            spec_dict.get("continuity")
-            if isinstance(spec_dict, dict)
-            else None
-        )
+        _continuity = spec_dict.get("continuity") if isinstance(spec_dict, dict) else None
         if isinstance(_continuity, dict):
             ref = _continuity.get("reference_image")
             if ref:
@@ -629,9 +610,7 @@ class Orchestrator:
                 if isinstance(_seg, dict):
                     _seg["ip_adapter_image"] = _continuity_ref
                     _seg["reference_image"] = _continuity_ref
-                    _seg.setdefault(
-                        "reference_image_strength", _continuity_strength
-                    )
+                    _seg.setdefault("reference_image_strength", _continuity_strength)
 
         # ---- Character-consistency plumbing (WBS-101..106, 2026-08) --------
         # For each scene that names a character (via ``scene["character"]``
@@ -775,9 +754,7 @@ class Orchestrator:
                 if st == "assembly_encode":
                     continue
                 if st in scene_types:
-                    per_scene_dispatch.append(
-                        (i, _scene_label(seg, i), st, seg)
-                    )
+                    per_scene_dispatch.append((i, _scene_label(seg, i), st, seg))
             if not per_scene_dispatch:
                 per_scene_dispatch = [
                     (i, f"scene_{i:03d}", st, {})
@@ -838,10 +815,13 @@ class Orchestrator:
             # there is no real scene work to render. Stub the per-scene
             # result and continue without invoking the adapter.
             if not _seg_for_render:
-                per_scene_results.setdefault(scene_type, {
-                    "artifact_path": None,
-                    "cache_key": "",
-                })
+                per_scene_results.setdefault(
+                    scene_type,
+                    {
+                        "artifact_path": None,
+                        "cache_key": "",
+                    },
+                )
                 continue
 
             # Defaulted getattr: a Mock adapter class raises AttributeError for
@@ -870,7 +850,9 @@ class Orchestrator:
             # Render cache fast-path: if the same prompt/seed/size/model was
             # already rendered into scene_out_dir, skip the adapter call
             # entirely and emit a done event with from_cache=True.
-            cache_root: Path | None = self._render_cache.cache_dir if self._render_cache is not None else None
+            cache_root: Path | None = (
+                self._render_cache.cache_dir if self._render_cache is not None else None
+            )
             cached_artifact: Path | None = None
             if cache_root is not None:
                 cached_artifact = scene_render_cached(_seg_for_render, cache_root)
@@ -953,16 +935,12 @@ class Orchestrator:
                     _ref_str = _seg_for_render.get("reference_image_strength")
                     if _ref_str is not None:
                         try:
-                            _render_kwargs["reference_image_strength"] = float(
-                                _ref_str
-                            )
+                            _render_kwargs["reference_image_strength"] = float(_ref_str)
                         except (TypeError, ValueError):
                             _render_kwargs["reference_image_strength"] = 0.65
                     # Backwards-compat alias for older adapters that
                     # still key off the pre-v2 on-wire name.
-                    _render_kwargs.setdefault(
-                        "scene_ip_adapter_image", str(_ref_img)
-                    )
+                    _render_kwargs.setdefault("scene_ip_adapter_image", str(_ref_img))
                 result = adapter.render(render_spec, **_render_kwargs)
             except Exception as exc:
                 elapsed_ms = (time.monotonic() - t0) * 1000.0
@@ -1016,9 +994,12 @@ class Orchestrator:
             # offline branch for, so ask the adapter rather than assuming
             # ``comfyui_image`` (the registry routes seven scene types to the
             # ComfyUI adapter, and all of them get placeholder clips offline).
-            _offline_env = os.environ.get(
-                "MELOSVIZ_COMFYUI_OFFLINE", ""
-            ).strip().lower() in ("1", "true", "yes", "on")
+            _offline_env = os.environ.get("MELOSVIZ_COMFYUI_OFFLINE", "").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+                "on",
+            )
             # ``getattr(mock, "flag", False)`` is a truthy Mock, so capability
             # flags are compared to True explicitly rather than used as truthy.
             _offline_placeholder = bool(
@@ -1048,9 +1029,7 @@ class Orchestrator:
                     "offline-placeholder"
                     if _offline_placeholder
                     else (
-                        "job-spec-only"
-                        if _plan_only
-                        else ("render" if artifact else "unavailable")
+                        "job-spec-only" if _plan_only else ("render" if artifact else "unavailable")
                     )
                 )
             )
@@ -1116,7 +1095,11 @@ class Orchestrator:
                 logger.debug("provenance write skipped: %s", exc)
 
             try:
-                cache_key = scene_cache_key(_seg_for_render, cache_root) if cache_root else scene_cache_key(_seg_for_render, self._output_dir)
+                cache_key = (
+                    scene_cache_key(_seg_for_render, cache_root)
+                    if cache_root
+                    else scene_cache_key(_seg_for_render, self._output_dir)
+                )
                 if self._render_cache is not None and artifact and not _artifact_issue:
                     self._render_cache.store(
                         cache_key,
@@ -1126,9 +1109,7 @@ class Orchestrator:
                             "scene_name": scene_name,
                             "outcome": _outcome,
                             "artifact_name": Path(artifact).name,
-                            "artifact_relpath": _artifact_relpath(
-                                artifact, self._output_dir
-                            ),
+                            "artifact_relpath": _artifact_relpath(artifact, self._output_dir),
                         },
                     )
             except Exception as exc:  # cache store is best-effort

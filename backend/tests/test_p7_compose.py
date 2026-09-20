@@ -58,9 +58,7 @@ def _make_segments(n: int, duration: float = 30.0) -> list[dict]:
 def _make_mir(n_seconds: int = 30, bpm: float = 128.0) -> dict:
     return {
         "tempo_bpm": bpm,
-        "energy_trajectory": [
-            0.3 + 0.5 * abs(math.sin(t * 0.4)) for t in range(n_seconds)
-        ],
+        "energy_trajectory": [0.3 + 0.5 * abs(math.sin(t * 0.4)) for t in range(n_seconds)],
         "brightness_trajectory": [0.5] * n_seconds,
         "valence_trajectory": [0.6] * n_seconds,
         "arousal_trajectory": [0.7] * n_seconds,
@@ -228,10 +226,7 @@ class TestNarrativeComposerIntensityArc:
         mir = {"energy_trajectory": [0.2] * 10 + [0.8] * 10 + [0.3] * 10}
         plan = NarrativeComposer(seed=0).assign(segs, mir)
         # Chorus should have higher intensity than intro/outro
-        assert (
-            plan[1].intensity > plan[0].intensity
-            or plan[1].intensity > plan[2].intensity
-        )
+        assert plan[1].intensity > plan[0].intensity or plan[1].intensity > plan[2].intensity
 
 
 # ---------------------------------------------------------------------------
@@ -283,9 +278,7 @@ class TestAssembleRenderPlan:
             curr = plan["segments"][i]
             pair_prev = (prev["scene_type"], prev["material"])
             pair_curr = (curr["scene_type"], curr["material"])
-            assert pair_prev != pair_curr, (
-                f"Adjacent repeat at {i - 1}→{i}: {pair_curr}"
-            )
+            assert pair_prev != pair_curr, f"Adjacent repeat at {i - 1}→{i}: {pair_curr}"
 
     def test_raises_on_empty_scene_segments(self):
         from melosviz.analysis.models import RenderSpec

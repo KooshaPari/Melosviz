@@ -99,9 +99,7 @@ def test_measure_profile_survives_missing_ffmpeg(monkeypatch, dynamic_wav: Path)
 
 def test_measure_profile_survives_missing_summary_block(monkeypatch, dynamic_wav: Path):
     """ffmpeg success without a Summary block must not raise or parse garbage."""
-    monkeypatch.setattr(
-        reference_mod, "run", lambda *a, **k: (0, "noise", "still no summary here")
-    )
+    monkeypatch.setattr(reference_mod, "run", lambda *a, **k: (0, "noise", "still no summary here"))
     profile = measure_profile(dynamic_wav)
     assert profile.integrated_lufs == -14.0
 
@@ -111,9 +109,7 @@ def test_measure_profile_survives_missing_summary_block(monkeypatch, dynamic_wav
 # ---------------------------------------------------------------------------
 
 
-def test_match_reference_converges_loudness_and_narrows_range(
-    dynamic_wav: Path, tmp_path: Path
-):
+def test_match_reference_converges_loudness_and_narrows_range(dynamic_wav: Path, tmp_path: Path):
     """Matching a quieter, narrower target must move both axes toward it."""
     source = measure_profile(dynamic_wav)
     target = ReferenceProfile(
@@ -123,9 +119,7 @@ def test_match_reference_converges_loudness_and_narrows_range(
         true_peak_dbtp=-3.0,
     )
     out = tmp_path / "matched.wav"
-    result = match_reference(
-        dynamic_wav, out, target, max_iterations=6, tol_lufs=0.4, tol_lra=0.6
-    )
+    result = match_reference(dynamic_wav, out, target, max_iterations=6, tol_lufs=0.4, tol_lra=0.6)
 
     assert out.exists() and out.stat().st_size > 0
     assert isinstance(result, ReferenceMatchResult)
@@ -183,9 +177,7 @@ def test_match_reference_threshold_is_the_lra_lever(dynamic_wav: Path, tmp_path:
     assert result.params["compressor_threshold_db"] < reference_mod._THRESHOLD_SEED_DB
 
 
-def test_match_reference_raises_threshold_when_target_is_wider(
-    dynamic_wav: Path, tmp_path: Path
-):
+def test_match_reference_raises_threshold_when_target_is_wider(dynamic_wav: Path, tmp_path: Path):
     """A wider target than the source must not over-compress."""
     source = measure_profile(dynamic_wav)
     wide = ReferenceProfile(

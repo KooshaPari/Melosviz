@@ -219,9 +219,7 @@ def evaluate_pose(
     angular_dist = min(orbit_angle_rad, _TWO_PI - orbit_angle_rad)
     cone_half_rad = math.radians(scanner.cone_angle_deg / 2.0)
 
-    if (
-        cone_half_rad <= 0.0
-    ):  # pragma: no cover — ScannerSpec validates cone_angle_deg > 0
+    if cone_half_rad <= 0.0:  # pragma: no cover — ScannerSpec validates cone_angle_deg > 0
         cone_raw = 0.0
     else:
         # x = 1 when scanner points directly at sample, 0 at cone boundary
@@ -403,8 +401,6 @@ def evaluate_semantic_rules(
         if stem_ok and onset_ok:
             value = min(1.0, base_cone_influence * rule.effect_gain)
             # If multiple rules write the same channel, take the max
-            channels[rule.effect_channel] = max(
-                channels.get(rule.effect_channel, 0.0), value
-            )
+            channels[rule.effect_channel] = max(channels.get(rule.effect_channel, 0.0), value)
 
     return channels

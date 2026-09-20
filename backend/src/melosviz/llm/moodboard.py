@@ -35,14 +35,14 @@ __all__ = [
 # Fallback palette per brightness/saturation profile — used when PIL
 # isn't installed so the pipeline still works offline.
 _FALLBACK_PALETTES: dict[str, list[str]] = {
-    "neon":        ["#ff2bd6", "#22d3ee", "#0d0d10", "#f0f0f8"],
-    "sunset":      ["#ff5e5b", "#f7b733", "#2c1810", "#fff1e6"],
-    "forest":      ["#4f7942", "#1e3a1e", "#fff59d", "#708238"],
-    "underwater":  ["#56e1ff", "#3f37c9", "#0a0a23", "#caf0f8"],
-    "monochrome":  ["#0d0d10", "#708090", "#cfd8dc", "#f0f0f8"],
-    "festival":    ["#ff2bd6", "#b6ff5c", "#ffd166", "#0d0d10"],
-    "warm":        ["#ff8fa3", "#fff1e6", "#d4a017", "#a0522d"],
-    "cold":        ["#708090", "#cfd8dc", "#3f37c9", "#0a0a23"],
+    "neon": ["#ff2bd6", "#22d3ee", "#0d0d10", "#f0f0f8"],
+    "sunset": ["#ff5e5b", "#f7b733", "#2c1810", "#fff1e6"],
+    "forest": ["#4f7942", "#1e3a1e", "#fff59d", "#708238"],
+    "underwater": ["#56e1ff", "#3f37c9", "#0a0a23", "#caf0f8"],
+    "monochrome": ["#0d0d10", "#708090", "#cfd8dc", "#f0f0f8"],
+    "festival": ["#ff2bd6", "#b6ff5c", "#ffd166", "#0d0d10"],
+    "warm": ["#ff8fa3", "#fff1e6", "#d4a017", "#a0522d"],
+    "cold": ["#708090", "#cfd8dc", "#3f37c9", "#0a0a23"],
 }
 
 
@@ -192,17 +192,17 @@ def mood_board_from_env(env_var: str = "MELOSVIZ_MOOD_BOARD") -> dict:
 
 
 _FALLBACK_KEYWORDS: dict[str, tuple[str, list[str]]] = {
-    "neon":        ("neon noir, vibrant", ["#ff2bd6", "#22d3ee", "#0d0d10"]),
-    "city":        ("urban night, cinematic", ["#ffb347", "#1ec8c8", "#0d0d10"]),
-    "forest":      ("dappled natural light", ["#4f7942", "#fff59d", "#1e3a1e"]),
-    "underwater":  ("caustic blue, dreamy", ["#56e1ff", "#3f37c9", "#0a0a23"]),
-    "desert":      ("harsh sun, ochre", ["#d4a017", "#a0522d", "#fff1e6"]),
-    "space":       ("rim light, sci-fi", ["#7c3aed", "#ffd166", "#0d0d10"]),
-    "festival":    ("festival strobe, fuchsia", ["#ff2bd6", "#b6ff5c", "#0d0d10"]),
-    "love":        ("soft warm, intimate", ["#ff8fa3", "#fff1e6", "#a0522d"]),
-    "dark":        ("low-key, moody", ["#0d0d10", "#708090", "#cfd8dc"]),
-    "warm":        ("warm tones", ["#ff8fa3", "#fff1e6", "#d4a017"]),
-    "cold":        ("cold tones", ["#708090", "#cfd8dc", "#3f37c9"]),
+    "neon": ("neon noir, vibrant", ["#ff2bd6", "#22d3ee", "#0d0d10"]),
+    "city": ("urban night, cinematic", ["#ffb347", "#1ec8c8", "#0d0d10"]),
+    "forest": ("dappled natural light", ["#4f7942", "#fff59d", "#1e3a1e"]),
+    "underwater": ("caustic blue, dreamy", ["#56e1ff", "#3f37c9", "#0a0a23"]),
+    "desert": ("harsh sun, ochre", ["#d4a017", "#a0522d", "#fff1e6"]),
+    "space": ("rim light, sci-fi", ["#7c3aed", "#ffd166", "#0d0d10"]),
+    "festival": ("festival strobe, fuchsia", ["#ff2bd6", "#b6ff5c", "#0d0d10"]),
+    "love": ("soft warm, intimate", ["#ff8fa3", "#fff1e6", "#a0522d"]),
+    "dark": ("low-key, moody", ["#0d0d10", "#708090", "#cfd8dc"]),
+    "warm": ("warm tones", ["#ff8fa3", "#fff1e6", "#d4a017"]),
+    "cold": ("cold tones", ["#708090", "#cfd8dc", "#3f37c9"]),
 }
 
 

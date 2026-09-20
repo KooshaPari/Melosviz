@@ -23,8 +23,8 @@ from __future__ import annotations
 
 from melosviz.character.registry_io import (
     DEFAULT_IMAGE_EXTENSIONS,
-    CharacterIOError,
     ENGINE_WORKFLOWS,
+    CharacterIOError,
     load_registry,
     save_registry,
     save_sheet,
@@ -35,8 +35,8 @@ from melosviz.character.sheet import (
     CHARACTER_PULID,
     ENGINE_IPADAPTER,
     ENGINE_PULID,
-    REFERENCE_FULL_BODY,
     REFERENCE_FRONT,
+    REFERENCE_FULL_BODY,
     REFERENCE_PROFILE,
     REFERENCE_SLOTS,
     REFERENCE_STYLE,

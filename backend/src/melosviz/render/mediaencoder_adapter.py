@@ -250,9 +250,7 @@ def assemble_with_ffmpeg(
         ) from exc
 
     if not segment_paths:
-        raise MESpecError(
-            "assemble_with_ffmpeg: segment_paths is empty — nothing to assemble."
-        )
+        raise MESpecError("assemble_with_ffmpeg: segment_paths is empty — nothing to assemble.")
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -311,9 +309,7 @@ def assemble_with_ffmpeg(
         )
 
     if not output_path.exists() or output_path.stat().st_size == 0:
-        raise MESpecError(
-            f"ffmpeg concat reported success but no output at {output_path}."
-        )
+        raise MESpecError(f"ffmpeg concat reported success but no output at {output_path}.")
 
     logger.info(
         "assemble_with_ffmpeg: assembled %d segments → %s",
@@ -372,9 +368,7 @@ def build_ame_job_spec(
     if fps <= 0:
         raise MESpecError(f"build_ame_job_spec: invalid fps={fps!r} in metadata.")
 
-    _output_dir = (
-        str(output_dir) if output_dir is not None else "/tmp/melosviz-ame-renders"
-    )
+    _output_dir = str(output_dir) if output_dir is not None else "/tmp/melosviz-ame-renders"
 
     # ---- Build source clip list aligned with scene segments ----------------
     source_clips: list[dict[str, Any]] = []
@@ -387,9 +381,7 @@ def build_ame_job_spec(
                 "path": str(path),
                 "start": float(seg.get("start", 0.0)),
                 "end": float(seg.get("end", 0.0)),
-                "duration": max(
-                    0.0, float(seg.get("end", 0.0)) - float(seg.get("start", 0.0))
-                ),
+                "duration": max(0.0, float(seg.get("end", 0.0)) - float(seg.get("start", 0.0))),
             }
         )
 
@@ -534,7 +526,9 @@ class MEAdapter:
             _spec_dict = (
                 render_spec.model_dump()
                 if hasattr(render_spec, "model_dump")
-                else render_spec if isinstance(render_spec, dict) else {}
+                else render_spec
+                if isinstance(render_spec, dict)
+                else {}
             )
             ffmpeg_output = assemble_with_ffmpeg(
                 _seg_paths,

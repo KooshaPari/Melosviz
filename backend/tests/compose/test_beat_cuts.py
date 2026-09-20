@@ -41,11 +41,13 @@ def _storyboard_with_beats(
 
 
 def test_build_plan_returns_assemble_effects_plan_type():
-    sb = _storyboard_with_beats([
-        {"name": "intro", "start": 0.0, "end": 4.0, "camera": "slow_dolly_in"},
-        {"name": "verse", "start": 4.0, "end": 8.0, "camera": "whip_pan_burst"},
-        {"name": "chorus", "start": 8.0, "end": 12.0, "camera": "slow_pull_back"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "intro", "start": 0.0, "end": 4.0, "camera": "slow_dolly_in"},
+            {"name": "verse", "start": 4.0, "end": 8.0, "camera": "whip_pan_burst"},
+            {"name": "chorus", "start": 8.0, "end": 12.0, "camera": "slow_pull_back"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     assert isinstance(plan, AssembleEffectsPlan)
     assert plan.schema_version == "1.0"
@@ -68,10 +70,12 @@ def test_plan_snaps_transitions_to_nearest_beat():
 
 
 def test_plan_marks_whip_pan_transition_kind():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 4.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 4.0, "end": 8.0, "camera": "whip_pan_burst_then_hold"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 4.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 4.0, "end": 8.0, "camera": "whip_pan_burst_then_hold"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     assert plan.transitions[0].kind == "whip_pan"
 
@@ -79,7 +83,13 @@ def test_plan_marks_whip_pan_transition_kind():
 def test_plan_marks_dip_to_black_for_chorus_or_drop_boundary():
     scenes = [
         {"name": "verse", "start": 0.0, "end": 5.0, "camera": "slow_pull_back"},
-        {"name": "drop", "start": 5.0, "end": 10.0, "camera": "slow_dolly_in", "lyric": {"mood_label": "drop"}},
+        {
+            "name": "drop",
+            "start": 5.0,
+            "end": 10.0,
+            "camera": "slow_dolly_in",
+            "lyric": {"mood_label": "drop"},
+        },
     ]
     sb = _storyboard_with_beats(scenes, bpm=120)
     plan = build_assemble_effects_plan(sb)
@@ -132,15 +142,19 @@ def test_plan_emits_risk_report_for_unmusical_boundary():
 
 
 def test_plan_cut_points_are_sorted_unique():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 15.0, "camera": "slow_pull_back"},  # long
-        {"name": "c", "start": 15.0, "end": 20.0, "camera": "slow_dolly_in"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 15.0, "camera": "slow_pull_back"},  # long
+            {"name": "c", "start": 15.0, "end": 20.0, "camera": "slow_dolly_in"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     assert plan.cut_points == sorted(plan.cut_points)
     # cut points is the union of transition times + internal cut times
-    expected = sorted([t.at_time for t in plan.transitions] + [c.at_time for c in plan.internal_cuts])
+    expected = sorted(
+        [t.at_time for t in plan.transitions] + [c.at_time for c in plan.internal_cuts]
+    )
     assert plan.cut_points == expected
 
 
@@ -157,20 +171,24 @@ def test_plan_handles_missing_optional_keys():
 
 
 def test_plan_transition_kinds_property():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_dolly_in"},  # same camera
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_dolly_in"},  # same camera
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     assert isinstance(plan.transition_kinds, list)
     assert all(isinstance(k, str) for k in plan.transition_kinds)
 
 
 def test_plan_to_dict_roundtrips():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 10.0, "camera": "whip_pan_burst"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 10.0, "camera": "whip_pan_burst"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     d = plan.to_dict()
     # round-trip through json
@@ -182,10 +200,12 @@ def test_plan_to_dict_roundtrips():
 
 
 def test_plan_to_ffmpeg_filter_returns_string():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_dolly_in"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_dolly_in"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     s = plan_to_ffmpeg_filter(plan)
     assert "ffmpeg" in s
@@ -193,10 +213,12 @@ def test_plan_to_ffmpeg_filter_returns_string():
 
 
 def test_summarize_plan_one_liner():
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 10.0, "camera": "whip_pan_burst"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 10.0, "camera": "whip_pan_burst"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     s = summarize_plan(plan)
     assert "effects plan v" in s
@@ -205,10 +227,12 @@ def test_summarize_plan_one_liner():
 
 
 def test_write_effects_plan_persists_to_disk(tmp_path: Path):
-    sb = _storyboard_with_beats([
-        {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
-        {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_pull_back"},
-    ])
+    sb = _storyboard_with_beats(
+        [
+            {"name": "a", "start": 0.0, "end": 5.0, "camera": "slow_dolly_in"},
+            {"name": "b", "start": 5.0, "end": 10.0, "camera": "slow_pull_back"},
+        ]
+    )
     plan = build_assemble_effects_plan(sb)
     out = write_effects_plan(plan, tmp_path / "effects.json")
     assert out.exists()

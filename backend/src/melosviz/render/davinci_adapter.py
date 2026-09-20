@@ -44,7 +44,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from melosviz.analysis.models import RenderSpec
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +155,9 @@ def is_resolve_available() -> bool:
     try:
         proc = subprocess.run(
             [py, "-c", "import DaVinciResolveScripting; print('ok')"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         return proc.returncode == 0 and "ok" in proc.stdout
     except (subprocess.TimeoutExpired, OSError):
@@ -198,24 +200,26 @@ def build_resolve_timeline(
     clips: list[dict[str, Any]] = []
     for i, path in enumerate(segment_paths):
         seg = scene_segments[i] if i < len(scene_segments) else {}
-        clips.append({
-            "index": i,
-            "label": str(seg.get("label", f"segment_{i}")),
-            "path": str(path),
-            "start": float(seg.get("start", 0.0)),
-            "end": float(seg.get("end", 0.0)),
-            "duration": max(
-                0.0,
-                float(seg.get("end", 0.0)) - float(seg.get("start", 0.0)),
-            ),
-            "color_grade": {
-                "lift":     seg.get("lift",     [0.0, 0.0, 0.0]),
-                "gamma":    seg.get("gamma",    [1.0, 1.0, 1.0]),
-                "gain":     seg.get("gain",     [1.0, 1.0, 1.0]),
-                "saturation": float(seg.get("saturation", 1.0)),
-                "contrast": float(seg.get("contrast", 1.0)),
-            },
-        })
+        clips.append(
+            {
+                "index": i,
+                "label": str(seg.get("label", f"segment_{i}")),
+                "path": str(path),
+                "start": float(seg.get("start", 0.0)),
+                "end": float(seg.get("end", 0.0)),
+                "duration": max(
+                    0.0,
+                    float(seg.get("end", 0.0)) - float(seg.get("start", 0.0)),
+                ),
+                "color_grade": {
+                    "lift": seg.get("lift", [0.0, 0.0, 0.0]),
+                    "gamma": seg.get("gamma", [1.0, 1.0, 1.0]),
+                    "gain": seg.get("gain", [1.0, 1.0, 1.0]),
+                    "saturation": float(seg.get("saturation", 1.0)),
+                    "contrast": float(seg.get("contrast", 1.0)),
+                },
+            }
+        )
 
     timeline: dict[str, Any] = {
         "schema": "melosviz.resolve.v1",
@@ -352,10 +356,14 @@ def render_with_resolve(
     out_dir.mkdir(parents=True, exist_ok=True)
     timeline_path = out_dir / "_timeline.json"
     timeline_path.write_text(json.dumps(timeline, indent=2), encoding="utf-8")
-    driver_path = _write_driver(driver or (Path(__file__).resolve().parent.parent.parent / "scripts" / "resolve_finish.py"))
+    driver_path = _write_driver(
+        driver or (Path(__file__).resolve().parent.parent.parent / "scripts" / "resolve_finish.py")
+    )
     proc = subprocess.run(
         [py, str(driver_path), str(timeline_path), str(out_dir)],
-        capture_output=True, text=True, timeout=_resolve_timeout_s(),
+        capture_output=True,
+        text=True,
+        timeout=_resolve_timeout_s(),
     )
     if proc.returncode != 0 or "RESOLVE_OK" not in proc.stdout:
         raise ResolveError(
@@ -395,9 +403,7 @@ def render_with_ffmpeg_fallback(
     try:
         ffmpeg = _resolve_ffmpeg_binary()
     except FFMpegNotFoundError as exc:
-        raise ResolveError(
-            f"ffmpeg fallback unavailable: {exc}. Install ffmpeg."
-        ) from exc
+        raise ResolveError(f"ffmpeg fallback unavailable: {exc}. Install ffmpeg.") from exc
 
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -405,9 +411,7 @@ def render_with_ffmpeg_fallback(
     if not segment_paths and timeline.get("clips"):
         segment_paths = [c["path"] for c in timeline["clips"]]
     if not segment_paths:
-        raise ResolveError(
-            "render_with_ffmpeg_fallback: no segment_paths or timeline.clips."
-        )
+        raise ResolveError("render_with_ffmpeg_fallback: no segment_paths or timeline.clips.")
 
     # Concatenate to a master-intermediate first
     master_inter = out_dir / "_intermediate_master.mp4"
@@ -417,17 +421,27 @@ def render_with_ffmpeg_fallback(
             safe = str(p).replace("'", "'\\''")
             fh.write(f"file '{safe}'\n")
     cmd = [
-        ffmpeg, "-y", "-f", "concat", "-safe", "0",
-        "-i", str(concat_file),
-        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium",
-        "-c:a", "pcm_s16le",
+        ffmpeg,
+        "-y",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        str(concat_file),
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-preset",
+        "medium",
+        "-c:a",
+        "pcm_s16le",
         str(master_inter),
     ]
     proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if proc.returncode != 0 or not master_inter.exists():
-        raise ResolveError(
-            f"ffmpeg concat failed: {proc.stderr.strip()[-2000:]}"
-        )
+        raise ResolveError(f"ffmpeg concat failed: {proc.stderr.strip()[-2000:]}")
 
     lufs = float(timeline.get("audio", {}).get("lufs_target", DEFAULT_LUFS))
     outputs: list[Path] = []
@@ -437,20 +451,29 @@ def render_with_ffmpeg_fallback(
             target = Path(d["path"]).with_suffix(".mov")
             d = {**d, "path": str(target), "codec": "h264", "bitrate_kbps": 50000}
         cmd = [
-            ffmpeg, "-y", "-i", str(master_inter),
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-b:v", f"{int(d.get('bitrate_kbps', 12000))}k",
-            "-preset", "medium",
-            "-af", f"loudnorm=I={lufs}:TP=-1.5:LRA=11",
-            "-c:a", "aac", "-b:a", "320k",
+            ffmpeg,
+            "-y",
+            "-i",
+            str(master_inter),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-b:v",
+            f"{int(d.get('bitrate_kbps', 12000))}k",
+            "-preset",
+            "medium",
+            "-af",
+            f"loudnorm=I={lufs}:TP=-1.5:LRA=11",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "320k",
             d["path"],
         ]
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
         if p.returncode != 0:
-            raise ResolveError(
-                f"ffmpeg deliver failed for {d['path']}: "
-                f"{p.stderr.strip()[-2000:]}"
-            )
+            raise ResolveError(f"ffmpeg deliver failed for {d['path']}: {p.stderr.strip()[-2000:]}")
         outputs.append(Path(d["path"]))
     return outputs
 
@@ -469,10 +492,9 @@ class ResolveAdapter:
 
     scene_type: str = "davinci_finish"
 
-    def render(self, render_spec: Any, *, output_path: Any = None,
-               **kwargs: Any) -> list[Path]:
-        out_dir = Path(str(output_path)) if output_path is not None else Path(
-            "/tmp/melosviz-resolve"
+    def render(self, render_spec: Any, *, output_path: Any = None, **kwargs: Any) -> list[Path]:
+        out_dir = (
+            Path(str(output_path)) if output_path is not None else Path("/tmp/melosviz-resolve")
         )
         out_dir.mkdir(parents=True, exist_ok=True)
         segment_paths: list[str | Path] = list(kwargs.get("segment_paths") or [])

@@ -164,9 +164,7 @@ class TDAdapter:
                 output_dir=output_dir,
             )
         except Exception as exc:
-            raise TDRuntimeError(
-                f"TouchDesigner network generation failed: {exc}"
-            ) from exc
+            raise TDRuntimeError(f"TouchDesigner network generation failed: {exc}") from exc
 
         # Start the live bridge if requested
         started_live = False

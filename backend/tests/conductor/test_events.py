@@ -11,17 +11,16 @@ import pytest
 
 from melosviz.conductor.events import (
     ALL_STATES,
-    RenderEvent,
-    RenderEventBus,
     STATE_DONE,
     STATE_ERROR,
     STATE_QUEUED,
     STATE_RENDERING,
     STATE_SKIPPED,
+    RenderEvent,
+    RenderEventBus,
     get_bus,
     reset_bus,
 )
-
 
 # --- RenderEventBus ----------------------------------------------------------
 
@@ -119,7 +118,7 @@ def test_subscriber_exceptions_do_not_break_the_bus() -> None:
     bus.emit_queued(job_id="j", scene_index=0, scene_name="s0", scene_type="x")
 
 
-def test_renderEvent_to_sse_format() -> None:
+def test_render_event_to_sse_format() -> None:
     evt = RenderEvent(
         job_id="abc",
         scene_index=2,
@@ -201,8 +200,8 @@ def test_stream_yields_emitted_events() -> None:
 
 def test_orchestrator_emits_events_for_each_scene(tmp_path: Path) -> None:
     """A render run should emit queued -> rendering -> done per scene."""
-    from melosviz.conductor.orchestrator import Orchestrator
     from melosviz.conductor.events import reset_bus
+    from melosviz.conductor.orchestrator import Orchestrator
 
     reset_bus()
     bus = get_bus()
@@ -234,8 +233,8 @@ def test_orchestrator_emits_events_for_each_scene(tmp_path: Path) -> None:
 
 def test_orchestrator_emits_error_event_for_missing_adapter(tmp_path: Path) -> None:
     """When no adapter is registered, an error event fires before ConductorError."""
-    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
     from melosviz.conductor.events import reset_bus
+    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
 
     reset_bus()
     bus = get_bus()

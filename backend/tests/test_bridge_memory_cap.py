@@ -27,18 +27,14 @@ class TestMemoryCapGuardUnit:
     def test_under_both_ceilings_is_a_noop(self):
         from melosviz.bridge.security import MemoryCapGuard
 
-        guard = MemoryCapGuard(
-            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 10.0
-        )
+        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 10.0)
         guard.check()  # must not raise
 
     def test_over_soft_ceiling_raises_soft(self):
-        from melosviz.bridge.security import MemoryCapExceeded, MemoryCapGuard
+        from melosviz.bridge.security import MemoryCapExceededError, MemoryCapGuard
 
-        guard = MemoryCapGuard(
-            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 600.0
-        )
-        with pytest.raises(MemoryCapExceeded) as excinfo:
+        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 600.0)
+        with pytest.raises(MemoryCapExceededError) as excinfo:
             guard.check()
         assert excinfo.value.tier == "soft"
         assert excinfo.value.rss_mb == 600.0
@@ -46,12 +42,10 @@ class TestMemoryCapGuardUnit:
 
     def test_over_hard_ceiling_raises_hard_not_soft(self):
         """When RSS clears both ceilings, hard must win (worse outcome first)."""
-        from melosviz.bridge.security import MemoryCapExceeded, MemoryCapGuard
+        from melosviz.bridge.security import MemoryCapExceededError, MemoryCapGuard
 
-        guard = MemoryCapGuard(
-            hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 1500.0
-        )
-        with pytest.raises(MemoryCapExceeded) as excinfo:
+        guard = MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=500, rss_probe=lambda: 1500.0)
+        with pytest.raises(MemoryCapExceededError) as excinfo:
             guard.check()
         assert excinfo.value.tier == "hard"
         assert excinfo.value.cap_mb == 1000
@@ -59,9 +53,7 @@ class TestMemoryCapGuardUnit:
     def test_disabled_when_both_caps_zero_or_negative(self):
         from melosviz.bridge.security import MemoryCapGuard
 
-        guard = MemoryCapGuard(
-            hard_cap_mb=0, soft_cap_mb=0, rss_probe=lambda: 999_999.0
-        )
+        guard = MemoryCapGuard(hard_cap_mb=0, soft_cap_mb=0, rss_probe=lambda: 999_999.0)
         guard.check()  # must not raise — fully disabled
 
     def test_fails_open_when_rss_unmeasurable(self):
@@ -78,9 +70,7 @@ class TestMemoryCapGuardUnit:
         monkeypatch.delenv("MELOSVIZ_MEMORY_SOFT_CAP_MB", raising=False)
         assert security.memory_soft_cap_mb() == 850
 
-    def test_explicit_soft_cap_env_wins_over_default(
-        self, monkeypatch: pytest.MonkeyPatch
-    ):
+    def test_explicit_soft_cap_env_wins_over_default(self, monkeypatch: pytest.MonkeyPatch):
         from melosviz.bridge import security
 
         monkeypatch.setenv("MELOSVIZ_MEMORY_CAP_MB", "1000")
@@ -151,9 +141,7 @@ class TestMemoryCapHttpIntegration:
     ):
         from melosviz.bridge import security, server
 
-        tight = security.MemoryCapGuard(
-            hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0
-        )
+        tight = security.MemoryCapGuard(hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0)
         monkeypatch.setattr(server, "memory_cap", tight)
 
         wav = bridge_env / "song.wav"
@@ -162,9 +150,7 @@ class TestMemoryCapHttpIntegration:
         resp = client.post("/analyze", json={"wav_path": str(wav)})
 
         assert resp.status_code == 503
-        assert resp.headers.get("content-type", "").startswith(
-            "application/problem+json"
-        )
+        assert resp.headers.get("content-type", "").startswith("application/problem+json")
         body = resp.json()
         assert body["status"] == 503
         assert "memory" in body["detail"].lower()
@@ -174,9 +160,7 @@ class TestMemoryCapHttpIntegration:
     ):
         from melosviz.bridge import security, server
 
-        tight = security.MemoryCapGuard(
-            hard_cap_mb=1000, soft_cap_mb=100, rss_probe=lambda: 150.0
-        )
+        tight = security.MemoryCapGuard(hard_cap_mb=1000, soft_cap_mb=100, rss_probe=lambda: 150.0)
         monkeypatch.setattr(server, "memory_cap", tight)
 
         wav = bridge_env / "song.wav"
@@ -185,9 +169,7 @@ class TestMemoryCapHttpIntegration:
         resp = client.post("/analyze", json={"wav_path": str(wav)})
 
         assert resp.status_code == 429
-        assert resp.headers.get("content-type", "").startswith(
-            "application/problem+json"
-        )
+        assert resp.headers.get("content-type", "").startswith("application/problem+json")
         assert "Retry-After" in resp.headers
 
     def test_memory_cap_rejection_appends_audit_row(
@@ -195,9 +177,7 @@ class TestMemoryCapHttpIntegration:
     ):
         from melosviz.bridge import security, server
 
-        tight = security.MemoryCapGuard(
-            hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0
-        )
+        tight = security.MemoryCapGuard(hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0)
         monkeypatch.setattr(server, "memory_cap", tight)
 
         wav = bridge_env / "song.wav"
@@ -207,11 +187,7 @@ class TestMemoryCapHttpIntegration:
 
         audit_path = data_dir / "audit" / "bridge.jsonl"
         assert audit_path.exists()
-        rows = [
-            json.loads(line)
-            for line in audit_path.read_text().splitlines()
-            if line.strip()
-        ]
+        rows = [json.loads(line) for line in audit_path.read_text().splitlines() if line.strip()]
         memory_rows = [r for r in rows if r.get("reason") == "memory_cap_exceeded"]
         assert memory_rows, f"no memory_cap_exceeded audit row found in {rows}"
         row = memory_rows[0]
@@ -220,15 +196,11 @@ class TestMemoryCapHttpIntegration:
         assert row["cap_mb"] == 100
         assert row["rss_mb"] == pytest.approx(200.0)
 
-    def test_under_cap_proceeds_normally(
-        self, bridge_env, monkeypatch: pytest.MonkeyPatch
-    ):
+    def test_under_cap_proceeds_normally(self, bridge_env, monkeypatch: pytest.MonkeyPatch):
         """Sanity: a guard well under both ceilings never blocks the request."""
         from melosviz.bridge import security, server
 
-        loose = security.MemoryCapGuard(
-            hard_cap_mb=999_999, soft_cap_mb=0, rss_probe=lambda: 10.0
-        )
+        loose = security.MemoryCapGuard(hard_cap_mb=999_999, soft_cap_mb=0, rss_probe=lambda: 10.0)
         monkeypatch.setattr(server, "memory_cap", loose)
 
         wav = bridge_env / "song.wav"
@@ -246,9 +218,7 @@ class TestMemoryCapHttpIntegration:
         """Fail-open guarantee: if RSS can't be read, requests still proceed."""
         from melosviz.bridge import security, server
 
-        blind = security.MemoryCapGuard(
-            hard_cap_mb=1, soft_cap_mb=1, rss_probe=lambda: None
-        )
+        blind = security.MemoryCapGuard(hard_cap_mb=1, soft_cap_mb=1, rss_probe=lambda: None)
         monkeypatch.setattr(server, "memory_cap", blind)
 
         wav = bridge_env / "song.wav"
@@ -271,9 +241,7 @@ class TestMemoryCapHttpIntegration:
     ):
         from melosviz.bridge import security, server
 
-        tight = security.MemoryCapGuard(
-            hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0
-        )
+        tight = security.MemoryCapGuard(hard_cap_mb=100, soft_cap_mb=0, rss_probe=lambda: 200.0)
         monkeypatch.setattr(server, "memory_cap", tight)
 
         wav = bridge_env / "song.wav"
@@ -284,7 +252,5 @@ class TestMemoryCapHttpIntegration:
         build_resp = client.post("/build", json={"wav_path": str(wav)})
         assert build_resp.status_code == 503
 
-        render_resp = client.post(
-            "/render", json={"wav_path": str(wav), "out_dir": str(out_dir)}
-        )
+        render_resp = client.post("/render", json={"wav_path": str(wav), "out_dir": str(out_dir)})
         assert render_resp.status_code == 503

@@ -45,9 +45,7 @@ from melosviz.scene.scanner import (
 
 
 class TestScannerOrbitBpmLocked:
-    def _spec(
-        self, beats_per_rotation: float = 4.0, phase_offset: float = 0.0
-    ) -> ScannerSpec:
+    def _spec(self, beats_per_rotation: float = 4.0, phase_offset: float = 0.0) -> ScannerSpec:
         return ScannerSpec(
             scanner_id="test",
             type=ScannerType.ROTATING_CONE,
@@ -56,9 +54,7 @@ class TestScannerOrbitBpmLocked:
                 beats_per_rotation=beats_per_rotation,
                 phase_offset=phase_offset,
             ),
-            noise=ScannerNoise(
-                edge_wobble=0.0, beat_pulse_gain=0.0
-            ),  # noise off for math
+            noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.0),  # noise off for math
             write_channels=["reveal_splat"],
         )
 
@@ -77,9 +73,7 @@ class TestScannerOrbitBpmLocked:
         period = beats_per_rotation * seconds_per_beat  # 2.0 s
 
         angle_0, phase_0 = _compute_orbit_angle(0.0, bpm, beats_per_rotation, 0.0)
-        angle_period, phase_period = _compute_orbit_angle(
-            period, bpm, beats_per_rotation, 0.0
-        )
+        angle_period, phase_period = _compute_orbit_angle(period, bpm, beats_per_rotation, 0.0)
 
         # After one full period, phase should wrap back to 0
         assert phase_period == pytest.approx(0.0, abs=1e-9)
@@ -104,9 +98,7 @@ class TestScannerOrbitBpmLocked:
         assert angle == pytest.approx(0.25 * 2 * math.pi)
 
     def test_degeneracy_zero_bpm_returns_zero(self):
-        angle, phase = _compute_orbit_angle(
-            10.0, bpm=0.0, beats_per_rotation=4.0, phase_offset=0.0
-        )
+        angle, phase = _compute_orbit_angle(10.0, bpm=0.0, beats_per_rotation=4.0, phase_offset=0.0)
         assert angle == 0.0 and phase == 0.0
 
 
@@ -124,9 +116,7 @@ class TestScannerChannelValues:
         return ScannerSpec(
             scanner_id="test",
             cone_angle_deg=60.0,  # wide cone so cone_raw > 0 at angle 0
-            rotation=ScannerRotation(
-                bpm_locked=True, beats_per_rotation=4.0, phase_offset=0.0
-            ),
+            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=4.0, phase_offset=0.0),
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.5),
             falloff=FalloffType.LINEAR,
             write_channels=[
@@ -154,8 +144,7 @@ class TestScannerChannelValues:
         # t=0.499 is half-beat away (far from next beat)
         pose_off = evaluate_pose(spec, t=0.499, bpm=bpm, beat_times=beats)
         assert (
-            pose_on.active_channels["boost_wireframe"]
-            > pose_off.active_channels["boost_wireframe"]
+            pose_on.active_channels["boost_wireframe"] > pose_off.active_channels["boost_wireframe"]
         )
 
     def test_beat_proximity_is_one_at_exact_beat(self):
@@ -213,9 +202,7 @@ class TestTransitionMappings:
                 DomainOpacityRule(
                     domain=Domain.PHOTO, channel="reveal_splat", base=1.0, scale=-1.0
                 ),
-                DomainOpacityRule(
-                    domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0
-                ),
+                DomainOpacityRule(domain=Domain.SPLAT, channel="reveal_splat", base=0.0, scale=1.0),
             ],
             fx_edge_channel="edge_emission",
             fx_edge_gain=1.4,
@@ -325,9 +312,7 @@ class TestMultiDomainAssembly:
     def _make_scanner(self) -> ScannerSpec:
         return ScannerSpec(
             cone_angle_deg=60.0,
-            rotation=ScannerRotation(
-                bpm_locked=True, beats_per_rotation=2.0, phase_offset=0.0
-            ),
+            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=2.0, phase_offset=0.0),
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=0.2),
             falloff=FalloffType.SMOOTHSTEP,
             write_channels=[
@@ -368,17 +353,13 @@ class TestMultiDomainAssembly:
                 default_look=DomainMaterialLook.RAW,
                 beat_pulse_look=DomainMaterialLook.HIGH_CONTRAST_MONO,
             ),
-            MaterialSpec(
-                domain=Domain.MESH, default_look=DomainMaterialLook.WIREFRAME_EMISSIVE
-            ),
+            MaterialSpec(domain=Domain.MESH, default_look=DomainMaterialLook.WIREFRAME_EMISSIVE),
             MaterialSpec(
                 domain=Domain.SPLAT,
                 default_look=DomainMaterialLook.MONO_CLOUD,
                 drop_look=DomainMaterialLook.POINT_HALO,
             ),
-            MaterialSpec(
-                domain=Domain.PERFORMER, default_look=DomainMaterialLook.PHOTOREAL
-            ),
+            MaterialSpec(domain=Domain.PERFORMER, default_look=DomainMaterialLook.PHOTOREAL),
             MaterialSpec(domain=Domain.FX, default_look=DomainMaterialLook.EDGE_GLOW),
         ]
 
@@ -408,9 +389,7 @@ class TestMultiDomainAssembly:
         )
         for asm in assemblies:
             for domain, opacity in asm.opacities.items():
-                assert 0.0 <= opacity <= 1.0, (
-                    f"t={asm.t} domain={domain} opacity={opacity}"
-                )
+                assert 0.0 <= opacity <= 1.0, f"t={asm.t} domain={domain} opacity={opacity}"
 
     def test_scanner_angle_advances_over_time(self):
         spec = _make_minimal_render_spec(fps=10, duration=2.0)
@@ -490,9 +469,7 @@ class TestFlashSafetyInHybridScene:
         clamped = apply_flash_safety(seq, fps=fps, max_hz=FLASH_SAFETY_MAX_HZ)
 
         # Count transitions (abs delta > 0.5) in the clamped sequence
-        transitions = sum(
-            1 for a, b in zip(clamped, clamped[1:], strict=False) if abs(b - a) > 0.5
-        )
+        transitions = sum(1 for a, b in zip(clamped, clamped[1:], strict=False) if abs(b - a) > 0.5)
         max_allowed = FLASH_SAFETY_MAX_HZ * (len(clamped) / fps)
         assert transitions <= max_allowed, (
             f"Flash safety failed: {transitions} transitions > {max_allowed} allowed"
@@ -504,9 +481,7 @@ class TestFlashSafetyInHybridScene:
         # Artificially high beat_pulse_gain to stress the safety net
         scanner = ScannerSpec(
             cone_angle_deg=120.0,
-            rotation=ScannerRotation(
-                bpm_locked=True, beats_per_rotation=0.5
-            ),  # very fast
+            rotation=ScannerRotation(bpm_locked=True, beats_per_rotation=0.5),  # very fast
             noise=ScannerNoise(edge_wobble=0.0, beat_pulse_gain=2.0),
             falloff=FalloffType.LINEAR,
             write_channels=["reveal_splat", "hide_photo", "edge_emission"],
@@ -544,9 +519,7 @@ class TestFlashSafetyInHybridScene:
         for domain in (Domain.PHOTO, Domain.SPLAT):
             opacities = [a.opacities[domain] for a in assemblies]
             transitions_count = sum(
-                1
-                for a, b in zip(opacities, opacities[1:], strict=False)
-                if abs(b - a) > 0.5
+                1 for a, b in zip(opacities, opacities[1:], strict=False) if abs(b - a) > 0.5
             )
             max_allowed = FLASH_SAFETY_MAX_HZ * (len(opacities) / fps)
             assert transitions_count <= max_allowed, (

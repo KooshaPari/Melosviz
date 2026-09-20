@@ -33,9 +33,7 @@ REPO = Path(__file__).resolve().parents[2]
 SRC = REPO / "src"
 # `parents[0]` is `tests/`, `parents[1]` is `backend/`.  Resolve source
 # relative to `backend/` because the package source lives at backend/src/.
-SRC = (
-    REPO / "src" if (REPO / "src" / "melosviz").exists() else (REPO / "backend" / "src")
-)
+SRC = REPO / "src" if (REPO / "src" / "melosviz").exists() else (REPO / "backend" / "src")
 MUTATIONS_DIR = REPO / ".mutations"
 TARGETS = [
     SRC / "melosviz" / "analysis" / "models.py",
@@ -63,13 +61,13 @@ def _plan(source_path: Path) -> list[Planned]:
     tree = ast.parse(source_path.read_text())
     out: list[Planned] = []
 
-    REL = {"Eq", "NotEq", "Lt", "LtE", "Gt", "GtE"}
-    ARITH = {"Add", "Sub", "Mult", "Div", "Mod"}
+    rel = {"Eq", "NotEq", "Lt", "LtE", "Gt", "GtE"}
+    arith = {"Add", "Sub", "Mult", "Div", "Mod"}
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Compare):
             for op in node.ops:
-                if type(op).__name__ in REL:
+                if type(op).__name__ in rel:
                     out.append(
                         Planned(
                             mid=str(uuid.uuid4()),
@@ -80,7 +78,7 @@ def _plan(source_path: Path) -> list[Planned]:
                     )
                     break  # one ROR per Compare
         elif isinstance(node, ast.BinOp):
-            if type(node.op).__name__ in ARITH:
+            if type(node.op).__name__ in arith:
                 out.append(
                     Planned(
                         mid=str(uuid.uuid4()),
@@ -249,11 +247,11 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         "score": 0.0,
         "per_file": {},
     }
-    MAX_PER_FILE = 60  # cap to keep CI runtime bounded
+    max_per_file = 60  # cap to keep CI runtime bounded
     for target in TARGETS:
         if not target.exists():
             continue
-        plan = _plan(target)[:MAX_PER_FILE]
+        plan = _plan(target)[:max_per_file]
         if not plan:
             continue
         src_text = target.read_text()

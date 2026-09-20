@@ -92,8 +92,10 @@ def test_direct_replaces_prompt_only(tmp_path: Path) -> None:
     result = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "2",
-        "--replace-prompt", new_prompt,
+        "--scene-index",
+        "2",
+        "--replace-prompt",
+        new_prompt,
         cwd=tmp_path,
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
@@ -114,10 +116,14 @@ def test_direct_replaces_multiple_fields(tmp_path: Path) -> None:
     result = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "1",
-        "--replace-prompt", "NEW intro prompt",
-        "--replace-camera", "whip_pan_burst",
-        "--replace-name", "INTRO_v2",
+        "--scene-index",
+        "1",
+        "--replace-prompt",
+        "NEW intro prompt",
+        "--replace-camera",
+        "whip_pan_burst",
+        "--replace-name",
+        "INTRO_v2",
         cwd=tmp_path,
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
@@ -140,9 +146,12 @@ def test_direct_writes_to_out_path_without_overwriting_original(tmp_path: Path) 
     result = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "3",
-        "--replace-name", "FINALE",
-        "--out", str(out_path),
+        "--scene-index",
+        "3",
+        "--replace-name",
+        "FINALE",
+        "--out",
+        str(out_path),
         cwd=tmp_path,
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
@@ -169,11 +178,15 @@ def test_direct_rerender_emits_generate_hint(tmp_path: Path) -> None:
     result = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "2",
-        "--replace-prompt", "test",
+        "--scene-index",
+        "2",
+        "--replace-prompt",
+        "test",
         "--re-render",
-        "--wav", str(track),
-        "--render-out", str(render_out),
+        "--wav",
+        str(track),
+        "--render-out",
+        str(render_out),
         cwd=tmp_path,
     )
     assert result.returncode == 0, f"stderr: {result.stderr}"
@@ -188,8 +201,10 @@ def test_direct_fails_when_scene_index_out_of_range(tmp_path: Path) -> None:
     result = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "99",
-        "--replace-prompt", "x",
+        "--scene-index",
+        "99",
+        "--replace-prompt",
+        "x",
         cwd=tmp_path,
     )
     assert result.returncode != 0
@@ -204,8 +219,10 @@ def test_direct_fails_when_storyboard_missing(tmp_path: Path) -> None:
     result = _run_cli(
         "direct",
         str(tmp_path / "does_not_exist.json"),
-        "--scene-index", "1",
-        "--replace-prompt", "x",
+        "--scene-index",
+        "1",
+        "--replace-prompt",
+        "x",
         cwd=tmp_path,
     )
     assert result.returncode != 0
@@ -223,16 +240,20 @@ def test_direct_bumps_edit_count_on_each_run(tmp_path: Path) -> None:
     r1 = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "1",
-        "--replace-prompt", "first edit",
+        "--scene-index",
+        "1",
+        "--replace-prompt",
+        "first edit",
         cwd=tmp_path,
     )
     assert r1.returncode == 0, r1.stderr
     r2 = _run_cli(
         "direct",
         str(sb_path),
-        "--scene-index", "2",
-        "--replace-camera", "whip_pan_burst",
+        "--scene-index",
+        "2",
+        "--replace-camera",
+        "whip_pan_burst",
         cwd=tmp_path,
     )
     assert r2.returncode == 0, r2.stderr

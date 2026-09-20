@@ -16,13 +16,10 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
-
-import pytest
 
 from melosviz.conductor.provenance import (
-    ClipProvenance,
     PROVENANCE_SCHEMA_VERSION,
+    ClipProvenance,
     collect_manifest_from_dir,
     provenance_path_for,
     write_provenance,
@@ -66,6 +63,7 @@ def _make_prov(
 # ---------------------------------------------------------------------------
 # ClipProvenance dataclass
 # ---------------------------------------------------------------------------
+
 
 def test_clip_provenance_default_values():
     p = ClipProvenance(
@@ -119,6 +117,7 @@ def test_clip_provenance_to_dict_handles_no_finished_at():
 # provenance_path_for / write_provenance
 # ---------------------------------------------------------------------------
 
+
 def test_provenance_path_for_appends_suffix():
     p = provenance_path_for("/some/dir/scene_0000.png")
     assert str(p).endswith("scene_0000.png.provenance.json")
@@ -158,6 +157,7 @@ def test_write_provenance_overwrites_existing(tmp_path):
 # ---------------------------------------------------------------------------
 # collect_manifest_from_dir
 # ---------------------------------------------------------------------------
+
 
 def test_collect_manifest_from_dir_empty(tmp_path):
     out = collect_manifest_from_dir(tmp_path)

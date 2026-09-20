@@ -9,16 +9,14 @@ anchor presence, lyric dangling refs, edit_count vs edits[] consistency.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
 from melosviz.conductor.validate import (
     ALLOWED_CAMERAS,
     ALLOWED_SCENE_TYPES,
-    Issue,
     SUPPORTED_SCHEMA_VERSIONS,
-    ValidationReport,
+    Issue,
     validate_storyboard,
     validate_storyboard_file,
     write_report,
@@ -87,6 +85,7 @@ def _sb(**overrides):
 # Happy-path
 # ---------------------------------------------------------------------------
 
+
 def test_validate_storyboard_clean_returns_no_errors():
     rpt = validate_storyboard(_sb())
     assert not rpt.has_errors
@@ -104,6 +103,7 @@ def test_validate_storyboard_populates_palette_used():
 # ---------------------------------------------------------------------------
 # Schema version
 # ---------------------------------------------------------------------------
+
 
 def test_validate_storyboard_missing_schema_is_error():
     sb = _sb()
@@ -127,13 +127,18 @@ def test_supported_schema_versions_includes_1_0():
 # Scene timing
 # ---------------------------------------------------------------------------
 
+
 def test_validate_storyboard_detects_overlapping_scenes():
     sb = _sb()
     sb["scenes"][1]["start"] = 5.0
     sb["scenes"][1]["end"] = 30.0
     sb["scenes"][1]["duration"] = 25.0
     rpt = validate_storyboard(sb)
-    assert any(i.code == "scene_timing_inverted" or "start" in i.message for i in rpt.issues if i.severity == "error")
+    assert any(
+        i.code == "scene_timing_inverted" or "start" in i.message
+        for i in rpt.issues
+        if i.severity == "error"
+    )
 
 
 def test_validate_storyboard_detects_gap_too_large():
@@ -170,6 +175,7 @@ def test_validate_storyboard_detects_empty_scenes():
 # Scene type / camera
 # ---------------------------------------------------------------------------
 
+
 def test_validate_storyboard_detects_unknown_scene_type():
     sb = _sb()
     sb["scenes"][0]["scene_type"] = "nuke_render"
@@ -203,6 +209,7 @@ def test_validate_storyboard_detects_empty_camera():
 # ---------------------------------------------------------------------------
 # Prompt / palette
 # ---------------------------------------------------------------------------
+
 
 def test_validate_storyboard_detects_empty_prompt():
     sb = _sb()
@@ -240,6 +247,7 @@ def test_validate_storyboard_detects_repetitive_cameras():
 # Continuity, lyrics, edits
 # ---------------------------------------------------------------------------
 
+
 def test_validate_storyboard_require_continuity_warns_when_missing():
     rpt = validate_storyboard(_sb(), require_continuity=True)
     assert any(i.code == "continuity_missing" for i in rpt.issues)
@@ -274,6 +282,7 @@ def test_validate_storyboard_edits_consistency():
 # Severity / reporting shape
 # ---------------------------------------------------------------------------
 
+
 def test_validation_report_summary_counts_by_severity():
     sb = _sb()
     sb["scenes"][0]["scene_type"] = "nuke_render"
@@ -294,7 +303,9 @@ def test_validation_report_to_dict_round_trip():
 
 
 def test_issue_to_dict_omits_none_fields():
-    issue = Issue("error", "scene_timing_missing", "scene 0 missing start/end/duration", scene_index=0)
+    issue = Issue(
+        "error", "scene_timing_missing", "scene 0 missing start/end/duration", scene_index=0
+    )
     d = issue.to_dict()
     assert d == {
         "severity": "error",
@@ -307,6 +318,7 @@ def test_issue_to_dict_omits_none_fields():
 # ---------------------------------------------------------------------------
 # File-based validation + report writing
 # ---------------------------------------------------------------------------
+
 
 def test_validate_storyboard_file_reads_json(tmp_path):
     p = tmp_path / "sb.json"

@@ -227,9 +227,7 @@ class TestAnalyzeValidation:
         response = client.post("/analyze", json={})
         assert response.status_code == 422
 
-    def test_nonexistent_file_returns_400(
-        self, client: TestClient, tmp_path: Path
-    ) -> None:
+    def test_nonexistent_file_returns_400(self, client: TestClient, tmp_path: Path) -> None:
         """POST /analyze with a path that does not exist must return 400."""
         missing = str(tmp_path / "ghost.wav")
         response = client.post("/analyze", json={"wav_path": missing})
@@ -294,13 +292,9 @@ class TestAnalyzeHappyPath:
 
         data = json.loads(response.text)
         meta = data["metadata"]
-        assert isinstance(meta.get("estimated_bpm"), (int, float)), (
-            "estimated_bpm must be numeric"
-        )
+        assert isinstance(meta.get("estimated_bpm"), (int, float)), "estimated_bpm must be numeric"
         assert isinstance(data.get("keyframes"), list), "keyframes must be a list"
-        assert isinstance(data.get("dense_keyframes"), list), (
-            "dense_keyframes must be a list"
-        )
+        assert isinstance(data.get("dense_keyframes"), list), "dense_keyframes must be a list"
         assert isinstance(data.get("palette"), list), "palette must be a list"
         assert isinstance(data.get("mir"), dict), "mir must be a dict"
 
@@ -340,9 +334,7 @@ class TestAnalyzeAudioPathAlias:
             "melosviz.bridge.server._analyze_with_mir_or_python",
             return_value=mock_render_spec,
         ):
-            response = client.post(
-                "/analyze", json={"audio_path": str(minimal_wav)}
-            )
+            response = client.post("/analyze", json={"audio_path": str(minimal_wav)})
         assert response.status_code == 200
 
 
@@ -352,9 +344,7 @@ class TestAnalyzeAudioPathAlias:
 
 
 class TestUploadEndpoint:
-    def test_upload_returns_wav_path(
-        self, client: TestClient, minimal_wav: Path
-    ) -> None:
+    def test_upload_returns_wav_path(self, client: TestClient, minimal_wav: Path) -> None:
         with minimal_wav.open("rb") as fh:
             response = client.post(
                 "/upload",

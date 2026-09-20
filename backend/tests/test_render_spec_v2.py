@@ -169,9 +169,7 @@ class TestRenderSpecV2Models:
                 {"t": 0.0, "type": "beat", "strength": 1.0},
                 {"t": 0.5, "type": "section", "strength": 1.0, "label": "drop"},
             ],
-            scene_segments=[
-                SceneSegment(index=0, label="intro", start=0.0, end=5.0).model_dump()
-            ],
+            scene_segments=[SceneSegment(index=0, label="intro", start=0.0, end=5.0).model_dump()],
             stem_channels={
                 "drums": [0.9, 0.1],
                 "bass": [0.5, 0.5],
@@ -286,9 +284,7 @@ class TestAnalyzeWavRichStdlibOnly:
         n = len(spec.dense_keyframes)
         for stem_name, ch in spec.stem_channels.items():
             assert len(ch) == n, f"{stem_name} channel length mismatch"
-            assert all(isinstance(v, float) for v in ch), (
-                f"{stem_name}: non-float values"
-            )
+            assert all(isinstance(v, float) for v in ch), f"{stem_name}: non-float values"
 
     def test_scene_segments_present(self, tmp_path: Path) -> None:
         """scene_segments must be populated (at least 1)."""
@@ -457,9 +453,7 @@ class TestVideoExporterConsumesV2:
 
             Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
             Path(cmd[-1]).write_bytes(b"\x00" * 4096)
-            return subprocess.CompletedProcess(
-                args=[], returncode=0, stderr="", stdout=""
-            )
+            return subprocess.CompletedProcess(args=[], returncode=0, stderr="", stdout="")
 
         spec = RenderSpec(
             metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0},
@@ -493,9 +487,7 @@ class TestVideoExporterConsumesV2:
         def _fake_success(cmd: list[str], **kwargs: Any) -> subprocess.CompletedProcess:  # type: ignore[misc]
             Path(cmd[-1]).parent.mkdir(parents=True, exist_ok=True)
             Path(cmd[-1]).write_bytes(b"\x00" * 4096)
-            return subprocess.CompletedProcess(
-                args=[], returncode=0, stderr="", stdout=""
-            )
+            return subprocess.CompletedProcess(args=[], returncode=0, stderr="", stdout="")
 
         spec = RenderSpec(
             metadata={"width": 16, "height": 16, "fps": 4, "duration": 1.0},

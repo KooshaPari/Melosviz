@@ -4,43 +4,44 @@ Pure-function tests — no fixtures, no orchestrator, no network. Proves the
 policy returns the right scene indices given a target + the env-controlled
 neighbor expansion.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from melosviz.cli.partial_rerender import (
-    MAX_NEIGHBORS,
     DEFAULT_NEIGHBORS,
+    MAX_NEIGHBORS,
     expand_scene_indices_with_neighbors,
     parse_neighbor_policy,
     resolve_only_scenes,
 )
 
-
 # ----------------------------------------------------------------------------
 # parse_neighbor_policy
 # ----------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "raw, expected",
     [
-        (None, DEFAULT_NEIGHBORS),    # unset -> default
-        ("",   DEFAULT_NEIGHBORS),    # empty  -> default
+        (None, DEFAULT_NEIGHBORS),  # unset -> default
+        ("", DEFAULT_NEIGHBORS),  # empty  -> default
         ("auto", DEFAULT_NEIGHBORS),
-        ("1",  1),
+        ("1", 1),
         ("true", 1),
         ("yes", 1),
-        ("on",  1),
-        ("0",  0),
+        ("on", 1),
+        ("0", 0),
         ("false", 0),
-        ("no",  0),
+        ("no", 0),
         ("off", 0),
-        ("2",  2),
-        ("3",  3),
+        ("2", 2),
+        ("3", 3),
         ("max", MAX_NEIGHBORS),
-        ("999", MAX_NEIGHBORS),       # clamp to MAX_NEIGHBORS
-        ("-5", 0),                    # clamp negative -> 0
-        ("abc", DEFAULT_NEIGHBORS),   # unknown -> default
+        ("999", MAX_NEIGHBORS),  # clamp to MAX_NEIGHBORS
+        ("-5", 0),  # clamp negative -> 0
+        ("abc", DEFAULT_NEIGHBORS),  # unknown -> default
     ],
 )
 def test_parse_neighbor_policy(raw, expected):
@@ -50,6 +51,7 @@ def test_parse_neighbor_policy(raw, expected):
 # ----------------------------------------------------------------------------
 # expand_scene_indices_with_neighbors
 # ----------------------------------------------------------------------------
+
 
 def test_expand_target_only_when_neighbor_zero():
     assert expand_scene_indices_with_neighbors(5, 10, 0) == [5]
@@ -101,6 +103,7 @@ def test_expand_deduplicates():
 # resolve_only_scenes — env-driven policy
 # ----------------------------------------------------------------------------
 
+
 def test_resolve_only_scenes_default_neighbor_policy():
     out = resolve_only_scenes(
         target_scene_index=3,
@@ -121,7 +124,7 @@ def test_resolve_only_scenes_disabled():
 
 def test_resolve_only_scenes_no_env_returns_default():
     out = resolve_only_scenes(target_scene_index=3, total_scenes=10, env=[])
-    assert out == [2, 3, 4]   # default = +1 neighbor each side
+    assert out == [2, 3, 4]  # default = +1 neighbor each side
 
 
 def test_resolve_only_scenes_max_neighbors():

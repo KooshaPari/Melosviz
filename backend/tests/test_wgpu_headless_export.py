@@ -168,9 +168,7 @@ class TestArgumentValidation:
 class TestSubprocessSuccess:
     """render_frame_bytes returns stdout bytes on a successful subprocess run."""
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_returns_stdout_bytes(
         self,
@@ -182,9 +180,7 @@ class TestSubprocessSuccess:
         assert isinstance(result, bytes)
         assert len(result) == 64 * 48 * 4
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_correct_byte_count_non_standard_dimensions(
         self,
@@ -195,9 +191,7 @@ class TestSubprocessSuccess:
         result = render_frame_bytes(_MINIMAL_SPEC, frame_index=0, width=16, height=16)
         assert len(result) == 16 * 16 * 4
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_non_zero_pixel_content(
         self,
@@ -209,9 +203,7 @@ class TestSubprocessSuccess:
         non_zero = sum(1 for b in result if b > 0)
         assert non_zero > 0, "all pixels were zero — unexpected for a non-black frame"
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_subcommand_in_argv(
         self,
@@ -224,9 +216,7 @@ class TestSubprocessSuccess:
         call_args = mock_run.call_args[0][0]  # first positional arg = cmd list
         assert "export-frame" in call_args
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_frame_index_in_argv(
         self,
@@ -240,9 +230,7 @@ class TestSubprocessSuccess:
         idx = call_args.index("--frame")
         assert call_args[idx + 1] == "7"
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_width_height_override_in_argv(
         self,
@@ -259,9 +247,7 @@ class TestSubprocessSuccess:
 class TestSubprocessFailure:
     """render_frame_bytes raises the right exception on subprocess failure."""
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_non_zero_exit_raises_wgpu_export_error(
         self,
@@ -276,9 +262,7 @@ class TestSubprocessFailure:
         with pytest.raises(WgpuExportError):
             render_frame_bytes(_MINIMAL_SPEC)
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_no_gpu_adapter_stderr_raises_not_available(
         self,
@@ -294,9 +278,7 @@ class TestSubprocessFailure:
         with pytest.raises(WgpuNotAvailableError, match="no GPU adapter"):
             render_frame_bytes(_MINIMAL_SPEC)
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_empty_stdout_on_success_raises(
         self,
@@ -312,9 +294,7 @@ class TestSubprocessFailure:
         with pytest.raises(WgpuExportError, match="no output"):
             render_frame_bytes(_MINIMAL_SPEC)
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_timeout_raises_wgpu_export_error(
         self,
@@ -325,18 +305,14 @@ class TestSubprocessFailure:
         with pytest.raises(WgpuExportError, match="timed out"):
             render_frame_bytes(_MINIMAL_SPEC)
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_file_not_found_raises_not_available(
         self,
         mock_run: MagicMock,
         mock_resolve: MagicMock,
     ) -> None:
-        mock_run.side_effect = FileNotFoundError(
-            "No such file or directory: '/fake/bin'"
-        )
+        mock_run.side_effect = FileNotFoundError("No such file or directory: '/fake/bin'")
         with pytest.raises(WgpuNotAvailableError, match="not found"):
             render_frame_bytes(_MINIMAL_SPEC)
 
@@ -379,9 +355,7 @@ class TestBinaryResolution:
         result = _find_repo_root(sub / "wgpu_adapter.py")
         assert result == tmp_path
 
-    def test_find_repo_root_returns_none_when_no_cargo_toml(
-        self, tmp_path: Path
-    ) -> None:
+    def test_find_repo_root_returns_none_when_no_cargo_toml(self, tmp_path: Path) -> None:
         result = _find_repo_root(tmp_path)
         # tmp_path has no Cargo.toml in any ancestor that we control.
         # We can only assert it returns Path | None without raising.
@@ -396,9 +370,7 @@ class TestIsWgpuAvailable:
         mock_resolve.side_effect = WgpuNotAvailableError("no binary")
         assert is_wgpu_available() is False
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_returns_true_when_binary_responds(
         self,
@@ -408,9 +380,7 @@ class TestIsWgpuAvailable:
         mock_run.return_value = MagicMock(returncode=0)
         assert is_wgpu_available() is True
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_returns_false_when_binary_fails_help(
         self,
@@ -420,9 +390,7 @@ class TestIsWgpuAvailable:
         mock_run.return_value = MagicMock(returncode=1)
         assert is_wgpu_available() is False
 
-    @patch(
-        "melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin"
-    )
+    @patch("melosviz.render.wgpu_adapter.resolve_render_binary", return_value="/fake/bin")
     @patch("melosviz.render.wgpu_adapter.subprocess.run")
     def test_returns_false_on_os_error(
         self,

@@ -182,14 +182,10 @@ class RateLimiter:
         window_seconds: int | None = None,
     ):
         self._max = (
-            max_requests
-            if max_requests is not None
-            else _env_int("MELOSVIZ_BRIDGE_RATE_LIMIT", 30)
+            max_requests if max_requests is not None else _env_int("MELOSVIZ_BRIDGE_RATE_LIMIT", 30)
         )
         self._window = (
-            window_seconds
-            if window_seconds is not None
-            else _env_int("MELOSVIZ_BRIDGE_WINDOW", 60)
+            window_seconds if window_seconds is not None else _env_int("MELOSVIZ_BRIDGE_WINDOW", 60)
         )
         self._buckets: dict[str, _Bucket] = {}
         self._lock = threading.Lock()
@@ -328,7 +324,7 @@ def is_path_allowed(p: Path, *, root: Path | None = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
-class QuotaExceeded(Exception):
+class QuotaExceededError(Exception):
     """Raised when :class:`RenderQuota` cannot acquire a slot."""
 
 
@@ -374,9 +370,7 @@ class RenderQuota:
             else _env_int("MELOSVIZ_RENDER_MAX_CONCURRENT", 2)
         )
         self._max_rss_mb = (
-            max_rss_mb
-            if max_rss_mb is not None
-            else _env_int("MELOSVIZ_RENDER_MAX_RSS_MB", 2048)
+            max_rss_mb if max_rss_mb is not None else _env_int("MELOSVIZ_RENDER_MAX_RSS_MB", 2048)
         )
         self._inflight = 0
         self._lock = threading.Lock()
@@ -408,9 +402,9 @@ class RenderQuota:
 
     @contextmanager
     def slot(self) -> Iterator[None]:
-        """Context manager that acquires a slot or raises :class:`QuotaExceeded`."""
+        """Context manager that acquires a slot or raises :class:`QuotaExceededError`."""
         if not self.try_acquire():
-            raise QuotaExceeded("render quota exceeded: too many concurrent renders")
+            raise QuotaExceededError("render quota exceeded: too many concurrent renders")
         try:
             yield
         finally:
@@ -425,7 +419,7 @@ class RenderQuota:
 BreakerState = Literal["closed", "open", "half_open"]
 
 
-class CircuitOpen(Exception):
+class CircuitOpenError(Exception):
     """Raised when the breaker is open and calls must fail fast."""
 
 
@@ -549,16 +543,14 @@ def memory_soft_cap_mb() -> int:
 MemoryTier = Literal["soft", "hard"]
 
 
-class MemoryCapExceeded(Exception):
+class MemoryCapExceededError(Exception):
     """Raised by :class:`MemoryCapGuard` when RSS is over a configured ceiling."""
 
     def __init__(self, tier: MemoryTier, rss_mb: float, cap_mb: int) -> None:
         self.tier = tier
         self.rss_mb = rss_mb
         self.cap_mb = cap_mb
-        super().__init__(
-            f"memory cap exceeded ({tier}): rss={rss_mb:.0f}MB > cap={cap_mb}MB"
-        )
+        super().__init__(f"memory cap exceeded ({tier}): rss={rss_mb:.0f}MB > cap={cap_mb}MB")
 
 
 class MemoryCapGuard:
@@ -608,7 +600,7 @@ class MemoryCapGuard:
         return self._rss_probe()
 
     def check(self) -> None:
-        """Raise :class:`MemoryCapExceeded` when over a configured ceiling.
+        """Raise :class:`MemoryCapExceededError` when over a configured ceiling.
 
         No-op (fails open) when both tiers are disabled or RSS can't be read.
         Checks the hard ceiling first so a process over *both* ceilings is
@@ -620,9 +612,9 @@ class MemoryCapGuard:
         if rss is None:
             return
         if self._hard > 0 and rss > self._hard:
-            raise MemoryCapExceeded("hard", rss, self._hard)
+            raise MemoryCapExceededError("hard", rss, self._hard)
         if self._soft > 0 and rss > self._soft:
-            raise MemoryCapExceeded("soft", rss, self._soft)
+            raise MemoryCapExceededError("soft", rss, self._soft)
 
 
 # ---------------------------------------------------------------------------
@@ -667,11 +659,7 @@ def install_middleware(
             # Body / upload size cap (JSON vs multipart upload use separate limits).
             if method == "POST" and is_protected:
                 clen = int(request.headers.get("content-length") or 0)
-                cap = (
-                    max_upload_bytes()
-                    if path == "/upload"
-                    else max_body_bytes()
-                )
+                cap = max_upload_bytes() if path == "/upload" else max_body_bytes()
                 if clen > cap:
                     self._audit(ip, method, path, 413, start)
                     label = "Upload" if path == "/upload" else "Body"
@@ -710,9 +698,7 @@ def install_middleware(
             self._audit(ip, method, path, response.status_code, start)
             return response
 
-        def _audit(
-            self, ip: str, method: str, path: str, status: int, start: float
-        ) -> None:
+        def _audit(self, ip: str, method: str, path: str, status: int, start: float) -> None:
             protected_now = path in protected or (
                 method == "POST" and path.startswith(("/analyze", "/build", "/render"))
             )

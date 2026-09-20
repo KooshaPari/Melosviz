@@ -40,9 +40,9 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
+from collections.abc import Iterable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
@@ -58,48 +58,245 @@ __all__ = [
 # Sentiment lexicon (small, dependency-free, English)
 # ---------------------------------------------------------------------------
 
-_POSITIVE_WORDS: frozenset[str] = frozenset({
-    "love", "loved", "loving", "light", "shine", "shining", "glow", "glowing",
-    "dream", "dreams", "dreaming", "free", "freedom", "rise", "rising", "fly",
-    "flying", "alive", "fire", "burning", "bright", "golden", "warm", "warmth",
-    "kiss", "hold", "holdme", "embrace", "smile", "smiling", "joy", "joyful",
-    "hope", "hopeful", "beat", "heartbeat", "dance", "dancing", "win", "won",
-    "celebrate", "festival", "rush", "rushing", "wild", "wildlife", "high",
-    "lift", "lifted", "save", "saved", "salvation", "bliss", "blissful",
-    "magic", "magical", "color", "colors", "colour", "colours", "electric",
-    "alive", "vivid", "pulse", "pulsing", "thrill", "thrilling", "starlight",
-    "sunrise", "sunset", "aurora", "radiant",
-})
+_POSITIVE_WORDS: frozenset[str] = frozenset(
+    {
+        "love",
+        "loved",
+        "loving",
+        "light",
+        "shine",
+        "shining",
+        "glow",
+        "glowing",
+        "dream",
+        "dreams",
+        "dreaming",
+        "free",
+        "freedom",
+        "rise",
+        "rising",
+        "fly",
+        "flying",
+        "alive",
+        "fire",
+        "burning",
+        "bright",
+        "golden",
+        "warm",
+        "warmth",
+        "kiss",
+        "hold",
+        "holdme",
+        "embrace",
+        "smile",
+        "smiling",
+        "joy",
+        "joyful",
+        "hope",
+        "hopeful",
+        "beat",
+        "heartbeat",
+        "dance",
+        "dancing",
+        "win",
+        "won",
+        "celebrate",
+        "festival",
+        "rush",
+        "rushing",
+        "wild",
+        "wildlife",
+        "high",
+        "lift",
+        "lifted",
+        "save",
+        "saved",
+        "salvation",
+        "bliss",
+        "blissful",
+        "magic",
+        "magical",
+        "color",
+        "colors",
+        "colour",
+        "colours",
+        "electric",
+        "vivid",
+        "pulse",
+        "pulsing",
+        "thrill",
+        "thrilling",
+        "starlight",
+        "sunrise",
+        "sunset",
+        "aurora",
+        "radiant",
+    }
+)
 
-_NEGATIVE_WORDS: frozenset[str] = frozenset({
-    "lost", "losing", "loss", "gone", "broken", "break", "breaking", "fall",
-    "falling", "fall", "dark", "darkness", "shadow", "shadows", "cold",
-    "freeze", "freezing", "alone", "lonely", "loneliness", "fear", "afraid",
-    "tears", "cry", "crying", "hurt", "pain", "painful", "bleed", "bleeding",
-    "die", "dies", "dying", "death", "dead", "fade", "fading", "empty",
-    "emptiness", "silence", "silent", "burn", "burnt", "smoke", "smoking",
-    "ash", "ashes", "ruin", "ruins", "ruined", "wreck", "wreckage",
-    "nightmare", "haunt", "haunted", "ghost", "ghosts", "sorrow", "grief",
-    "rain", "storm", "thunder", "drown", "drowning", "sink", "sinking",
-    "wound", "wounded", "scars", "scar", "bitter", "poison", "venom",
-})
+_NEGATIVE_WORDS: frozenset[str] = frozenset(
+    {
+        "lost",
+        "losing",
+        "loss",
+        "gone",
+        "broken",
+        "break",
+        "breaking",
+        "fall",
+        "falling",
+        "dark",
+        "darkness",
+        "shadow",
+        "shadows",
+        "cold",
+        "freeze",
+        "freezing",
+        "alone",
+        "lonely",
+        "loneliness",
+        "fear",
+        "afraid",
+        "tears",
+        "cry",
+        "crying",
+        "hurt",
+        "pain",
+        "painful",
+        "bleed",
+        "bleeding",
+        "die",
+        "dies",
+        "dying",
+        "death",
+        "dead",
+        "fade",
+        "fading",
+        "empty",
+        "emptiness",
+        "silence",
+        "silent",
+        "burn",
+        "burnt",
+        "smoke",
+        "smoking",
+        "ash",
+        "ashes",
+        "ruin",
+        "ruins",
+        "ruined",
+        "wreck",
+        "wreckage",
+        "nightmare",
+        "haunt",
+        "haunted",
+        "ghost",
+        "ghosts",
+        "sorrow",
+        "grief",
+        "rain",
+        "storm",
+        "thunder",
+        "drown",
+        "drowning",
+        "sink",
+        "sinking",
+        "wound",
+        "wounded",
+        "scars",
+        "scar",
+        "bitter",
+        "poison",
+        "venom",
+    }
+)
 
-_ENERGY_WORDS: frozenset[str] = frozenset({
-    "run", "running", "scream", "screaming", "fight", "fighting", "burn",
-    "fire", "explode", "explosion", "shatter", "shattered", "crash", "crashing",
-    "whip", "whips", "kick", "kicks", "punch", "punches", "blast", "blasts",
-    "rush", "rushes", "storm", "storming", "attack", "attacks", "war", "wars",
-    "rage", "fury", "fierce", "savage", "wild", "untamed", "swing", "swings",
-})
+_ENERGY_WORDS: frozenset[str] = frozenset(
+    {
+        "run",
+        "running",
+        "scream",
+        "screaming",
+        "fight",
+        "fighting",
+        "burn",
+        "fire",
+        "explode",
+        "explosion",
+        "shatter",
+        "shattered",
+        "crash",
+        "crashing",
+        "whip",
+        "whips",
+        "kick",
+        "kicks",
+        "punch",
+        "punches",
+        "blast",
+        "blasts",
+        "rush",
+        "rushes",
+        "storm",
+        "storming",
+        "attack",
+        "attacks",
+        "war",
+        "wars",
+        "rage",
+        "fury",
+        "fierce",
+        "savage",
+        "wild",
+        "untamed",
+        "swing",
+        "swings",
+    }
+)
 
-_CALM_WORDS: frozenset[str] = frozenset({
-    "breathe", "breathing", "whisper", "whispers", "still", "stillness",
-    "quiet", "silence", "silent", "drift", "drifting", "float", "floating",
-    "soft", "softly", "gentle", "gently", "tender", "tenderly", "calm",
-    "peace", "peaceful", "rest", "resting", "sleep", "sleeping", "dream",
-    "dreams", "slow", "slowly", "linger", "lingering", "fade", "fading",
-    "sway", "swaying", "echo", "echoes", "echoing",
-})
+_CALM_WORDS: frozenset[str] = frozenset(
+    {
+        "breathe",
+        "breathing",
+        "whisper",
+        "whispers",
+        "still",
+        "stillness",
+        "quiet",
+        "silence",
+        "silent",
+        "drift",
+        "drifting",
+        "float",
+        "floating",
+        "soft",
+        "softly",
+        "gentle",
+        "gently",
+        "tender",
+        "tenderly",
+        "calm",
+        "peace",
+        "peaceful",
+        "rest",
+        "resting",
+        "sleep",
+        "sleeping",
+        "dream",
+        "dreams",
+        "slow",
+        "slowly",
+        "linger",
+        "lingering",
+        "fade",
+        "fading",
+        "sway",
+        "swaying",
+        "echo",
+        "echoes",
+        "echoing",
+    }
+)
 
 
 def _score_sentiment(text: str) -> tuple[float, float]:
@@ -221,17 +418,19 @@ def parse_lrc(text: str) -> list[LyricPhrase]:
             end = start + 1.0
         text_line = re.sub(r"\s+", " ", text_line).strip()
         v, a = _score_sentiment(text_line)
-        phrases.append(LyricPhrase(
-            index=i,
-            text=text_line,
-            start=start,
-            end=end,
-            valence=v,
-            arousal=a,
-            mood_label=_mood_label(v, a),
-            suggested_camera=_camera_for_arousal(a),
-            suggested_palette_mood=_palette_for_valence(v),
-        ))
+        phrases.append(
+            LyricPhrase(
+                index=i,
+                text=text_line,
+                start=start,
+                end=end,
+                valence=v,
+                arousal=a,
+                mood_label=_mood_label(v, a),
+                suggested_camera=_camera_for_arousal(a),
+                suggested_palette_mood=_palette_for_valence(v),
+            )
+        )
     return phrases
 
 
@@ -243,6 +442,7 @@ def parse_lyrics_file(path: str | Path) -> list[LyricPhrase]:
     s = text.lstrip()
     if s.startswith("[") or s.startswith("{"):
         import json
+
         try:
             data = json.loads(text)
             if isinstance(data, list):
@@ -252,7 +452,8 @@ def parse_lyrics_file(path: str | Path) -> list[LyricPhrase]:
                         text=str(item.get("text", "")),
                         start=float(item.get("start", 0.0)),
                         end=float(item.get("end", item.get("start", 0.0) + 5.0)),
-                    ) for i, item in enumerate(data)
+                    )
+                    for i, item in enumerate(data)
                 ]
         except json.JSONDecodeError:
             pass
@@ -293,18 +494,20 @@ def align_to_segments(
             sub_end = min(s_end, p.end)
             if sub_end <= sub_start:
                 continue
-            sub.append({
-                **seg,
-                "start": sub_start,
-                "end": sub_end,
-                "duration": sub_end - sub_start,
-                "lyric_index": p.index,
-                "lyric_text": p.text,
-                "lyric_valence": p.valence,
-                "lyric_arousal": p.arousal,
-                "lyric_mood": p.mood_label,
-                "lyric_camera": p.suggested_camera,
-            })
+            sub.append(
+                {
+                    **seg,
+                    "start": sub_start,
+                    "end": sub_end,
+                    "duration": sub_end - sub_start,
+                    "lyric_index": p.index,
+                    "lyric_text": p.text,
+                    "lyric_valence": p.valence,
+                    "lyric_arousal": p.arousal,
+                    "lyric_mood": p.mood_label,
+                    "lyric_camera": p.suggested_camera,
+                }
+            )
         # Merge short sub-segments with the next one
         merged: list[dict] = []
         for item in sub:
@@ -357,9 +560,15 @@ def _palette_for_valence(valence: float) -> str:
     return "neutral"
 
 
-_VALID_LABELS: frozenset[str] = frozenset({
-    "euphoric", "tender", "fierce", "somber", "neutral",
-})
+_VALID_LABELS: frozenset[str] = frozenset(
+    {
+        "euphoric",
+        "tender",
+        "fierce",
+        "somber",
+        "neutral",
+    }
+)
 
 
 def is_lyric_mood(s: str) -> bool:

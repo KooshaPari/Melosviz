@@ -80,9 +80,7 @@ def test_second_render_is_served_from_cache_and_recorded(tmp_path: Path, monkeyp
     )
 
     sidecars = sorted(out.rglob("*.provenance.json"))
-    assert len(sidecars) == 1, (
-        f"one artifact, one sidecar, but found {len(sidecars)}"
-    )
+    assert len(sidecars) == 1, f"one artifact, one sidecar, but found {len(sidecars)}"
     payload = json.loads(sidecars[0].read_text(encoding="utf-8"))
     assert payload["extra"]["from_cache"] is True, (
         f"the sidecar does not record the reuse: {payload['extra']!r}"
@@ -93,9 +91,7 @@ def test_second_render_is_served_from_cache_and_recorded(tmp_path: Path, monkeyp
     assert Path(payload["artifact_path"]).resolve() == cold_path.resolve()
 
 
-def test_poisoned_cache_metadata_cannot_escape_the_output_dir(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_poisoned_cache_metadata_cannot_escape_the_output_dir(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv(OFFLINE_ENV, "1")
     orch = _orch(tmp_path)
     orch.render(_spec())

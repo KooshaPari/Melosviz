@@ -63,9 +63,7 @@ def test_load_health_concurrent(client: TestClient) -> None:
         return r.status_code
 
     with ThreadPoolExecutor(max_workers=16) as pool:
-        codes = [
-            f.result() for f in as_completed(pool.submit(one, i) for i in range(n))
-        ]
+        codes = [f.result() for f in as_completed(pool.submit(one, i) for i in range(n))]
     assert codes.count(200) == n
 
 
@@ -79,9 +77,7 @@ def test_load_analyze_burst(client: TestClient, tmp_path: Path) -> None:
         return r.status_code
 
     with ThreadPoolExecutor(max_workers=6) as pool:
-        codes = [
-            f.result() for f in as_completed(pool.submit(one, i) for i in range(n))
-        ]
+        codes = [f.result() for f in as_completed(pool.submit(one, i) for i in range(n))]
     assert all(c == 200 for c in codes), codes
 
 

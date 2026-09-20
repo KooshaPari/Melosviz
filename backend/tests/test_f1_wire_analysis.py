@@ -35,17 +35,12 @@ from melosviz.analysis.models import HarmonicResult, RenderSpec
 # ---------------------------------------------------------------------------
 
 
-def _sine_samples(
-    freq_hz: float, duration_sec: float, sample_rate: int = 22050
-) -> list[int]:
+def _sine_samples(freq_hz: float, duration_sec: float, sample_rate: int = 22050) -> list[int]:
     """Return 16-bit signed PCM samples for a sine wave."""
     import math
 
     n = int(duration_sec * sample_rate)
-    return [
-        int(32767 * math.sin(2.0 * math.pi * freq_hz * i / sample_rate))
-        for i in range(n)
-    ]
+    return [int(32767 * math.sin(2.0 * math.pi * freq_hz * i / sample_rate)) for i in range(n)]
 
 
 def _click_samples(
@@ -107,9 +102,7 @@ def test_analyze_wav_onsets_non_empty_for_click_track(click_wav: Path) -> None:
     """A click track must produce at least one onset."""
     result = analyze_wav(click_wav)
     assert isinstance(result.onset_times, list), "onset_times must be a list"
-    assert len(result.onset_times) > 0, (
-        "onset_times must be non-empty for a click track"
-    )
+    assert len(result.onset_times) > 0, "onset_times must be non-empty for a click track"
 
 
 def test_analyze_wav_onset_times_are_non_negative_and_bounded(click_wav: Path) -> None:
@@ -117,9 +110,7 @@ def test_analyze_wav_onset_times_are_non_negative_and_bounded(click_wav: Path) -
     result = analyze_wav(click_wav)
     for t in result.onset_times:
         assert t >= 0.0, f"onset time {t} is negative"
-        assert t <= result.duration_sec, (
-            f"onset time {t} exceeds duration {result.duration_sec}"
-        )
+        assert t <= result.duration_sec, f"onset time {t} exceeds duration {result.duration_sec}"
 
 
 def test_analyze_wav_onset_times_monotonically_increasing(click_wav: Path) -> None:
@@ -198,9 +189,7 @@ def test_spec_from_wav_timeline_contains_onset_events(click_wav: Path) -> None:
 def test_spec_from_wav_timeline_onset_times_match_metadata(click_wav: Path) -> None:
     """Timeline onset event times must exactly match metadata onset_times."""
     spec = spec_from_wav(click_wav)
-    timeline_times = sorted(
-        e["time"] for e in spec.timeline if e.get("type") == "onset"
-    )
+    timeline_times = sorted(e["time"] for e in spec.timeline if e.get("type") == "onset")
     metadata_times = sorted(spec.metadata["onset_times"])
     assert timeline_times == metadata_times, (
         "Timeline onset times do not match metadata onset_times"
@@ -232,14 +221,10 @@ def test_spec_from_wav_onset_events_have_strength(click_wav: Path) -> None:
         ([60, 63, 66], "diminished"),
     ],
 )
-def test_detect_chord_known_triads(
-    note_numbers: list[int], expected_substring: str
-) -> None:
+def test_detect_chord_known_triads(note_numbers: list[int], expected_substring: str) -> None:
     chord = detect_chord(note_numbers)
     assert chord is not None, f"detect_chord returned None for {note_numbers}"
-    assert expected_substring in chord, (
-        f"Expected '{expected_substring}' in chord '{chord}'"
-    )
+    assert expected_substring in chord, f"Expected '{expected_substring}' in chord '{chord}'"
 
 
 def test_detect_chord_returns_none_for_fewer_than_three_notes() -> None:
@@ -258,14 +243,10 @@ def test_detect_chord_returns_none_for_fewer_than_three_notes() -> None:
         ([60, 62, 63, 65, 67, 68, 70], "minor"),
     ],
 )
-def test_detect_scale_known_scales(
-    note_numbers: list[int], expected_substring: str
-) -> None:
+def test_detect_scale_known_scales(note_numbers: list[int], expected_substring: str) -> None:
     scale = detect_scale(note_numbers)
     assert scale is not None, f"detect_scale returned None for {note_numbers}"
-    assert expected_substring in scale, (
-        f"Expected '{expected_substring}' in scale '{scale}'"
-    )
+    assert expected_substring in scale, f"Expected '{expected_substring}' in scale '{scale}'"
 
 
 def test_detect_scale_returns_none_for_fewer_than_three_notes() -> None:

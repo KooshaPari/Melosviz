@@ -13,7 +13,6 @@ delegates to two specialist helpers:
 from __future__ import annotations
 
 from . import director, lyrics, moodboard  # noqa: F401
-
 from .director import (
     DEFAULT_ASPECT_RATIO,
     DEFAULT_LLM_MODEL,

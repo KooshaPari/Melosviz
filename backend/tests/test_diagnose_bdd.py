@@ -108,17 +108,13 @@ def diagnose_module_importable() -> None:
     The import itself is the RED-state guard: the module-import at the top
     of this file raises ``ModuleNotFoundError`` while the script is missing.
     """
-    assert hasattr(diagnose, "run_diagnose"), (
-        "scripts.diagnose must expose run_diagnose()"
-    )
+    assert hasattr(diagnose, "run_diagnose"), "scripts.diagnose must expose run_diagnose()"
     assert callable(diagnose.run_diagnose)
 
 
 @given("the `run_diagnose()` function returns a `DiagnoseReport`")
 def run_diagnose_returns_report() -> None:
-    assert hasattr(diagnose, "DiagnoseReport"), (
-        "scripts.diagnose must expose a DiagnoseReport type"
-    )
+    assert hasattr(diagnose, "DiagnoseReport"), "scripts.diagnose must expose a DiagnoseReport type"
 
 
 # ---------------------------------------------------------------------------
@@ -220,9 +216,7 @@ def render_diagnose_table(ctx: Context) -> None:
 def inspect_exit_code(ctx: Context) -> None:
     # The report was prepared in the matching ``Given`` step. Nothing to
     # do here other than assert it exists.
-    assert ctx.report is not None, (
-        "precondition violated: Given step did not produce a report"
-    )
+    assert ctx.report is not None, "precondition violated: Given step did not produce a report"
 
 
 # ---------------------------------------------------------------------------
@@ -234,9 +228,7 @@ def every_required_check_passes(ctx: Context) -> None:
     required = [c for c in ctx.report.checks if c.required]
     assert required, "no required checks were registered"
     for c in required:
-        assert c.status == "PASS", (
-            f"required check {c.name!r} unexpectedly {c.status}: {c.detail}"
-        )
+        assert c.status == "PASS", f"required check {c.name!r} unexpectedly {c.status}: {c.detail}"
 
 
 @then("the report's `required_passed` is True")
@@ -318,9 +310,7 @@ def header_row_has_columns(ctx: Context, a: str, b: str, c: str) -> None:
 @then("every body row has exactly three columns aligned with the header")
 def body_rows_have_three_columns(ctx: Context) -> None:
     lines = ctx.rendered_table.splitlines()
-    assert len(lines) >= 2, (
-        f"expected at least header + 1 body row, got {len(lines)} lines"
-    )
+    assert len(lines) >= 2, f"expected at least header + 1 body row, got {len(lines)} lines"
 
     # Column count = number of separators in a single row of the table.
     # We use a simple heuristic: split on 2+ spaces and assert the row has
@@ -329,9 +319,7 @@ def body_rows_have_three_columns(ctx: Context) -> None:
         return len([seg for seg in re.split(r"\s{2,}", row.strip()) if seg])
 
     header_cols = _col_count(lines[0])
-    assert header_cols == 3, (
-        f"header should have 3 columns, got {header_cols}: {lines[0]!r}"
-    )
+    assert header_cols == 3, f"header should have 3 columns, got {header_cols}: {lines[0]!r}"
     for row in lines[1:]:
         cols = _col_count(row)
         assert cols == 3, f"body row should have 3 columns, got {cols}: {row!r}"

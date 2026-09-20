@@ -21,7 +21,6 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import struct
 import subprocess
 import sys
 import wave
@@ -74,17 +73,19 @@ def _write_180s_124bpm_wav(path: Path) -> None:
 
 def _write_lrc(path: Path) -> None:
     path.write_text(
-        "\n".join([
-            "[ar:Koosha]",
-            "[ti:Neon Tide (Demo)]",
-            "[00:00.00]City lights are calling out my name",
-            "[00:15.00]Neon pouring through the doorway",
-            "[00:30.00]Whisper softly, the rhythm takes me",
-            "[00:60.00]Lost in the dark, breaking, falling",
-            "[00:90.00]I am the pulse of the city tonight",
-            "[00:120.00]Dance, electric, alive, rise",
-            "[00:150.00]Whisper, slow, the night is ours",
-        ]),
+        "\n".join(
+            [
+                "[ar:Koosha]",
+                "[ti:Neon Tide (Demo)]",
+                "[00:00.00]City lights are calling out my name",
+                "[00:15.00]Neon pouring through the doorway",
+                "[00:30.00]Whisper softly, the rhythm takes me",
+                "[00:60.00]Lost in the dark, breaking, falling",
+                "[00:90.00]I am the pulse of the city tonight",
+                "[00:120.00]Dance, electric, alive, rise",
+                "[00:150.00]Whisper, slow, the night is ours",
+            ]
+        ),
         encoding="utf-8",
     )
 
@@ -130,12 +131,18 @@ def test_full_pipeline_three_minute_track(tmp_path: Path) -> None:
     # ----- 1. STORYBOARD -------------------------------------------------
     sb_path = out / "storyboard.json"
     res = _run_cli(
-        "storyboard", str(wav),
-        "--concept", "neon noir bioluminescent city, 35mm grain",
-        "--bpm", "124",
-        "--palette", "#0d0d10 #ff2bd6 #22d3ee #c084fc",
-        "--lyrics", str(lrc),
-        "--out", str(sb_path),
+        "storyboard",
+        str(wav),
+        "--concept",
+        "neon noir bioluminescent city, 35mm grain",
+        "--bpm",
+        "124",
+        "--palette",
+        "#0d0d10 #ff2bd6 #22d3ee #c084fc",
+        "--lyrics",
+        str(lrc),
+        "--out",
+        str(sb_path),
     )
     assert res.returncode == 0, f"storyboard failed: {res.stderr}"
     sb = json.loads(sb_path.read_text())
@@ -160,44 +167,45 @@ def test_full_pipeline_three_minute_track(tmp_path: Path) -> None:
     # ----- 2. GENERATE ---------------------------------------------------
     gen_dir = out / "generate"
     res = _run_cli(
-        "generate", str(wav),
-        "--storyboard", str(sb_path),
-        "--out", str(gen_dir),
+        "generate",
+        str(wav),
+        "--storyboard",
+        str(sb_path),
+        "--out",
+        str(gen_dir),
     )
     assert res.returncode == 0, f"generate failed: {res.stderr}"
     # At least one per-scene workflow JSON under one of the expected dirs
     workflow_files = list(gen_dir.glob("**/workflow.json"))
-    assert len(workflow_files) >= 1, (
-        f"generate produced no workflow.json files: {gen_dir}"
-    )
+    assert len(workflow_files) >= 1, f"generate produced no workflow.json files: {gen_dir}"
 
     # ----- 3. ASSEMBLE ---------------------------------------------------
     res = _run_cli(
-        "assemble", str(gen_dir),
+        "assemble",
+        str(gen_dir),
     )
     assert res.returncode == 0, f"assemble failed: {res.stderr}"
     plan_glob = list(gen_dir.glob("**/assembly_plan.json"))
-    assert plan_glob, (
-        f"assemble should have written assembly_plan.json: {gen_dir}"
-    )
+    assert plan_glob, f"assemble should have written assembly_plan.json: {gen_dir}"
 
     # ----- 4. MASTER -----------------------------------------------------
     # Use the assembly plan from step 3 as the master input
     assembly_plan = plan_glob[0]
     master_dir = out / "master"
     res = _run_cli(
-        "master", str(assembly_plan),
-        "--out", str(master_dir),
+        "master",
+        str(assembly_plan),
+        "--out",
+        str(master_dir),
     )
     assert res.returncode == 0, f"master failed: {res.stderr}"
     master_plan_glob = list(master_dir.glob("**/master_plan.json"))
-    assert master_plan_glob, (
-        f"master should have written master_plan.json: {master_dir}"
-    )
+    assert master_plan_glob, f"master should have written master_plan.json: {master_dir}"
 
     # ----- 5. SHIP -------------------------------------------------------
     res = _run_cli(
-        "ship", str(master_dir),
+        "ship",
+        str(master_dir),
     )
     assert res.returncode == 0, f"ship failed: {res.stderr}"
     # Final zip + manifest
@@ -228,12 +236,18 @@ def test_storyboard_only_emits_lyrics_aligned_scenes(tmp_path: Path) -> None:
     sb_path = tmp_path / "storyboard.json"
 
     res = _run_cli(
-        "storyboard", str(wav),
-        "--concept", "neon noir",
-        "--bpm", "124",
-        "--palette", "#0d0d10 #ff2bd6 #22d3ee",
-        "--lyrics", str(lrc),
-        "--out", str(sb_path),
+        "storyboard",
+        str(wav),
+        "--concept",
+        "neon noir",
+        "--bpm",
+        "124",
+        "--palette",
+        "#0d0d10 #ff2bd6 #22d3ee",
+        "--lyrics",
+        str(lrc),
+        "--out",
+        str(sb_path),
     )
     assert res.returncode == 0, res.stderr
     sb = json.loads(sb_path.read_text())
@@ -275,12 +289,18 @@ def test_storyboard_with_moodboard_palette_extraction(tmp_path: Path) -> None:
     sb_path = tmp_path / "storyboard.json"
 
     res = _run_cli(
-        "storyboard", str(wav),
-        "--concept", "neon noir",
-        "--bpm", "124",
-        "--palette", "#0d0d10 #ff2bd6",
-        "--mood-board", str(fake_mb),
-        "--out", str(sb_path),
+        "storyboard",
+        str(wav),
+        "--concept",
+        "neon noir",
+        "--bpm",
+        "124",
+        "--palette",
+        "#0d0d10 #ff2bd6",
+        "--mood-board",
+        str(fake_mb),
+        "--out",
+        str(sb_path),
     )
     assert res.returncode == 0, res.stderr
     sb = json.loads(sb_path.read_text())

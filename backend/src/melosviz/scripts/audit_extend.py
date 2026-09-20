@@ -1,4 +1,5 @@
 """Extend audit JSON with showcase pillar + update next_steps + clean weaknesses."""
+
 import datetime
 import json
 import os
@@ -18,7 +19,7 @@ def main() -> int:
         return 1
     with open(p, encoding="utf-8") as f:
         d = json.load(f)
-    now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    now = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
 
     s = d["summary"]
     s["last_modified"] = now
@@ -80,7 +81,7 @@ def main() -> int:
     )
 
     # Recompute macro
-    for cat, info in d["scores"].items():
+    for _cat, info in d["scores"].items():
         raw = sum(pil.get("v", 0) for pil in info.get("pillars", {}).values())
         n = len(info.get("pillars", {}))
         info["score"] = raw
@@ -123,7 +124,7 @@ def main() -> int:
         json.dump(d, f, indent=2)
 
     print(
-        f'Audit: {s["overall"]}% / {s["grade"]} / {s["pillars_passing"]}/{s["pillars_evaluated"]} pillars / {len(s["fixes_applied_post_audit"])} fixes / {len(d["scores"])} cats'
+        f"Audit: {s['overall']}% / {s['grade']} / {s['pillars_passing']}/{s['pillars_evaluated']} pillars / {len(s['fixes_applied_post_audit'])} fixes / {len(d['scores'])} cats"
     )
     print(f"next_steps: {len(d['next_steps'])} items")
     print(f"weaknesses: {len(s['weaknesses'])} entries")

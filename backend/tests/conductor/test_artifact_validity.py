@@ -61,9 +61,7 @@ def _outcome(tmp_path: Path, adapter: Any, monkeypatch) -> dict:
     out = tmp_path / "out"
     orch = Orchestrator(output_dir=out, skip_assembly=True, auto_offline=False)
     spec = {
-        "scene_segments": [
-            {"scene_index": 0, "scene_name": "s0", "scene_type": "video_export"}
-        ]
+        "scene_segments": [{"scene_index": 0, "scene_name": "s0", "scene_type": "video_export"}]
     }
     orch.render(spec)
     sidecars = sorted(out.rglob("*.provenance.json"))

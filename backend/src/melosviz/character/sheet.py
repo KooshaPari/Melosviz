@@ -10,8 +10,9 @@ schema-validated wrapper later.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
-from typing import Any, Iterable, Iterator
+from collections.abc import Iterable, Iterator
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 # ---- Reference-slot constants ------------------------------------------------
 
@@ -150,7 +151,7 @@ class CharacterSheet:
         return d
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "CharacterSheet":
+    def from_dict(cls, data: dict[str, Any]) -> CharacterSheet:
         """Build a :class:`CharacterSheet` from a dict (e.g. parsed YAML).
 
         Extra keys in ``data`` are silently dropped; missing keys use
@@ -159,9 +160,7 @@ class CharacterSheet:
         canonical slots are normalised).
         """
         if not isinstance(data, dict):
-            raise TypeError(
-                f"CharacterSheet.from_dict expected a dict, got {type(data).__name__}"
-            )
+            raise TypeError(f"CharacterSheet.from_dict expected a dict, got {type(data).__name__}")
         # Pull only known top-level fields. ``pop`` rather than ``get``
         # so we surface typos in the YAML at construction time.
         kwargs: dict[str, Any] = {}
@@ -229,8 +228,7 @@ class CharacterRegistry:
             raise ValueError("CharacterSheet.name is required to add to a registry")
         if not overwrite and sheet.name in self.sheets:
             raise ValueError(
-                f"character {sheet.name!r} already in registry "
-                f"(pass overwrite=True to replace)"
+                f"character {sheet.name!r} already in registry (pass overwrite=True to replace)"
             )
         self.sheets[sheet.name] = sheet
 
@@ -253,8 +251,7 @@ class CharacterRegistry:
             return self.sheets[name]
         except KeyError as exc:
             raise KeyError(
-                f"character {name!r} not in registry "
-                f"(known: {', '.join(self.names()) or '—'})"
+                f"character {name!r} not in registry (known: {', '.join(self.names()) or '—'})"
             ) from exc
 
     # ---- bulk helpers -------------------------------------------------------
@@ -274,7 +271,7 @@ class CharacterRegistry:
         sheets: Iterable[CharacterSheet],
         *,
         source_root: str = "",
-    ) -> "CharacterRegistry":
+    ) -> CharacterRegistry:
         """Build a registry from any iterable of sheets.
 
         Duplicate names keep the *first* occurrence. Pass

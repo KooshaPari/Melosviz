@@ -164,9 +164,7 @@ class TestOptionalDepsAbsent:
         # TestCoreImports already imported all core modules — if librosa had
         # leaked into a module-level import it would be in sys.modules now.
         if not _has_optional_dep("librosa"):
-            assert "librosa" not in sys.modules, (
-                "librosa leaked into module-level imports"
-            )
+            assert "librosa" not in sys.modules, "librosa leaked into module-level imports"
 
     def test_no_top_level_torch_import(self) -> None:
         """torch must not be imported at module level in the core tree.
@@ -181,6 +179,4 @@ class TestOptionalDepsAbsent:
         # was NOT in sys.modules before and our core imports leaked it in,
         # it would be there now.  Either way, the absence of ImportError in
         # TestCoreImports is the definitive guard.
-        assert True, (
-            "torch module-level leak would have caused ImportError in TestCoreImports"
-        )
+        assert True, "torch module-level leak would have caused ImportError in TestCoreImports"

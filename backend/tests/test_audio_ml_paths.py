@@ -71,17 +71,13 @@ def _write_sine_wav(
         h.setframerate(sample_rate)
         frames = bytearray()
         for n in range(n_frames):
-            sample = int(
-                amplitude * math.sin(2.0 * math.pi * freq_hz * n / sample_rate)
-            )
+            sample = int(amplitude * math.sin(2.0 * math.pi * freq_hz * n / sample_rate))
             frames += struct.pack("<h", sample)
         h.writeframes(bytes(frames))
     return path
 
 
-def _write_silence_wav(
-    path: Path, duration_sec: float = 0.5, sample_rate: int = 22050
-) -> Path:
+def _write_silence_wav(path: Path, duration_sec: float = 0.5, sample_rate: int = 22050) -> Path:
     """Write a 16-bit mono PCM WAV file containing silence."""
     n_frames = int(duration_sec * sample_rate)
     with wave.open(str(path), "wb") as h:
@@ -168,9 +164,7 @@ class TestTryImportHelpers:
         assert _try_import_demucs() is True
 
     def test_try_import_demucs_returns_false_when_missing(self) -> None:
-        with mock.patch.dict(
-            "sys.modules", {"demucs": None, "demucs.pretrained": None}
-        ):
+        with mock.patch.dict("sys.modules", {"demucs": None, "demucs.pretrained": None}):
             assert _try_import_demucs() is False
 
 
@@ -287,9 +281,7 @@ class TestLibrosaSegmentBoundaries:
                 np.ones(sr, dtype=np.float32) * 0.8,
             ]
         )
-        segs = _librosa_segment_boundaries(
-            librosa, np, y, sr, n_segments=4, duration_sec=3.0
-        )
+        segs = _librosa_segment_boundaries(librosa, np, y, sr, n_segments=4, duration_sec=3.0)
         assert len(segs) == 4
         for start, end in segs:
             assert 0.0 <= start <= 3.0
@@ -302,9 +294,7 @@ class TestLibrosaSegmentBoundaries:
 
         sr = 22050
         y = np.ones(sr, dtype=np.float32)  # 1s of constant tone (no novelty)
-        segs = _librosa_segment_boundaries(
-            librosa, np, y, sr, n_segments=6, duration_sec=1.0
-        )
+        segs = _librosa_segment_boundaries(librosa, np, y, sr, n_segments=6, duration_sec=1.0)
         assert len(segs) == 6
 
 

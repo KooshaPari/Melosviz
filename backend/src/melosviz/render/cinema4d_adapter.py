@@ -42,13 +42,12 @@ import logging
 import os
 import shutil
 import subprocess
-import tempfile
 import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:  # pragma: no cover
-    from melosviz.analysis.models import RenderSpec
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -152,8 +151,9 @@ def is_c4d_available() -> bool:
 # ---------------------------------------------------------------------------
 
 
-def scaffold_script(scene: dict[str, Any], *, project: Path | None,
-                    renderer: str, output_dir: Path) -> str:
+def scaffold_script(
+    scene: dict[str, Any], *, project: Path | None, renderer: str, output_dir: Path
+) -> str:
     """Return Python source that drives C4D to render one scene.
 
     The script is deliberately conservative: it expects a ``.c4d`` template
@@ -165,7 +165,7 @@ def scaffold_script(scene: dict[str, Any], *, project: Path | None,
     height = int(scene.get("height", 720))
     frames = int(scene.get("frames", 240))
     fps = int(scene.get("fps", 24))
-    cam = scene.get("camera", "Camera")
+    scene.get("camera", "Camera")
     motion_text = scene.get("motion_text", "")
     renderer_enum = {
         "redshift": "c4d.REDSHIFT",
@@ -226,17 +226,20 @@ def scaffold_script(scene: dict[str, Any], *, project: Path | None,
     )
 
 
-def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
-                 project: Path | None = None,
-                 renderer: str | None = None) -> list[Path]:
+def render_scene(
+    scene: dict[str, Any],
+    *,
+    output_dir: Path | str,
+    project: Path | None = None,
+    renderer: str | None = None,
+) -> list[Path]:
     """Render one C4D scene; returns the per-frame PNG paths."""
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     renderer = renderer or _c4d_renderer()
     project = project or _c4d_project()
 
-    script = scaffold_script(scene, project=project, renderer=renderer,
-                             output_dir=out)
+    script = scaffold_script(scene, project=project, renderer=renderer, output_dir=out)
     script_path = out / "_c4d_render.py"
     script_path.write_text(script, encoding="utf-8")
 
@@ -249,7 +252,9 @@ def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
         try:
             proc = subprocess.run(
                 [py, str(script_path)],
-                capture_output=True, text=True, timeout=timeout,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
             )
         except subprocess.TimeoutExpired as exc:
             raise C4DRenderError(f"C4D timed out after {timeout}s") from exc
@@ -271,8 +276,7 @@ def render_scene(scene: dict[str, Any], *, output_dir: Path | str,
             cmd += ["--render", str(project)]
         logger.info("C4D: rendering via Commandline %s", bin_)
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True,
-                                  timeout=timeout)
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         except subprocess.TimeoutExpired as exc:
             raise C4DRenderError(f"C4D timed out after {timeout}s") from exc
         if proc.returncode != 0:
@@ -303,11 +307,8 @@ class C4DAdapter:
 
     scene_type: str = "c4d_3d"
 
-    def render(self, render_spec: Any, *, output_path: Any = None,
-               **kwargs: Any) -> list[Path]:
-        out_dir = Path(str(output_path)) if output_path is not None else Path(
-            "/tmp/melosviz-c4d"
-        )
+    def render(self, render_spec: Any, *, output_path: Any = None, **kwargs: Any) -> list[Path]:
+        out_dir = Path(str(output_path)) if output_path is not None else Path("/tmp/melosviz-c4d")
         out_dir.mkdir(parents=True, exist_ok=True)
 
         # ---- Offline mode: write job-spec JSON, do NOT invoke C4D -----------
@@ -372,7 +373,8 @@ class C4DAdapter:
             scene_out.mkdir(parents=True, exist_ok=True)
             try:
                 frames = render_scene(
-                    scene, output_dir=scene_out,
+                    scene,
+                    output_dir=scene_out,
                     project=kwargs.get("project"),
                     renderer=kwargs.get("renderer"),
                 )

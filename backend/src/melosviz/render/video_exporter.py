@@ -230,9 +230,7 @@ def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
     return struct.pack(">I", len(data)) + payload + struct.pack(">I", crc)
 
 
-def _write_raw_png_rgb(
-    path: Path, width: int, height: int, rgb: tuple[int, int, int]
-) -> None:
+def _write_raw_png_rgb(path: Path, width: int, height: int, rgb: tuple[int, int, int]) -> None:
     """Write a solid-colour 8-bit truecolor PNG without any third-party deps.
 
     Produces a valid PNG (signature + IHDR + IDAT + IEND) using only
@@ -259,10 +257,7 @@ def _write_raw_png_rgb(
     raw = scanline * height
     idat = zlib.compress(raw, 1)
     path.write_bytes(
-        signature
-        + _png_chunk(b"IHDR", ihdr)
-        + _png_chunk(b"IDAT", idat)
-        + _png_chunk(b"IEND", b"")
+        signature + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"IDAT", idat) + _png_chunk(b"IEND", b"")
     )
 
 
@@ -276,9 +271,7 @@ def _pillow_available() -> bool:
         return False
 
 
-def _save_solid_png(
-    path: Path, width: int, height: int, rgb: tuple[int, int, int]
-) -> None:
+def _save_solid_png(path: Path, width: int, height: int, rgb: tuple[int, int, int]) -> None:
     """Persist a single solid-colour PNG, preferring Pillow when present.
 
     Falls back to :func:`_write_raw_png_rgb` (a pure-stdlib writer) if
@@ -379,9 +372,7 @@ def _extract_envelope(spec: Any) -> list[float]:
         dense = getattr(spec, "dense_keyframes", None)
         if isinstance(dense, list) and dense:
             try:
-                return [
-                    max(0.0, min(1.0, float(kf.get("energy", 0.0)))) for kf in dense
-                ]
+                return [max(0.0, min(1.0, float(kf.get("energy", 0.0)))) for kf in dense]
             except (TypeError, ValueError, AttributeError):
                 pass
     # Fall back to v1 amplitude_envelope in metadata.
@@ -493,17 +484,12 @@ def _export_video_rawvideo_pipe(
     except Exception as exc:
         proc.kill()
         proc.wait()
-        raise RenderExportError(
-            f"Error while streaming rawvideo frames to ffmpeg: {exc}"
-        ) from exc
+        raise RenderExportError(f"Error while streaming rawvideo frames to ffmpeg: {exc}") from exc
 
     if proc.returncode != 0:
-        stderr_tail = "\n".join(
-            (stderr_bytes.decode(errors="replace") or "").splitlines()[-5:]
-        )
+        stderr_tail = "\n".join((stderr_bytes.decode(errors="replace") or "").splitlines()[-5:])
         raise RenderExportError(
-            f"ffmpeg rawvideo export failed (rc={proc.returncode}). "
-            f"Tail of stderr:\n{stderr_tail}"
+            f"ffmpeg rawvideo export failed (rc={proc.returncode}). Tail of stderr:\n{stderr_tail}"
         )
     if not output_path.exists() or output_path.stat().st_size == 0:
         raise RenderExportError(
@@ -579,9 +565,7 @@ def export_video(
             "200k",
         ]
     else:
-        raise RenderExportError(
-            f"Unsupported export format: {format!r}. Expected 'mp4' or 'webm'."
-        )
+        raise RenderExportError(f"Unsupported export format: {format!r}. Expected 'mp4' or 'webm'.")
 
     # ---- 2. Resolve ffmpeg ----------------------------------------------
     ffmpeg = _resolve_ffmpeg_binary()
@@ -612,8 +596,7 @@ def export_video(
     output_path = output_dir / f"melosviz-render.{extension}"
 
     logger.info(
-        "export_video: format=%s width=%d height=%d fps=%d duration=%.2fs "
-        "frames=%d output_dir=%s",
+        "export_video: format=%s width=%d height=%d fps=%d duration=%.2fs frames=%d output_dir=%s",
         fmt,
         width,
         height,
@@ -646,15 +629,9 @@ def export_video(
         base = colors[index % len(colors)]
         frame_colors.append(
             (
-                max(
-                    0, min(255, int(base[0] * (0.4 + 0.6 * intensity) + 40 * intensity))
-                ),
-                max(
-                    0, min(255, int(base[1] * (0.4 + 0.6 * intensity) + 20 * intensity))
-                ),
-                max(
-                    0, min(255, int(base[2] * (0.4 + 0.6 * intensity) + 55 * intensity))
-                ),
+                max(0, min(255, int(base[0] * (0.4 + 0.6 * intensity) + 40 * intensity))),
+                max(0, min(255, int(base[1] * (0.4 + 0.6 * intensity) + 20 * intensity))),
+                max(0, min(255, int(base[2] * (0.4 + 0.6 * intensity) + 55 * intensity))),
             )
         )
 
@@ -676,9 +653,7 @@ def export_video(
             frame_dir = Path(tmp)
             frame_dir.mkdir(parents=True, exist_ok=True)
             for index, rgb in enumerate(frame_colors):
-                _save_solid_png(
-                    frame_dir / f"frame_{index + 1:05d}.png", width, height, rgb
-                )
+                _save_solid_png(frame_dir / f"frame_{index + 1:05d}.png", width, height, rgb)
             frame_pattern = frame_dir / "frame_%05d.png"
 
             cmd: list[str] = [

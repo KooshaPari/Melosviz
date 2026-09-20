@@ -383,9 +383,7 @@ class TestSaveSolidPng:
     def test_fallback_no_pillow(self, tmp_path):
         from melosviz.render.video_exporter import _save_solid_png
 
-        with patch(
-            "melosviz.render.video_exporter._pillow_available", return_value=False
-        ):
+        with patch("melosviz.render.video_exporter._pillow_available", return_value=False):
             p = tmp_path / "out.png"
             _save_solid_png(p, 2, 2, (100, 200, 50))
             assert p.exists()
@@ -687,9 +685,7 @@ class TestExportVideoErrors:
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.video_exporter import export_video
 
-        spec = RenderSpec(
-            metadata={"width": 2, "height": 2, "fps": 1, "duration": "bad"}
-        )
+        spec = RenderSpec(metadata={"width": 2, "height": 2, "fps": 1, "duration": "bad"})
         mock_result = MagicMock()
         mock_result.returncode = 1
         mock_result.stderr = "error"
@@ -747,17 +743,13 @@ class TestExportVideoErrors:
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.video_exporter import export_video
 
-        spec = RenderSpec(
-            metadata={"width": 2, "height": 2, "fps": 30, "duration": 10.0}
-        )
+        spec = RenderSpec(metadata={"width": 2, "height": 2, "fps": 30, "duration": 10.0})
         with (
             patch(
                 "melosviz.render.video_exporter._resolve_ffmpeg_binary",
                 return_value="/fake/ffmpeg",
             ),
-            patch(
-                "melosviz.render.video_exporter._export_video_rawvideo_pipe"
-            ) as mock_pipe,
+            patch("melosviz.render.video_exporter._export_video_rawvideo_pipe") as mock_pipe,
         ):
             out = tmp_path / "melosviz-render.mp4"
             out.write_bytes(b"fake")
@@ -775,8 +767,7 @@ class TestExportVideoErrors:
             real_stat = out.stat()
             dir_mode = (real_stat.st_mode & ~stat_module.S_IFREG) | stat_module.S_IFDIR
             stat_fields = [
-                dir_mode if i == stat_module.ST_MODE else real_stat[i]
-                for i in range(10)
+                dir_mode if i == stat_module.ST_MODE else real_stat[i] for i in range(10)
             ]
             dir_like_stat = os.stat_result(stat_fields)
             with (
@@ -1074,9 +1065,7 @@ class TestTDAdapter:
     def _make_spec(self) -> Any:
         from melosviz.analysis.models import RenderSpec
 
-        return RenderSpec(
-            metadata={"duration": 0.1, "fps": 10, "width": 2, "height": 2}
-        )
+        return RenderSpec(metadata={"duration": 0.1, "fps": 10, "width": 2, "height": 2})
 
     def test_render_success_no_live_mode(self, tmp_path):
         import melosviz.runtime.touchdesigner.generator as gen_mod
@@ -1103,9 +1092,7 @@ class TestTDAdapter:
         import melosviz.runtime.touchdesigner.generator as gen_mod
         from melosviz.runtime.touchdesigner.adapter import TDAdapter, TDRuntimeError
 
-        with patch.object(
-            gen_mod, "generate_network", side_effect=RuntimeError("gen failed")
-        ):
+        with patch.object(gen_mod, "generate_network", side_effect=RuntimeError("gen failed")):
             adapter = TDAdapter()
             # adapter.render does: from melosviz.runtime.touchdesigner.generator import generate_network
             # so we patch via sys.modules
@@ -1117,9 +1104,7 @@ class TestTDAdapter:
                     sys.modules,
                     {
                         "melosviz.runtime.touchdesigner.generator": MagicMock(
-                            generate_network=MagicMock(
-                                side_effect=RuntimeError("gen failed")
-                            )
+                            generate_network=MagicMock(side_effect=RuntimeError("gen failed"))
                         )
                     },
                 ),
@@ -1151,9 +1136,7 @@ class TestTDAdapter:
             mock_thread_cls.return_value = mock_thread
             with patch("socket.socket"):
                 adapter = TDAdapter()
-                result = adapter.render(
-                    self._make_spec(), output_path=tmp_path, live_mode=True
-                )
+                result = adapter.render(self._make_spec(), output_path=tmp_path, live_mode=True)
         assert result.live_mode is True
 
     def test_live_mode_bridge_failure_non_fatal(self, tmp_path):
@@ -1177,9 +1160,7 @@ class TestTDAdapter:
             patch("socket.socket", side_effect=OSError("socket error")),
         ):
             adapter = TDAdapter()
-            result = adapter.render(
-                self._make_spec(), output_path=tmp_path, live_mode=True
-            )
+            result = adapter.render(self._make_spec(), output_path=tmp_path, live_mode=True)
         # Generation succeeded; bridge failure is non-fatal
         assert result.live_mode is False
 
@@ -1406,11 +1387,7 @@ class TestDiffOverrides:
     def test_diff_absent_key(self):
         from melosviz.runtime.touchdesigner.overrides import diff_overrides
 
-        network = {
-            "groups": [
-                {"name": "scanner", "operators": [{"name": "main", "params": {}}]}
-            ]
-        }
+        network = {"groups": [{"name": "scanner", "operators": [{"name": "main", "params": {}}]}]}
         overrides = {"scanner.main.newparam": 99}
         diff = diff_overrides(network, overrides)
         assert "scanner.main.newparam" in diff
@@ -1642,9 +1619,7 @@ class TestBridgeServer:
             "melosviz.compose.assemble.assemble_render_plan",
             return_value={"segments": [], "transitions": []},
         ):
-            resp = client.post(
-                "/render", json={"wav_path": str(wav), "out_dir": str(out_dir)}
-            )
+            resp = client.post("/render", json={"wav_path": str(wav), "out_dir": str(out_dir)})
         assert resp.status_code == 200
 
     def test_main_function(self):
@@ -1710,9 +1685,7 @@ class TestBlenderScene:
 
         scanner = self._make_scanner()
         scene_spec = SceneSpec(scene_id="test", scanners=[scanner])
-        result = assemble_multi_domain_scene(
-            scanner, scene_spec, [], [], self._make_render_spec()
-        )
+        result = assemble_multi_domain_scene(scanner, scene_spec, [], [], self._make_render_spec())
         assert isinstance(result, list)
 
     def test_domain_opacities_no_active_transitions(self):
@@ -1756,8 +1729,7 @@ class TestEvaluateScannerFallback:
 
         return ScannerSpec(
             scanner_id="test",
-            write_channels=write_channels
-            or ["reveal_splat", "boost_wireframe", "edge_emission"],
+            write_channels=write_channels or ["reveal_splat", "boost_wireframe", "edge_emission"],
         )
 
     def test_no_dense_kf_falls_back_to_fps_grid(self):
@@ -1957,9 +1929,7 @@ class TestNarratorEdgeCases:
         composer = NarrativeComposer(seed=0)
         rng = random.Random(0)
         # With 1 scene and 1 material and a forced prev_pair, it hits the fallback
-        result = composer._pick_varied(
-            rng, ["scene_a"], ["mat_a"], ("scene_a", "mat_a")
-        )
+        result = composer._pick_varied(rng, ["scene_a"], ["mat_a"], ("scene_a", "mat_a"))
         assert isinstance(result, tuple)
         assert len(result) == 2
 

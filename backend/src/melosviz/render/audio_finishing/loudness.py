@@ -6,7 +6,7 @@ import json
 import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ._proc import run
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 # Each preset is (integrated_LUFS, true_peak_dBTP, label).
-LUFS_TARGETS: Dict[str, Dict[str, Any]] = {
+LUFS_TARGETS: dict[str, dict[str, Any]] = {
     "club_pa": {
         "label": "Club PA / live venue (-9 LUFS, -1 dBTP)",
         "integrated_lufs": -9.0,
@@ -46,15 +46,14 @@ LUFS_TARGETS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def list_lufs_targets() -> List[Dict[str, Any]]:
+def list_lufs_targets() -> list[dict[str, Any]]:
     """Return the registered LUFS delivery targets (label + value)."""
     return [
-        {"name": name, **{k: v for k, v in meta.items()}}
-        for name, meta in LUFS_TARGETS.items()
+        {"name": name, **{k: v for k, v in meta.items()}} for name, meta in LUFS_TARGETS.items()
     ]
 
 
-def resolve_lufs_target(name: str) -> Dict[str, Any]:
+def resolve_lufs_target(name: str) -> dict[str, Any]:
     """Resolve a target name to its LUFS metadata. Falls back to YouTube."""
     meta = LUFS_TARGETS.get(name)
     if meta is None:
@@ -77,14 +76,14 @@ class LoudnessReport:
     input_lra: float = 0.0  # loudness range
     input_thresh: float = 0.0
     target_offset: float = 0.0
-    output_i: Optional[float] = None
-    output_tp: Optional[float] = None
-    output_lra: Optional[float] = None
-    output_thresh: Optional[float] = None
+    output_i: float | None = None
+    output_tp: float | None = None
+    output_lra: float | None = None
+    output_thresh: float | None = None
     target_lufs: float = -14.0
     target_true_peak: float = -1.0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -124,7 +123,7 @@ def analyze_loudness(wav_path: Path) -> LoudnessReport:
 def normalize_loudness(
     wav_path: Path,
     out_path: Path,
-    target: Dict[str, Any],
+    target: dict[str, Any],
     *,
     overwrite: bool = False,
 ) -> LoudnessReport:
@@ -179,4 +178,3 @@ def normalize_loudness(
     first_pass.output_lra = verify.input_lra
     first_pass.output_thresh = verify.input_thresh
     return first_pass
-

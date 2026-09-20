@@ -30,9 +30,7 @@ from melosviz.analysis.models import (
 # ---------------------------------------------------------------------------
 
 
-def _make_wav(
-    path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440
-) -> Path:
+def _make_wav(path: Path, *, seconds: float = 1.0, sr: int = 44100, freq: int = 440) -> Path:
     """Write a <seconds>-long mono sine WAV.  Returns the same path."""
     import struct
 
@@ -43,8 +41,7 @@ def _make_wav(
         wf.setsampwidth(2)
         wf.setframerate(sr)
         frames = b"".join(
-            struct.pack("<h", int(32767 * math.sin(2 * math.pi * freq * i / sr)))
-            for i in range(n)
+            struct.pack("<h", int(32767 * math.sin(2 * math.pi * freq * i / sr))) for i in range(n)
         )
         wf.writeframes(frames)
     return path
@@ -85,7 +82,7 @@ def _make_render_spec(*, with_v2: bool = True) -> RenderSpec:
 # ---------------------------------------------------------------------------
 
 
-class TestAOR_Killers:
+class TestAORKillers:
     """Assure that swapping + for -, * for / in DSP / coords trips a test."""
 
     def test_metadata_fps_must_be_int_positive_when_int(self) -> None:
@@ -106,14 +103,12 @@ class TestAOR_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestROR_Killers:
+class TestRORKillers:
     """Relational operator mutations — killers around predicates."""
 
     def test_render_spec_v2_round_trip_preserves_dense_keyframes(self) -> None:
         spec = _make_render_spec()
-        spec.dense_keyframes = [
-            {"t": round(i * 0.1, 3), "energy": i / 10.0} for i in range(20)
-        ]
+        spec.dense_keyframes = [{"t": round(i * 0.1, 3), "energy": i / 10.0} for i in range(20)]
         roundtrip = RenderSpec.model_validate(RenderSpec.model_dump(spec))
         # 0.1-spaced t values must survive exactly — catches == → != around compare.
         assert len(roundtrip.dense_keyframes) == 20
@@ -126,7 +121,7 @@ class TestROR_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestBOOL_Killers:
+class TestBOOLKillers:
     """Boolean-flips around default factories and feature switches."""
 
     def test_render_spec_default_extra_is_ignored(self) -> None:
@@ -142,7 +137,7 @@ class TestBOOL_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestNUM_Killers:
+class TestNUMKillers:
     """Numeric-literal mutations around magic numbers and durations."""
 
     def test_render_spec_defaults_match_qgate_baseline(self) -> None:
@@ -162,7 +157,7 @@ class TestNUM_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestSTR_LIT_Killers:
+class TestSTRLITKillers:
     """String-literal mutations on default presets / theme strings."""
 
     def test_genre_theme_values_are_distinct(self) -> None:
@@ -183,7 +178,7 @@ class TestSTR_LIT_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestBRANCH_Killers:
+class TestBRANCHKillers:
     """Branch flips in conditional logic."""
 
     def test_dense_keyframe_requires_positive_t(self) -> None:
@@ -199,7 +194,7 @@ class TestBRANCH_Killers:
 # ---------------------------------------------------------------------------
 
 
-class TestEndToEnd_MutationGuard:
+class TestEndToEndMutationGuard:
     """End-to-end guards — anything that swaps < for <= or == must fail."""
 
     def test_video_exporter_writes_file_when_keys_valid(self, tmp_path: Path) -> None:
