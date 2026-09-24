@@ -137,6 +137,9 @@ def test_auto_critic_report_defaults_and_to_dict() -> None:
 def clean_critic_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MELOSVIZ_CRITIC_PROVIDER", raising=False)
     monkeypatch.delenv("MELOSVIZ_CRITIC_API_KEY", raising=False)
+    # _anthropic_critique reads this with a default, so an ambient value would
+    # silently change the model name the provider tests assert on.
+    monkeypatch.delenv("MELOSVIZ_CRITIC_MODEL", raising=False)
 
 
 def test_detect_provider_explicit_openai(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -596,7 +599,9 @@ def test_anthropic_cost_uses_anthropic_pricing() -> None:
 
 
 def test_anthropic_critique_handles_text_block_content(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    clean_critic_env: None,
 ) -> None:
     image = tmp_path / "frame.png"
     image.write_bytes(b"fake-png")
