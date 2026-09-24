@@ -1,0 +1,39 @@
+# =============================================================================
+# Locale Parity — en/es translation key parity
+# =============================================================================
+# Fails the build when a locale catalog drifts from its en.json baseline.
+# A key present in en but missing in es (or vice versa) silently falls back
+# to English at runtime, so this is a real correctness gate rather than a
+# style check. scripts/check_locale_parity.py is stdlib-only, so no
+# dependency installation is required.
+#
+# Added by PR #293 alongside the script itself.
+# =============================================================================
+
+name: Locale Parity
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: locale-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  locale-parity:
+    name: locale key parity (en vs es)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+      - name: Check en/es locale key parity
+        run: python scripts/check_locale_parity.py
