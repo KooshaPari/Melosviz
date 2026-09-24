@@ -9,11 +9,11 @@
 #
 # In-repo reusable workflow (promoted from phenotype-tooling; upstream
 # workflow_call entrypoint is unparseable on GitHub — see ci.yml history):
-#   uses: ./.github/workflows/reusable/quality-gate.yml
+#   uses: ./.github/workflows/quality-gate-reusable.yml
 # Standalone baseline gate:
 #   .github/workflows/qgate.yml
 # External repos may call:
-#   uses: KooshaPari/Melosviz/.github/workflows/reusable/quality-gate.yml@main
+#   uses: KooshaPari/Melosviz/.github/workflows/quality-gate-reusable.yml@main
 
 # ─── Coverage gate ────────────────────────────────────────────────────────
 # Granular-recursive: every module must clear this threshold (no hiding

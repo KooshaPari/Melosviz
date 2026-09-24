@@ -212,6 +212,10 @@ jobs:
           repository: KooshaPari/PhenoShared
           ref: ${{ inputs.qgate-ref }}
           path: _phenoshared
+          # Don't leave the workflow token in the checked-out tree: this
+          # workspace is only used to build the qgate binary, and the qgate-ref
+          # code must not be able to read GITHUB_TOKEN off disk.
+          persist-credentials: false
           # Only qgate itself is needed for the build; the rest of the
           # PhenoShared monorepo would force cargo to resolve ~80 unrelated
           # workspace members, one of which (phenotype-nvms-adapter) references
@@ -306,7 +310,7 @@ jobs:
             echo "::error::working-directory must not contain '..'"
             exit 1
           fi
-          if ! echo "$INPUT_NOT_APPLICABLE" | grep -qE '^[a-zA-Z0-9_,]*$'; then
+          if [[ "$INPUT_NOT_APPLICABLE" =~ [^a-zA-Z0-9_,] ]]; then
             echo "::error::not-applicable must only contain letters, digits, underscores, and commas"
             exit 1
           fi
@@ -326,6 +330,10 @@ jobs:
             echo "::error::sbom-command must not contain backticks or $()"
             exit 1
           fi
+          if [[ "$INPUT_SBOM_COMMAND" == *[[:cntrl:]]* ]]; then
+            echo "::error::sbom-command must not contain control characters"
+            exit 1
+          fi
           echo "Input validation passed."
 
       - name: Write .qgate.toml overrides
@@ -339,6 +347,15 @@ jobs:
         run: |
           WORK_DIR="${INPUT_WORKING_DIR}"
           cd "$WORK_DIR"
+          # sbom-command is the only caller-controlled value written as a TOML
+          # basic string below (coverage_path is a fixed skip marker), so its
+          # backslashes and double quotes must be escaped or a legitimate
+          # input like `cargo sbom --output "report file.json"` would
+          # produce an unparseable .qgate.toml.
+          toml_escape() {
+            printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g'
+          }
+          SBOM_COMMAND_TOML=$(toml_escape "$INPUT_SBOM_COMMAND")
           NOT_APPLICABLE_TOML=$(printf '%s' "$INPUT_NOT_APPLICABLE" \
             | tr ',' '\n' \
             | grep -v '^$' \
@@ -364,7 +381,7 @@ jobs:
             echo "coverage_format = \"${INPUT_COVERAGE_FORMAT}\""
             echo "not_applicable = [${NOT_APPLICABLE_TOML}]"
             if [ -n "$INPUT_SBOM_COMMAND" ]; then
-              printf 'sbom_command = "%s"\n' "$INPUT_SBOM_COMMAND"
+              printf 'sbom_command = "%s"\n' "$SBOM_COMMAND_TOML"
             fi
           } > .qgate.toml
           echo "Wrote flat-key .qgate.toml."
