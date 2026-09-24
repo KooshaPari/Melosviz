@@ -15,12 +15,18 @@ completes so rehearsal stays runnable.
 from __future__ import annotations
 
 import json
+import wave
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from melosviz.conductor import registry as registry_mod
+from melosviz.conductor.events import (
+    ALL_OUTCOMES,
+    OUTCOME_MALFORMED,
+    OUTCOME_RENDER,
+)
 from melosviz.conductor.orchestrator import Orchestrator
 
 
@@ -82,7 +88,7 @@ def test_unusable_artifact_is_not_labelled_render(
     tmp_path: Path, monkeypatch, adapter: Any, reason_fragment: str
 ) -> None:
     payload = _outcome(tmp_path, adapter, monkeypatch)
-    assert payload["extra"]["outcome"] == "malformed", (
+    assert payload["extra"]["outcome"] == OUTCOME_MALFORMED, (
         f"unusable artifact labelled {payload['extra']['outcome']!r}"
     )
     reason = str(payload["extra"].get("rejection_reason", ""))
@@ -91,7 +97,65 @@ def test_unusable_artifact_is_not_labelled_render(
 
 def test_real_clip_is_still_labelled_render(tmp_path: Path, monkeypatch) -> None:
     payload = _outcome(tmp_path, _RealClipAdapter, monkeypatch)
-    assert payload["extra"]["outcome"] == "render", (
+    assert payload["extra"]["outcome"] == OUTCOME_RENDER, (
         f"a real clip was labelled {payload['extra']['outcome']!r}"
     )
     assert "rejection_reason" not in payload["extra"]
+
+
+def _write_zero_duration_wav(path: Path) -> None:
+    """Write a WAV whose data chunk contains zero frames."""
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(44100)
+        # No call to w.writeframes — zero playable frames = zero duration.
+
+
+class _ZeroDurationWavAdapter:
+    def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
+        out = Path(str(kwargs["output_path"]))
+        out.mkdir(parents=True, exist_ok=True)
+        clip = out / "silent.wav"
+        _write_zero_duration_wav(clip)
+        return [clip]
+
+
+def test_zero_duration_wav_is_rejected_as_malformed(tmp_path: Path, monkeypatch) -> None:
+    """A1: zero-duration media must be rejected, not labelled ``render``."""
+    payload = _outcome(tmp_path, _ZeroDurationWavAdapter, monkeypatch)
+    assert payload["extra"]["outcome"] == OUTCOME_MALFORMED, (
+        f"zero-duration WAV labelled {payload['extra']['outcome']!r}"
+    )
+    reason = str(payload["extra"].get("rejection_reason", ""))
+    assert "zero-duration" in reason, f"unhelpful rejection reason: {reason!r}"
+
+
+def test_outcome_constants_are_machine_readable() -> None:
+    """A1: outcomes must be addressable by name, not just by string equality."""
+    from melosviz.conductor.events import (
+        OUTCOME_CACHE_HIT,
+        OUTCOME_FAILED,
+        OUTCOME_JOB_SPEC_ONLY,
+        OUTCOME_MALFORMED,
+        OUTCOME_OFFLINE_PLACEHOLDER,
+        OUTCOME_RENDER,
+        OUTCOME_UNAVAILABLE,
+    )
+
+    assert OUTCOME_RENDER == "render"
+    assert OUTCOME_OFFLINE_PLACEHOLDER == "offline-placeholder"
+    assert OUTCOME_JOB_SPEC_ONLY == "job-spec-only"
+    assert OUTCOME_UNAVAILABLE == "unavailable"
+    assert OUTCOME_MALFORMED == "malformed"
+    assert OUTCOME_FAILED == "failed"
+    assert OUTCOME_CACHE_HIT == "cache-hit"
+    assert set(ALL_OUTCOMES) == {
+        OUTCOME_RENDER,
+        OUTCOME_OFFLINE_PLACEHOLDER,
+        OUTCOME_JOB_SPEC_ONLY,
+        OUTCOME_UNAVAILABLE,
+        OUTCOME_MALFORMED,
+        OUTCOME_FAILED,
+        OUTCOME_CACHE_HIT,
+    }

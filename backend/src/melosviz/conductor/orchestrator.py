@@ -34,6 +34,15 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:  # pragma: no cover
     from melosviz.analysis.models import RenderSpec
 
+from melosviz.conductor.events import (
+    OUTCOME_CACHE_HIT,
+    OUTCOME_FAILED,
+    OUTCOME_JOB_SPEC_ONLY,
+    OUTCOME_MALFORMED,
+    OUTCOME_OFFLINE_PLACEHOLDER,
+    OUTCOME_RENDER,
+    OUTCOME_UNAVAILABLE,
+)
 from melosviz.conductor.provenance import ClipProvenance, write_provenance
 from melosviz.conductor.render_cache import (
     RenderCache,
@@ -74,6 +83,38 @@ def _path_like_str(value: Any) -> str | None:
     return None
 
 
+def _is_zero_duration(artifact: str) -> bool | None:
+    """Return whether ``artifact`` has a measurable zero-duration media stream.
+
+    Returns ``True`` when the container resolves to zero playable frames,
+    ``False`` when duration is measurable and positive, and ``None`` when
+    this implementation cannot determine duration for the container format
+    (callers must treat ``None`` as "do not claim either way" rather than
+    accepting the artifact).
+
+    A1 acceptance requires zero-duration media to be rejected so release
+    acceptance cannot silently consume fixture output. ``ffprobe`` is not
+    available in this repo, so the implementation covers formats the
+    Python standard library can read directly:
+
+    * ``.wav`` — read header with :mod:`wave`. Zero frames = zero duration.
+    """
+    if not artifact:
+        return None
+    suffix = Path(artifact).suffix.lower()
+    if suffix == ".wav":
+        try:
+            import wave
+
+            with wave.open(artifact, "rb") as _w:
+                nframes = _w.getnframes()
+                framerate = _w.getframerate() or 1
+            return (nframes == 0) or ((nframes / framerate) <= 0.0)
+        except (wave.Error, EOFError, OSError, ValueError):
+            return None
+    return None
+
+
 def _artifact_rejection(artifact: str) -> str | None:
     """Return why `artifact` is unusable as media, or ``None`` when it is fine.
 
@@ -82,9 +123,9 @@ def _artifact_rejection(artifact: str) -> str | None:
     ``render``, so release acceptance could silently consume output that is not
     media (A1: "malformed ... media are rejected or explicitly blocked").
 
-    A zero-*duration* container also counts as malformed media, but detecting it
-    needs real container probing and this repo has no ffprobe helper, so it is
-    deliberately not claimed here.
+    WAV containers are additionally probed for zero-duration media; for other
+    container formats the implementation does not claim either way and accepts
+    the file when its size and existence look healthy.
     """
     if not artifact:
         return None
@@ -98,6 +139,8 @@ def _artifact_rejection(artifact: str) -> str | None:
             return "artifact is empty (0 bytes)"
     except OSError as exc:  # unreadable path/metadata
         return f"artifact could not be inspected: {exc}"
+    if _is_zero_duration(artifact) is True:
+        return "artifact is zero-duration media (no playable frames)"
     return None
 
 
@@ -187,7 +230,7 @@ def _record_cached_scene(
                 width=int(getattr(render_spec, "width", 1920) or 1920),
                 height=int(getattr(render_spec, "height", 1080) or 1080),
                 fps=int(getattr(render_spec, "fps", 24) or 24),
-                extra={"outcome": outcome or "cache-hit", "from_cache": True},
+                extra={"outcome": outcome or OUTCOME_CACHE_HIT, "from_cache": True},
             )
         )
     except Exception:  # pragma: no cover - provenance is best-effort
@@ -230,7 +273,7 @@ def _record_failed_scene(
                 height=int(getattr(render_spec, "height", 1080) or 1080),
                 fps=int(getattr(render_spec, "fps", 24) or 24),
                 extra={
-                    "outcome": "failed",
+                    "outcome": OUTCOME_FAILED,
                     "error_type": error_type,
                     "error": error[:500],
                 },
@@ -1023,13 +1066,15 @@ class Orchestrator:
             # A scene that reported no usable artifact path is neither a render
             # nor a placeholder. Label it so release acceptance can see it.
             _outcome = (
-                "malformed"
+                OUTCOME_MALFORMED
                 if _artifact_issue
                 else (
-                    "offline-placeholder"
+                    OUTCOME_OFFLINE_PLACEHOLDER
                     if _offline_placeholder
                     else (
-                        "job-spec-only" if _plan_only else ("render" if artifact else "unavailable")
+                        OUTCOME_JOB_SPEC_ONLY
+                        if _plan_only
+                        else (OUTCOME_RENDER if artifact else OUTCOME_UNAVAILABLE)
                     )
                 )
             )

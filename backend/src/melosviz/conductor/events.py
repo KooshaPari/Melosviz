@@ -42,6 +42,28 @@ STATE_SKIPPED = "skipped"
 ALL_STATES = (STATE_QUEUED, STATE_RENDERING, STATE_DONE, STATE_ERROR, STATE_SKIPPED)
 
 
+# Outcome classes (A1, machine-readable; recorded in provenance ``extra.outcome``
+# and used by release acceptance to distinguish real renders from placeholders,
+# plans, and rejected artifacts). Order does not imply severity.
+OUTCOME_RENDER = "render"
+OUTCOME_OFFLINE_PLACEHOLDER = "offline-placeholder"
+OUTCOME_JOB_SPEC_ONLY = "job-spec-only"
+OUTCOME_UNAVAILABLE = "unavailable"
+OUTCOME_MALFORMED = "malformed"
+OUTCOME_FAILED = "failed"
+OUTCOME_CACHE_HIT = "cache-hit"
+
+ALL_OUTCOMES = (
+    OUTCOME_RENDER,
+    OUTCOME_OFFLINE_PLACEHOLDER,
+    OUTCOME_JOB_SPEC_ONLY,
+    OUTCOME_UNAVAILABLE,
+    OUTCOME_MALFORMED,
+    OUTCOME_FAILED,
+    OUTCOME_CACHE_HIT,
+)
+
+
 @dataclass
 class RenderEvent:
     """A single per-scene render event."""
@@ -304,6 +326,14 @@ __all__ = [
     "STATE_ERROR",
     "STATE_SKIPPED",
     "ALL_STATES",
+    "OUTCOME_RENDER",
+    "OUTCOME_OFFLINE_PLACEHOLDER",
+    "OUTCOME_JOB_SPEC_ONLY",
+    "OUTCOME_UNAVAILABLE",
+    "OUTCOME_MALFORMED",
+    "OUTCOME_FAILED",
+    "OUTCOME_CACHE_HIT",
+    "ALL_OUTCOMES",
     "get_bus",
     "reset_bus",
 ]
