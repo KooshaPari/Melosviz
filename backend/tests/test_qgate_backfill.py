@@ -863,6 +863,17 @@ except ImportError:  # pragma: no cover
     st = _St()  # type: ignore[assignment]
 
 
+# Hoisted imports for the property tests below. These modules are imported here
+# rather than inside each test body so the cold-start cost lands at pytest
+# collection time instead of bleeding into the FIRST example run, which would
+# otherwise breach hypothesis's default 200ms deadline and surface as a flaky
+# ``Unreliable test timings!`` failure under random ordering.
+if HAS_HYPOTHESIS:
+    from melosviz.analysis.models import RenderSpec as _PropRenderSpec  # noqa: E402
+    from melosviz.presets.cinematic import CINEMATIC_PALETTE as _CINEMATIC_PALETTE  # noqa: E402
+    from melosviz.presets.cinematic import apply as _cinematic_apply  # noqa: E402
+
+
 @pytest.mark.skipif(not HAS_HYPOTHESIS, reason="hypothesis not installed")
 class TestPropertyPresets:
     @given(
@@ -870,38 +881,39 @@ class TestPropertyPresets:
         fps=st.integers(min_value=1, max_value=60),
         duration=st.floats(min_value=0.5, max_value=10.0, allow_nan=False, allow_infinity=False),
     )
-    @settings(max_examples=30)
+    @settings(
+        max_examples=30,
+        # Cold cache + hypothesis's shrinking pass can pay a one-time setup
+        # cost of >200ms on Windows. ``deadline=None`` lets the test run
+        # without being flagged flaky when its first call is slow but every
+        # subsequent call is fast.
+        deadline=None,
+    )
     def test_cinematic_apply_always_sets_palette(
         self, bpm: float, fps: int, duration: float
     ) -> None:
-        from melosviz.analysis.models import RenderSpec
-        from melosviz.presets.cinematic import CINEMATIC_PALETTE, apply
-
-        spec = RenderSpec(
+        spec = _PropRenderSpec(
             metadata={"bpm": bpm, "fps": fps, "duration": duration},
             palette=[],
         )
-        result = apply(spec)
-        assert result.palette == list(CINEMATIC_PALETTE)
+        result = _cinematic_apply(spec)
+        assert result.palette == list(_CINEMATIC_PALETTE)
 
     @given(
         palette_size=st.integers(min_value=0, max_value=10),
     )
-    @settings(max_examples=20)
+    @settings(max_examples=20, deadline=None)
     def test_cinematic_timeline_always_grows(self, palette_size: int) -> None:
-        from melosviz.analysis.models import RenderSpec
-        from melosviz.presets.cinematic import apply
-
         initial_events = [
             {"time": float(i), "type": "beat", "data": {}} for i in range(palette_size)
         ]
-        spec = RenderSpec(
+        spec = _PropRenderSpec(
             metadata={"fps": 24, "duration": 30.0},
             palette=[],
             timeline=initial_events,
         )
         before = len(spec.timeline)
-        result = apply(spec)
+        result = _cinematic_apply(spec)
         assert len(result.timeline) >= before
 
 
