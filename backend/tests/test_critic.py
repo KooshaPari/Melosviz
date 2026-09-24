@@ -161,22 +161,34 @@ def test_detect_provider_no_key_returns_deterministic(clean_critic_env: None) ->
     assert detect_provider() == "deterministic"
 
 
-def test_detect_provider_anthropic_key_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_provider_anthropic_key_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+    clean_critic_env: None,
+) -> None:
     monkeypatch.setenv("MELOSVIZ_CRITIC_API_KEY", "sk-ant-fakefake")
     assert detect_provider() == "anthropic"
 
 
-def test_detect_provider_openai_key_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_provider_openai_key_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+    clean_critic_env: None,
+) -> None:
     monkeypatch.setenv("MELOSVIZ_CRITIC_API_KEY", "sk-fakefakefake")
     assert detect_provider() == "openai"
 
 
-def test_detect_provider_google_key_prefix(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_provider_google_key_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+    clean_critic_env: None,
+) -> None:
     monkeypatch.setenv("MELOSVIZ_CRITIC_API_KEY", "AIzaFakeKey")
     assert detect_provider() == "google"
 
 
-def test_detect_provider_unknown_prefix_defaults_to_openai(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_provider_unknown_prefix_defaults_to_openai(
+    monkeypatch: pytest.MonkeyPatch,
+    clean_critic_env: None,
+) -> None:
     monkeypatch.setenv("MELOSVIZ_CRITIC_API_KEY", "totally-unrecognised")
     assert detect_provider() == "openai"
 
