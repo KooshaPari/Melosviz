@@ -65,6 +65,21 @@ captures the post-June deltas shipped in that artifact.
 
 ## [0.2.0] - 2026-07-04
 
+> **Status: never released.** The `v0.2.0` git tag (`5835da3`) points to a
+> CHANGELOG-only commit and has **no corresponding GitHub Release** or
+> installable artifacts. The entries below were retroactively populated by
+> [`1c32005`](https://github.com/KooshaPari/Melosviz/commit/1c32005)
+> (`docs(changelog): regenerate from full git history`) from the PRs and
+> work that landed during the P1A–P1Q quality-gate wave.
+>
+> **The current installable release is [`v0.1.1` (2026-09-17)][0.1.1].**
+> See [GitHub Releases](https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.1)
+> for the macOS arm64 `.tar.gz` and `.dmg` artifacts.
+>
+> The `v0.2.0` git tag is slated for deletion in a follow-up. Until that
+> deletion lands, `git checkout v0.2.0` resolves to the CHANGELOG-only
+> commit `5835da3` and will not build the P1A–P1Q feature set.
+
 ### Added
 
 - **Quality-gate wave P1A–P1Q (full v38 scorecard B-grade):**
@@ -168,6 +183,6 @@ captures the post-June deltas shipped in that artifact.
 - Restore `melosviz` package so `test_video_exporter` can collect and pass.
 
 [Unreleased]: https://github.com/KooshaPari/Melosviz/compare/v0.1.1...HEAD
-[0.2.0]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.2.0
+[0.2.0]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.1
 [0.1.1]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.1
 [0.1.0]: https://github.com/KooshaPari/Melosviz/releases/tag/v0.1.0
