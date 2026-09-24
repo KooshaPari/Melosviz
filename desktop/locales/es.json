@@ -41,6 +41,7 @@
   "shell.tab.spec": "RenderSpec",
   "shell.tab.timeline": "Línea de escenas",
   "shell.tab.plan": "Plan de render",
+  "shell.tab.video": "Vídeo",
   "shell.tab.storyboard": "Consola del Director",
   "shell.queue.title": "Cola de renderizado",
   "shell.queue.empty": "No hay escenas en cola. Ejecuta Storyboard para llenar la cola.",
