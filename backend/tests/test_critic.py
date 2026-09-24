@@ -703,9 +703,7 @@ def test_critique_scene_anthropic_dispatch_path(
     # Assert on the parsed hostname, not a substring: a substring check would
     # also pass for "https://evil.test/?x=api.anthropic.com", and it trips the
     # CodeQL incomplete-URL-substring-sanitization check.
-    assert (
-        urllib.parse.urlparse(captured["url"]).hostname == "api.anthropic.com"
-    )
+    assert urllib.parse.urlparse(captured["url"]).hostname == "api.anthropic.com"
     assert result.score == 9
 
 
@@ -741,10 +739,7 @@ def test_critique_scene_google_dispatch_path(
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
     result = critic_mod.critique_scene(image, "p", provider="google")
     # Parsed-hostname assertion, for the reason given in the Anthropic test.
-    assert (
-        urllib.parse.urlparse(captured["url"]).hostname
-        == "generativelanguage.googleapis.com"
-    )
+    assert urllib.parse.urlparse(captured["url"]).hostname == "generativelanguage.googleapis.com"
     assert result.score == 8
 
 
