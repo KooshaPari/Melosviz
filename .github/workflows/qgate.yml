@@ -15,7 +15,7 @@ on:
       not-applicable:
         description: "Comma-separated N/A categories"
         type: string
-        default: "a11y"
+        default: "a11y,integration,property"
   push:
     branches: ["main"]
     paths:
@@ -41,7 +41,7 @@ on:
       not-applicable:
         description: "Comma-separated N/A categories"
         type: string
-        default: "a11y"
+        default: "a11y,integration,property"
 
 permissions:
   contents: read
@@ -59,6 +59,15 @@ jobs:
       coverage-report: backend/coverage/lcov.info
       coverage-format: lcov
       threshold: 100
-      not-applicable: a11y
+      # N/A categories for the baseline gate:
+      # - a11y: WKWebView/Electrobun UI — no headless Chromium in Linux CI (manual on host).
+      # - integration: this repo runs integration tests via pytest (studio-tests.yml);
+      #   qgate's cargo fallback (`cargo test --workspace --test '*'`) fails because
+      #   the workspace's [[bin]]-only fixture crate (melosviz-demo) has no test target.
+      # - property: qgate's cargo fallback (`cargo test --workspace --features proptest`)
+      #   fails because no workspace member exposes a `proptest` feature. The Python
+      #   property tests under tests/test_qgate_backfill.py::TestPropertyPresets run
+      #   via pytest in studio-tests.yml.
+      not-applicable: a11y,integration,property
       working-directory: .
       run-baseline-checks: true
