@@ -395,20 +395,6 @@ def _approve_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(critic_mod, "_heuristic_critique", _fake_heuristic)
 
 
-def _rejecting_heuristic(monkeypatch: pytest.MonkeyPatch) -> None:
-    def _fake_reject(image, prompt):
-        return CritiqueResult(
-            score=2.0,
-            verdict=CritiqueVerdict.REJECT.value,
-            issues=[CritiqueIssue(category="quality", severity="high", note="bad")],
-            suggested_prompt_patch=f"{prompt} (patched v2)",
-            model_used="deterministic-heuristic",
-            latency_ms=1,
-        )
-
-    monkeypatch.setattr(critic_mod, "_heuristic_critique", _fake_reject)
-
-
 def test_auto_critic_loop_exits_on_approve_immediately(tmp_path: Path) -> None:
     image = tmp_path / "frame.png"
     image.write_bytes(b"x" * 4096)
@@ -436,9 +422,22 @@ def test_auto_critic_loop_caps_at_max_rounds_when_always_rejecting(
 ) -> None:
     image = tmp_path / "frame.png"
     image.write_bytes(b"x" * 4096)
+    seen: list[str] = []
+
+    def _record(image, prompt):
+        seen.append(prompt)
+        return CritiqueResult(
+            score=2.0,
+            verdict=CritiqueVerdict.REJECT.value,
+            issues=[CritiqueIssue(category="quality", severity="high", note="bad")],
+            suggested_prompt_patch=f"{prompt} (patched v2)",
+            model_used="deterministic-heuristic",
+            latency_ms=1,
+        )
+
     monkeypatch_obj = pytest.MonkeyPatch()
     try:
-        _rejecting_heuristic(monkeypatch_obj)
+        monkeypatch_obj.setattr(critic_mod, "_heuristic_critique", _record)
         report = auto_critic_loop(
             image_path=image,
             prompt="p0",
@@ -453,6 +452,12 @@ def test_auto_critic_loop_caps_at_max_rounds_when_always_rejecting(
     assert len(report.rounds) == 3
     assert report.accepted is False
     assert report.final_verdict == "reject"
+    # Each round must critique the previous round's patch, not the original
+    # prompt. Without this the loop could keep re-criticing "p0" forever.
+    assert seen == ["p0", "p0 (patched v2)", "p0 (patched v2) (patched v2)"]
+    # The loop applies the last round's patch after recording the round, so the
+    # final prompt is one patch ahead of the last critiqued prompt.
+    assert report.final_prompt == "p0 (patched v2) (patched v2) (patched v2)"
 
 
 def test_auto_critic_loop_halts_when_no_patch_suggested(tmp_path: Path) -> None:
@@ -573,6 +578,7 @@ def test_openai_critique_parses_response(tmp_path: Path, monkeypatch: pytest.Mon
     def _fake_urlopen(req: urllib.request.Request, timeout: int | None = None) -> _FakeResponse:
         captured["url"] = req.full_url
         captured["headers"] = dict(req.headers)
+        captured["body"] = json.loads(req.data.decode("utf-8"))
         return _fake_urlopen_response(payload)
 
     monkeypatch.setattr(urllib.request, "urlopen", _fake_urlopen)
@@ -580,6 +586,14 @@ def test_openai_critique_parses_response(tmp_path: Path, monkeypatch: pytest.Mon
 
     assert captured["url"] == "https://api.openai.com/v1/chat/completions"
     assert captured["headers"]["Authorization"] == "Bearer sk-test"
+    # Assert the request actually carries the image, prompt, model, and JSON
+    # response mode. Without these, dropping any of them from the body would
+    # leave this test green.
+    assert captured["body"]["model"] == "gpt-4o"
+    assert captured["body"]["response_format"] == {"type": "json_object"}
+    content = captured["body"]["messages"][0]["content"]
+    assert "scene prompt" in content[0]["text"]
+    assert content[1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert result.verdict == "approve"
     assert result.score == 9.1
     # 1000/1000*0.005 + 200/1000*0.015 = 0.005 + 0.003 = 0.008
@@ -687,6 +701,40 @@ def test_critique_scene_falls_back_when_provider_raises(
         raise urllib.error.URLError("network is down")
 
     monkeypatch.setattr(urllib.request, "urlopen", _boom)
+    result = critic_mod.critique_scene(image, "clean prompt", provider="openai")
+    assert result.model_used == "deterministic-heuristic"
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        pytest.param(urllib.error.URLError("network is down"), id="urlerror"),
+        pytest.param(
+            urllib.error.HTTPError("https://api.openai.com", 500, "server error", None, None),
+            id="httperror",
+        ),
+        pytest.param(json.JSONDecodeError("not json", "{", 0), id="malformed_json"),
+    ],
+)
+def test_critique_scene_falls_back_on_each_provider_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: Exception,
+) -> None:
+    """critique_scene catches URLError, HTTPError, and JSONDecodeError.
+
+    Each is a distinct failure mode from the provider, and a regression that
+    dropped one from the except clause would let a real request error escape
+    instead of falling back to the deterministic heuristic.
+    """
+    image = tmp_path / "frame.png"
+    image.write_bytes(b"x" * 4096)
+    monkeypatch.setenv("MELOSVIZ_CRITIC_API_KEY", "sk-fake")
+
+    def _raise(req, timeout=None):
+        raise failure
+
+    monkeypatch.setattr(urllib.request, "urlopen", _raise)
     result = critic_mod.critique_scene(image, "clean prompt", provider="openai")
     assert result.model_used == "deterministic-heuristic"
 
