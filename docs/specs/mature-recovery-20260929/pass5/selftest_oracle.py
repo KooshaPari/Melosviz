@@ -17,7 +17,7 @@ def encode(root, name, rgb, pcm):
     return target
 
 def desc(rgb,pcm):
-    return dict(width=32,height=24,fps="12",pts_tolerance_s="0.001",frames=len(rgb)//(32*24*3),sample_rate=48000,
+    return dict(width=32,height=24,fps="12",pts_tolerance_s="0.001",frames=len(rgb)//(32*24*3),sample_rate=48000,samples=len(pcm)//2,
                 rgb_sha256=sha(rgb),pcm_sha256=sha(pcm))
 
 def main():
@@ -65,6 +65,13 @@ def main():
     r=copy.deepcopy(receipt);r["scenes"][1]["path"]="../escape.mkv";check("path_escape",r)
     check("collector_missing",receipt,"BLOCKED",ffprobe="/nonexistent/verifier")
     check("empty_receipt",{})
+    check("non_object_receipt",[])
+    r=copy.deepcopy(receipt);r["scenes"]=[1,2,3];check("malformed_scene_rows",r)
+    r=copy.deepcopy(receipt);r["assembly"]=[];check("malformed_assembly_record",r)
+    lateaudio=root/"late-audio.mkv"
+    subprocess.run(["ffmpeg","-v","error","-y","-i",str(final),"-itsoffset","0.5","-i",str(final),
+        "-map","0:v:0","-map","1:a:0","-c","copy",str(lateaudio)],check=True,timeout=20)
+    r=copy.deepcopy(receipt);r["assembly"].update(path=lateaudio.name,artifact_sha256=sha(lateaudio.read_bytes()));check("audio_PTS_offset",r)
     empty=copy.deepcopy(policy);empty["scenes"]=[];check("empty_trusted_denominator",receipt,p=empty)
     # R2: only S2 changes; independent policy must change too. Old receipt cannot qualify R2.
     updated=bytes([245])*32*24*3*12
