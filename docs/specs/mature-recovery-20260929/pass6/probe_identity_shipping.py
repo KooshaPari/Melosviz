@@ -11,7 +11,7 @@ from typing import Any, Mapping
 SOURCE="1aec20a2ba41a01ed557d1c7f63f9a0089f842cf"
 ORCH_BLOB="549e70a5741f43546af3d068b5444d54d47affc2"
 CACHE_BLOB="9a780c78dedd0201f59f8b47358313314f63201d"
-PACKAGE_BLOB="c03f2e8ecaa29f88d0130120f9e2be68b0c2873a"
+PACKAGE_BLOB="8fc745cf3b3f09c6f997b132a686dbad131ce3f3"
 CLI_BLOB="f5e3ff76da68779ba38be12874475fe5868d0975"
 
 def _audio_fingerprint(scene: Mapping[str, Any]) -> str:
