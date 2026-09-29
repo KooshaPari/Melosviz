@@ -21,8 +21,8 @@ jobs:
       - name: Install
         working-directory: backend
         run: |
-          pip install -e ".[test,bridge]"
-          pip install mutmut
+          pip install -e ".[test,bridge]" --only-binary :all:
+          pip install mutmut==3.8.0 --only-binary :all:
       - name: Run mutmut (bounded)
         working-directory: backend
         # Full suite is slow; mutate a high-value slice and report score.

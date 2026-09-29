@@ -130,7 +130,11 @@ jobs:
       - name: Install backend test deps
         if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
         working-directory: backend
-        run: pip install -e ".[test,lint,analysis,bridge]" pytest-cov coverage hypothesis httpx pytest-bdd bandit
+        # Exact pins on every third-party tool, verified to publish wheels so
+        # --only-binary guard resolves without running any sdist setup script.
+        # Verified end to end in a clean venv on this dependency set.
+        run: >-
+          pip install -e ".[test,lint,analysis,bridge]" pytest-cov==7.1.0 coverage==7.16.2 hypothesis==6.168.3 httpx==0.28.1 pytest-bdd==8.1.0 bandit==1.9.4 --only-binary :all:
 
       - name: Generate coverage (standalone caller)
         if: inputs.coverage-artifact-name == ''

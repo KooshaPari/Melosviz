@@ -25,7 +25,7 @@ jobs:
       app-name: Melosviz
       app-bundle-id: ai.phenotype.melosviz
       build-cmd: |
-        pip install -e ".[desktop]"
+        pip install -e ".[desktop]" --only-binary :all:
         pyinstaller --windowed --name Melosviz --osx-bundle-identifier ai.phenotype.melosviz melosviz/__main__.py
         cp -R dist/Melosviz.app dist/macos/
       entitlements-file: Entitlements.plist

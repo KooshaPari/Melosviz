@@ -19,17 +19,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify release exists
+        # inputs.version is supplied by whoever triggers the workflow, so it is
+        # passed through the environment and validated as semver rather than
+        # interpolated into the shell text.
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          [ -n "$VERSION" ] || VERSION="${{ inputs.version }}"
-          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+          set -euo pipefail
+          VERSION="${EVENT_TAG:-$INPUT_VERSION}"
+          VERSION="${VERSION#v}"
+          # Reject CR/LF first: grep anchors ^ and $ per line, so a value with
+          # an embedded newline would otherwise satisfy the semver pattern.
+          case "$VERSION" in
+            *$'\n'*|*$'\r'*)
+              echo "::error::refusing version containing a newline" >&2
+              exit 1
+              ;;
+          esac
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.+][0-9A-Za-z.-]+)?$'; then
+            echo "::error::refusing non-semver version: '$VERSION'" >&2
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Compute SHA256 for Windows zip
         id: sha-win
         run: |
-          VERSION="${VERSION#v}"
-          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/melosviz-cli-windows-x86_64.zip"
-          curl -fsSL "$URL" -o /tmp/cli.zip
+          set -euo pipefail
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/melosviz-cli-windows-x86_64.zip"
+          curl -fsSL --proto '=https' --tlsv1.2 "$URL" -o /tmp/cli.zip
           SHA=$(sha256sum /tmp/cli.zip | awk '{print $1}')
           echo "sha=${SHA}" >> $GITHUB_OUTPUT
           echo "url=${URL}" >> $GITHUB_OUTPUT

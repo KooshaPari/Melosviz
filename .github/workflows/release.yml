@@ -276,8 +276,8 @@ jobs:
           toolchain: stable
       - name: Generate SBOMs
         run: |
-          pip install cyclonedx-bom
-          (cd backend && pip install -e . && cyclonedx-py environment -o ../sbom-python.cdx.json)
+          pip install cyclonedx-bom==7.4.0 cyclonedx-py==1.0.1 --only-binary :all:
+          (cd backend && pip install -e . --only-binary :all: && cyclonedx-py environment -o ../sbom-python.cdx.json)
           cargo install cargo-cyclonedx --locked
           cargo cyclonedx --format json --all --override-filename sbom-cargo.cdx.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

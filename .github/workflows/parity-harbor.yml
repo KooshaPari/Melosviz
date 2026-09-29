@@ -30,7 +30,11 @@ jobs:
         run: cargo build --release -p melosviz-mir
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[test]"
+        # Installed editable from the local tree, so there is no third-party
+        # version to pin here. The --only-binary guard blocks the sdist path
+        # for every transitive dependency, which is where setup scripts run.
+        run: >-
+          pip install -e ".[test]" --only-binary :all:
       - name: Parity tests
         working-directory: backend
         env:
@@ -48,7 +52,8 @@ jobs:
           cache: pip
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[test,bridge]"
+        run: >-
+          pip install -e ".[test,bridge]" --only-binary :all:
       - name: Emit Harbor task trees
         run: python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers

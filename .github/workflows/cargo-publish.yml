@@ -7,12 +7,16 @@ on:
 
 permissions:
   contents: read
-  id-token: write # for OIDC trusted publishing via crates.io
 
 jobs:
   publish-demo:
     name: melosviz-demo
     runs-on: ubuntu-latest
+    # Scoped to this job only. At workflow level it would hand an OIDC token to
+    # every job, letting a compromised build step mint a crates.io credential.
+    permissions:
+      contents: read
+      id-token: write # for OIDC trusted publishing via crates.io
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -31,6 +35,9 @@ jobs:
   publish-mir:
     name: melosviz-mir
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -49,6 +56,9 @@ jobs:
   publish-wgpu:
     name: melosviz-render-wgpu
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

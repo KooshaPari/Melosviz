@@ -25,7 +25,8 @@ jobs:
           cache: pip
       - name: Install
         working-directory: backend
-        run: pip install -e ".[test,bridge]"
+        run: >-
+          pip install -e ".[test,bridge]" --only-binary :all:
       - name: Load + golden + fuzz
         working-directory: backend
         run: |

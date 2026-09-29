@@ -7,12 +7,16 @@ on:
 
 permissions:
   contents: read
-  id-token: write # for OIDC trusted publishing via npm provenance
 
 jobs:
   publish-electron-app:
     name: "@melosviz/electron-app"
     runs-on: ubuntu-latest
+    # Scoped to the publishing jobs. At workflow level this would hand an OIDC
+    # token to every job in the file.
+    permissions:
+      contents: read
+      id-token: write # for OIDC trusted publishing via npm provenance
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -23,6 +27,12 @@ jobs:
           bun-version: latest
 
       - name: Setup npm auth via OIDC provenance
+        # NOT SHA-pinned. githubactions:S7637 flags this, but the upstream
+        # `npm/login-action` repository is not resolvable from the public GitHub
+        # API (404 on the repo, its tags, and its refs), so there is no
+        # trustworthy commit to pin. Inventing a SHA would break publishing, so
+        # the tag is left as-is and the finding stays open rather than being
+        # silently closed with a wrong value.
         uses: npm/login-action@v3
         with:
           registry-url: https://registry.npmjs.org/
@@ -32,7 +42,7 @@ jobs:
       - name: Build
         working-directory: desktop
         run: |
-          bun install --frozen-lockfile
+          bun install --frozen-lockfile --ignore-scripts
           bun run build
 
       - name: Publish
@@ -44,6 +54,9 @@ jobs:
   publish-cli-frontend:
     name: "@melosviz/cli-frontend"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -61,7 +74,7 @@ jobs:
 
       - name: Build
         working-directory: packages/cli-frontend
-        run: bun install --frozen-lockfile && bun run build
+        run: bun install --frozen-lockfile --ignore-scripts && bun run build
 
       - name: Publish
         working-directory: packages/cli-frontend

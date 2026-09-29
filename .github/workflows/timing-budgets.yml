@@ -28,7 +28,8 @@ jobs:
       - name: Install backend (test extras)
         working-directory: backend
         # Keep install lean: smoke + golden need package + pytest only.
-        run: pip install -e ".[test]"
+        run: >-
+          pip install -e ".[test]" --only-binary :all:
 
       - name: Install ffmpeg (diagnose required check)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg

@@ -23,17 +23,19 @@ jobs:
         with:
           node-version: "22"
       - name: Install Playwright Chromium
-        run: npx --yes playwright@1.52.0 install --with-deps chromium
+        run: npx --yes --ignore-scripts playwright@1.52.0 install --with-deps chromium
       - name: Install web deps (R3F canvas fixture)
-        # Prefer lock when valid; fall back to install for nested drei peers.
-        run: |
-          npm ci --prefix web --legacy-peer-deps --no-audit --no-fund \
-            || npm install --prefix web --legacy-peer-deps --no-audit --no-fund
+        # No `|| npm install` fallback. A silent fallback to an unlocked install
+        # discards the lockfile guarantee and lets a fresh transitive version
+        # reach CI. web/package-lock.json is present and `npm ci --dry-run
+        # --legacy-peer-deps` resolves it cleanly, so the strict path is the
+        # only one taken and a real lockfile break fails loudly.
+        run: npm ci --prefix web --legacy-peer-deps --no-audit --no-fund --ignore-scripts
       - name: Start R3F canvas fixture dev server (Vite)
         working-directory: web
         run: |
           set -euo pipefail
-          npx vite --host 127.0.0.1 --port 5183 --strictPort > /tmp/vite.log 2>&1 &
+          npx --ignore-scripts vite --host 127.0.0.1 --port 5183 --strictPort > /tmp/vite.log 2>&1 &
           echo $! > /tmp/vite.pid
           ready=0
           for i in $(seq 1 60); do
@@ -99,12 +101,12 @@ jobs:
       - name: Playwright screenshot golden
         run: |
           mkdir -p eval/golden/screenshots
-          npx --yes playwright@1.52.0 screenshot \
+          npx --yes --ignore-scripts playwright@1.52.0 screenshot \
             --browser chromium \
             --viewport-size=1280,720 \
             http://127.0.0.1:8760/fixture.html \
             eval/golden/screenshots/a11y-fixture.png
-          npx --yes playwright@1.52.0 screenshot \
+          npx --yes --ignore-scripts playwright@1.52.0 screenshot \
             --browser chromium \
             --viewport-size=1280,720 \
             http://127.0.0.1:8761/views/main/splash.html \
@@ -113,7 +115,7 @@ jobs:
           # frameloop="demand" + frozen performance.now(), not the live App
           # (no audio, no requestAnimationFrame drift). See
           # web/src/fixtures/r3fCanvasFixture.tsx + docs/VISUAL_SPEC.md.
-          npx --yes playwright@1.52.0 screenshot \
+          npx --yes --ignore-scripts playwright@1.52.0 screenshot \
             --browser chromium \
             --viewport-size=960,540 \
             --wait-for-selector "body[data-fixture-ready='true']" \
@@ -124,7 +126,7 @@ jobs:
         run: |
           test -f eval/golden/screenshots/a11y-fixture.baseline.png
           test -f eval/golden/screenshots/desktop-splash.baseline.png
-          npm ci --prefix scripts/visual-gate
+          npm ci --prefix scripts/visual-gate --no-audit --no-fund --ignore-scripts
           node scripts/visual-gate/compare.mjs \
             eval/golden/screenshots/a11y-fixture.baseline.png \
             eval/golden/screenshots/a11y-fixture.png \
