@@ -68,3 +68,18 @@ This is a concrete mounted-surface false positive. It is distinct from the separ
 `backend/src/melosviz/compose/assemble.py` loops semantic assignments and, when `mock_adapters=False`, calls `_dispatch_segment(render_spec, asgn)`. That helper creates a fresh Orchestrator and calls `orch.render(render_spec, scene_types=[scene_type])`; it does not pass the assignment's scene index/identity. The orchestrator's explicit scene-type path dispatches **every** segment in the full RenderSpec matching that type, then `per_scene_results.get(scene_type)` returns the type-aggregated result.
 
 Therefore a compose-plan “segment adapter_result” is not proven to correspond to that assignment when multiple scenes share a backend type. This reinforces the ontology decision that scene instance identity cannot be keyed by scene type. Closure needs a scene-ID/index-targeted render API with one-to-one receipts, not a type filter used as a segment selector.
+
+
+## M-F11 — desktop Studio turns subprocess return into every-scene green (blocking human-interface truth)
+
+The mounted desktop `onStudioGenerate()` pre-marks every queued scene `rendering`, calls `rpc.request.runOrchestratedRender(...)`, and if that call returns, loops over **every** queue entry setting `status: "done"` and `progressPct: 100`. It does not inspect per-scene outcome/provenance/decoded media before doing so.
+
+This makes the event/acceptance ambiguity user-visible: malformed media, job-spec-only adapters, scene-type aggregation, or partial scene completion can be rendered as a full green queue if the subprocess returns normally. The UI must consume typed scene acceptance receipts (or clearly label execution completion) rather than synthesize product acceptance.
+
+## M-F12 — July “100%” trace/completeness catalogs are invalid as current graders
+
+`docs/intent/MelosViz.md` says Status Accepted and asserts exact beat-to-frame alignment, byte-identical reproducibility, 99% render success and 100% traceability. `docs/TRACEABILITY.md` declares “100% documented” across a fixed 50-requirement registry. `docs/COMPLETENESS.md` declares “20/20 DONE (100%)” and “Major Gaps: NONE.”
+
+Current source findings falsify material assumptions behind those scores: media validity can accept a zero-filled MP4 fixture; mounted generate can report assembly success without assembled generated segments; scene identity collapses by type; desktop can mark all scenes done from subprocess return. The historical documents remain useful archaeology and source obligations, but their scalar scores and DONE labels are **quarantined from grading** until each underlying semantic obligation, current implementation surface and oracle is revalidated against the frozen/current candidate.
+
+This is exactly why the new program has no target requirement count or inherited completion percentage.
