@@ -63,6 +63,12 @@ jobs:
           set -euo pipefail
           python docs/specs/mature-recovery-20260929/pass5/selftest_oracle.py             --out "$RECEIPTS/oracle-selftest"             | tee "$RECEIPTS/oracle-selftest.log"
 
+      - name: Exercise reference result/identity contract
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/selftest_result_contract.py \
+            | tee "$RECEIPTS/result-contract-selftest.log"
+
       - name: Run focused existing regression suites
         run: |
           set -euo pipefail
