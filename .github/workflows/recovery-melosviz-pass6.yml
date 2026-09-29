@@ -1,0 +1,108 @@
+name: Recovery baseline — M-E01
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/specs/mature-recovery-20260929/**"
+      - ".github/workflows/recovery-melosviz-pass6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  m-e01:
+    name: M-E01 frozen-source and mounted baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOURCE_SHA: 1aec20a2ba41a01ed557d1c7f63f9a0089f842cf
+      RECEIPTS: recovery-receipts
+    steps:
+      - name: Checkout recovery branch with history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Assert product implementation remains frozen
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$SOURCE_SHA" --             backend desktop web src-tauri api-spec deploy packages sdk packaging
+          mkdir -p "$RECEIPTS"
+          git ls-tree -r "$SOURCE_SHA" > "$RECEIPTS/tracked-source-tree.tsv"
+          sha256sum "$RECEIPTS/tracked-source-tree.tsv" | tee "$RECEIPTS/tracked-source-tree.sha256"
+          git rev-parse HEAD | tee "$RECEIPTS/recovery-head.txt"
+          git status --porcelain=v1 | tee "$RECEIPTS/status-before.txt"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install FFmpeg and backend test dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install -e "backend[test]"
+          python --version | tee "$RECEIPTS/python-version.txt"
+          ffmpeg -version | head -1 | tee "$RECEIPTS/ffmpeg-version.txt"
+          ffprobe -version | head -1 | tee "$RECEIPTS/ffprobe-version.txt"
+
+      - name: Replay exact frozen helper probes
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass5/probe_source.py             --repo . --out "$RECEIPTS/frozen-source-probes.json"
+
+      - name: Exercise independent real-media oracle
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass5/selftest_oracle.py             --out "$RECEIPTS/oracle-selftest"             | tee "$RECEIPTS/oracle-selftest.log"
+
+      - name: Run focused existing regression suites
+        run: |
+          set -euo pipefail
+          python -m pytest             backend/tests/conductor/test_artifact_validity.py             backend/tests/conductor/test_render_cache_activation.py             backend/tests/conductor/test_render_cache_hit.py             backend/tests/conductor/test_assembly_failure_events.py             backend/tests/test_bridge_security.py             -q --no-header --timeout=60             | tee "$RECEIPTS/focused-pytest.log"
+
+      - name: Reproduce mounted viz generate assembly false green
+        env:
+          MELOSVIZ_RECOVERY_RECEIPT: recovery-receipts/mounted-cli-baseline.json
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_mounted_cli_baseline.py             | tee "$RECEIPTS/mounted-cli-baseline.log"
+
+      - name: Require the bridge bind negative control to fail frozen main
+        run: |
+          set +e
+          python -m pytest             docs/specs/mature-recovery-20260929/pass6/test_bridge_bind_contract.py             -q --no-header --maxfail=1             >"$RECEIPTS/bridge-negative-baseline.log" 2>&1
+          rc=$?
+          set -e
+          cat "$RECEIPTS/bridge-negative-baseline.log"
+          if [ "$rc" -ne 1 ]; then
+            echo "Expected pytest exit 1 from the known M-F13 baseline; observed $rc" >&2
+            exit 1
+          fi
+
+      - name: Verify experiments did not mutate tracked candidate
+        run: |
+          set -euo pipefail
+          git status --porcelain=v1 | tee "$RECEIPTS/status-after.txt"
+          if [ -n "$(git status --porcelain=v1 --untracked-files=no)" ]; then
+            echo "Recovery tests modified tracked candidate files" >&2
+            git diff -- .
+            exit 1
+          fi
+          sha256sum             "$RECEIPTS/frozen-source-probes.json"             "$RECEIPTS/mounted-cli-baseline.json"             "$RECEIPTS/oracle-selftest/selftest-report.json"             > "$RECEIPTS/key-receipts.sha256"
+
+      - name: Upload raw recovery receipts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: melosviz-m-e01-recovery-receipts
+          path: recovery-receipts/
+          if-no-files-found: error
+          retention-days: 30
