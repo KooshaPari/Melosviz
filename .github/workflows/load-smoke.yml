@@ -17,22 +17,15 @@ jobs:
   load-smoke:
     name: Bridge load smoke (concurrent /health + /analyze)
     runs-on: ubuntu-22.04
-    env:
-      # No third-party sdist may be built at install time, so no
-      # package setup.py can run. This is the uv equivalent of the
-      # --only-binary :all: policy the pip commands used before the
-      # uv.lock migration. `--no-build` is not usable here: it also
-      # blocks installing melosviz itself, a source tree with no wheel.
-      UV_ONLY_BINARY: ":all:"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-          # No `cache: pip` here: this job installs with `uv sync`, and
-          # setup-python's pip cache hard-errors at post-job time when
-          # pip never runs and its cache dir was never created.
-          # astral-sh/setup-uv caches the uv store from uv.lock instead.
+          # No `cache: pip` here: this job installs with `uv pip install`, and
+          # setup-python's pip cache hard-errors at post-job time when pip never
+          # runs and its cache dir was never created. astral-sh/setup-uv caches
+          # the uv store from uv.lock instead.
       - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
         with:
           version: "0.5"
@@ -40,7 +33,20 @@ jobs:
         working-directory: backend
         # Installed from the committed uv.lock, so every transitive
         # version is pinned rather than resolved at CI time.
-        run: uv sync --locked --extra test --extra bridge
+        # --only-binary :all: means no third-party source distribution may be
+        # built, so no package setup.py can run at install time (S8541). The
+        # package set comes from the committed uv.lock via `uv export`, and
+        # --no-deps installs exactly those pinned versions without resolving
+        # anything, so the install stays lock-exact (S8544).
+        run: |
+          uv export --locked --no-emit-project --no-hashes \
+            --extra test --extra bridge \
+            --format requirements.txt --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
+          uv pip install --only-binary :all: --no-deps setuptools wheel
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
       - name: Load + golden + fuzz
         working-directory: backend
         run: |

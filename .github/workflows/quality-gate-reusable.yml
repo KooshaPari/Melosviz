@@ -88,13 +88,6 @@ jobs:
   gate:
     name: qgate — granular-recursive quality gate
     runs-on: ubuntu-22.04
-    env:
-      # No third-party sdist may be built at install time, so no
-      # package setup.py can run. This is the uv equivalent of the
-      # --only-binary :all: policy the pip commands used before the
-      # uv.lock migration. `--no-build` is not usable here: it also
-      # blocks installing melosviz itself, a source tree with no wheel.
-      UV_ONLY_BINARY: ":all:"
     outputs:
       gate-status: ${{ steps.run-gate.outputs.gate-status }}
       report-json: ${{ steps.run-gate.outputs.report-json }}
@@ -115,10 +108,10 @@ jobs:
         uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
-          # No `cache: pip` here: this job installs with `uv sync`, and
-          # setup-python's pip cache hard-errors at post-job time when
-          # pip never runs and its cache dir was never created.
-          # astral-sh/setup-uv caches the uv store from uv.lock instead.
+          # No `cache: pip` here: this job installs with `uv pip install`, and
+          # setup-python's pip cache hard-errors at post-job time when pip never
+          # runs and its cache dir was never created. astral-sh/setup-uv caches
+          # the uv store from uv.lock instead.
           cache-dependency-path: backend/pyproject.toml
 
       - name: Set up uv
@@ -149,7 +142,20 @@ jobs:
         # Installed from the committed uv.lock, so every transitive version is
         # pinned rather than resolved at CI time. pytest-cov, coverage and
         # bandit come from the [dependency-groups] dev table in pyproject.toml.
-        run: uv sync --locked --extra test --extra lint --extra analysis --extra bridge --group dev
+        # --only-binary :all: means no third-party source distribution may be
+        # built, so no package setup.py can run at install time (S8541). The
+        # package set comes from the committed uv.lock via `uv export`, and
+        # --no-deps installs exactly those pinned versions without resolving
+        # anything, so the install stays lock-exact (S8544).
+        run: |
+          uv export --locked --no-emit-project --no-hashes \
+            --extra test --extra lint --extra analysis --extra bridge --group dev \
+            --format requirements.txt --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
+          uv pip install --only-binary :all: --no-deps setuptools wheel
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
 
       - name: Generate coverage (standalone caller)
         if: inputs.coverage-artifact-name == ''
