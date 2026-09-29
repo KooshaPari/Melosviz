@@ -263,11 +263,15 @@ def _ffmpeg_minterpolate_cmd(
     from_path: Path,
     to_path: Path,
     output_path: Path,
-    frames_to_insert: int,
     fps: int = 24,
 ) -> list[str]:
-    """Build the ffmpeg argv for motion-compensated minterpolate."""
-    max(1, int(frames_to_insert))
+    """Build the ffmpeg argv for motion-compensated minterpolate.
+
+    ffmpeg's ``minterpolate`` has no frame-count option: output length is driven
+    by ``fps`` and the input clip duration. The caller's frame budget travels
+    separately, via the manifest and the ``frames_inserted`` return value of
+    :func:`interpolate_pair`, so it is not a parameter here.
+    """
     filter_chain = (
         f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1[outv]"
     )
@@ -421,7 +425,7 @@ def interpolate_pair(
             "manifest": str(manifest),
         }
 
-    cmd = _ffmpeg_minterpolate_cmd(ffmpeg_bin, from_path, to_path, out_mp4, frames_to_insert, fps)
+    cmd = _ffmpeg_minterpolate_cmd(ffmpeg_bin, from_path, to_path, out_mp4, fps)
     LOG.debug("ffmpeg minterpolate: %s", " ".join(cmd))
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
