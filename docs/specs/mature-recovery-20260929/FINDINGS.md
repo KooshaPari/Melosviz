@@ -1,49 +1,55 @@
-# Melosviz semantic findings — pass 1
+# Melosviz semantic findings — pass 2
 
-Inspected on 2026-09-29 at product `1aec20a2ba41a01ed557d1c7f63f9a0089f842cf` and registry `85d7cd00cf59c379c05b740e8130a85b0d5bd31b`. Early source reconnaissance is not the final mature-contract implementation map.
+Inspected on 2026-09-29 at product `1aec20a2ba41a01ed557d1c7f63f9a0089f842cf` and registry `85d7cd00cf59c379c05b740e8130a85b0d5bd31b`. Historical PR/user-description text is evidence of repository-directed intent at that time, but not automatically the complete mature horizon.
 
-## M-F01 — product horizon and surface authority conflict (blocking)
+## M-F01 — original hybrid/API-first horizon has user authority; no supersession witness was recovered (blocking architecture freeze)
 
-README promotes a browser visualizer; AGENTS.md describes a studio conductor, deprecates browser rendering and calls the desktop a Director's Console. SPEC.md lines 1–180 retain hybrid scene/scanner models and Electrobun/Rust surface claims. Registry ADR0003 anchors hybrid representation switching and structured GUI override round-trip to the earlier exploration. September registry STATE instead reports a Tauri artifact. None alone resolves the complete intended horizon.
+Conversation archaeology recovered explicit April 18 user intent: scripting/API-first agent interaction with heavy GUI review/small manual adjustments; hybrid programmable music-video scenes using 3D/splat/depth, scanner/material sweeps, 360 club video, mesh/photo/splat domains and rotoscoping; plus simpler programmed graphics, lyric-driven videos and Canvas-style loops. The user explicitly accepted the concrete hybrid system design in that conversation.
 
-History leads: `ff5f1fc4215ef6940b2c701b5ee04d2f275c58fb` (August 28 studio pivot), `99127a6ba8ff312f3fe4c26e352d7614566cf71e` (Rust removal), `b804174d7acc02a765a47ef4c5545abfdfdddaf1` (September 12 delivery work including Rust reintroduction), `316bac0be7c3c983d236825342e6853b4091a76a` (September 17 release-note reconciliation). These commit messages establish leads and author assertions, not independent user approval or verified implementation completeness.
+The later studio pivot is real repository evolution. PR #210's user description adds lyrics/moodboard modules into the ComfyUI-centered studio work; PR #211's user description explicitly says the pre-pivot R3F visualizer and Rust MIR were fully replaced by the studio pipeline. That establishes directed implementation intent to replace those **implementations**, not an explicit user decision that the accepted hybrid/live/simple-output product outcomes were deleted.
 
-Required: recover pivot authority and diffs, decide whether hybrid/live/simple-output and studio-generation are retained projections or explicitly superseded, then reconcile canonical docs without erasing history.
+Current README/AGENTS/SPEC/release descriptions still disagree. Until a supersession decision is recovered or made, architecture must preserve the accepted earlier outcomes as mature-contract candidates while allowing their implementation to change. Do not resurrect R3F merely because the outcome survives.
 
-## M-F02 — nonempty unknown media is not independently verified (blocking)
+## M-F02 — artifact-validity tests currently certify bytes, not playable media (blocking)
 
-Source `backend/src/melosviz/conductor/orchestrator.py`, blob `549e70a5741f43546af3d068b5444d54d47affc2`. `_is_zero_duration` recognizes WAV only and returns unknown for unsupported formats/errors. `_artifact_rejection` rejects absence/directories/zero bytes/known zero-duration WAV, but returns no rejection for other nonempty files. The render loop then assigns OUTCOME_RENDER to an artifact not classified malformed, placeholder or plan-only.
+`backend/tests/conductor/test_artifact_validity.py` defines `_RealClipAdapter` by writing 64 zero bytes to `clip.mp4` and asserts that outcome is `render`. The production helper rejects missing/directory/zero-byte files and known zero-duration WAV, but unsupported/nonempty containers are accepted.
 
-Concrete counterexample design: nonempty garbage named `.mp4`; malformed nonempty `.wav`; readable file with no decodable video; valid video for a different audio/spec/candidate. Needed oracle: media probe and actual decode, expected streams/timebase/duration, content identity and exact contract/configuration binding. Unknown collector result is BLOCKED, never accepted. This pass's source observation does not assert that every downstream release path accepts the file.
+This converts the prior hypothesis into an explicit **oracle defect**: the regression suite calls a non-decodable byte blob a real clip. Replace existence/size acceptance with independent probe/decode and expected stream/timebase/duration checks. FFprobe officially exposes streams, frames and frame counts; decode failure/unknown collector state cannot be green. Correct media identity still requires product/scene/audio/configuration binding beyond ffprobe.
 
-## M-F03 — same-size materialization is weaker than cache evidence identity (blocking)
+## M-F03 — same-size cache target can retain wrong bytes (blocking evidence identity)
 
-The same source's `_materialise_cached_artifact` preserves an existing target when target and cache blob sizes match, without comparing their contents. The cache-hit branch emits done and continues without passing the materialized file through `_artifact_rejection` in this loop.
+`_materialise_cached_artifact` skips copying when an existing target has the same byte size as the cache blob; it does not compare content. The cache-hit branch then emits done and records cached-scene provenance without re-running artifact validation in this loop.
 
-Counterexample: cached bytes `NEW!`, target bytes `OLD!`, equal size. A returned pathname can identify old content while the result describes a cache reuse. Also test corrupt cached media, wrong origin mode, stale model/workflow/tool, missing provenance and concurrent writers. This is a specific function-level identity risk, not an independently reproduced entire release failure.
+Counterexample remains: cache blob `NEW!`, target `OLD!`, equal size. Content digest/atomic materialization plus origin evidence are required. Cache key hashing of scene/audio inputs is useful but does not prove the materialized output bytes or backend/tool/model/workflow identity unless those inputs are included and verified.
 
-## M-F04 — per-scene dispatch versus per-type results / assembly is unresolved (blocking)
+## M-F04 — generated scene artifacts do not feed final assembly in the inspected orchestrator (blocking journey closure)
 
-Full orchestrator ranges were read. `collected_paths` initializes from caller-supplied `segment_paths`; the inspected render body does not append newly returned scene artifacts before forwarding that list to final assembly. `per_scene_results.setdefault(scene_type, result)` retains only the first result per type. Adapters receive the full RenderSpec in each per-scene iteration and share a scene-type output directory.
+This is now corroborated by a pre-existing repo finding: `docs/sessions/20260918-desktop-findings/FINDINGS.md §5.4` states `collected_paths` is initialized and never appended, so assembly receives only caller-supplied `segment_paths`.
 
-Needed witness: at least two distinct scenes using the same backend, nonidentical nonce-bearing outputs, no caller-supplied paths, exact one-to-one receipts and ordered final timeline. Inspect adapter and assembly implementations before claiming the full pipeline necessarily fails; they may perform their own collection. The observed orchestration alone does not establish scene completeness.
+Current frozen code still initializes `collected_paths = list(segment_paths or [])`, does not append per-scene artifacts in the render loop, and passes that list to `MEAdapter.render`. The assembly adapter does **not** compensate: with no segment paths and no AME it returns a job spec only; its ffmpeg fallback requires nonempty paths. Therefore an ordinary conductor invocation that renders scenes but supplies no external segment list does not assemble those freshly rendered artifacts.
 
-## M-F05 — execution done and product acceptance are not the same state
+Separately, `per_scene_results.setdefault(scene_type, result)` retains only the first result per backend type. These are product-state/accounting defects, not proof that every CLI path fails—some callers may explicitly supply segment paths. The vertical oracle must exercise the actual CLI/API path with multiple same-backend scenes and no injected rescue list.
 
-The loop emits a done event even after setting a malformed outcome, and the inspected call does not pass that outcome into event extras. Provenance records carry the outcome but are best-effort; write failures log and continue. Cache records also preserve non-production outcomes. A UI may interpret done only as execution completion, so an actual UI false green is not yet established.
+## M-F05 — execution completion and accepted product state are conflated at the event boundary
 
-Needed: explicit execution/acceptance state separation across events, persisted receipts, CLI/API/UI and shipping; missing receipt cannot qualify output. Test provenance write failure, placeholder reuse and event replay after worker replacement.
+The loop can emit a `done` event after classifying an artifact malformed; the event call shown does not include the computed outcome. Provenance carries outcome but writes are best-effort. Cache reuse also writes execution/provenance state independently of a durable acceptance decision.
 
-## M-F06 — an earlier global-offline claim is stale, not a current bug
+A UI false-green has not yet been reproduced, but the architecture lacks a trustworthy invariant that done == accepted. Persist execution state and acceptance state separately; require evidence-complete acceptance before shipping/GA claims.
 
-AGENTS.md and constructor documentation say automatic offline detection sets MELOSVIZ_COMFYUI_OFFLINE. Current constructor code warns but deliberately does not mutate os.environ; the September delivery history records that repair. Do not report the historical global-mutation defect as still present. Adapter fallback behavior and production-required mode need separate current inspection.
+## M-F06 — stale global-offline bug corrected; do not resurrect it
 
-## M-F07 — lineage and research do not yet justify existence
+Current constructor warns when ComfyUI is unavailable but deliberately does not mutate process-global `os.environ`. Historical work records that repair. Adapter-specific offline behavior and plan/placeholder typing remain separate review subjects.
 
-Registry `docs/boundary/backend-melosviz.md` records an older backend absorption into phenotype-python-sdk/packages/melosviz, at short commit bbeedd5; owner and ancestry were not verified. Keep it as a predecessor lead rather than move canonical ownership on this assertion.
+## M-F07 — SOTA attacks generic orchestration, not the accepted product's stronger thesis
 
-External AutoMV overlaps generic multi-agent music-video planning/generation/verification. OpenTimelineIO, OpenUSD, ComfyUI and FFmpeg already solve substantial constituent problems. Candidate differentiation is an editable, audio-constrained, cross-tool, provenance-qualified workflow and possibly hybrid spatial scenes—not simply generating music videos. These claims remain unverified; research does not certify superiority.
+AutoMV already proposes full-song multi-agent music-video planning/generation/verification and reports a 30-song, four-language benchmark; its own paper says multimodal automatic judges still trail human experts. Generic multi-agent MV generation is therefore contested prior art, not Melosviz differentiation.
 
-## Source blobs
+OpenTimelineIO already models clips/tracks/transitions/time ranges and adapter-based interchange; OpenUSD supplies layered/referenced scene composition; ComfyUI is an existing render runtime; ffprobe supplies media inspection primitives. Build custom only where the accepted audio/hybrid/edit/provenance semantics cannot be faithfully composed from these.
 
-README `8489968676c2fe53fadbafa88444644fa93da6c8`; AGENTS `48c27ebde7523dd5fcefb2636c69ff6316df4df3`; SPEC `4dfb05bab8b415a40cd2bd5dfde4faec461cd08c`; STUDIO_PIPELINE `e35e1c982c2e80bd272f9de9e2c3db11e00c1f90`; orchestrator `549e70a5741f43546af3d068b5444d54d47affc2`. Registry ADR0003 `f77eb8f0da3093e8a8d2acd00f0de21b4cd906fb`; predecessor boundary `0f64c3fefe8845410a2e350efdf6d528d8aed5da`.
+Candidate differentiation remains: durable API-first + GUI-reviewable structured intent, audio/timebase constraints across heterogeneous tools, accepted hybrid scanner/domain semantics, selective revision/recovery and independently qualified deliverables. These require experiment/pilot evidence.
+
+## M-F08 — repository history itself documents repeated evidence-system weaknesses
+
+The September 18 findings already recorded mutation tests editing tracked source in place and earlier cache activation/provenance defects. September CI history includes qgate failures, workflow parse failures and later repairs. This does not invalidate all current tests; it means historical 'green' labels need exact candidate/run/collector provenance.
+
+The mature grader must therefore protect its own policy and source candidate: mutation/fuzz work belongs in isolated copies/worktrees; a test run that mutates the candidate under evaluation without immutable before/after identity cannot qualify that same candidate.
