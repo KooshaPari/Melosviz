@@ -47,13 +47,12 @@ jobs:
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
-          uv pip install --only-binary :all: --no-deps setuptools wheel
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
       - name: Load + golden + fuzz
         working-directory: backend
         run: |
-          uv run --locked --no-sync python -m pytest \
+          uv run --locked --no-sync --no-build python -m pytest \
             tests/test_load_bridge.py \
             tests/test_golden_corpus.py \
             tests/test_fuzz_renderspec.py \
@@ -61,11 +60,11 @@ jobs:
       - name: Emit Harbor tasks (smoke)
         # Runs from the repo root, so point uv at the backend project
         # that holds the lock.
-        run: uv run --locked --no-sync --project backend python eval/harbor/adapter.py --out eval/harbor/out
+        run: uv run --locked --no-sync --no-build --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers (inline)
         working-directory: backend
         run: |
-          uv run --locked --no-sync python -m pytest \
+          uv run --locked --no-sync --no-build python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short

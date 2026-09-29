@@ -50,14 +50,13 @@ jobs:
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
-          uv pip install --only-binary :all: --no-deps setuptools wheel
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
       - name: Parity tests
         working-directory: backend
         env:
           MELOSVIZ_MIR_BIN: ${{ github.workspace }}/target/release/melosviz-mir
-        run: uv run --locked --no-sync python -m pytest tests/test_rust_python_parity.py -q --tb=short
+        run: uv run --locked --no-sync --no-build python -m pytest tests/test_rust_python_parity.py -q --tb=short
 
   harbor-runner:
     name: Harbor emit + verify (live runner smoke)
@@ -91,17 +90,16 @@ jobs:
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
-          uv pip install --only-binary :all: --no-deps setuptools wheel
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
       - name: Emit Harbor task trees
         # Runs from the repo root, so point uv at the backend project
         # that holds the lock.
-        run: uv run --locked --no-sync --project backend python eval/harbor/adapter.py --out eval/harbor/out
+        run: uv run --locked --no-sync --no-build --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers
         working-directory: backend
         run: |
-          uv run --locked --no-sync python -m pytest \
+          uv run --locked --no-sync --no-build python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short
