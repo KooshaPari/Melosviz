@@ -111,7 +111,7 @@ class TestLoopbackAssertion:
             "169.254.1.2",
             "8.8.8.8",
             "2001:4860:4860::8888",
-            "example.com",
+            "definitely-not-local.invalid",
         ],
     )
     def test_main_refuses_any_non_loopback_without_allow_flag(
@@ -142,6 +142,24 @@ class TestLoopbackAssertion:
         ok, reason = security.loopback_check(host)
         assert ok is True
         assert reason == "loopback"
+
+    def test_hostname_resolving_to_lan_is_not_loopback(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        from melosviz.bridge import security
+
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+
+        def fake_getaddrinfo(host, port, family, socktype):
+            assert host == "render-host.internal"
+            if family == security.socket.AF_INET:
+                return [(family, socktype, 6, "", ("192.168.50.20", 0))]
+            return []
+
+        monkeypatch.setattr(security.socket, "getaddrinfo", fake_getaddrinfo)
+        ok, reason = security.loopback_check("render-host.internal")
+        assert ok is False
+        assert "loopback only" in reason
 
     def test_public_override_requires_bearer_auth(
         self, bridge_env, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
