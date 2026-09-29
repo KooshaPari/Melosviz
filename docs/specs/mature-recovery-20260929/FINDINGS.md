@@ -177,3 +177,20 @@ Therefore mature/current implementation mapping should treat:
 - `src-tauri/` as an alternate/historical/experimental shell until authority or release evidence promotes it.
 
 This resolves one implementation ambiguity without deciding whether the mature product should continue to own both shells.
+
+
+## M-F14 — two scene ontologies exist; only the weaker index/dict model is on the orchestration spine (blocking identity migration)
+
+`analysis/models.py::RenderSpec` stores `scene_segments` as mutable `list[dict[str, Any]]`. The typed `SceneSegment` helper has an integer `index`, label/start/end and analysis summaries but no stable scene ID or revision. `cli/partial_rerender.py` targets and expands rerenders entirely by integer scene index.
+
+Separately, `scene/models.py::SceneSpec` has a stable-looking `scene_id` plus hybrid assets/scanners. Search for `SceneSpec` construction finds the model itself, hybrid renderer helpers and tests, but no conductor/CLI path that makes `SceneSpec.scene_id` the identity of a RenderSpec scene. Search for `scene_id` in the orchestrator shows event/index/name use rather than consumption of the hybrid SceneSpec identity.
+
+This means the repository currently has **two scene ontologies without a canonical identity bridge**:
+1. audio/editorial `RenderSpec.scene_segments[index]` — the mounted orchestration path;
+2. hybrid spatial `SceneSpec.scene_id` — a renderer/domain model exercised mainly through hybrid helpers/tests.
+
+The old traceability claim that hybrid SceneSpec is DONE does not prove it is integrated into the mounted product journey.
+
+Migration consequence: do not replace RenderSpec wholesale. Add stable `scene_id` and immutable `scene_revision` semantics to the mounted scene-segment contract with backward-compatible derivation/migration for historical specs, then reference optional hybrid SceneSpec/projection by that identity. Integer index remains order/position, not identity. Partial rerender should resolve a scene ID/revision to the current ordered index set and record why neighbors were invalidated.
+
+Required oracle: reorder scenes without changing IDs; insert a new scene before S2; edit only S2; verify cache/evidence/rerender/assembly follow identity rather than old numerical position. Also prove a hybrid SceneSpec projection round-trips against the same scene ID instead of creating a second product object.
