@@ -4,7 +4,7 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 
 | Required condition | Current status / exact closure witness |
 |---|---|
-| Source ledger fully resolved | OPEN; complete file/family denominator and six semantic resolution fields |
+| Source ledger fully resolved | TRACKED-TREE ENUMERATION CLOSED (688 exact blobs); semantic family/history/conversation/external denominator still OPEN |
 | Alias/history archaeology exhausted reasonably | OPEN; raw primary conversation, pivot authority, backend/SDK predecessor, deleted/moved sources and useful refs/history |
 | SOTA study complete | PARTIAL; primary primitive docs and academic pass, but standards/licenses/health/commercial stacks and full current papers incomplete |
 | Realistic product-absent alternative defined | Candidate studio and hybrid/live compositions; concrete component qualification and integration experiments outstanding |
@@ -17,13 +17,13 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Stage projections justified | Candidate spine-preserving stages; retained versus superseded scope unresolved |
 | Acceptance/oracle design complete | Initial slice and negative controls; complete mature behavior/configuration/failure coverage outstanding |
 | High-risk architecture unknowns experimentally closed | NOT MET; helper probes are not actual multi-scene render/edit/restart/delivery experiments |
-| Implementation mapping complete | NOT MET; mounted `viz generate` and compose dispatch traced and expose false-positive/identity defects; bridge/UI/storage/adapters/test graph still incomplete |
+| Implementation mapping complete | NOT MET; CLI, bridge, Electrobun, web, orchestrator, ComfyUI/C4D/UE, assembly/package are substantially traced; duplicated whole-spec adapter work + bridge layout mismatch found; storage/restart/remaining adapters/tests still incomplete |
 | Traceability structurally valid | Proposed identity/authority model; accepted bidirectional graph and structural/orphan checks not run |
 | Registry and repo agree | Frozen sources and explicit incomplete status align by design; final readback/cross-link receipt required |
 | Invalid/generated catalogs excluded from grading | Excluded in this dossier; all existing grading consumers remain to inspect |
 | No unexplained orphan requirements/features/journeys | Not established without complete accepted graph |
-| No unresolved contradictions | NOT MET: M-F01, lineage and state/acceptance semantics |
-| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F10 |
+| No unresolved contradictions | NOT MET: M-F01 plus CLI/API/UI/output-layout and execution-vs-acceptance contradictions (M-F09–M-F15) |
+| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F15 |
 | Independent/fresh adversarial review | NOT PERFORMED; self-review and a local probe do not satisfy independence |
 
 ## Next minimal work packages
@@ -31,3 +31,8 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 M-WP-INTENT: recover pivot authority and current horizon; retain outcome/implementation distinction. M-WP-COVERAGE: complete source inventory, history/lineage, canonical schema and mounted routes. M-WP-ALTERNATIVES: qualify real MIR/DCC/editor/runtime/media stack, licenses and architecture tradeoffs. M-WP-ORACLE: add mounted `viz generate` counterexample for two same-backend scenes; require typed assembly state, decoded media, exact scene receipts and content identity. M-WP-VERTICAL: persistent project → real media → GUI edit → selective rerender → restart → decoded deliverable. M-WP-CONTRACT: accepted obligations/quality/stages/traces plus complete oracle design. M-WP-ATTACK: independent reviewer tries alternative interpretations, lifecycle states, configurations, failure modes and competing architectures.
 
 Do not replace blocked experimental work with additional horizontal adapters or catalogs. Keep these two product programs in scope. After a product stage is built, run a separate pilot against the strongest realistic alternative and status quo, measuring correctness/timing, usable creative outcomes, human intervention, cost, maintenance, false greens, recovery and operating burden. That pilot cannot substitute for this pre-build design gate.
+
+
+## Pass 6 gate movement
+
+Closed sub-gate: finite tracked-tree enumeration. This is deliberately not credited as specification completion because semantic resolution remains open. New blocking evidence increases architectural certainty while reducing product-readiness: scene iteration is duplicated between orchestrator and adapters, bridge manifest layout does not match actual adapter output nesting, and active UIs can disagree on the same run. The next admissible progress is experimental repair/reproduction against the executable oracle, not additional scorecard/catalog expansion.
