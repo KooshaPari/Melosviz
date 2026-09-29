@@ -17,6 +17,13 @@ jobs:
   rust-python-parity:
     name: Rust ↔ Python RenderSpec parity
     runs-on: ubuntu-22.04
+    env:
+      # No third-party sdist may be built at install time, so no
+      # package setup.py can run. This is the uv equivalent of the
+      # --only-binary :all: policy the pip commands used before the
+      # uv.lock migration. `--no-build` is not usable here: it also
+      # blocks installing melosviz itself, a source tree with no wheel.
+      UV_ONLY_BINARY: ":all:"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
@@ -38,16 +45,23 @@ jobs:
         working-directory: backend
         # Installed from the committed uv.lock, so every transitive
         # version is pinned rather than resolved at CI time.
-        run: uv sync --frozen --extra test
+        run: uv sync --locked --extra test
       - name: Parity tests
         working-directory: backend
         env:
           MELOSVIZ_MIR_BIN: ${{ github.workspace }}/target/release/melosviz-mir
-        run: uv run python -m pytest tests/test_rust_python_parity.py -q --tb=short
+        run: uv run --locked --no-sync python -m pytest tests/test_rust_python_parity.py -q --tb=short
 
   harbor-runner:
     name: Harbor emit + verify (live runner smoke)
     runs-on: ubuntu-22.04
+    env:
+      # No third-party sdist may be built at install time, so no
+      # package setup.py can run. This is the uv equivalent of the
+      # --only-binary :all: policy the pip commands used before the
+      # uv.lock migration. `--no-build` is not usable here: it also
+      # blocks installing melosviz itself, a source tree with no wheel.
+      UV_ONLY_BINARY: ":all:"
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -64,15 +78,15 @@ jobs:
         working-directory: backend
         # Installed from the committed uv.lock, so every transitive
         # version is pinned rather than resolved at CI time.
-        run: uv sync --frozen --extra test --extra bridge
+        run: uv sync --locked --extra test --extra bridge
       - name: Emit Harbor task trees
         # Runs from the repo root, so point uv at the backend project
         # that holds the lock.
-        run: uv run --project backend python eval/harbor/adapter.py --out eval/harbor/out
+        run: uv run --locked --no-sync --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers
         working-directory: backend
         run: |
-          uv run python -m pytest \
+          uv run --locked --no-sync python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short

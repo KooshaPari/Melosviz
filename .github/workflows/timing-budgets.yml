@@ -13,6 +13,13 @@ jobs:
   timing-budgets:
     name: Feedback-loop timing budgets
     runs-on: ubuntu-22.04
+    env:
+      # No third-party sdist may be built at install time, so no
+      # package setup.py can run. This is the uv equivalent of the
+      # --only-binary :all: policy the pip commands used before the
+      # uv.lock migration. `--no-build` is not usable here: it also
+      # blocks installing melosviz itself, a source tree with no wheel.
+      UV_ONLY_BINARY: ":all:"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
@@ -36,11 +43,11 @@ jobs:
         # Keep install lean: smoke + golden need package + pytest only.
         # Installed from the committed uv.lock, so every transitive
         # version is pinned rather than resolved at CI time.
-        run: uv sync --frozen --extra test
+        run: uv sync --locked --extra test
 
       - name: Install ffmpeg (diagnose required check)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
       - name: Run timing budget gate
         # Budgets: docs/TIMING_BUDGETS.md (WBS-P1.11 / C03 L30.10)
-        run: uv run --project backend python scripts/check_timing_budgets.py
+        run: uv run --locked --no-sync --project backend python scripts/check_timing_budgets.py

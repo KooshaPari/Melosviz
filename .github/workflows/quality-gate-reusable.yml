@@ -88,6 +88,13 @@ jobs:
   gate:
     name: qgate — granular-recursive quality gate
     runs-on: ubuntu-22.04
+    env:
+      # No third-party sdist may be built at install time, so no
+      # package setup.py can run. This is the uv equivalent of the
+      # --only-binary :all: policy the pip commands used before the
+      # uv.lock migration. `--no-build` is not usable here: it also
+      # blocks installing melosviz itself, a source tree with no wheel.
+      UV_ONLY_BINARY: ":all:"
     outputs:
       gate-status: ${{ steps.run-gate.outputs.gate-status }}
       report-json: ${{ steps.run-gate.outputs.report-json }}
@@ -142,7 +149,7 @@ jobs:
         # Installed from the committed uv.lock, so every transitive version is
         # pinned rather than resolved at CI time. pytest-cov, coverage and
         # bandit come from the [dependency-groups] dev table in pyproject.toml.
-        run: uv sync --frozen --extra test --extra lint --extra analysis --extra bridge --group dev
+        run: uv sync --locked --extra test --extra lint --extra analysis --extra bridge --group dev
 
       - name: Generate coverage (standalone caller)
         if: inputs.coverage-artifact-name == ''
@@ -159,7 +166,7 @@ jobs:
         # presets/aspect_ratios.py). The pytest --cov-fail-under=80 bar
         # remains the canonical coverage floor.
         run: |
-          uv run python -m pytest \
+          uv run --locked --no-sync python -m pytest \
             --cov=melosviz \
             --cov-fail-under=80 \
             --cov-report=term-missing \
@@ -173,8 +180,8 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          uv run python -m ruff check src/ tests/
-          uv run python -m ruff format --check src/ tests/
+          uv run --locked --no-sync python -m ruff check src/ tests/
+          uv run --locked --no-sync python -m ruff format --check src/ tests/
 
       - name: Baseline — security (bandit high/critical)
         if: inputs.run-baseline-checks
@@ -184,8 +191,8 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          uv run python -m bandit -r src/ -ll -ii --quiet || true
-          uv run python -m bandit -r src/ -lll -iii --quiet
+          uv run --locked --no-sync python -m bandit -r src/ -ll -ii --quiet || true
+          uv run --locked --no-sync python -m bandit -r src/ -lll -iii --quiet
 
       - name: Baseline — chaos / perf / property
         if: inputs.run-baseline-checks
@@ -195,9 +202,9 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          uv run python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
-          uv run python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
-          uv run python -m pytest tests/test_qgate_backfill.py::TestPropertyPresets -q --tb=short
+          uv run --locked --no-sync python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
+          uv run --locked --no-sync python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
+          uv run --locked --no-sync python -m pytest tests/test_qgate_backfill.py::TestPropertyPresets -q --tb=short
 
       - name: Baseline — backend e2e pipeline smoke
         if: inputs.run-baseline-checks
@@ -206,7 +213,7 @@ jobs:
           LC_ALL: C.UTF-8
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
-        run: uv run python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
+        run: uv run --locked --no-sync python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
