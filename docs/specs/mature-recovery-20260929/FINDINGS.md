@@ -145,3 +145,35 @@ Concrete source-equivalent probe: `127.0.0.1`, `::1`, and `localhost` return all
 The threat is compounded by the explicitly supported legacy auth-off mode: protected middleware only checks bearer auth when `MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`, and path containment has a legacy branch that returns the requested path when auth is disabled and no explicit allowed-dir override is set. Packaged desktop normally enables auth, but manual/dev invocation can combine an arbitrary non-loopback `--host` with auth-off defaults.
 
 Required repair experiment: parse host with `ipaddress.ip_address` when literal; allow only `.is_loopback`; resolve hostnames conservatively or reject non-`localhost` names unless explicit public-bind authorization is present. Add negative tests for RFC1918, link-local, public IPv4/IPv6 and arbitrary hostnames. Verify auth + allowed-dir policy is automatically required for any authorized public bind. Do not treat `0.0.0.0` coverage as proof of the general property.
+
+
+## M-F13 — per-scene orchestrator dispatch calls whole-spec adapters, causing duplicated work and identity collapse (blocking)
+
+The orchestrator constructs one dispatch tuple per scene, then instantiates the adapter and calls `adapter.render(render_spec, ...)` with the **entire RenderSpec**. The ComfyUI adapter explicitly documents and implements `render every scene of render_spec`; it extracts all scenes and writes `scene_NNN` subdirectories. Therefore two same-backend scenes cause two orchestrator invocations, and each invocation can render the whole storyboard again into the same scene-type directory. The corresponding C4D and Unreal adapters filter all scenes of their supported type and likewise loop all matching scenes on every call.
+
+This is not merely `per_scene_results.setdefault(scene_type,...)` losing metadata after correct work. The work unit itself is wrong: **scene dispatch is not scene-bounded**. For N scenes sharing one of these adapters, the path can do repeated N×N scene work, overwrite/shared-directory artifacts, and emit one scene's queued/rendering/done envelope around adapter work that actually touched multiple scenes.
+
+Existing event tests do not catch this. The multi-scene event test uses two `video_export` scenes and asserts only that each scene received queued→rendering→done; it does not assert adapter call identity, output cardinality or independent scene artifacts. The vertical oracle must therefore count backend invocations/artifacts as well as receipts.
+
+Closure requires a scene-targeted adapter contract (scene ID/index + scene payload or equivalent) or an explicitly batch-targeted contract invoked exactly once. The orchestrator and adapters cannot both own iteration.
+
+## M-F14 — Studio generate bridge manifest scans a layout different from the real orchestrator layout (blocking API journey)
+
+`/api/studio/generate` claims that outputs live under `<out_dir>/<scene_type>/scene_*`, but after running the CLI it scans only `out.glob("scene_*")` — flat children of the output root. The real orchestrator passes `output_dir / scene_type` as each adapter's output path. ComfyUI, C4D and Unreal then write their own `scene_NNN` children **inside that scene-type directory**. Thus those real outputs are not discovered by the bridge's manifest loop.
+
+The bridge regression test does not exercise this contract. It pre-creates `out_dir/scene_0/workflow.json`, mocks `_run_studio_subprocess`, then verifies that the pre-created flat directory is returned. It can pass even if the actual CLI/orchestrator layout is incompatible.
+
+Consequences: the web StudioConsole can receive an empty scene manifest after real rendering and mark every requested scene as error/no artifact, while the Electrobun path bypasses this manifest and can mark every scene done on CLI return. The same product can therefore false-green or false-red depending on surface.
+
+Closure: one canonical scene-result schema returned by the mounted generate operation; bridge discovers from structured receipts, not directory guessing. Integration test must run the actual generate path or at minimum the real orchestrator output-layout producer, not pre-seed the expected output.
+
+## M-F15 — current release desktop is Electrobun; Tauri is a separate non-release surface
+
+The frozen release workflow has explicit `macos-desktop` and `windows-desktop` jobs that run `bunx electrobun build/package` and upload Electrobun artifacts. No Tauri build appears in the release workflow. `src-tauri/` is a real buildable/scaffolded surface consuming `web/dist`, but it is not the frozen release desktop path.
+
+Therefore mature/current implementation mapping should treat:
+- Electrobun `desktop/` + its webview as the shipping native desktop candidate;
+- `web/` as a separate browser/bridge surface and frontend reused by Tauri;
+- `src-tauri/` as an alternate/historical/experimental shell until authority or release evidence promotes it.
+
+This resolves one implementation ambiguity without deciding whether the mature product should continue to own both shells.
