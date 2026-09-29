@@ -34,6 +34,9 @@ jobs:
         # package set comes from the committed uv.lock via `uv export`, and
         # --no-deps installs exactly those pinned versions without resolving
         # anything, so the install stays lock-exact (S8544).
+        # These flags are verified against the uv version pinned above,
+        # not a globally installed one: `uv export --format` alone has
+        # already changed its accepted value across uv releases.
         run: |
           uv export --locked --no-emit-project --no-hashes \
             --extra test \
