@@ -88,7 +88,7 @@ for v in "${REJECT[@]}"; do
 done
 
 printf '\n'
-if [ "$fail" -eq 0 ]; then
+if [[ $fail -eq 0 ]]; then
   echo "ALL SEMVER CASES PASS"
 else
   echo "SEMVER PATTERN HAS FAILURES"

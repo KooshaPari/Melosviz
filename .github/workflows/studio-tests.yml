@@ -88,7 +88,11 @@ jobs:
           bun-version: 1.1.34
       - name: Install deps
         working-directory: web
-        run: bun install --ignore-scripts
+        # --frozen-lockfile asserts that web/bun.lock already matches
+        # package.json and fails loudly otherwise, so CI installs exactly the
+        # committed resolution. The lockfile was stale on main (its overrides
+        # no longer matched package.json) and is regenerated in this branch.
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: Run vitest (StudioConsole component)
         working-directory: web
         # Not advisory. This suite is the only thing that runs the StudioConsole
@@ -111,7 +115,10 @@ jobs:
           bun-version: 1.1.34
       - name: Install deps
         working-directory: desktop
-        run: bun install --ignore-scripts
+        # Same assertion as the web job above. desktop/bun.lock pinned
+        # electrobun 1.18.1 while package.json asks for ^2.0.1, so it was
+        # stale on main too; it is regenerated in this branch.
+        run: bun install --frozen-lockfile --ignore-scripts
       - name: Run bun test (renderBinary helper)
         working-directory: desktop
         run: bun test src/renderBinary.test.ts
