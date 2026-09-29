@@ -91,8 +91,11 @@ jobs:
         run: bun install --ignore-scripts
       - name: Run vitest (StudioConsole component)
         working-directory: web
+        # Not advisory. This suite is the only thing that runs the StudioConsole
+        # component in CI, so leaving it on continue-on-error let a red suite
+        # pass while the job reported success. Verified green on the pinned
+        # lockfile before removing the flag.
         run: bunx --bun vitest run src/components/__tests__/StudioConsole.test.tsx
-        continue-on-error: true
       - name: Typecheck
         working-directory: web
         run: bunx tsc --noEmit -p tsconfig.json
