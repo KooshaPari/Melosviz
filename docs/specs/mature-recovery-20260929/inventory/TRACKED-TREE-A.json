@@ -1,0 +1,2265 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Melosviz",
+  "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "part": "A",
+  "enumeration": "COMPLETE_FOR_LISTED_SUBTREES",
+  "subtrees": [
+    ".cargo",
+    ".circleci",
+    ".devcontainer",
+    ".github",
+    ".trunk",
+    "agileplus",
+    "api-spec",
+    "assets",
+    "audit",
+    "backend",
+    "benches",
+    "crates",
+    "deploy"
+  ],
+  "blob_counts": {
+    ".cargo": 1,
+    ".circleci": 1,
+    ".devcontainer": 1,
+    ".github": 46,
+    ".trunk": 1,
+    "agileplus": 1,
+    "api-spec": 1,
+    "assets": 4,
+    "audit": 13,
+    "backend": 192,
+    "benches": 1,
+    "crates": 9,
+    "deploy": 7
+  },
+  "total_blobs": 278,
+  "semantic_resolved": 0,
+  "rows": [
+    {
+      "path": ".cargo/mutants.toml",
+      "object_id": "94e55630af339d28b3598364fcad64e11a4741e7",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".circleci/config.yml",
+      "object_id": "15878badf9b7a3c5af1131c8f593ad767dd36040",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "object_id": "affa47fac1b1a54faaa52578d9a07d0eaaf5a3f6",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "object_id": "e87494fbb6462df402cda1416b0c99af09950872",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "object_id": "f25173b2a09f62535a87143d15699675c427733b",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "object_id": "37469c2b30ef62b41060e3e906bc976ad9135055",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "object_id": "82c33414fce139dece78551e107c54d3555dfdc8",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/question.md",
+      "object_id": "2b13a84948360f91d6f7a52695262250bbabb8b1",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/security_report.md",
+      "object_id": "dd1a506784737239d55f712bbaafb26b4ed56ed1",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "object_id": "9a003b7550c999b73f744d2c4f2b422d6157286c",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "object_id": "04bd76da9da8c695d13b4760a086409a200eda9c",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/scorecard-baseline.json",
+      "object_id": "f0dee0309f08c2f00d244814dc27574778702a28",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/stale.yml",
+      "object_id": "eaf932f8dfe179ade413bc2aadafb12106235934",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/a11y.yml",
+      "object_id": "d29e5a071dc42c4f858efdc80c1554eb3bc3f1e6",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/agileplus-pillar-scorecard.yml",
+      "object_id": "2d42095e1a174c9493074e9cb80b0f0187bc3a3c",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/cargo-fuzz.yml",
+      "object_id": "6dd833d84b29aca5fcaf5a88644975ce439de0b1",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/cargo-publish.yml",
+      "object_id": "3ca1f2d595fe99f5584eac08d985c74032ca39c7",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "object_id": "f0d15a1e0bd433fd706e8f7da9448d26e804ed92",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "object_id": "2e01a87605e09bdd72d99e64ee776d0c9289bd66",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/criterion-smoke.yml",
+      "object_id": "8422a51854bd07b012a94e44c4308773a1b38e4a",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/dco.yml",
+      "object_id": "62b903ebb5526cbdca40a84f5f59d4c92eba5fd7",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/docs-trace.yml",
+      "object_id": "fe6dc39ecb9e85a1f9bba3416c9553ec336992de",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/ghcr-bridge.yml",
+      "object_id": "adae375acb6a6ca7f4f7ffee6ff135a5f69ae78f",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/gitleaks.yml",
+      "object_id": "a57e5f25c64405cd44c525afbdff9b2ba3c38886",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/gpu-smoke.yml",
+      "object_id": "337871e3548594965896dc43a785bcccc687348d",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/homebrew-tap.yml",
+      "object_id": "0c6419970d4b1de3ace72b3cea733ade04d0c10d",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/infisical.yml",
+      "object_id": "50812353ed39b9e7191ee64ef8f528e6fd14a93b",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/journeys.yml",
+      "object_id": "e84b617da9bae653a22886978070d26c450cb90c",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/load-smoke.yml",
+      "object_id": "93c2d4bf5980875d2142133d06226e23befac765",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/locale-parity.yml",
+      "object_id": "c57ff122448afc85161eb493e8bb3c2bc7e89561",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/mutmut.yml",
+      "object_id": "bf04193ad037bbd02d22ae90adfc7e22a78f8ded",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/npm-publish.yml",
+      "object_id": "b6656f2351824696d80b115d3500c371db69e01f",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/openapi.yml",
+      "object_id": "f816d060598e304ddc4ff8399c1122f40f116d61",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/parity-harbor.yml",
+      "object_id": "677d0e8aeef898a4072ad9086eefa0219357a12b",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/perf-smoke.yml",
+      "object_id": "9358949cd1f38b23451edca722361fb297cc58ee",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/publish-sdk-packages.yml",
+      "object_id": "638d018bf7442b54940cc754d13bfa020fe484fa",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/pypi-publish.yml",
+      "object_id": "66545791925322f1ee4e6c8bcd958613d1550624",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/qgate.yml",
+      "object_id": "ef537ce86b5838f1d84624b810ecb1740af9ba40",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/quality-gate-reusable.yml",
+      "object_id": "5660c24c2a595c64beb7f1287d2afee3974364cb",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/release-macos.yml",
+      "object_id": "7e31ab0a6be2d446ee0b6e22264c96e433eb24da",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "object_id": "5a06188b437f17653fb73dd008f721bd8c2b2527",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/scoop-bucket.yml",
+      "object_id": "c8d80505321593f69a17e6be6515f3679ab969d3",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/scorecard-ci.yml",
+      "object_id": "6e7c16e44a7f71bdf40c2b80123a9fe68962924c",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/scorecard.yml",
+      "object_id": "4ad882e02598b30e2e8d1f51979ad0490189e060",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/studio-tests.yml",
+      "object_id": "169f41814ac274a16cfa83f06738c5143ee2c835",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/supply-chain.yml",
+      "object_id": "7e25ea839f903e9ea50a4ba773bff2fb284797f9",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/timing-budgets.yml",
+      "object_id": "e942aece07a48c26ea81f1d679bc392b543e473b",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/trunk-check.yml",
+      "object_id": "cb61980040b64cb8a38d28ca7d947749724bd7ea",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".github/workflows/winget-pr.yml",
+      "object_id": "2748398c04ad3c686c4a8a6003634c12011c498d",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".trunk/trunk.yaml",
+      "object_id": "fbb1fbcb0535648b37e748a122aafb1c861f8db3",
+      "mode": "100644",
+      "family": "ci",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "agileplus/pillars/31-pillar-scorecard.json",
+      "object_id": "79a72ef9ba9f8f385f01033ac8dd141a7ed55cb9",
+      "mode": "100644",
+      "family": "auxiliary",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "api-spec/studio-pipeline.openapi.yaml",
+      "object_id": "19e1594ad654aa4b6e19839b9587e232ad6c8972",
+      "mode": "100644",
+      "family": "api",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "assets/brand/README.md",
+      "object_id": "c8010af886c0192e55b1111c3a556afc309962b0",
+      "mode": "100644",
+      "family": "assets",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "assets/brand/favicon.svg",
+      "object_id": "b79123f54417031f29c103a506938d04b68961f4",
+      "mode": "100644",
+      "family": "assets",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "assets/brand/icon-animated.svg",
+      "object_id": "162baaa978df92ad2987ddca315a161f98c5c02f",
+      "mode": "100644",
+      "family": "assets",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "assets/brand/icon.svg",
+      "object_id": "349d76f72de86bca305edd70c9123349020e04e7",
+      "mode": "100644",
+      "family": "assets",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c00/C00.md",
+      "object_id": "bdef45c0a1cc775dffb8fc158e8fa2501711a064",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c01/C01.md",
+      "object_id": "3f9ab84813918fe75e1742ffdc4c13118677a06d",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c02/C02.md",
+      "object_id": "048eee0ac0d3e66e77d4a94c05ba6dc184798b2e",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c03/C03.md",
+      "object_id": "4444b808ed5e6a0663d743bbad7330bf53d5e7f7",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c04/C04.md",
+      "object_id": "226dc4c6686cfcec6773e7d950e27fb8a22500a7",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c05/C05.md",
+      "object_id": "acfe47a148e720c68ab03e4bdf9639be83572d22",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c06/C06.md",
+      "object_id": "8a14af12ef89ebba50d4b9ff2bbd9280763c7e89",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c07/C07.md",
+      "object_id": "58e9652d56eb033a7dc94f99bd3a4d9d0c82c319",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c08/C08.md",
+      "object_id": "dbb1ec03f784d020b40aa00b2151b3d90c65aaf3",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c09/C09.md",
+      "object_id": "de48271a843f0165108a9cc54e6eec381f188989",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c10/C10.md",
+      "object_id": "6a071eb08e9d6db88f511434b592d9c16b033a94",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/.lane-c11/C11.md",
+      "object_id": "deb4768ed1db5ffcdcac74035cd56582a15e9049",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit/SCORECARD.md",
+      "object_id": "845b353532e4f9dcb59eba8d4962472ebdd70b8e",
+      "mode": "100644",
+      "family": "historical-audit",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/.coveragerc",
+      "object_id": "bc1163335d787ec295f2a6159de0357654363fe0",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/README.md",
+      "object_id": "66fecf1d929f28b6170329a7a85251fdcc6e003b",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/mutmut.toml",
+      "object_id": "971707ab91ae9c84d4d1e40732fc581f673c9e0b",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/pyproject.toml",
+      "object_id": "2ca66c63b71f0ad40725eef42e133861d3d13e4b",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/scripts/check/check_traceability.py",
+      "object_id": "178a01d6b036b9e5e680d9f65dda2f81f92350bb",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/scripts/run_mutmut.sh",
+      "object_id": "d23a7036808950d06f1f5646565c8233bc60e146",
+      "mode": "100755",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/__init__.py",
+      "object_id": "735f9e6f1846abb23675d68ac72a98b95bec055d",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/analysis/__init__.py",
+      "object_id": "85d96d933a26d6092d76321a59b7abffb5cfac88",
+      "mode": "100644",
+      "family": "analysis",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/analysis/audio.py",
+      "object_id": "3aad71383f7669670644a4cdf884168420c92d77",
+      "mode": "100644",
+      "family": "analysis",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/analysis/models.py",
+      "object_id": "03ec6e8ebb9b62edcd0dc90bfd52f00c62622863",
+      "mode": "100644",
+      "family": "analysis",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/bridge/__init__.py",
+      "object_id": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "family": "api",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/bridge/errors.py",
+      "object_id": "a32d9c69b8dbb37599150fc136574475137087b3",
+      "mode": "100644",
+      "family": "api",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/bridge/security.py",
+      "object_id": "db2eed2c46bf878e388f6802db0b66ce02390957",
+      "mode": "100644",
+      "family": "api",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/bridge/server.py",
+      "object_id": "37223ac8eaf4f01dc1a76b630da4a217b56cdb95",
+      "mode": "100644",
+      "family": "api",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/character/__init__.py",
+      "object_id": "81ac3cb3c3401fa77f5f3043d6fd29f3c3aa7ce5",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/character/registry_io.py",
+      "object_id": "8ef41f0e511369c405112f36bf6d2e8c1d97888a",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/character/sheet.py",
+      "object_id": "35860a0ddfc32ed44f1f3100db97f30d05756151",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/cli/__init__.py",
+      "object_id": "97ac9e7f754a9b1f437bfa721fad7ffb2f1fee7c",
+      "mode": "100644",
+      "family": "cli",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/cli/main.py",
+      "object_id": "f5e3ff76da68779ba38be12874475fe5868d0975",
+      "mode": "100644",
+      "family": "cli",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/cli/partial_rerender.py",
+      "object_id": "9ad021f21d474a71265cf143ef06c7be2a15d309",
+      "mode": "100644",
+      "family": "cli",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/compose/__init__.py",
+      "object_id": "64407b6056b673ef2dd62439e56d30d7009ada76",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/compose/assemble.py",
+      "object_id": "663ba429f63285ef91f898aba9018244e1e8ba06",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/compose/beat_cuts.py",
+      "object_id": "40c88baaede041879e719dea55dab6038bf685f2",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/compose/narrator.py",
+      "object_id": "c610d846578b6a4a28c3f08184ca70982c6ea636",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/compose/web_spec.py",
+      "object_id": "ee51f232385a218b5126d9782caeecd98a4df3b3",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/__init__.py",
+      "object_id": "923fafbaee700fa7d2d7095c80a62a01ea4eae40",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/events.py",
+      "object_id": "dec8fb74a30bf237a077c59d53dfb8c60e827c29",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/orchestrator.py",
+      "object_id": "549e70a5741f43546af3d068b5444d54d47affc2",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/provenance.py",
+      "object_id": "ab077ebed4435c6111cad68f43e4c64eb1ff7130",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/registry.py",
+      "object_id": "bfb17d0c183b2cbec0c7e05b9b03ef7ea76e079a",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/render_cache.py",
+      "object_id": "9a780c78dedd0201f59f8b47358313314f63201d",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/validate.py",
+      "object_id": "ca7dc3e4459ea82ec536f04ab7174574084cd70f",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/conductor/visual_diff.py",
+      "object_id": "ea2233c440f7b8c7b631e8a04c9df368d06bbac1",
+      "mode": "100644",
+      "family": "conductor",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/export/__init__.py",
+      "object_id": "2f5fe4e3e2ff06470bbb2fa8cbe016b9e2bdebb6",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/export/package.py",
+      "object_id": "8fc745cf3b3f09c6f997b132a686dbad131ce3f3",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/export/vj.py",
+      "object_id": "548ecc5e3f46e4220aa154d553288c69925f9f5d",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/i18n/__init__.py",
+      "object_id": "35340c13fa002b79b9aad1f01dbdf1a93816788a",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/i18n/locales/en.json",
+      "object_id": "da6d201cbdab7fbb0a717dc421d3de51a47985be",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/i18n/locales/es.json",
+      "object_id": "95832975886b5324b96e48f677611d20ffcc2f4c",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/interpolation/__init__.py",
+      "object_id": "b6ca2e55ed64a7a22f7a71bc489c02fbe543adf4",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/interpolation/engine.py",
+      "object_id": "92d34f76bcb626623fa13b65220d63f80ab90038",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/__init__.py",
+      "object_id": "a135e9e96a2c49c2825037a721de3cac69a18905",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/admission.py",
+      "object_id": "afd620edb2e1c734392aeb125cf22af4847c87b8",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/critic/__init__.py",
+      "object_id": "4c1acd265365cd23cabafcff5879b9fc60ea7702",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/director.py",
+      "object_id": "37227f319da63479659fe04ab168dfd99495f4c7",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/lyrics.py",
+      "object_id": "15434dbe61b2254e3ba090b05bf7638fb4a36439",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/llm/moodboard.py",
+      "object_id": "3a3e149078d123b0b2a8f0dc253c00267f745fa8",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/observability.py",
+      "object_id": "475e2cd7ced0a04b2d8b267286ebf3f510057905",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/__init__.py",
+      "object_id": "f641aa19bee6e3156fd7e0f06a118a1f46d30457",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/aspect_ratios.py",
+      "object_id": "462a4278252389f34bf6e6276f56085f6ecc514a",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/cinematic.py",
+      "object_id": "f2f853914c6dd674c901c59648ad5c07657ccdf4",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/lofi.py",
+      "object_id": "9ad4a9992986335201f9e64d7fe2a641d6675c92",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/minimal.py",
+      "object_id": "4c6787b0e3c49a28843b6138da58e197639271bf",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/registry.py",
+      "object_id": "5ad6e53fb9ba4d2295ea98316643e3e4f6e15619",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/scene_families.py",
+      "object_id": "0e2a610e03664d3318dd718f6aae77be5a4c786e",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/presets/synthwave.py",
+      "object_id": "06c5f2ebfbb59ab6400251abf4fe60c2933a12c9",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/py.typed",
+      "object_id": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/__init__.py",
+      "object_id": "585c9781359a28caaf16415e84031892038f0788",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/aftereffects_adapter.py",
+      "object_id": "d7c3f27e21c4d35b84a537da4b584e43094df6a7",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/__init__.py",
+      "object_id": "d5e64ddfbb0681658e78969f4b9e66975a823878",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/_proc.py",
+      "object_id": "1bafc7e35e8c78a7253a1ec4c3ea92893c2bdfa9",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/loudness.py",
+      "object_id": "4124e242635ed04aaeee2ab9b10cf4899e44450a",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/master.py",
+      "object_id": "8cfd08d60a13e7e081e268407be085dabbd3ed31",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/reference.py",
+      "object_id": "16646c468dfd6ff2a00cb7331cdb890f7588f093",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/audio_finishing/stems.py",
+      "object_id": "616f702bd83eaea515a3d8dbd0c9e558171c180f",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/blender_exporter.py",
+      "object_id": "3fedd084f07b2d50e70f49b008941e3b82e17f9d",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/cinema4d_adapter.py",
+      "object_id": "219e36fd27e9bf75bb18cbcd8dfd3cb686f7051c",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/comfyui_adapter.py",
+      "object_id": "3ea156748d1a1560a301b404d89ccadb2e22b71d",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/davinci_adapter.py",
+      "object_id": "98b64a9ebc12a677e52aea6eb23077d1639b7885",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/firefly_adapter.py",
+      "object_id": "431d245e579b815a407f0bec739e2b65f08d57df",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/mediaencoder_adapter.py",
+      "object_id": "beec3d77dd02871aa2bdecb3b9b6fd51d87ff26c",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/unreal_adapter.py",
+      "object_id": "e730bfd74708f9bee468d805582e0a4d8cca5f37",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/video_exporter.py",
+      "object_id": "7d68eecb197776f535d55e41071b60cb5a9ba92e",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/render/wgpu_adapter.py",
+      "object_id": "db30c3b80afe59afbf334875b5fc0d52e6b66c26",
+      "mode": "100644",
+      "family": "render",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/__init__.py",
+      "object_id": "981ba6b4ab6e3e05b43618dfca049e83a1fe6d80",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/__init__.py",
+      "object_id": "aa69755c344c0a732197a89aa79f4e829209f439",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/adapter.py",
+      "object_id": "26ebafede4141717368e0b12ab69f6245708a4c0",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/bootstrap.py",
+      "object_id": "51068a16f4e30a8038eb1dfd3cf99463d1565764",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/bridge.py",
+      "object_id": "51b16f62d161bcf25affc6f59a7f9fe1cbb442b9",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/generator.py",
+      "object_id": "e3aa99460d761d6319dd721f8918ce3d0fb5f680",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/live_scheduler.py",
+      "object_id": "7896cf5d4a0526e7a29f664465934ded17ee3b28",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/runtime/touchdesigner/overrides.py",
+      "object_id": "bd922c5a51d690d9a39e174351e12304f9a0f842",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scene/__init__.py",
+      "object_id": "e4ab316c0b3fa4b709b8a92ecd09789758f298e0",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scene/blender_scene.py",
+      "object_id": "52c5831c76aceafc98d63c769dc5cb0f089d53cb",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scene/camera.py",
+      "object_id": "3b4ca69d6e6db520f14fe18de75715642814ef03",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scene/models.py",
+      "object_id": "e4b7a2de5f12f87da781bdd7f7b14cfc21230554",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scene/scanner.py",
+      "object_id": "0b3cdd618b832ad70366af2587c36584ed193501",
+      "mode": "100644",
+      "family": "domain",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scripts/audit_extend.py",
+      "object_id": "73b7f3035a59383ee28446ccc60b06c692b84d29",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/src/melosviz/scripts/check_i18n_coverage.py",
+      "object_id": "6f132461f3e9b4f17977d56f2f09ada876f8ee62",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/character/__init__.py",
+      "object_id": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/character/test_registry_io.py",
+      "object_id": "8e981ed7f6df55b130ca4c1fc08094a432e529cf",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/character/test_sheet.py",
+      "object_id": "90ed92be1279a1ad5ffbbca601decca3453b3145",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/cli/__init__.py",
+      "object_id": "d7534c4904579816c3e6e6576eb03997ab7a5796",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/cli/test_gpu_smoke.py",
+      "object_id": "3114d27443a4ece66d2bae0148caa0eb7c66b513",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/cli/test_partial_rerender.py",
+      "object_id": "409a3c8b853f55ce3c43a1c734b451897e29e3a2",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/cli/test_ship.py",
+      "object_id": "579890524ba36c84344059d178bd4923c7fa0b0a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/compose/test_beat_cuts.py",
+      "object_id": "95c88edac339fed030a9ea8af1e4d9ecfc1f5c07",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/compose/test_storyboard_encoding.py",
+      "object_id": "c91c58bfd0fd6ba14f0d1d23af9843b86568f784",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_artifact_validity.py",
+      "object_id": "f6a0abb364d6b73b7b454c9c75cf329d24f6cd18",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_assembly_failure_events.py",
+      "object_id": "661158ba48b0ecb8683e877d2474a4727c5470ae",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_done_artifact.py",
+      "object_id": "403eabafa178410f0ec89db012f69ab5af397494",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_events.py",
+      "object_id": "3a009960a2e28eee4338d5c01b50c063ba32f03b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_failed_scene_provenance.py",
+      "object_id": "d7c06be624d09f435cceaa71b1755a38bdc68c08",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_missing_adapter_record.py",
+      "object_id": "5a9ae8fa0e9297f7d4be750a55b781d15d75a92f",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_offline_outcome_scope.py",
+      "object_id": "c831f98fd347ac8202e44c154d01f17864c2d385",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_provenance.py",
+      "object_id": "0966f7b2bf95b32426926f036d6ead53f61ec01a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_provenance_containment.py",
+      "object_id": "c7af7fed9b1e65c8b4ee54e68bdb7394837bb7c4",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_render_cache.py",
+      "object_id": "4a43de35fc88ec0795ea69381026b7f5b990715c",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_render_cache_activation.py",
+      "object_id": "a645a8cd3c8e10d3159f46f2ee1dc0af53ce36ab",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_render_cache_hit.py",
+      "object_id": "2109bae4cc693c8cc33d2b40c4dea543bb40c328",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_validate.py",
+      "object_id": "60bb653cc15ea48d5864961d8d7585d8dd3ad909",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conductor/test_visual_diff.py",
+      "object_id": "73906fe07cc129afd377cefac39cc4fb4a9fee3e",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "object_id": "cde547c032fd9de04b6e487a5d94e3429785a74a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/export/test_package.py",
+      "object_id": "a9e96885e25fcc96542612bcccfcdbbf551ec7cc",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/export/test_vj.py",
+      "object_id": "2d8cfd619bf6da21aca4123a3fb51c470e880ee8",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/fixtures/k.wav",
+      "object_id": "8ec038f1f244256991a323ea56bdabebd13dde2a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/fixtures/test_tone.wav",
+      "object_id": "d30f786a4b96aa4d1478c18a3a02f995d016f3e3",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/interpolation/__init__.py",
+      "object_id": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/interpolation/test_engine.py",
+      "object_id": "584044d277f27631ee843ac22723f0440f7c2330",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/__init__.py",
+      "object_id": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_admission.py",
+      "object_id": "33a4f3c512b2b9cc1cf121cbfc7b6070794a66ba",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_director.py",
+      "object_id": "c05841e9934b2c1b32288debf4aca532aa4f5b30",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_lyrics.py",
+      "object_id": "db8184800dd5d0a56f7c79bbb7b331190eb0fa3d",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_moodboard.py",
+      "object_id": "ab9aef287cb5a89648a6ff914f6e7ec1a018f29c",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_multi_shot_director.py",
+      "object_id": "21510c18ab451484d86f757418dfcbfc35a72c32",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/llm/test_story_length.py",
+      "object_id": "e59a583010ddca1707812a0639b0d7ad6360ce21",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/render/test_audio_finishing.py",
+      "object_id": "a65d608e5f1ea883db72385cfa40e5d266380cba",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/render/test_audio_finishing_reference.py",
+      "object_id": "51712c1d447f0aa2a4e1f2d63797c7d9b7bbb2bc",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/render/test_comfyui_adapter_references.py",
+      "object_id": "80bbaaa7fbb5313faefe14e15151d912581cd756",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/render/test_native_audio_routing.py",
+      "object_id": "d787dc06f5ad79a9526c7879a0a6473219a98b8b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/runtime/test_live_stage_dict_spec.py",
+      "object_id": "98d06aa67f5843bca71682d5ad65c22d3bfc874d",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/runtime/test_live_stage_outcome.py",
+      "object_id": "0a007af7fa79adacbc0e7ce5c0d8943fa9c1082c",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_antigame_fuzz_chaos.py",
+      "object_id": "3a6354fb1a917aabe28257211768e1264b3f0431",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_aspect_ratios.py",
+      "object_id": "07968312a6dbbd408d332480ff02543a35993bd4",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_audio_ml_paths.py",
+      "object_id": "b2254d331b50681c751f1be4f1fc2440417e59e9",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_beat_track_isolation.py",
+      "object_id": "184f587c01f476754c562c4548880433b0b9ece1",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_blender_exporter.py",
+      "object_id": "9c0a8457e8334365ddcacbe4ca9518ec96d02cfa",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bpm_key.py",
+      "object_id": "41a09d009b773ef0fa41b6dad140a0dd3ca8a634",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_api.py",
+      "object_id": "b1fe01920e2e60b71a54fddc4390328ba171cff2",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_b7_error_paths.py",
+      "object_id": "c7ad927a8c1fdb132c78e3ebc1018129e78aa13b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_concurrency_race.py",
+      "object_id": "f91de38220bcb05720f2b0b7931248ef09d3fea3",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_http_integration.py",
+      "object_id": "579e066a3c06cf1a2deaad5cb784b22fe4c7bf5b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_memory_cap.py",
+      "object_id": "324fc499226569babbb2cff5da8e08c96fe13375",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_security.py",
+      "object_id": "977560a87cb519dc2566c1c85ed06eaf37838ba9",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_bridge_studio_pipeline.py",
+      "object_id": "da13b6f3d6cfa3b439107546693c07e275325ce8",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_character_subcommand.py",
+      "object_id": "8be628fd818440d4f67bb2fe25fa9cd5c92e4d97",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_cli.py",
+      "object_id": "a1f64b337b930fa15125235ff94e05d7fcadacfd",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_comfyui_adapter.py",
+      "object_id": "02ecd44b423640f6b23b6f6e0315987b71526081",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_conductor.py",
+      "object_id": "21c56a479673a1d60b0877ed3cb19ca98c69a071",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_coverage_100.py",
+      "object_id": "3beaaeaebb1fe042ef129aeae42fefee25e2d69b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_coverage_gaps.py",
+      "object_id": "927c05a9ed9b2bd65cbe4ff90107921f700c15ea",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_critic.py",
+      "object_id": "affc4b61a8846c08be40fbf00085b52d9ee51c28",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_diagnose_bdd.py",
+      "object_id": "682562bc22458ace0c37d03ff94b4397c687d400",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_direct_subcommand.py",
+      "object_id": "6584ff6bf20bc7431cdce772a948b0636cd6c573",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_e2e_3min_pipeline.py",
+      "object_id": "f56061f5446843553aa9d7b5c5e574f23cba4466",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_e2e_pipeline_smoke.py",
+      "object_id": "acfeef212bac027fb602df42e01f85e82cfc93cf",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_f1_wire_analysis.py",
+      "object_id": "9694fbf327d99155fc8bfc802a90b5276eed6143",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_fuzz_renderspec.py",
+      "object_id": "c0d31d77e9bc9719aa9dba67879a273699437576",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_golden_corpus.py",
+      "object_id": "a5de668b517bb0d2eaf8cbf2f40da6eee2543388",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_gpu_smoke_workflow.py",
+      "object_id": "db9acdbb0668cd19591e5e20930faf39cafef054",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_hybrid_scene.py",
+      "object_id": "819f8f1b608e616991f67d085ce30afa99ed5161",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_i18n.py",
+      "object_id": "a60c8e60e5822afcc56ac12daf2eaa63a5e506cb",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_intent_doc_spec.py",
+      "object_id": "d14825e28a04994d09028511ae1b6f42667c79cc",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_load_bridge.py",
+      "object_id": "5938ed9225e6229d297ade40ef48d67a1c9046e3",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_local_run_bugs.py",
+      "object_id": "84ea3b60241bbb829113be930fdfdd12207c5991",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_multi_tool_adapters.py",
+      "object_id": "8c1174e019b6dd68192790e16b4ea5107c8ff610",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_mutation_engine.py",
+      "object_id": "d3fc5d39a4a88ad7c3c1c4640690b17639495092",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_mutation_kill_score.py",
+      "object_id": "790f150821132ecc8eb7158e8105e1603af06a30",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_new_presets.py",
+      "object_id": "6419ac69f99c1194c4aa333c4cbb291832f3f1cc",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_optional_dep_imports.py",
+      "object_id": "cdd4ecadbb79c2e2fd0a014db90caf511fb9dba7",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_p7_compose.py",
+      "object_id": "c08aca1920b2059f74a502bcd2b0823d3ae83ac0",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_p8_advanced_scene.py",
+      "object_id": "deca36d952caa635ebffd1d52d0951a6295d630b",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_presets_roundtrip.py",
+      "object_id": "77257eaf7e44a900a3acaadfa07c467af6a3dbd2",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_qgate_backfill.py",
+      "object_id": "23a357f3eb423c229eee587ff2bc6beeff8fe5b5",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_render_spec_v2.py",
+      "object_id": "58fc5ab9262102dbc79dda49b715643d22b5b13a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_rust_python_parity.py",
+      "object_id": "03d59de22ddb40aa0c969fe239a78de6f167b56a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_spectrum.py",
+      "object_id": "31042f39aaada02daeb980ece4f75aa9b1d2c3f4",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_studio_pipeline_adapters.py",
+      "object_id": "7e125b212c3f19cf03a818b98f18f27f6f3b3936",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_top_level_spec_md_spec.py",
+      "object_id": "bd9cb117de59dc30fc08401bf665b5f12cf587f9",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_touchdesigner_runtime.py",
+      "object_id": "1741c5e61f20fa4d19e0e95de45609b9c447c178",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_video_exporter.py",
+      "object_id": "45aa979b532a73aaf52f60dc6e83545e4cce7495",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_web_spec.py",
+      "object_id": "17ef5b507f01e1e13017128a9bb3231252550630",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/test_wgpu_headless_export.py",
+      "object_id": "7b01621c525fb48657787062152969edce945d3c",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/tests/workflows/test_native_audio_workflows.py",
+      "object_id": "35c3e4f4e2b26e122f07ae5b41933c9fea9b63b0",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/uv.lock",
+      "object_id": "e917961af2fb97aaf4251426f86b5ecf00b28a26",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/README.md",
+      "object_id": "d1c33a9810ad3325ed5cee701395b678b167025f",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/ipadapter_character.json",
+      "object_id": "929c1615e19dbe447814482f81a2b778c37f8dcb",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/pulid_character.json",
+      "object_id": "a435eba7d1aca39b3b88b6237528cbd0cc40b515",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/sdxl_image.json",
+      "object_id": "c44a56179d4c7860ad6e303aa15fd3813c153ca5",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/seedance_a2v.json",
+      "object_id": "b8f5ad99f60ff37e8ac25146a4a7aad370e0b6e7",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/wan_s2v_audio.json",
+      "object_id": "8af224ae2340006b1c3c29d4db2a01333c37b282",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "backend/workflows/wan_video.json",
+      "object_id": "85631e032645c19e15539be13ea5ec722f28a051",
+      "mode": "100644",
+      "family": "support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "benches/README.md",
+      "object_id": "65ef96cb1c6c5b953a238790f4605d0bccf0494a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-demo/Cargo.toml",
+      "object_id": "4c563e237540995fbe8efd38df313484d996cc76",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-demo/src/main.rs",
+      "object_id": "1610afc8aa68fbf915ee1b3c6889602b47e1d0d2",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-mir/Cargo.toml",
+      "object_id": "7694bf29011fc234d617926aec695faf5011ad36",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-mir/benches/analyzer.rs",
+      "object_id": "d378cd78e49ec12727abbb42b2b9ec36aacd87ef",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-mir/src/bin/main.rs",
+      "object_id": "3b9f7a771daa8aed5bf9250339793803941f58aa",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-mir/src/lib.rs",
+      "object_id": "7396aaa010971251602df999bbfd9f6edaa2eef1",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-render-wgpu/Cargo.toml",
+      "object_id": "36536565b4ad351a15fc2069627881fdd85ac75e",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/melosviz-render-wgpu/src/lib.rs",
+      "object_id": "88576f214845ae36994fd951ca0e49ef5b80dd1e",
+      "mode": "100644",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "crates/scripts/run_cargo_mutants.sh",
+      "object_id": "644656cc3a99a387de1e93078c4926b135381c01",
+      "mode": "100755",
+      "family": "rust-support",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/README.md",
+      "object_id": "9b837163a5f4121836e04d54f4a3a13665647336",
+      "mode": "100644",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/docker-compose.dev.yml",
+      "object_id": "e86bbe51e6abca11f94bc97aeb67d652af1dba4f",
+      "mode": "100644",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/prometheus/melosviz-bridge-rules.yaml",
+      "object_id": "41c531af11888636208dccc18a2de27481298ddf",
+      "mode": "100644",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/scripts/c4d_render_driver_stub.py",
+      "object_id": "2528534442dcdd37d78c194187f4acd405866a9b",
+      "mode": "100755",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/scripts/c4d_stub_server.py",
+      "object_id": "e21eb2d7e66bed3bce37e506e26cc3621ce9f5cc",
+      "mode": "100755",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/scripts/run_pipeline_dev.sh",
+      "object_id": "c453dde3ceccd4bf4d3063beb6ad634a6b36c399",
+      "mode": "100755",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deploy/scripts/test_c4d_stub_server.py",
+      "object_id": "7adeacdab972782fb3e12e029f1d1ce566b63dff",
+      "mode": "100644",
+      "family": "deployment",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    }
+  ]
+}
