@@ -53,3 +53,18 @@ Candidate differentiation remains: durable API-first + GUI-reviewable structured
 The September 18 findings already recorded mutation tests editing tracked source in place and earlier cache activation/provenance defects. September CI history includes qgate failures, workflow parse failures and later repairs. This does not invalidate all current tests; it means historical 'green' labels need exact candidate/run/collector provenance.
 
 The mature grader must therefore protect its own policy and source candidate: mutation/fuzz work belongs in isolated copies/worktrees; a test run that mutates the candidate under evaluation without immutable before/after identity cannot qualify that same candidate.
+
+
+## M-F09 — mounted `viz generate` can report assembly_ok for a spec-only assembly (blocking user-facing oracle)
+
+Tracing the actual CLI removes the earlier caller ambiguity. `_cmd_generate` constructs `Orchestrator(...)` with default assembly enabled and calls `orchestrator.render(spec, audio_path=wav_path)` **without** `segment_paths`. It then reports `"assembly_ok": result.assembly_result is not None`.
+
+The frozen orchestrator initializes `collected_paths` only from caller-supplied `segment_paths`; it never appends freshly rendered artifacts. It passes that empty list to `MEAdapter.render`. MEAdapter deliberately returns a job-spec result when AME is unavailable and no segment paths exist; no assembly is performed. Because that object is non-null, the CLI can report `assembly_ok: true` for a run that assembled no generated scene media.
+
+This is a concrete mounted-surface false positive. It is distinct from the separate `viz assemble` command, which scans the output directory for media. Closure requires the generate contract to either (a) feed exact per-scene accepted artifacts into assembly and validate the resulting media, or (b) report typed assembly states such as `not_attempted`, `plan_only`, `assembled_unverified`, `accepted` rather than object existence. Add a regression with two same-backend scenes and no injected segment list.
+
+## M-F10 — the alternate real compose path also loses scene identity at dispatch
+
+`backend/src/melosviz/compose/assemble.py` loops semantic assignments and, when `mock_adapters=False`, calls `_dispatch_segment(render_spec, asgn)`. That helper creates a fresh Orchestrator and calls `orch.render(render_spec, scene_types=[scene_type])`; it does not pass the assignment's scene index/identity. The orchestrator's explicit scene-type path dispatches **every** segment in the full RenderSpec matching that type, then `per_scene_results.get(scene_type)` returns the type-aggregated result.
+
+Therefore a compose-plan “segment adapter_result” is not proven to correspond to that assignment when multiple scenes share a backend type. This reinforces the ontology decision that scene instance identity cannot be keyed by scene type. Closure needs a scene-ID/index-targeted render API with one-to-one receipts, not a type filter used as a segment selector.
