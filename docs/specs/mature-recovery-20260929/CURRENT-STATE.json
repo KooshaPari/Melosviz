@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "program_id": "MR-20260929",
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
@@ -9,18 +9,33 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": null,
   "status": "INCOMPLETE_BLOCKED",
-  "contract_authority": "CANDIDATE_NOT_ACCEPTED",
-  "source_denominator": {"state": "OPEN", "total": null, "resolved": null, "fraction": null},
+  "contract_authority": "PARTIAL_USER_INTENT_RECOVERED_ARCHITECTURE_NOT_FROZEN",
+  "source_denominator": {
+    "state": "OPEN",
+    "total": null,
+    "resolved": null,
+    "fraction": null
+  },
   "mature_completion": null,
   "specification_completion": null,
   "journey_closure": "REAL_CREATIVE_PIPELINE_NOT_INDEPENDENTLY_MEASURED",
   "product_suites_run_this_pass": false,
-  "blocking_findings": ["M-F01", "M-F02", "M-F03", "M-F04", "M-F07"],
-  "additional_verification_risk": ["M-F05"],
+  "blocking_findings": [
+    "M-F01",
+    "M-F02",
+    "M-F03",
+    "M-F04",
+    "M-F07"
+  ],
+  "additional_verification_risk": [
+    "M-F05",
+    "M-F08"
+  ],
   "corrected_historical_claim": "M-F06",
-  "authority_gap": "Later studio-pivot acceptance and relationship to earlier hybrid/live horizon unresolved; raw conversation not fetched",
+  "authority_recovered": "April 18 user accepted API/script-first + GUI-review hybrid/scanner music-visual design and also wanted simpler lyric/Canvas-style outputs. Later studio implementation replacement exists; no user-authored supersession of those product outcomes recovered.",
+  "existence_gate": "OPEN_GENERIC_MULTI_AGENT_MV_COMMODITIZED",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "progress_policy": "No scalar document-count progress; measure exact candidate-bound functional, trace, evidence, journey and quality dimensions separately"
+  "progress_policy": "No scalar document-count progress. Real decoded media, scene identity, durable revision and exact candidate/config evidence are separate dimensions."
 }
