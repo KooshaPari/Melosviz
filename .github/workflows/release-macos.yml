@@ -25,7 +25,12 @@ jobs:
       app-name: Melosviz
       app-bundle-id: ai.phenotype.melosviz
       build-cmd: |
-        pip install -e ".[desktop]" --only-binary :all:
+        # The extra is `bridge`, not `desktop`: that is the table in
+        # backend/pyproject.toml that carries the FastAPI/uvicorn/python-multipart
+        # stack the Electrobun shell talks to. pip warns and installs nothing when
+        # an extra does not exist, so the previous ".[desktop]" was a no-op and
+        # the PyInstaller step ran against an environment with no HTTP layer.
+        pip install -e ".[bridge]" --only-binary :all:
         pyinstaller --windowed --name Melosviz --osx-bundle-identifier ai.phenotype.melosviz melosviz/__main__.py
         cp -R dist/Melosviz.app dist/macos/
       entitlements-file: Entitlements.plist
