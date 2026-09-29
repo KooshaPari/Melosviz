@@ -98,8 +98,15 @@ jobs:
         # Not advisory. This suite is the only thing that runs the StudioConsole
         # component in CI, so leaving it on continue-on-error let a red suite
         # pass while the job reported success. Verified green on the pinned
-        # lockfile before removing the flag.
-        run: bunx --bun vitest run src/components/__tests__/StudioConsole.test.tsx
+        # lockfile (13/13) before removing the flag.
+        #
+        # Do NOT add `--bun` here. vite@8.2.2 does
+        # `import { parseEnv } from "node:util"`, and util.parseEnv is a
+        # Node >= 20.12 API that Bun 1.1.34 (the version pinned above) does not
+        # implement, so forcing the vitest process onto Bun's runtime dies at
+        # startup with "Export named 'parseEnv' not found in module 'util'".
+        # Plain `bunx` runs vitest on Node, where the import resolves.
+        run: bunx vitest run src/components/__tests__/StudioConsole.test.tsx
       - name: Typecheck
         working-directory: web
         run: bunx tsc --noEmit -p tsconfig.json
