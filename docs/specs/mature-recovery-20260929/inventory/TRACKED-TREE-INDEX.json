@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "product": "KooshaPari/Melosviz",
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "tracked_git_denominator": {
@@ -9,7 +9,8 @@
       "TRACKED-TREE-A.json",
       "TRACKED-TREE-B.json"
     ],
-    "untruncated": true
+    "untruncated": true,
+    "category_sum": 688
   },
   "family_counts": {
     "support": 54,
@@ -23,24 +24,25 @@
     "domain": 10,
     "conductor": 8,
     "render": 17,
-    "verification": 36,
+    "verification": 114,
     "rust-support": 9,
     "deployment": 7,
-    "human-interface": 420,
-    "documentation": 136,
-    "design-intent": 4,
-    "historical": 22,
-    "examples": 10,
-    "localization": 6,
-    "integration": 40,
-    "packaging": 14,
-    "automation": 62,
-    "root-contract-or-config": 70
+    "human-interface": 210,
+    "documentation": 68,
+    "design-intent": 2,
+    "historical": 11,
+    "examples": 5,
+    "localization": 3,
+    "integration": 20,
+    "packaging": 7,
+    "automation": 31,
+    "root-contract-or-config": 35
   },
   "semantic_denominator": {
     "state": "OPEN",
     "resolved": null,
     "total": null
   },
-  "warning": "Tracked blob count is not a requirements count, semantic-source count, or completion percentage. External/history/conversation sources are separate denominators."
+  "warning": "Tracked blob count is not a requirements count, semantic-source count, or completion percentage. External/history/conversation sources are separate denominators.",
+  "correction": "v1 accidentally double-counted part-B family buckets while leaving total_blobs correct; v2 recomputes family counts from both inventories exactly once."
 }
