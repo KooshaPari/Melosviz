@@ -18,14 +18,18 @@
   },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "REAL_CREATIVE_PIPELINE_NOT_INDEPENDENTLY_MEASURED",
+  "journey_closure": "MOUNTED_GENERATE_AND_DESKTOP_FALSE_GREENS_CONFIRMED_BY_SOURCE_TRACE",
   "product_suites_run_this_pass": false,
   "blocking_findings": [
     "M-F01",
     "M-F02",
     "M-F03",
     "M-F04",
-    "M-F07"
+    "M-F07",
+    "M-F09",
+    "M-F10",
+    "M-F11",
+    "M-F12"
   ],
   "additional_verification_risk": [
     "M-F05",
@@ -37,5 +41,7 @@
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "progress_policy": "No scalar document-count progress. Real decoded media, scene identity, durable revision and exact candidate/config evidence are separate dimensions."
+  "progress_policy": "No scalar document-count progress. Real decoded media, scene identity, durable revision and exact candidate/config evidence are separate dimensions.",
+  "inherited_catalog_grading": "QUARANTINED_TRACEABILITY_COMPLETENESS_SCALARS",
+  "executable_oracle": "SPECIFIED_NOT_EXECUTED"
 }
