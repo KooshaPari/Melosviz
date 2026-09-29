@@ -1077,6 +1077,25 @@ def main() -> None:
         print(f"[melosviz bridge] {reason}", file=sys.stderr)
         sys.exit(2)
 
+    # A public bind crosses the desktop-local trust boundary. The explicit
+    # bind override authorizes exposure; it does not silently waive bearer
+    # authentication. Refuse startup unless auth is enabled and configured.
+    if reason == "ALLOW_PUBLIC=1":
+        if not security.auth_required():
+            print(
+                "[melosviz bridge] public bind requires "
+                "MELOSVIZ_BRIDGE_REQUIRE_AUTH=1",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if not security.expected_token():
+            print(
+                "[melosviz bridge] public bind requires "
+                "MELOSVIZ_BRIDGE_TOKEN",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+
     print(f"[melosviz bridge] binding {args.host}:{args.port} ({reason})")
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
 

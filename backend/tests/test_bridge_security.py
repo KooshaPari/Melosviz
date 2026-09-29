@@ -102,6 +102,95 @@ class TestLoopbackAssertion:
         captured = capsys.readouterr()
         assert "loopback" in captured.err.lower() or "0.0.0.0" in captured.err
 
+    @pytest.mark.parametrize(
+        "host",
+        [
+            "192.168.1.10",
+            "10.0.0.7",
+            "172.16.1.2",
+            "169.254.1.2",
+            "8.8.8.8",
+            "2001:4860:4860::8888",
+            "definitely-not-local.invalid",
+        ],
+    )
+    def test_main_refuses_any_non_loopback_without_allow_flag(
+        self,
+        bridge_env,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture,
+        host: str,
+    ):
+        from melosviz.bridge import server
+
+        monkeypatch.setattr("sys.argv", ["server", "--host", host, "--port", "0"])
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+
+        with pytest.raises(SystemExit) as excinfo:
+            server.main()
+        assert excinfo.value.code != 0
+        captured = capsys.readouterr()
+        assert "loopback" in captured.err.lower()
+
+    @pytest.mark.parametrize("host", ["127.0.0.1", "127.12.3.4", "::1", "localhost"])
+    def test_loopback_classifier_accepts_true_loopback(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch, host: str
+    ):
+        from melosviz.bridge import security
+
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+        ok, reason = security.loopback_check(host)
+        assert ok is True
+        assert reason == "loopback"
+
+    def test_hostname_resolving_to_lan_is_not_loopback(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch
+    ):
+        from melosviz.bridge import security
+
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+
+        def fake_getaddrinfo(host, port, family, socktype):
+            assert host == "render-host.internal"
+            if family == security.socket.AF_INET:
+                return [(family, socktype, 6, "", ("192.168.50.20", 0))]
+            return []
+
+        monkeypatch.setattr(security.socket, "getaddrinfo", fake_getaddrinfo)
+        ok, reason = security.loopback_check("render-host.internal")
+        assert ok is False
+        assert "loopback only" in reason
+
+    def test_public_override_requires_bearer_auth(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    ):
+        from melosviz.bridge import server
+
+        monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", "1")
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_REQUIRE_AUTH", raising=False)
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_TOKEN", raising=False)
+        monkeypatch.setattr("sys.argv", ["server", "--host", "192.168.1.10", "--port", "0"])
+
+        with pytest.raises(SystemExit) as excinfo:
+            server.main()
+        assert excinfo.value.code != 0
+        assert "requires MELOSVIZ_BRIDGE_REQUIRE_AUTH=1" in capsys.readouterr().err
+
+    def test_public_override_requires_configured_token(
+        self, bridge_env, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+    ):
+        from melosviz.bridge import server
+
+        monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", "1")
+        monkeypatch.setenv("MELOSVIZ_BRIDGE_REQUIRE_AUTH", "1")
+        monkeypatch.delenv("MELOSVIZ_BRIDGE_TOKEN", raising=False)
+        monkeypatch.setattr("sys.argv", ["server", "--host", "192.168.1.10", "--port", "0"])
+
+        with pytest.raises(SystemExit) as excinfo:
+            server.main()
+        assert excinfo.value.code != 0
+        assert "requires MELOSVIZ_BRIDGE_TOKEN" in capsys.readouterr().err
+
     def test_main_allows_public_bind_with_allow_flag(
         self, bridge_env, monkeypatch: pytest.MonkeyPatch
     ):
@@ -127,10 +216,10 @@ class TestLoopbackAssertion:
                 )
             },
         ) as _run:
-            monkeypatch.setattr("sys.argv", ["server", "--host", "0.0.0.0", "--port", "9123"])
+            monkeypatch.setattr("sys.argv", ["server", "--host", "192.168.1.10", "--port", "9123"])
             server.main()
 
-        assert called["host"] == "0.0.0.0"
+        assert called["host"] == "192.168.1.10"
         assert called["port"] == 9123
 
 
