@@ -50,6 +50,23 @@ jobs:
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
+          # --no-build-isolation means uv will NOT provision a build
+          # environment, so the setuptools backend has to already be in
+          # the venv. `uv venv` on a Linux runner gives a bare venv with
+          # no setuptools, so without this the editable install dies with
+          # "No module named 'setuptools'".
+          #
+          # The version is read out of uv.lock instead of being written
+          # here: `uv export` never emits build-system requirements, so it
+          # cannot ride in on the requirements file, and naming a version in
+          # the workflow is precisely what githubactions:S8544 flags. This
+          # keeps the lock authoritative and pins the backend the same way
+          # as every other dependency. It is a py3-none-any wheel, so
+          # --only-binary :all: accepts it and no sdist is built for it
+          # either.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "could not read the locked setuptools version from uv.lock" >&2; exit 1; }
+          uv pip install --only-binary :all: --no-deps "setuptools==${SETUPTOOLS_VERSION}"
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
 
