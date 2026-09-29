@@ -44,7 +44,7 @@ jobs:
         run: |
           uv export --locked --no-emit-project --no-hashes \
             --extra test \
-            --format requirements.txt --output-file "$RUNNER_TEMP/uv-requirements.txt"
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
           uv pip install --only-binary :all: --no-deps setuptools wheel
@@ -82,7 +82,7 @@ jobs:
           uv export --locked --no-emit-project --no-hashes \
             --extra test \
             --extra bridge \
-            --format requirements.txt --output-file "$RUNNER_TEMP/uv-requirements.txt"
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
           uv pip install --only-binary :all: --no-deps setuptools wheel

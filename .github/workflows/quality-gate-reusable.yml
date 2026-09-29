@@ -150,7 +150,7 @@ jobs:
         run: |
           uv export --locked --no-emit-project --no-hashes \
             --extra test --extra lint --extra analysis --extra bridge --group dev \
-            --format requirements.txt --output-file "$RUNNER_TEMP/uv-requirements.txt"
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
           uv pip install --only-binary :all: --no-deps setuptools wheel
