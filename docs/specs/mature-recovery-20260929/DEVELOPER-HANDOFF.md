@@ -27,7 +27,9 @@ Use a fresh output directory. The first command generates actual three-scene FFV
 
 **M-E03 — mounted consumer propagation and restart witness (after M-E02 result contract review).** Own CLI/bridge/desktop consumers and tests, not E02's files concurrently. Report per-scene execution versus independent acceptance; remove object-exists/all-rows-done inference. Exercise one persisted scene edit, stop/restart the actual application/renderer, rerun and prove which work was reused. A synthetic R2 verifier selftest is NOT this restart witness. Closure: real CLI/API/UI observations with identity-bound media; no job plan or placeholder counted as accepted output.
 
-M-E01 may run alongside Khostty K-E01 in another worktree. M-E02 and M-E03 share a contract dependency and must not write concurrently before it is reviewed. Registry receives compact receipts, not a competing canonical contract.
+**M-ESEC — bridge bind fail-closed repair (READY NOW, independent of M-E02).** Own `backend/src/melosviz/bridge/security.py`, focused bridge startup/security tests, and only the necessary startup policy hook in `bridge/server.py`. Start from `pass6/test_bridge_bind_contract.py`: frozen main should fail non-wildcard LAN/hostname cases. Repair must accept only true loopback without override; any authorized public bind must have an explicit auth/path policy. Do not mix rendering/result-schema changes into this worktree. Closure: RFC1918/link-local/public IPv4/IPv6/hostname negatives, explicit-public positives, and startup integration receipt.
+
+M-E01 may run alongside Khostty K-E01/K-E02/K-E03 and M-ESEC in separate worktrees. M-E02 and M-E03 share a contract dependency and must not write concurrently before it is reviewed. Registry receives compact receipts, not a competing canonical contract.
 
 ## Stop conditions / forbidden shortcuts
 
