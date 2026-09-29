@@ -9,7 +9,7 @@ import argparse, hashlib, json, shutil, subprocess
 from fractions import Fraction
 from pathlib import Path
 
-VERSION = "mv-oracle-0.1-experimental"
+VERSION = "mv-oracle-0.2-experimental"
 MAX_FILE_BYTES = 8 * 1024 * 1024
 MAX_FRAMES = 96
 
@@ -68,6 +68,15 @@ def inspect_media(path: Path, expected: dict, ffmpeg: str, ffprobe: str) -> dict
             raise ValueError("presentation timeline differs from fixture clock")
     if int(a["sample_rate"]) != expected["sample_rate"] or a["channels"] != 1:
         raise ValueError("wrong audio configuration")
+    audio_times = json.loads(execute([ffprobe, *common, "-select_streams", "a:0", "-show_frames",
+        "-show_entries", "frame=best_effort_timestamp_time,nb_samples", "-of", "json", str(path)]))
+    sample_cursor = 0
+    for frame in audio_times.get("frames", []):
+        if abs(Fraction(frame["best_effort_timestamp_time"]) - Fraction(sample_cursor, expected["sample_rate"])) > tolerance:
+            raise ValueError("audio presentation timeline differs from fixture clock")
+        sample_cursor += int(frame["nb_samples"])
+    if sample_cursor != expected["samples"]:
+        raise ValueError("decoded audio sample count mismatch")
     if expected["frames"] > MAX_FRAMES or expected["width"] > 64 or expected["height"] > 64:
         raise ValueError("policy exceeds fixture resource ceiling")
     rgb = execute([ffmpeg, *common, "-xerror", "-err_detect", "explode", "-i", str(path),
@@ -85,6 +94,8 @@ def inspect_media(path: Path, expected: dict, ffmpeg: str, ffprobe: str) -> dict
 
 def evaluate(policy: dict, receipt: dict, root: Path, *, ffmpeg: str | None = None, ffprobe: str | None = None) -> dict:
     errors, observations = [], []
+    if not isinstance(policy, dict) or not isinstance(receipt, dict):
+        return {"verdict":"FAIL", "verifier":VERSION, "errors":["policy and receipt must be objects"], "observations":[]}
     try:
         fm, fp = ffmpeg or shutil.which("ffmpeg"), ffprobe or shutil.which("ffprobe")
         if not fm or not fp:
@@ -103,7 +114,7 @@ def evaluate(policy: dict, receipt: dict, root: Path, *, ffmpeg: str | None = No
         if receipt.get("collector_status") != "complete":
             errors.append("missing/failed/skipped collection")
         actual = receipt.get("scenes", [])
-        if not isinstance(actual, list) or [s.get("id") for s in actual] != ids:
+        if not isinstance(actual, list) or not all(isinstance(s, dict) for s in actual) or [s.get("id") for s in actual] != ids:
             errors.append("missing/duplicate/reordered scene receipts")
         else:
             for want, got in zip(expected, actual, strict=True):
@@ -117,7 +128,7 @@ def evaluate(policy: dict, receipt: dict, root: Path, *, ffmpeg: str | None = No
                 except ValueError as exc:
                     errors.append(f"scene {want['id']}: {exc}")
         final = receipt.get("assembly", {})
-        if final.get("state") != "assembled_unverified":
+        if not isinstance(final, dict) or final.get("state") != "assembled_unverified":
             errors.append("no independently verifiable assembled output")
         else:
             try:
@@ -129,7 +140,7 @@ def evaluate(policy: dict, receipt: dict, root: Path, *, ffmpeg: str | None = No
                 errors.append(f"assembly: {exc}")
     except Blocked as exc:
         return {"verdict":"BLOCKED", "verifier":VERSION, "verifier_sha256":sha(Path(__file__).read_bytes()), "errors":[str(exc)], "observations":observations}
-    except (KeyError, TypeError, ValueError, OSError) as exc:
+    except (KeyError, TypeError, ValueError, OSError, AttributeError) as exc:
         errors.append(f"invalid or missing evidence: {exc}")
     return {"verdict":"FAIL" if errors else "PASS", "verifier":VERSION, "verifier_sha256":sha(Path(__file__).read_bytes()),
             "identity_authentication":"requires trusted external execution receipt; claims alone are not authenticated",
