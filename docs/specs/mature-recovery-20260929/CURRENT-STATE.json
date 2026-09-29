@@ -4,7 +4,7 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-29",
-  "assessment_pass": 5,
+  "assessment_pass": 6,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -14,14 +14,30 @@
   "general_dev_handoff": false,
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
-  "ready_work_packages": ["M-E01"],
-  "dependent_experimental_work_packages": {"M-E02": ["M-E01"], "M-E03": ["M-E02", "experimental result contract review"]},
+  "ready_work_packages": [
+    "M-E01"
+  ],
+  "dependent_experimental_work_packages": {
+    "M-E02": [
+      "M-E01"
+    ],
+    "M-E03": [
+      "M-E02",
+      "experimental result contract review"
+    ]
+  },
   "contract_authority": "HISTORICAL_ACCEPTANCE_ATTRIBUTIONS_REQUIRE_PRIMARY_SOURCE",
   "authority_correction": "Earlier direct-recovery claims are not independently reproduced. Pass 5 found prior assistant summaries; original April 18 transcript search returned no primary match. Preserve as imported attribution, not authorized fact.",
-  "source_denominator": {"state": "OPEN", "total": null, "resolved": null, "fraction": null},
+  "source_denominator": {
+    "state": "OPEN_SEMANTIC_RESOLUTION",
+    "tracked_tree_enumeration": "CLOSED",
+    "total_semantic_sources": null,
+    "resolved_semantic_sources": null,
+    "fraction": null
+  },
   "mature_completion": null,
   "specification_completion": null,
-  "journey_closure": "CLI_AND_GUI_SOURCE_TRACE_ONLY_NO_PRODUCT_E2E_RUN",
+  "journey_closure": "MOUNTED_SOURCE_TRACE_REVEALS_DUPLICATED_ADAPTER_WORK_AND_CONTRADICTORY_UI_TRUTH; NO PRODUCT_E2E_RUN",
   "product_suites_run_this_pass": false,
   "helper_probe_execution": "EXTRACTED_FUNCTION_BODIES_3_DEFECTS_3_CONTROLS",
   "full_frozen_source_replay": "READY_NOT_EXECUTED",
@@ -29,13 +45,43 @@
   "oracle_version": "mv-oracle-0.2-experimental",
   "oracle_subject": "VERIFIER_ONLY_NOT_PRODUCT",
   "experiment_receipt": "pass5/EXPERIMENT-RECEIPT.json",
-  "blocking_findings": ["M-F01", "M-F02", "M-F03", "M-F04", "M-F07", "M-F09", "M-F10", "M-F11", "M-F12"],
-  "additional_verification_risk": ["M-F05", "M-F08", "identity receipt authentication not implemented"],
+  "blocking_findings": [
+    "M-F01",
+    "M-F02",
+    "M-F03",
+    "M-F04",
+    "M-F07",
+    "M-F09",
+    "M-F10",
+    "M-F11",
+    "M-F12",
+    "M-F13",
+    "M-F14",
+    "M-F15"
+  ],
+  "additional_verification_risk": [
+    "M-F05",
+    "M-F08",
+    "identity receipt authentication not implemented"
+  ],
   "corrected_historical_claim": "M-F06 applies to orchestrator constructor only; not a whole-repository env-mutation claim",
   "existence_gate": "OPEN",
   "independent_fresh_review": "NOT_PERFORMED",
   "invalid_catalogs_eligible_for_grading": false,
   "inherited_catalog_grading": "EXCLUDED_BY_RECOVERY_POLICY_EXISTING_CI_NOT_MODIFIED",
   "pilot": "NOT_RUN_SEPARATE_POST_BUILD_GATE",
-  "progress_policy": "Verifier selftests, diagnostic reproduction, source tracing and product acceptance are distinct subjects. No document-count completion or empty greens."
+  "progress_policy": "Verifier selftests, diagnostic reproduction, source tracing and product acceptance are distinct subjects. No document-count completion or empty greens.",
+  "tracked_tree_enumeration": {
+    "state": "CLOSED",
+    "exact_blob_rows": 688,
+    "all_top_level_trees_covered": true,
+    "all_recursive_responses_untruncated": true,
+    "summary": "inventory/SUMMARY.json"
+  },
+  "M_E01_progress": {
+    "tracked_tree_inventory": "COMPLETE",
+    "full_frozen_source_replay": "NOT_EXECUTED",
+    "mounted_generate_reproduction": "NOT_EXECUTED",
+    "semantic_family_resolution": "IN_PROGRESS"
+  }
 }
