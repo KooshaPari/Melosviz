@@ -134,3 +134,14 @@ Index base cannot be part of implicit tribal knowledge. Mature identity should u
 The desktop generate path marks every scene done/100% after the CLI call returns. Mastering can intentionally emit an offline `master_plan.json` and return 0 without real master media. Shipping can produce an offline/debug ZIP. Desktop handlers advance status to master/ship done based on request return rather than independent acceptance state.
 
 Thus the earlier execution-vs-acceptance issue is systemic across generate → master → ship, not local to the scene queue. UI state must distinguish planned/executed/validated/accepted and surface the exact evidence subject.
+
+
+## M-F13 — bridge non-loopback guard is fail-open for arbitrary LAN/hostname binds (blocking security boundary)
+
+`backend/src/melosviz/bridge/security.py::loopback_check` documents that anything other than a true loopback literal/localhost should require `MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1`. The implementation only rejects three wildcard hosts: `0.0.0.0`, `::`, and `*`. Every other string falls through to `return True, "loopback"`.
+
+Concrete source-equivalent probe: `127.0.0.1`, `::1`, and `localhost` return allowed as intended, but so do `192.168.1.10`, `10.0.0.7`, and `example.com` with no public-bind override. `server.py` calls this guard directly before `uvicorn.run`, so this is mounted startup behavior rather than an unused helper.
+
+The threat is compounded by the explicitly supported legacy auth-off mode: protected middleware only checks bearer auth when `MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`, and path containment has a legacy branch that returns the requested path when auth is disabled and no explicit allowed-dir override is set. Packaged desktop normally enables auth, but manual/dev invocation can combine an arbitrary non-loopback `--host` with auth-off defaults.
+
+Required repair experiment: parse host with `ipaddress.ip_address` when literal; allow only `.is_loopback`; resolve hostnames conservatively or reject non-`localhost` names unless explicit public-bind authorization is present. Add negative tests for RFC1918, link-local, public IPv4/IPv6 and arbitrary hostnames. Verify auth + allowed-dir policy is automatically required for any authorized public bind. Do not treat `0.0.0.0` coverage as proof of the general property.
