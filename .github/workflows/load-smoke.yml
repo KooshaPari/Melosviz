@@ -23,24 +23,30 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Install
         working-directory: backend
-        run: >-
-          pip install -e ".[test,bridge]" --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive
+        # version is pinned rather than resolved at CI time.
+        run: uv sync --frozen --extra test --extra bridge
       - name: Load + golden + fuzz
         working-directory: backend
         run: |
-          python -m pytest \
+          uv run python -m pytest \
             tests/test_load_bridge.py \
             tests/test_golden_corpus.py \
             tests/test_fuzz_renderspec.py \
             -q --tb=short
       - name: Emit Harbor tasks (smoke)
-        run: python eval/harbor/adapter.py --out eval/harbor/out
+        # Runs from the repo root, so point uv at the backend project
+        # that holds the lock.
+        run: uv run --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers (inline)
         working-directory: backend
         run: |
-          python -m pytest \
+          uv run python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short

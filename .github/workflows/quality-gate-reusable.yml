@@ -111,6 +111,12 @@ jobs:
           cache: pip
           cache-dependency-path: backend/pyproject.toml
 
+      - name: Set up uv
+        if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
+
       - name: Install ffmpeg and set C locale
         if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
         env:
@@ -130,11 +136,10 @@ jobs:
       - name: Install backend test deps
         if: inputs.coverage-artifact-name == '' || inputs.run-baseline-checks
         working-directory: backend
-        # Exact pins on every third-party tool, verified to publish wheels so
-        # --only-binary guard resolves without running any sdist setup script.
-        # Verified end to end in a clean venv on this dependency set.
-        run: >-
-          pip install -e ".[test,lint,analysis,bridge]" pytest-cov==7.1.0 coverage==7.16.2 hypothesis==6.168.3 httpx==0.28.1 pytest-bdd==8.1.0 bandit==1.9.4 --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive version is
+        # pinned rather than resolved at CI time. pytest-cov, coverage and
+        # bandit come from the [dependency-groups] dev table in pyproject.toml.
+        run: uv sync --frozen --extra test --extra lint --extra analysis --extra bridge --group dev
 
       - name: Generate coverage (standalone caller)
         if: inputs.coverage-artifact-name == ''
@@ -151,7 +156,7 @@ jobs:
         # presets/aspect_ratios.py). The pytest --cov-fail-under=80 bar
         # remains the canonical coverage floor.
         run: |
-          python -m pytest \
+          uv run python -m pytest \
             --cov=melosviz \
             --cov-fail-under=80 \
             --cov-report=term-missing \
@@ -165,8 +170,8 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          python -m ruff check src/ tests/
-          python -m ruff format --check src/ tests/
+          uv run python -m ruff check src/ tests/
+          uv run python -m ruff format --check src/ tests/
 
       - name: Baseline — security (bandit high/critical)
         if: inputs.run-baseline-checks
@@ -176,8 +181,8 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          python -m bandit -r src/ -ll -ii --quiet || true
-          python -m bandit -r src/ -lll -iii --quiet
+          uv run python -m bandit -r src/ -ll -ii --quiet || true
+          uv run python -m bandit -r src/ -lll -iii --quiet
 
       - name: Baseline — chaos / perf / property
         if: inputs.run-baseline-checks
@@ -187,9 +192,9 @@ jobs:
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
         run: |
-          python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
-          python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
-          python -m pytest tests/test_qgate_backfill.py::TestPropertyPresets -q --tb=short
+          uv run python -m pytest tests/test_qgate_backfill.py::TestChaosResilience -q --tb=short
+          uv run python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
+          uv run python -m pytest tests/test_qgate_backfill.py::TestPropertyPresets -q --tb=short
 
       - name: Baseline — backend e2e pipeline smoke
         if: inputs.run-baseline-checks
@@ -198,7 +203,7 @@ jobs:
           LC_ALL: C.UTF-8
           LANG: C.UTF-8
           MELOSVIZ_LOCALE: en
-        run: python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
+        run: uv run python -m pytest tests/test_e2e_pipeline_smoke.py -q --tb=short
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1

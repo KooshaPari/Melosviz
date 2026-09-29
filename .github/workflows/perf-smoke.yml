@@ -19,12 +19,16 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Install backend
         working-directory: backend
-        run: >-
-          pip install -e ".[test]" hypothesis==6.168.3 --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive
+        # version is pinned rather than resolved at CI time.
+        run: uv sync --frozen --extra test
       - name: Run perf smoke tests
         working-directory: backend
         # Gates documented in docs/PERF_BENCHMARK.md and .qgate.toml.
         # Import the full qgate module (needs hypothesis for collection).
-        run: python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short
+        run: uv run python -m pytest tests/test_qgate_backfill.py::TestPerfSmoke -q --tb=short

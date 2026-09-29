@@ -26,20 +26,21 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Build melosviz-mir
         run: cargo build --release -p melosviz-mir
       - name: Install backend
         working-directory: backend
-        # Installed editable from the local tree, so there is no third-party
-        # version to pin here. The --only-binary guard blocks the sdist path
-        # for every transitive dependency, which is where setup scripts run.
-        run: >-
-          pip install -e ".[test]" --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive
+        # version is pinned rather than resolved at CI time.
+        run: uv sync --frozen --extra test
       - name: Parity tests
         working-directory: backend
         env:
           MELOSVIZ_MIR_BIN: ${{ github.workspace }}/target/release/melosviz-mir
-        run: python -m pytest tests/test_rust_python_parity.py -q --tb=short
+        run: uv run python -m pytest tests/test_rust_python_parity.py -q --tb=short
 
   harbor-runner:
     name: Harbor emit + verify (live runner smoke)
@@ -50,16 +51,22 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Install backend
         working-directory: backend
-        run: >-
-          pip install -e ".[test,bridge]" --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive
+        # version is pinned rather than resolved at CI time.
+        run: uv sync --frozen --extra test --extra bridge
       - name: Emit Harbor task trees
-        run: python eval/harbor/adapter.py --out eval/harbor/out
+        # Runs from the repo root, so point uv at the backend project
+        # that holds the lock.
+        run: uv run --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers
         working-directory: backend
         run: |
-          python -m pytest \
+          uv run python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short

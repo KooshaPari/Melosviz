@@ -75,6 +75,23 @@ otel = [
     "opentelemetry-exporter-otlp-proto-http>=1.25",
 ]
 
+# CI tooling that the library never imports but the quality gate installs
+# alongside the package. Declaring these here, instead of naming them ad
+# hoc in each workflow, is what lets uv.lock pin them. They were
+# previously absent from the lock, so every workflow had to spell out its
+# own versions, and SonarCloud's dependency-locking rule
+# (githubactions:S8544) flagged each `pip install -e ".[...]"` line.
+#
+# `uv sync --all-extras --dev` now resolves all of them from uv.lock.
+[dependency-groups]
+dev = [
+    "pytest-cov>=5.0",
+    "coverage>=7.4",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "mutmut>=3.0",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

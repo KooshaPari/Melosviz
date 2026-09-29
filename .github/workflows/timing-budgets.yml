@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
 
       - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
         with:
@@ -28,12 +31,13 @@ jobs:
       - name: Install backend (test extras)
         working-directory: backend
         # Keep install lean: smoke + golden need package + pytest only.
-        run: >-
-          pip install -e ".[test]" --only-binary :all:
+        # Installed from the committed uv.lock, so every transitive
+        # version is pinned rather than resolved at CI time.
+        run: uv sync --frozen --extra test
 
       - name: Install ffmpeg (diagnose required check)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
 
       - name: Run timing budget gate
         # Budgets: docs/TIMING_BUDGETS.md (WBS-P1.11 / C03 L30.10)
-        run: python scripts/check_timing_budgets.py
+        run: uv run --project backend python scripts/check_timing_budgets.py
