@@ -83,6 +83,7 @@ def test_same_backend_scenes_are_one_work_item_each(tmp_path, monkeypatch):
         "comfyui_image",
         "comfyui_image",
     ]
+    assert all(result.per_scene_results[i]["artifact_sha256"] for i in range(3))
     assert len(AssemblyAdapter.calls) == 1
     assert len(AssemblyAdapter.calls[0]) == 3
     assert [Path(p).read_text() for p in AssemblyAdapter.calls[0]] == [
