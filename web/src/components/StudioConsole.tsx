@@ -786,17 +786,19 @@ export function StudioConsole({
             data-state={
               errorScenes > 0
                 ? "error"
-                : completedScenes === totalScenes && totalScenes > 0
-                  ? "done"
-                  : stage === "generate"
-                    ? "running"
-                    : "queued"
+                : acceptedScenes === totalScenes && totalScenes > 0
+                  ? "accepted"
+                  : producedScenes === totalScenes && totalScenes > 0
+                    ? "produced"
+                    : stage === "generate"
+                      ? "running"
+                      : "queued"
             }
           >
             {totalScenes === 0
               ? tr("studio.queue.empty", "No scenes yet")
-              : tr("studio.queue.progress", "{completed} / {total} done{error}")
-                  .replace("{completed}", String(completedScenes))
+              : tr("studio.queue.progress", "{completed} / {total} accepted{error}")
+                  .replace("{completed}", String(acceptedScenes))
                   .replace("{total}", String(totalScenes))
                   .replace(
                     "{error}",
