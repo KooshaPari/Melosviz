@@ -47,7 +47,7 @@ def test_only_one_live_claimable_attempt_per_scene(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
     a=l.queue("P",r,"S1")
     try: l.queue("P",r,"S1")
-    except Exception: pass
+    except m.sqlite3.IntegrityError: pass
     else: raise AssertionError("duplicate live attempt admitted")
     assert l.claim(a,"w1"); assert not l.claim(a,"w2")
 
