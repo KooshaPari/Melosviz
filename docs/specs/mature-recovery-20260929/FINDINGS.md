@@ -230,3 +230,12 @@ Closure requires cache identity to cover every render-affecting dependency by im
 The mounted bridge `main()` calls this helper before `uvicorn.run`, so the classifier participates in the real startup boundary. A source-equivalent pass-6 probe reproduced the false positives for `192.168.1.10`, `10.0.0.7`, and `example.com`, while true loopback controls passed and wildcard hosts were denied as expected. A full-checkout regression test is committed but not yet executed.
 
 Public-bind authorization and bearer authentication are separate controls. A repair must fail closed for every non-loopback target unless explicit public binding is authorized, and startup must also require or explicitly waive an authentication/path policy for that public exposure. Do not treat packaged-desktop defaults as proof that manual/dev/server invocation is safe.
+
+
+## M-F16 — Electrobun partial-rerender RPC schema and handler disagree on parameter names
+
+The RPC contract in `desktop/src/rpc.ts` names the optional fields `reRender`, `renderOut`, and `renderOffline`. The corresponding Bun main-process handler in `desktop/src/index.ts` destructures `rerender` and `renderOutDir`, and does not destructure/use `renderOffline`.
+
+Therefore a caller honoring the published TypeScript RPC schema does not supply the property names that the handler checks for `--re-render` and `--render-out`; the offline flag is ignored entirely by that handler. This is a deterministic interface mismatch in a mounted desktop RPC definition/implementation, even though current source search did not find `rpc.request.runDirect` used by the existing Electrobun view.
+
+The web StudioConsole uses the separate FastAPI `/api/studio/direct` path, so this finding must not be generalized into “all edit/re-render is broken.” It does show that the desktop RPC surface and documentation cannot be treated as self-validating. Closure requires generated/checked schema parity and an actual consumer test that asserts the CLI argv, including negative cases for omitted versus supplied flags.
