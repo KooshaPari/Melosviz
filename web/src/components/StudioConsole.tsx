@@ -75,11 +75,10 @@ interface StoryboardPayload {
 }
 
 interface GenerateSceneMeta {
-  name?: string;
-  scene_dir?: string;
-  workflow_json?: string;
-  job_spec_json?: string;
-  plan_json?: string;
+  scene_index?: number;
+  scene_type?: string;
+  outcome?: string | null;
+  artifact_path?: string | null;
 }
 
 interface GeneratePayload {
@@ -229,9 +228,13 @@ export function StudioConsole({
           artifact_path?: string;
           error_message?: string;
           duration_ms?: number;
+          extras?: { outcome?: string };
         };
         const idx = payload.scene_index;
-        const next = payload.state;
+        let next = payload.state;
+        if (next === "done" && payload.extras?.outcome !== "render") {
+          next = "error";
+        }
         if (typeof idx !== "number" || !next) return;
         setScenes((prev) => {
           if (idx >= prev.length) return prev;
@@ -243,7 +246,11 @@ export function StudioConsole({
               ...cur,
               status: next,
               artifactPath: payload.artifact_path ?? cur.artifactPath,
-              errorMessage: payload.error_message ?? cur.errorMessage,
+              errorMessage:
+                payload.error_message ??
+                (next === "error" && payload.state === "done"
+                  ? `Render finished with non-production outcome: ${payload.extras?.outcome ?? "unknown"}`
+                  : cur.errorMessage),
             },
             ...prev.slice(idx + 1),
           ];
@@ -352,30 +359,36 @@ export function StudioConsole({
         offline,
         job_id: generatedJobId,
       });
-      // Mark every scene done + attach emitted artifact path
-      const emitted = new Map<string, GenerateSceneMeta>();
+      // Consume conductor identity/outcome directly; do not infer truth from
+      // filenames or directory layout.
+      const emitted = new Map<number, GenerateSceneMeta>();
       for (const sceneMeta of payload.scenes ?? []) {
-        const stem = sceneMeta.name ?? "";
-        if (stem) emitted.set(stem, sceneMeta);
+        if (typeof sceneMeta.scene_index === "number") {
+          emitted.set(sceneMeta.scene_index, sceneMeta);
+        }
       }
       setScenes((prev) =>
         prev.map((s, i) => {
-          const meta = emitted.get(`scene_${i}`);
+          const meta = emitted.get(i);
           if (!meta) {
             return {
               ...s,
               status: "error" as const,
-              errorMessage: "No artifact emitted",
+              errorMessage: "No structured scene result returned",
+            };
+          }
+          if (meta.outcome !== "render" || !meta.artifact_path) {
+            return {
+              ...s,
+              status: "error" as const,
+              errorMessage: `Non-production render outcome: ${meta.outcome ?? "unknown"}`,
             };
           }
           return {
             ...s,
             status: "done" as const,
-            artifactPath:
-              meta.workflow_json ??
-              meta.job_spec_json ??
-              meta.plan_json ??
-              meta.scene_dir,
+            artifactPath: meta.artifact_path,
+            errorMessage: undefined,
           };
         }),
       );
