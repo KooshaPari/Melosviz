@@ -75,14 +75,15 @@
     },
     {
       "id": "M-ESEC",
-      "state": "READY",
+      "state": "READY_IN_PROGRESS",
       "depends_on": [],
       "parallel_group": "M-P1",
-      "purpose": "Fail-closed bridge bind classifier and public-bind auth contract",
+      "purpose": "Fail-closed bridge bind classifier, public-bind auth/data-root policy, and protected Studio/render/profile route coverage",
       "write_scope": [
         "backend/src/melosviz/bridge/security.py",
+        "backend/src/melosviz/bridge/server.py",
         "focused bridge startup/security tests",
-        "minimum startup policy hook"
+        "candidate-only focused CI workflow"
       ],
       "forbidden": [
         "render/result-schema changes",
@@ -90,11 +91,19 @@
         "public bind without explicit authorization policy"
       ],
       "exit": [
-        "loopback positives",
+        "true-loopback positives",
         "RFC1918/link-local/public IPv4/IPv6/hostname negatives",
-        "authorized public positives",
-        "startup auth-policy receipt"
-      ]
+        "explicit-public positives",
+        "public bind requires auth token and explicit data root",
+        "Studio/render/profile routes bearer-protected when auth enabled",
+        "adjacent bridge regressions",
+        "candidate identity receipts"
+      ],
+      "candidate": {
+        "branch": "experiment/melosviz-bridge-security-pass6",
+        "pr": 300,
+        "status": "DRAFT_UNACCEPTED"
+      }
     }
   ],
   "closed_prerequisites": [
