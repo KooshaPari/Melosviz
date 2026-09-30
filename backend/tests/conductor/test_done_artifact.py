@@ -10,11 +10,20 @@ distinguish a real clip from an empty result.
 
 from __future__ import annotations
 
+import wave
 from pathlib import Path
 from typing import Any
 
 from melosviz.conductor import registry as registry_mod
 from melosviz.conductor.orchestrator import Orchestrator
+
+
+def _write_real_wav(path: Path) -> None:
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x01\x00" * 256)
 
 
 class _ListAdapter:
@@ -25,8 +34,8 @@ class _ListAdapter:
     def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
         out = Path(str(kwargs["output_path"]))
         out.mkdir(parents=True, exist_ok=True)
-        clip = out / "clip.mp4"
-        clip.write_bytes(b"\x00" * 16)
+        clip = out / "clip.wav"
+        _write_real_wav(clip)
         return [clip]
 
 
@@ -58,7 +67,7 @@ def test_done_event_carries_artifact_from_list_returning_adapter(
     assert done[0].artifact_path, (
         "done event must carry a non-empty artifact_path for list-returning adapters"
     )
-    assert done[0].artifact_path.endswith("clip.mp4")
+    assert done[0].artifact_path.endswith("clip.wav")
 
 
 def test_provenance_outcome_tag_present(tmp_path: Path, monkeypatch) -> None:
