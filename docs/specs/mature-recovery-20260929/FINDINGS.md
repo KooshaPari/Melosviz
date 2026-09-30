@@ -194,3 +194,31 @@ The old traceability claim that hybrid SceneSpec is DONE does not prove it is in
 Migration consequence: do not replace RenderSpec wholesale. Add stable `scene_id` and immutable `scene_revision` semantics to the mounted scene-segment contract with backward-compatible derivation/migration for historical specs, then reference optional hybrid SceneSpec/projection by that identity. Integer index remains order/position, not identity. Partial rerender should resolve a scene ID/revision to the current ordered index set and record why neighbors were invalidated.
 
 Required oracle: reorder scenes without changing IDs; insert a new scene before S2; edit only S2; verify cache/evidence/rerender/assembly follow identity rather than old numerical position. Also prove a hybrid SceneSpec projection round-trips against the same scene ID instead of creating a second product object.
+
+## M-F16 — the advertised web “Re-render this scene” journey cannot reach a render (blocking revision journey)
+
+The web StudioConsole's edit action POSTs `/api/studio/direct` with `storyboard_path`, `scene_index`, `replace_prompt`, and `re_render: true`; it supplies neither `wav_path` nor `render_out`.
+
+The bridge converts `re_render: true` to the CLI `direct --re-render` flag, adding `--wav` only when `req.wav_path` exists. The CLI `_cmd_direct` explicitly returns exit 2 when `--re-render` is requested without WAV. `_run_studio_subprocess` turns every nonzero CLI exit into HTTP 400. Therefore the current web button labelled “Re-render this scene” deterministically hits an error before a render can be launched.
+
+Even with WAV supplied, `_cmd_direct` does **not** execute the render despite comments/docstrings saying “immediate” or “actually invoke.” The implementation sets `re_render_invoked = False`, constructs and prints a `viz generate ... --only-scenes ...` hint, and tells the user to paste it. The bridge/API descriptions claiming the request “also invoke[s] viz generate” are therefore false at the frozen source.
+
+This blocks M-J-REVISE independently of cache correctness. Closure requires one truthful contract: either direct edit persists only and returns a next-action plan, or it actually schedules/executes a revision-bound render and returns that durable job identity.
+
+## M-F17 — default render job identity is process-dependent and not a durable restart identity
+
+`_cmd_generate` computes a default job ID as `job-{hash(str(out_dir)) & 0xFFFFFFFF:08x}` when the caller does not provide `--job-id`. No `PYTHONHASHSEED` configuration exists in the repository. Python string hashing is process-randomized; an isolated local check in this recovery environment produced different 32-bit values for the same path in two separate Python processes.
+
+The web bridge avoids this for its immediate run by generating/passing an explicit job ID. Electrobun's RPC schema advertises an optional `jobId`, but its `runOrchestratedRender` implementation does not destructure or forward it, and the desktop view does not supply one. More generally, neither an event-bus job ID nor a process hash is a durable product revision/job identity.
+
+Consequence: restart/recovery cannot use default `job_id` as the durable key required by M-J-RECOVER. A stable product job/revision ID must be persisted independently from the worker process and event-stream correlation ID.
+
+## M-F18 — cache identity omits reference/character render inputs despite comments claiming edit_count invalidates caches
+
+`_cmd_direct` increments storyboard-level `edit_count` with the comment “so downstream caches invalidate.” `_cmd_generate` does not carry `edit_count` into the render spec or scene cache key. Cache invalidation actually depends on fields selected by `SceneCacheKey.from_scene`.
+
+The cache key includes prompt, seed, dimensions/fps, camera, scene-level continuity subject/env tokens, palette, lyric phrase, audio fingerprint and `cache_extra`. It does **not** include the stamped `reference_image`, `ip_adapter_image`, `reference_image_strength`, or character reference paths/weights that the orchestrator later forwards to adapters. The orchestrator stamps those render-affecting fields onto scenes **before** cache lookup, but the key ignores them.
+
+Therefore changing a storyboard-level reference image/strength or resolved character reference can leave the cache fingerprint unchanged and reuse media rendered from different visual inputs. The global `edit_count` does not rescue this.
+
+Closure requires cache identity to cover every render-affecting dependency by immutable content/config identity, not a manual edit counter. Add negative controls that change only reference image bytes/path, strength, character sheet/ref/model/workflow and prove the old artifact cannot qualify.
