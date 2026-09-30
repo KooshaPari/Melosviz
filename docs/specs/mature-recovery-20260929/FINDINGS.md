@@ -265,3 +265,31 @@ This matters because the bridge already supports `MELOSVIZ_BRIDGE_REQUIRE_AUTH=1
 The shipping Electrobun path is different and should not be conflated with this defect. Its Bun main process spawns the authenticated bridge, attaches `Authorization: Bearer ...` via `bridgeAuthHeaders()` to ordinary requests, and proxies render SSE using streaming `fetch` with the same headers. Thus M-ESEC can close the current release-desktop server boundary while leaving standalone web/Tauri authenticated operation blocked.
 
 Do **not** solve this by putting a long-lived bearer token in an EventSource query string: URLs leak into logs/history/referrers and the candidate middleware intentionally does not accept query tokens. M-E03 must choose an authenticated web transport, e.g. a fetch-stream/polling client or a trusted local shell/proxy that injects headers. The web surface must also receive auth capability for its POST requests. If mature scope declares direct standalone web auth out-of-scope, record that authorized decision explicitly rather than silently leaving a broken advertised surface.
+
+
+## M-F16 — both `only_scenes` selector entry points are dead; advertised partial rerender does not select work (blocking revision/recovery journey)
+
+The orchestrator exposes scene selection twice:
+1. `Orchestrator.__init__(only_scenes=...)` stores `self._only_scenes`.
+2. `Orchestrator.render(..., only_scenes=...)` declares a selector parameter and documents out-of-range validation.
+
+Frozen source search shows `self._only_scenes` is assigned but never read. Within the complete `render()` body, `only_scenes` appears only in the function signature/docstring; it is never used to filter `segs`, build `per_scene_dispatch`, or validate indices.
+
+The mounted CLI makes this observable: `_cmd_generate` parses `--only-scenes`, passes it into the **constructor**, then calls `orchestrator.render(spec, audio_path=wav_path)` without the render parameter. Even if it passed the render parameter, current `render()` would still ignore it.
+
+The separate `partial_rerender.py` helpers correctly compute target + neighbor indices, but those values do not become an effective conductor work filter. The direct-edit CLI even describes/presents a selective rerender command whose selector is currently inert.
+
+Consequences:
+- editing S2 and asking for selective rerender can still dispatch the whole storyboard;
+- cache/revision evidence cannot currently prove only intended scenes were reconsidered;
+- the proposed R1→edit S2→R2 journey is not merely untested; its current selector contract is unimplemented.
+
+Minimum experimental repair should reuse existing `scene_index` identity rather than invent a new ID model: resolve one effective selector at render entry (explicit render arg overriding or combining with constructor policy by an accepted rule), validate it, filter `per_scene_dispatch`, and pass a **scene-bounded** work item to the adapter or switch to one explicit batch invocation. Add negative tests for out-of-range, empty selection, same-backend neighbors, and ensure unselected adapters are not invoked.
+
+## M-F17 — scene identity already exists across the stack; result identity is the broken projection
+
+A new global scene-ID subsystem is not required to repair the observed conductor defect. Frozen code already carries `scene_index` through render events, provenance, render-cache metadata, CLI direct/partial-rerender policy, bridge request schemas, critic reports and export logic. Hybrid `SceneSpec` separately has a `scene_id` for the older spatial scene model.
+
+The immediate studio-pipeline defect is that `OrchestratorResult.per_scene_results` is documented and implemented as `{scene_type: adapter_result}`. That projection throws away the existing per-scene identity and cannot represent two scenes of the same type.
+
+Bootstrap decision: preserve the existing storyboard `scene_index` (plus revision/scene name where required) as the current studio work identity and make `scene_type` adapter-selection metadata. Do not introduce UUIDs merely to fix a dictionary key. A future durable cross-revision scene identity can be added only if recovered product requirements demonstrate index instability is insufficient.
