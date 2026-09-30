@@ -101,6 +101,18 @@ def main():
         bad=run([sys.executable,"-m","melosviz.cli.main","generate",str(w),"--storyboard",str(sb),"--out",str(root/"bad"),"--only-scenes","99"],cwd=candidate,env=env)
         assert bad.returncode!=0,(bad.stdout,bad.stderr)
         result["checks"]["invalid_selector_non_green"]=True
+
+        # Candidate exit success is not acceptance: corrupt the assembled media
+        # after production and prove the reviewer-owned probe rejects it.
+        good_bytes=assembly.read_bytes()
+        assembly.write_bytes(b"\\x00"*64)
+        try:
+            probe(assembly)
+        except AssertionError:
+            result["checks"]["post_success_corruption_non_green"]=True
+        else:
+            raise AssertionError("reviewer accepted corrupted final media")
+        assembly.write_bytes(good_bytes)
     result["verdict"]="PASS_REVIEWER_STRUCTURAL" if all(result["checks"].values()) else "FAIL"
     a.out.write_text(json.dumps(result,indent=2)+"\n");print(json.dumps(result,indent=2))
     return 0 if result["verdict"].startswith("PASS") else 1
