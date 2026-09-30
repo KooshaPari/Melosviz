@@ -1264,6 +1264,7 @@ class Orchestrator:
                             "outcome": _outcome,
                             "artifact_name": Path(artifact).name,
                             "artifact_relpath": _artifact_relpath(artifact, self._output_dir),
+                            "backend_identity": scene_cache_backend_identity(_seg_for_render),
                         },
                     )
             except Exception as exc:  # cache store is best-effort
