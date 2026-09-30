@@ -163,11 +163,14 @@ class Ledger:
         scenes=list(self.db.execute("SELECT scene_id,input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? ORDER BY ordinal",(pid,rev)))
         ordered=[]
         for sid,inp in scenes:
-            reused=self.db.execute("SELECT artifact_sha256 FROM reuse_receipt WHERE project_id=? AND project_revision=? AND scene_id=?",(pid,rev,sid)).fetchone()
-            if reused: ordered.append([sid,reused[0]]); continue
-            fresh=self.db.execute("""SELECT a.artifact_sha256 FROM render_attempt a WHERE a.project_id=? AND a.project_revision=? AND a.scene_id=? AND a.input_sha256=? AND a.state='executed' AND EXISTS(
+            reused=self.db.execute("SELECT artifact_sha256,source_attempt_id FROM reuse_receipt WHERE project_id=? AND project_revision=? AND scene_id=?",(pid,rev,sid)).fetchone()
+            if reused:
+                if not self.artifact_intact(reused[1]): raise RuntimeError(f"scene {sid} reused artifact is missing/corrupt")
+                ordered.append([sid,reused[0]]); continue
+            fresh=self.db.execute("""SELECT a.artifact_sha256,a.id FROM render_attempt a WHERE a.project_id=? AND a.project_revision=? AND a.scene_id=? AND a.input_sha256=? AND a.state='executed' AND EXISTS(
               SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256) ORDER BY a.id DESC LIMIT 1""",(pid,rev,sid,inp)).fetchone()
             if not fresh: raise RuntimeError(f"scene {sid} lacks accepted artifact")
+            if not self.artifact_intact(fresh[1]): raise RuntimeError(f"scene {sid} accepted artifact is missing/corrupt")
             ordered.append([sid,fresh[0]])
         with self.db:
             cur=self.db.execute("INSERT INTO assembly_attempt(project_id,project_revision,ordered_inputs_json,state) VALUES(?,?,?,'frozen')",(pid,rev,json.dumps(ordered)))
