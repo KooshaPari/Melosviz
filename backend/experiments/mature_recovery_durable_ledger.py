@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS render_attempt(
  lease_owner TEXT,
  lease_expires REAL,
  artifact_sha256 TEXT,
+ artifact_path TEXT,
  FOREIGN KEY(project_id, project_revision, scene_id)
    REFERENCES scene_revision(project_id, project_revision, scene_id)
 );
@@ -128,9 +129,9 @@ class Ledger:
               WHERE state='leased' AND lease_expires IS NOT NULL AND lease_expires<=?""",(now,))
         return cur.rowcount
 
-    def execute(self,attempt:int,artifact_sha:str):
+    def execute(self,attempt:int,artifact_sha:str,artifact_path:str|None=None):
         with self.db:
-            cur=self.db.execute("UPDATE render_attempt SET state='executed',artifact_sha256=?,lease_owner=NULL,lease_expires=NULL WHERE id=? AND state='leased'",(artifact_sha,attempt))
+            cur=self.db.execute("UPDATE render_attempt SET state='executed',artifact_sha256=?,artifact_path=?,lease_owner=NULL,lease_expires=NULL WHERE id=? AND state='leased'",(artifact_sha,artifact_path,attempt))
             if cur.rowcount!=1: raise RuntimeError("attempt not leased")
 
     def accept(self,attempt:int,verifier:str,artifact_sha:str):
@@ -139,12 +140,21 @@ class Ledger:
         with self.db:
             self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,collection_state,created_at) VALUES(?,?,?,'accepted',?)",(attempt,verifier,artifact_sha,time.time()))
 
+    def artifact_intact(self,attempt:int)->bool:
+        row=self.db.execute("SELECT artifact_sha256,artifact_path FROM render_attempt WHERE id=? AND state='executed'",(attempt,)).fetchone()
+        if not row: return False
+        expected,path=row
+        if path is None: return True  # symbolic fixture; product integration must always provide a path
+        p=Path(path)
+        return p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==expected
+
     def reusable(self,source_attempt:int,pid:str,rev:int,sid:str)->bool:
         target=self.db.execute("SELECT input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? AND scene_id=?",(pid,rev,sid)).fetchone()
         source=self.db.execute("""SELECT a.input_sha256,a.artifact_sha256 FROM render_attempt a
           WHERE a.id=? AND a.state='executed' AND EXISTS(
             SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256)""",(source_attempt,)).fetchone()
         if not target or not source or target[0]!=source[0]: return False
+        if not self.artifact_intact(source_attempt): return False
         with self.db:
             self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0]))
         return True
