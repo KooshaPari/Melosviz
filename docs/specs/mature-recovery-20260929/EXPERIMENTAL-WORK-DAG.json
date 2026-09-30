@@ -72,6 +72,29 @@
         "stable persisted job/revision identity",
         "R1→edit S2→restart→R2 exact reuse/invalidation"
       ]
+    },
+    {
+      "id": "M-ESEC",
+      "state": "READY",
+      "depends_on": [],
+      "parallel_group": "M-P1",
+      "purpose": "Fail-closed bridge bind classifier and public-bind auth contract",
+      "write_scope": [
+        "backend/src/melosviz/bridge/security.py",
+        "focused bridge startup/security tests",
+        "minimum startup policy hook"
+      ],
+      "forbidden": [
+        "render/result-schema changes",
+        "claim source-equivalent probe as full checkout test",
+        "public bind without explicit authorization policy"
+      ],
+      "exit": [
+        "loopback positives",
+        "RFC1918/link-local/public IPv4/IPv6/hostname negatives",
+        "authorized public positives",
+        "startup auth-policy receipt"
+      ]
     }
   ],
   "closed_prerequisites": [
