@@ -20,6 +20,14 @@ jobs:
       SOURCE_SHA: 1aec20a2ba41a01ed557d1c7f63f9a0089f842cf
       RECEIPTS: recovery-receipts
     steps:
+      - name: Validate recovery metadata integrity
+        run: |
+          set -euo pipefail
+          mkdir -p "${RECEIPTS:-recovery-receipts}"
+          python docs/specs/mature-recovery-20260929/pass6/validate_recovery_state.py \
+            --prefix M-F \
+            --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
+
       - name: Checkout recovery branch with history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
