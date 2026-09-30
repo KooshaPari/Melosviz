@@ -213,7 +213,7 @@ class RenderCache:
             "outcome": (meta or {}).get("outcome"),
             # Bind stored evidence to the renderer/model/workflow/tool identity
             # that actually produced it; current declarations alone are not evidence.
-            "backend_identity": dict(key.extra).get("backend_identity"),
+            "backend_identity": (meta or {}).get("backend_identity") or dict(key.extra).get("backend_identity"),
         }
         meta_path.write_text(json.dumps(meta_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         return target
