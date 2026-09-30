@@ -148,36 +148,16 @@
     ]
   },
   "experimental_candidates": {
-    "M-ESEC": {
-      "branch": "experiment/melosviz-bridge-security-pass6",
-      "pr": 300,
-      "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
-      "candidate": "f43717dc25c0021c47b41f638e0ecd184942931c",
-      "status": "AWAITING_DEDICATED_CI_AND_RECEIPT_REVIEW",
-      "review_note": "Diff is scope-bounded to 5 files. Bind classifier/startup auth/root policy and Studio/render/debug route protection are directionally consistent. Dedicated workflow was tightened to require ruff + focused tests; no acceptance until it completes and artifacts are inspected. Global rate limiting of unprotected routes remains separate policy question."
-    },
-    "M-E01": {
-      "branch": "experiment/melosviz-baseline-pass6",
-      "pr": 301,
-      "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
-      "status": "IN_PROGRESS_DIAGNOSTIC_ONLY"
-    },
     "M_E02": {
       "branch": "experiment/mature-recovery-m-e02",
-      "ahead_of_frozen_source": 18,
-      "review": "reviews/M-E02-CANDIDATE-REVIEW.md",
-      "grade": "FAIL_REVISE",
-      "provisional_pass": [
-        "selector",
-        "iteration cardinality",
-        "scene-index result identity",
-        "assembly collection structure"
-      ],
+      "worker_head_reviewed": "1066a61cabadfd3578c1e3561d23b7b5943f2a8c",
+      "grader_review_commit": "555007ea172da914f14637f3dd593a75ca813eae",
+      "verdict": "FAIL_REVISE",
       "blocking": [
-        "live malformed media acceptance",
-        "cache blob integrity/outcome trust",
-        "cross-process SSE not actually proxied",
-        "real R2 restart not proven"
+        "media validity still accepts garbage MP4",
+        "cache trusts historical outcome without current validation",
+        "web status uses invalid done state",
+        "no candidate-bound execution receipt"
       ]
     }
   },
@@ -185,7 +165,7 @@
   "web_auth_state": "DIRECT_STUDIOCONSOLE_HAS_NO_BEARER_SUPPORT; ELECTROBUN_PROXY_DOES",
   "partial_rerender": "BROKEN_SELECTORS_DECLARED_BUT_UNUSED",
   "minimum_repair_model": "REUSE_EXISTING_SCENE_INDEX_AS_WORK_IDENTITY; SCENE_TYPE_IS_ADAPTER_SELECTION; SINGLE_ITERATION_OWNER",
-  "M_E02_readiness": "CANDIDATE_EXISTS_AND_INDEPENDENTLY_REVIEWED_FAIL_REVISE",
+  "M_E02_readiness": "WORKER_CANDIDATE_EXISTS_FAIL_REVISE",
   "assembly_input": "DISCONNECTED_FROM_RENDER_LOOP_EXCEPT_CALLER_SUPPLIED_SEGMENT_PATHS",
   "event_semantics": "DONE_IS_EXECUTION_NOTIFICATION_NOT_ACCEPTANCE"
 }
