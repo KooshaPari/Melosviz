@@ -808,6 +808,10 @@ class Orchestrator:
         # scene_type selects an adapter; scene_index is the work/result identity.
         per_scene_results: dict[int, Any] = {}
         collected_paths: list[str | Path] = list(segment_paths or [])
+        # Accepted production artifacts keyed by storyboard scene_index. This is
+        # also the seed for reconstructing a complete timeline after a partial
+        # rerender; filesystem existence alone is never enough to reuse a scene.
+        scene_artifacts: dict[int, Path] = {}
 
         # The constructor selector exists for CLI compatibility; an explicit
         # render() selector wins. Validate before invoking any adapter so a bad
@@ -1001,6 +1005,7 @@ class Orchestrator:
                     }
                     if per_scene_results[scene_idx]["outcome"] == OUTCOME_RENDER:
                         collected_paths.append(materialised)
+                        scene_artifacts[scene_idx] = materialised
                     _record_cached_scene(
                         scene_out_dir=scene_out_dir,
                         scene_index=scene_idx,
@@ -1191,6 +1196,7 @@ class Orchestrator:
             }
             if _outcome == OUTCOME_RENDER and artifact:
                 collected_paths.append(artifact)
+                scene_artifacts[scene_idx] = Path(artifact)
 
             # ---- Provenance sidecar + render cache store ----
             # Track wall-clock timestamps for duration_seconds in provenance.
@@ -1256,6 +1262,60 @@ class Orchestrator:
                     )
             except Exception as exc:  # cache store is best-effort
                 logger.debug("render cache store skipped: %s", exc)
+
+        # A selective rerender still needs a complete timeline before it may
+        # claim a final assembly. Reuse untouched scenes only through exact
+        # cache identity + current media validation; do not glob old outputs.
+        if (
+            _selected_scene_indices is not None
+            and segment_paths is None
+            and not self._skip_assembly
+            and segs
+        ):
+            cache_root = self._render_cache.cache_dir if self._render_cache is not None else None
+            expected_scene_indices = [
+                i
+                for i, seg in enumerate(segs)
+                if str(seg.get("scene_type", "video_export")) != "assembly_encode"
+            ]
+            missing_for_full_assembly: list[int] = []
+            for i in expected_scene_indices:
+                if i in scene_artifacts:
+                    continue
+                seg = dict(segs[i])
+                seg["scene_index"] = i
+                seg.setdefault("scene_name", _scene_label(seg, i))
+                if cache_root is None:
+                    missing_for_full_assembly.append(i)
+                    continue
+                cached = scene_render_cached(seg, cache_root)
+                meta = scene_cache_meta(seg, cache_root)
+                if (
+                    cached is None
+                    or not cached.exists()
+                    or meta.get("outcome") != OUTCOME_RENDER
+                ):
+                    missing_for_full_assembly.append(i)
+                    continue
+                scene_type = str(seg.get("scene_type", "video_export"))
+                scene_dir = self._output_dir / scene_type / f"dispatch_{i:03d}"
+                materialised = _materialise_cached_artifact(
+                    cached, self._output_dir, scene_dir
+                )
+                if materialised is None or _artifact_rejection(str(materialised)):
+                    missing_for_full_assembly.append(i)
+                    continue
+                scene_artifacts[i] = materialised
+
+            if missing_for_full_assembly:
+                raise ConductorError(
+                    "Orchestrator: partial rerender cannot produce a complete "
+                    "assembly because unchanged scenes lack current render evidence: "
+                    f"{missing_for_full_assembly}. Run a full render first."
+                )
+            # Replace selected-only collection with exactly one artifact per
+            # storyboard scene, in storyboard order.
+            collected_paths = [scene_artifacts[i] for i in expected_scene_indices]
 
         # ---- Final assembly step -------------------------------------------
         assembly_result: Any = None
