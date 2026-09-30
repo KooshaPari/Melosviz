@@ -21,6 +21,7 @@ Failure policy
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -962,6 +963,7 @@ class Orchestrator:
                     emitted.append(done_evt)
                     per_scene_results[scene_idx] = {
                         "artifact_path": materialised,
+                        "artifact_sha256": hashlib.sha256(materialised.read_bytes()).hexdigest(),
                         "cache_key": _cache_key,
                         "outcome": _cached_outcome,
                         "scene_type": scene_type,
@@ -1148,6 +1150,11 @@ class Orchestrator:
             per_scene_results[scene_idx] = {
                 "adapter_result": result,
                 "artifact_path": artifact or None,
+                "artifact_sha256": (
+                    hashlib.sha256(Path(artifact).read_bytes()).hexdigest()
+                    if _outcome == OUTCOME_RENDER and artifact and Path(artifact).is_file()
+                    else None
+                ),
                 "outcome": _outcome,
                 "scene_type": scene_type,
             }
