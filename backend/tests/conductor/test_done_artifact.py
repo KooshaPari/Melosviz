@@ -94,7 +94,7 @@ def test_provenance_outcome_tag_present(tmp_path: Path, monkeypatch) -> None:
     import json as _json
 
     d = _json.loads(sidecars[0].read_text(encoding="utf-8"))
-    assert d.get("artifact_path", "").endswith("clip.mp4"), (
+    assert d.get("artifact_path", "").endswith("clip.wav"), (
         f"provenance artifact_path empty or wrong: {d.get('artifact_path')!r}"
     )
     assert d.get("extra", {}).get("outcome") == "render", (
