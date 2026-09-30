@@ -62,7 +62,15 @@
     "M-F16",
     "M-F17",
     "M-F18",
-    "M-F19"
+    "M-F19",
+    "M-F20",
+    "M-F21",
+    "M-F22",
+    "M-F24",
+    "M-F25",
+    "M-F26",
+    "M-F27",
+    "M-F28"
   ],
   "additional_verification_risk": [
     "M-F05",
@@ -104,5 +112,15 @@
     "source_equivalent_probe": "EXECUTED",
     "full_checkout_test": "NOT_EXECUTED",
     "repair": "READY"
+  },
+  "finding_namespace": {
+    "state": "CANONICAL_UNIQUE",
+    "range": "M-F01..M-F28",
+    "duplicate_ids": false,
+    "nonblocking_context": [
+      "M-F06",
+      "M-F08",
+      "M-F23"
+    ]
   }
 }
