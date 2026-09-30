@@ -72,3 +72,10 @@ Source review after the implementation candidate found a remaining critical gap 
 Therefore a model/workflow/tool change can leave the key unchanged and allow old media to qualify for the R2 full assembly. This violates the pass-8 negative control requiring tool/model/workflow changes to invalidate relevant evidence.
 
 **Required before M-E02 experimental acceptance for generative backends:** define a backend-owned deterministic cache/evidence identity and require it in the key/metadata for cacheable real-render outcomes. Add a held-out test that changes model/workflow identity without changing prompt/scene index and proves no old cache hit is accepted. For deterministic video_export, an explicit stable backend identity can satisfy the same contract. Do not solve this by globally disabling cache; the recovery journey specifically needs trustworthy reuse.
+
+
+## Exact-head execution result — run 45
+
+Push workflow run 45 (`36751162085`) on exact head `df72dcd80ecd39d17f4fa6e8733e00574226f360` completed **success**. Focused M-E02 contract, mounted real CLI + bridge FFmpeg journey, broader conductor/bridge regressions, web behavioral/build and Electrobun webview bundle all passed. The earlier R2 failure was traced to literal escaped-newline corruption in the test patch; after restoring the intended prompt mutation and call reset, the selector/reuse test passes. A stale provenance test hard-coded `clip.mp4` after its fixture had been deliberately upgraded to a real WAV; its assertion was corrected to the actual decodable artifact and the broader suite then passed.
+
+**Disposition remains PARTIAL / BLOCKED for the full M-E02 thesis.** This run establishes the deterministic video_export vertical spine and current UI/bridge propagation on the tested Linux/FFmpeg configuration. It does not close the recovery-controller held-out cache-identity finding for generative backends, independent external media grading, real ComfyUI/model/workflow identity, creative/beat quality, or a real application persistence restart. Do not convert run 45 into product acceptance or general handoff.
