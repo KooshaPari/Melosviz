@@ -651,6 +651,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
                     "scene_index": int(scene_index),
                     "scene_type": scene_result.get("scene_type"),
                     "outcome": scene_result.get("outcome"),
+                    "artifact_sha256": scene_result.get("artifact_sha256"),
                     "artifact_path": (
                         str(scene_result.get("artifact_path"))
                         if scene_result.get("artifact_path")
@@ -664,6 +665,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
                     "scene_index": int(scene_index),
                     "scene_type": None,
                     "outcome": None,
+                    "artifact_sha256": None,
                     "artifact_path": None,
                 }
             )
