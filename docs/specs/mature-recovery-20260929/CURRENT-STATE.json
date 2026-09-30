@@ -161,13 +161,31 @@
       "pr": 301,
       "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
       "status": "IN_PROGRESS_DIAGNOSTIC_ONLY"
+    },
+    "M_E02": {
+      "branch": "experiment/mature-recovery-m-e02",
+      "ahead_of_frozen_source": 18,
+      "review": "reviews/M-E02-CANDIDATE-REVIEW.md",
+      "grade": "FAIL_REVISE",
+      "provisional_pass": [
+        "selector",
+        "iteration cardinality",
+        "scene-index result identity",
+        "assembly collection structure"
+      ],
+      "blocking": [
+        "live malformed media acceptance",
+        "cache blob integrity/outcome trust",
+        "cross-process SSE not actually proxied",
+        "real R2 restart not proven"
+      ]
     }
   },
   "parallel_experimental_handoff": true,
   "web_auth_state": "DIRECT_STUDIOCONSOLE_HAS_NO_BEARER_SUPPORT; ELECTROBUN_PROXY_DOES",
   "partial_rerender": "BROKEN_SELECTORS_DECLARED_BUT_UNUSED",
   "minimum_repair_model": "REUSE_EXISTING_SCENE_INDEX_AS_WORK_IDENTITY; SCENE_TYPE_IS_ADAPTER_SELECTION; SINGLE_ITERATION_OWNER",
-  "M_E02_readiness": "IMPLEMENTATION_CANDIDATE_EXISTS_BUT_FAILS_CRITICAL_REVIEW",
+  "M_E02_readiness": "CANDIDATE_EXISTS_AND_INDEPENDENTLY_REVIEWED_FAIL_REVISE",
   "assembly_input": "DISCONNECTED_FROM_RENDER_LOOP_EXCEPT_CALLER_SUPPLIED_SEGMENT_PATHS",
   "event_semantics": "DONE_IS_EXECUTION_NOTIFICATION_NOT_ACCEPTANCE"
 }
