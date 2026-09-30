@@ -1,6 +1,6 @@
 # Melosviz developer-agent handoff
 
-**READY FOR EXPERIMENTAL IMPLEMENTATION. NOT READY FOR GENERAL DEV HANDOFF.**
+**READY FOR PARALLEL EXPERIMENTAL IMPLEMENTATION. NOT READY FOR GENERAL DEV HANDOFF.**
 Updated 2026-09-29, pass 5. Source under test: `1aec20a2ba41a01ed557d1c7f63f9a0089f842cf`. Specification branch: `docs/mature-recovery-20260929`. Draft #297; registry draft #593. Only Khostty and Melosviz are product subjects.
 
 This readiness applies to the bounded work packages below, not to the full mature product. No agent is authorized to invent missing accepted scope, select a new platform-wide architecture, weaken an oracle, merge, release, or spend on a provider.
@@ -56,3 +56,11 @@ The next agent must preserve these counterexamples as raw receipts before repair
 7. Media/cache: retain pass-5 garbage-media and equal-size stale-cache controls.
 
 Do not repair these by changing only UI wording while leaving false product state underneath. The product-state/result schema is the spine; UI/CLI/API should project it.
+
+
+## Live experimental drafts
+
+- **M-E01 baseline:** draft #301, branch `experiment/melosviz-baseline-pass6`, frozen base `1aec20a2...`. Diagnostic tests intentionally assert current broken scene-dispatch and bridge-layout behavior; green means reproduction succeeded, not product acceptance.
+- **M-ESEC security:** draft #300, branch `experiment/melosviz-bridge-security-pass6`, frozen base `1aec20a2...`. Production-code repair is isolated to bridge security/startup policy plus focused tests; keep separate from M-E02 scene/result work.
+
+These two may run concurrently. **M-E02 is not ready until M-E01 receipts are reviewed. M-E03 is not ready until M-E02's result/state contract is reviewed.**
