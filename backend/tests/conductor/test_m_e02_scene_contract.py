@@ -293,7 +293,13 @@ def test_partial_rerender_reuses_only_valid_unchanged_cache_for_full_assembly(
 
     r2 = _spec()
     r2.scene_segments[1] = dict(r2.scene_segments[1])
-    # Change a declared production cache input (prompt) and the synthetic\n    # fixture marker that SceneAdapter turns into output bytes. Marker alone is\n    # intentionally not part of SceneCacheKey unless an adapter declares it via\n    # cache_extra.\n    r2.scene_segments[1]["prompt"] = "scene one revised"\n    r2.scene_segments[1]["marker"] = "one-r2"\n    SceneAdapter.calls = []
+    # Change a declared production cache input (prompt) and the synthetic
+    # fixture marker that SceneAdapter turns into output bytes. Marker alone is
+    # intentionally not part of SceneCacheKey unless an adapter declares it via
+    # cache_extra.
+    r2.scene_segments[1]["prompt"] = "scene one revised"
+    r2.scene_segments[1]["marker"] = "one-r2"
+    SceneAdapter.calls = []
     AssemblyAdapter.calls = []
 
     result = Orchestrator(output_dir=out, only_scenes=[1]).render(r2)
