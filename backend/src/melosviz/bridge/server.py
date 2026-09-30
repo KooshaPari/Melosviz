@@ -18,8 +18,8 @@ The bridge ships with five defense layers installed by default:
 
 * **Loopback guard** — refuses to bind a non-loopback interface unless
   ``MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1``.
-* **Bearer auth** — when ``MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`` (recommended for
-  any non-loopback bind) each protected request must carry
+* **Bearer auth** — when ``MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`` each protected
+  request must carry
   ``Authorization: Bearer $MELOSVIZ_BRIDGE_TOKEN``.
 * **Rate limit** — sliding-window per remote IP (env-tunable).
 * **Audit log** — every protected request is appended to
@@ -96,6 +96,9 @@ security_limiter = security.install_middleware(
         "/health",
         "/ready",
         "/metrics",
+        "/debug/profile",
+        "/api/studio",
+        "/api/render",
     ),
 )
 
@@ -1076,6 +1079,22 @@ def main() -> None:
     if not ok:
         print(f"[melosviz bridge] {reason}", file=sys.stderr)
         sys.exit(2)
+
+    if reason == "ALLOW_PUBLIC=1":
+        if not security.auth_required():
+            print(
+                "[melosviz bridge] Refusing authorized public bind without "
+                "MELOSVIZ_BRIDGE_REQUIRE_AUTH=1.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if not security.expected_token():
+            print(
+                "[melosviz bridge] Refusing authorized public bind without "
+                "MELOSVIZ_BRIDGE_TOKEN.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
 
     print(f"[melosviz bridge] binding {args.host}:{args.port} ({reason})")
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
