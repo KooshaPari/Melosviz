@@ -81,6 +81,23 @@ jobs:
           set -euo pipefail
           python docs/specs/mature-recovery-20260929/pass6/probe_mounted_cli_baseline.py             | tee "$RECEIPTS/mounted-cli-baseline.log"
 
+      - name: Reproduce repeated-backend whole-spec dispatch
+        env:
+          MELOSVIZ_RECOVERY_RECEIPT: recovery-receipts/scene-dispatch-baseline.json
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_scene_dispatch_baseline.py \
+            | tee "$RECEIPTS/scene-dispatch-baseline.log"
+
+      - name: Reproduce mounted bridge nested-output manifest mismatch
+        env:
+          MELOSVIZ_RECOVERY_RECEIPT: recovery-receipts/bridge-layout-baseline.json
+          MELOSVIZ_BRIDGE_RATE_LIMIT: "1000"
+        run: |
+          set -euo pipefail
+          python docs/specs/mature-recovery-20260929/pass6/probe_bridge_manifest_baseline.py \
+            | tee "$RECEIPTS/bridge-layout-baseline.log"
+
       - name: Require the bridge bind negative control to fail frozen main
         run: |
           set +e
@@ -89,7 +106,7 @@ jobs:
           set -e
           cat "$RECEIPTS/bridge-negative-baseline.log"
           if [ "$rc" -ne 1 ]; then
-            echo "Expected pytest exit 1 from the known M-F13 baseline; observed $rc" >&2
+            echo "Expected pytest exit 1 from the known M-F20 bridge-bind baseline; observed $rc" >&2
             exit 1
           fi
 
@@ -102,7 +119,13 @@ jobs:
             git diff -- .
             exit 1
           fi
-          sha256sum             "$RECEIPTS/frozen-source-probes.json"             "$RECEIPTS/mounted-cli-baseline.json"             "$RECEIPTS/oracle-selftest/selftest-report.json"             > "$RECEIPTS/key-receipts.sha256"
+          sha256sum \
+            "$RECEIPTS/frozen-source-probes.json" \
+            "$RECEIPTS/mounted-cli-baseline.json" \
+            "$RECEIPTS/scene-dispatch-baseline.json" \
+            "$RECEIPTS/bridge-layout-baseline.json" \
+            "$RECEIPTS/oracle-selftest/selftest-report.json" \
+            > "$RECEIPTS/key-receipts.sha256"
 
       - name: Upload raw recovery receipts
         if: always()
