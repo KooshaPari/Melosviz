@@ -125,3 +125,20 @@ def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
     try: l.accept(a,"oracle","A1")
     except RuntimeError: pass
     else: raise AssertionError("leased attempt accepted")
+
+
+def test_assembly_execution_cannot_self_accept_and_digest_must_match(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    accepted(l,"P",r,"S1","A1"); accepted(l,"P",r,"S2","A2"); accepted(l,"P",r,"S3","A3")
+    asm=l.freeze_assembly("P",r)
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",)
+    try: l.accept_assembly(asm,"FINAL")
+    except RuntimeError: pass
+    else: raise AssertionError("frozen assembly accepted before execution")
+    l.execute_assembly(asm,"FINAL")
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("executed",)
+    try: l.accept_assembly(asm,"WRONG")
+    except RuntimeError: pass
+    else: raise AssertionError("wrong final digest accepted")
+    l.accept_assembly(asm,"FINAL")
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
