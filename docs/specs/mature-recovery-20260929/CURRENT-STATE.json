@@ -229,5 +229,32 @@
   "authoritative_product_intent": "AUTHORITATIVE-PRODUCT-INTENT.md",
   "product_identity": "MULTI_SCENE_AUDIO_CONDITIONED_VISUAL_COMPOSITION_AND_GENERATION",
   "cvp_constraint": "MULTI_SCENE_REQUIRED_SINGLE_SCENE_IS_PRIMITIVE",
-  "editorial_bootstrap": "OTIO_CANDIDATE_PROJECTION_NOT_CANONICAL_GENERATIVE_STATE"
+  "editorial_bootstrap": "OTIO_CANDIDATE_PROJECTION_NOT_CANONICAL_GENERATIVE_STATE",
+  "durable_state_experiment": {
+    "branch": "experiment/melosviz-durable-ledger-pass10",
+    "pr": 304,
+    "head": "aa3be20988390817222ec4230f2877fbbbff76f8",
+    "status": "EXACT_HEAD_QUEUED",
+    "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
+    "demonstration_targets": [
+      "R1 close/reopen R2",
+      "immutable revision history",
+      "execution/evidence separation",
+      "exact unchanged-input reuse receipts",
+      "ordered accepted assembly inputs",
+      "single live attempt",
+      "stale lease recovery",
+      "missing acceptance blocks assembly"
+    ]
+  },
+  "reviewer_grade": {
+    "policy_branch": "docs/mature-recovery-20260929",
+    "policy_head": "d4a8f83ba1a1ebd8dae71ce259e75d7e3dba684e",
+    "candidate": "cefb683c82455d065cdac914b6e34b07b252b666",
+    "new_negative_controls": [
+      "stored producer identity corruption forces rerender",
+      "R2 final digest differs from R1 after S2 edit"
+    ],
+    "status": "AWAITING_EXECUTION"
+  }
 }
