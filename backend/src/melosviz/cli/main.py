@@ -643,12 +643,41 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         print(t("cli.error.generate_failed", error=str(exc)), file=sys.stderr)
         return 1
 
+    scene_results = []
+    for scene_index, scene_result in sorted(result.per_scene_results.items()):
+        if isinstance(scene_result, dict):
+            scene_results.append(
+                {
+                    "scene_index": int(scene_index),
+                    "scene_type": scene_result.get("scene_type"),
+                    "outcome": scene_result.get("outcome"),
+                    "artifact_path": (
+                        str(scene_result.get("artifact_path"))
+                        if scene_result.get("artifact_path")
+                        else None
+                    ),
+                }
+            )
+        else:
+            scene_results.append(
+                {
+                    "scene_index": int(scene_index),
+                    "scene_type": None,
+                    "outcome": None,
+                    "artifact_path": None,
+                }
+            )
     summary = {
         "job_id": job_id,
         "output_dir": str(result.output_dir),
         "dispatched_scenes": sorted(result.per_scene_results.keys()),
         "only_scenes": sorted(only_scenes) if only_scenes else None,
-        "assembly_ok": result.assembly_result is not None,
+        # Object existence means the assembly adapter returned, not that an
+        # independent verifier accepted final media.
+        "assembly_state": (
+            "produced_unverified" if result.assembly_result is not None else "not_attempted"
+        ),
+        "scenes": scene_results,
     }
     print(json.dumps(summary, indent=2, default=str))
     return 0
