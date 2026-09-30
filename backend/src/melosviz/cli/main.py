@@ -529,6 +529,19 @@ def _cmd_direct(args: argparse.Namespace) -> int:
     return 0
 
 
+def _assembly_execution_state(assembly_result: object | None) -> str:
+    """Classify assembly execution without pretending a job spec is media."""
+    if assembly_result is None:
+        return "not_attempted"
+    used_ffmpeg = getattr(assembly_result, "used_ffmpeg_fallback", False) is True
+    ffmpeg_output = getattr(assembly_result, "ffmpeg_output_path", None)
+    if used_ffmpeg and ffmpeg_output and Path(ffmpeg_output).is_file():
+        return "produced_unverified"
+    # MEAdapter's AME path emits a job spec for an external worker; an object
+    # return therefore does not mean a master/delivery file was produced.
+    return "plan_only"
+
+
 def _cmd_generate(args: argparse.Namespace) -> int:
     """Run ComfyUI / C4D / Unreal / AE per scene based on a storyboard."""
     from melosviz.analysis.audio import spec_from_wav_rich
@@ -676,9 +689,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         "only_scenes": sorted(only_scenes) if only_scenes else None,
         # Object existence means the assembly adapter returned, not that an
         # independent verifier accepted final media.
-        "assembly_state": (
-            "produced_unverified" if result.assembly_result is not None else "not_attempted"
-        ),
+        "assembly_state": _assembly_execution_state(result.assembly_result),
         "scenes": scene_results,
     }
     print(json.dumps(summary, indent=2, default=str))
