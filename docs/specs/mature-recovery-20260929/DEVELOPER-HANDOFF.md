@@ -1,7 +1,7 @@
 # Melosviz developer-agent handoff
 
 **READY FOR PARALLEL EXPERIMENTAL IMPLEMENTATION. NOT READY FOR GENERAL DEV HANDOFF.**
-Updated 2026-09-29, pass 5. Source under test: `1aec20a2ba41a01ed557d1c7f63f9a0089f842cf`. Specification branch: `docs/mature-recovery-20260929`. Draft #297; registry draft #593. Only Khostty and Melosviz are product subjects.
+Updated 2026-09-30, pass 6. Source under test: `1aec20a2ba41a01ed557d1c7f63f9a0089f842cf`. Specification branch: `docs/mature-recovery-20260929`. Draft #297; registry draft #593. Only Khostty and Melosviz are product subjects.
 
 This readiness applies to the bounded work packages below, not to the full mature product. No agent is authorized to invent missing accepted scope, select a new platform-wide architecture, weaken an oracle, merge, release, or spend on a provider.
 
@@ -64,3 +64,8 @@ Do not repair these by changing only UI wording while leaving false product stat
 - **M-ESEC security:** draft #300, branch `experiment/melosviz-bridge-security-pass6`, frozen base `1aec20a2...`. Production-code repair is isolated to bridge security/startup policy plus focused tests; keep separate from M-E02 scene/result work.
 
 These two may run concurrently. **M-E02 is not ready until M-E01 receipts are reviewed. M-E03 is not ready until M-E02's result/state contract is reviewed.**
+
+
+## Pass 6 M-ESEC review status
+
+Draft #300 candidate `f43717dc25c0021c47b41f638e0ecd184942931c` remains **experimental / unaccepted**. The five-file diff is within the declared write scope. Source review supports the intended bind classifier, public-bind auth/token/root preconditions and prefix protection for Studio/render/debug routes. The dedicated evidence workflow has been tightened to run Ruff in addition to compile + focused/adjacent tests and artifact identity capture. Do not promote or merge until that exact candidate's dedicated workflow completes and raw receipts are inspected. The broader middleware currently rate-limits unprotected requests too; that is an unresolved operational-policy question outside this narrow repair and must not be silently redefined here.
