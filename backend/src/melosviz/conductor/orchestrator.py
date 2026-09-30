@@ -51,6 +51,7 @@ from melosviz.conductor.render_cache import (
     scene_cache_key,
     scene_cache_meta,
     scene_cache_identity_qualified,
+    scene_cache_backend_identity,
     scene_render_cached,
 )
 from melosviz.conductor.visual_diff import compute_visual_diff
