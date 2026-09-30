@@ -97,5 +97,11 @@
   },
   "security_boundary": "BRIDGE_LOOPBACK_CLASSIFIER_FAILS_OPEN_FOR_ARBITRARY_NON_WILDCARD_HOSTS",
   "semantic_spine": "CONDUCTOR_API_CLI_HIGH_RISK_FAMILY_PARTIALLY_RESOLVED",
-  "durable_product_state": "FILE_BASED_STORYBOARD_CACHE_PROVENANCE; NO_DURABLE_PROJECT_JOB_STORE_FOUND_IN_MOUNTED_SPINE"
+  "durable_product_state": "FILE_BASED_STORYBOARD_CACHE_PROVENANCE; NO_DURABLE_PROJECT_JOB_STORE_FOUND_IN_MOUNTED_SPINE",
+  "M_ESEC_progress": {
+    "source_function": "CONFIRMED_FAIL_OPEN",
+    "source_equivalent_probe": "EXECUTED",
+    "full_checkout_test": "NOT_EXECUTED",
+    "repair": "READY"
+  }
 }
