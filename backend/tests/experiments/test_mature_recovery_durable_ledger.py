@@ -105,3 +105,23 @@ def test_corruption_after_reuse_receipt_blocks_assembly_freeze(tmp_path):
     try: l.freeze_assembly("P",r2)
     except RuntimeError as e: assert "corrupt" in str(e)
     else: raise AssertionError("assembly froze after accepted artifact corruption")
+
+
+def test_failed_verifier_is_durable_but_never_reusable(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,"A1")
+    l.record_failed_evidence(a,"oracle:v1","A1","failed")
+    assert l.db.execute("SELECT collection_state FROM evidence WHERE attempt_id=?",(a,)).fetchone()==("failed",)
+    assert not l.reusable(a,"P",r,"S1")
+
+
+def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    a=l.queue("P",r,"S1")
+    try: l.accept(a,"oracle","A1")
+    except RuntimeError: pass
+    else: raise AssertionError("queued attempt accepted")
+    assert l.claim(a,"w")
+    try: l.accept(a,"oracle","A1")
+    except RuntimeError: pass
+    else: raise AssertionError("leased attempt accepted")
