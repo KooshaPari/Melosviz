@@ -293,3 +293,18 @@ A new global scene-ID subsystem is not required to repair the observed conductor
 The immediate studio-pipeline defect is that `OrchestratorResult.per_scene_results` is documented and implemented as `{scene_type: adapter_result}`. That projection throws away the existing per-scene identity and cannot represent two scenes of the same type.
 
 Bootstrap decision: preserve the existing storyboard `scene_index` (plus revision/scene name where required) as the current studio work identity and make `scene_type` adapter-selection metadata. Do not introduce UUIDs merely to fix a dictionary key. A future durable cross-revision scene identity can be added only if recovered product requirements demonstrate index instability is insufficient.
+
+
+## M-F18 — final assembly receives no newly rendered or cache-hit scene artifacts
+
+`collected_paths` is initialized exactly once as `list(segment_paths or [])`. Frozen orchestrator source contains no `collected_paths.append` or `extend`, and neither the live-render branch nor cache-hit branch adds its artifact. The final `assembly_encode` call therefore receives only paths supplied by the caller before rendering.
+
+Mounted `viz generate` calls `render(spec, audio_path=...)` without `segment_paths`. Consequently the final assembly step receives an empty segment list even when scene renders produced artifacts. This independently confirms and strengthens M-F09.
+
+Minimum repair must append each **accepted scene-specific artifact** to an ordered assembly input exactly once, including qualified cache hits, while excluding malformed/placeholders/plan-only outcomes unless the accepted assembly contract explicitly permits them. Merely changing `per_scene_results` keys will not reconnect assembly.
+
+## M-F19 — existing done events are execution notifications, not acceptance receipts
+
+After adapter return, the orchestrator computes `_artifact_issue` and typed `_outcome`, but `bus.emit_done(...)` is called without those values in `extras`. The event's artifact path can therefore accompany a malformed, offline-placeholder, job-spec-only or unavailable outcome while consumers see the same `done` state.
+
+This explains why UI code treating `done` as accepted product output is structurally unsafe even after scene identity is fixed. The minimum repair should either rename/interpret this as execution completion and expose outcome/acceptance separately, or include a typed outcome that consumers are forbidden to collapse to green. Independent acceptance still belongs to the grader, not the worker event bus.
