@@ -257,3 +257,22 @@ def test_cache_historical_render_label_does_not_override_current_media_validatio
     monkeypatch.setattr(orchestrator_module, "scene_cache_meta", lambda *_: {"outcome": OUTCOME_RENDER})
     result = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True, only_scenes=[0]).render(_spec())
     assert result.per_scene_results[0]["outcome"] == OUTCOME_MALFORMED
+
+
+def test_cli_assembly_state_distinguishes_plan_from_real_media(tmp_path):
+    from melosviz.cli.main import _assembly_execution_state
+
+    class PlanOnly:
+        used_ffmpeg_fallback = False
+        ffmpeg_output_path = None
+
+    class Produced:
+        used_ffmpeg_fallback = True
+        ffmpeg_output_path = tmp_path / "assembled.mp4"
+
+    assert _assembly_execution_state(None) == "not_attempted"
+    assert _assembly_execution_state(PlanOnly()) == "plan_only"
+    produced = Produced()
+    assert _assembly_execution_state(produced) == "plan_only"
+    produced.ffmpeg_output_path.write_bytes(b"media")
+    assert _assembly_execution_state(produced) == "produced_unverified"
