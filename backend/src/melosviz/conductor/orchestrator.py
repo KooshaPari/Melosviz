@@ -189,8 +189,12 @@ def _materialise_cached_artifact(blob: Path, output_dir: Path, scene_out_dir: Pa
 
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not (target.exists() and target.stat().st_size == blob.stat().st_size):
-            shutil.copy2(blob, target)
+        # A same-size target is not evidence of identical content. Always
+        # materialise the content-addressed cache blob atomically enough for
+        # this local path: copy to a sibling temp file, then replace.
+        tmp_target = target.with_name(target.name + ".cache-materialising")
+        shutil.copy2(blob, tmp_target)
+        tmp_target.replace(target)
     except OSError as exc:
         logger.debug("cache materialise failed for %s: %s", blob, exc)
         return None
@@ -933,6 +937,7 @@ class Orchestrator:
                         materialised,
                     )
                     elapsed_ms = 0.0
+                    _cached_outcome = scene_cache_meta(_seg_for_render, cache_root).get("outcome")
                     done_evt = bus.emit_done(
                         job_id=job_id,
                         scene_index=scene_idx,
@@ -941,13 +946,18 @@ class Orchestrator:
                         backend=backend_key,
                         duration_ms=0.0,
                         artifact_path=str(materialised),
-                        extras={"from_cache": True, "cache_key": _cache_key},
+                        extras={
+                            "from_cache": True,
+                            "cache_key": _cache_key,
+                            "outcome": _cached_outcome,
+                        },
                     )
                     emitted.append(done_evt)
                     per_scene_results[scene_idx] = {
                         "artifact_path": materialised,
                         "cache_key": _cache_key,
-                        "outcome": scene_cache_meta(_seg_for_render, cache_root).get("outcome"),
+                        "outcome": _cached_outcome,
+                        "scene_type": scene_type,
                     }
                     if per_scene_results[scene_idx]["outcome"] == OUTCOME_RENDER:
                         collected_paths.append(materialised)
