@@ -159,6 +159,11 @@ class Ledger:
             self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0]))
         return True
 
+    def record_failed_evidence(self,attempt:int,verifier:str,artifact_sha:str,collection_state:str='failed'):
+        if collection_state not in ('rejected','failed'): raise ValueError(collection_state)
+        with self.db:
+            self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,collection_state,created_at) VALUES(?,?,?,?,?)",(attempt,verifier,artifact_sha,collection_state,time.time()))
+
     def freeze_assembly(self,pid:str,rev:int)->int:
         scenes=list(self.db.execute("SELECT scene_id,input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? ORDER BY ordinal",(pid,rev)))
         ordered=[]
