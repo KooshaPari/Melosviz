@@ -211,6 +211,9 @@ class RenderCache:
             "artifact_name": (meta or {}).get("artifact_name") or src.name,
             "artifact_relpath": (meta or {}).get("artifact_relpath"),
             "outcome": (meta or {}).get("outcome"),
+            # Bind stored evidence to the renderer/model/workflow/tool identity
+            # that actually produced it; current declarations alone are not evidence.
+            "backend_identity": dict(key.extra).get("backend_identity"),
         }
         meta_path.write_text(json.dumps(meta_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         return target
@@ -318,8 +321,12 @@ def scene_render_cached(seg: dict, cache_root: Path) -> Path | None:
     # A historical real-render artifact without renderer/model/workflow identity
     # cannot qualify unchanged-scene reuse. Placeholder/job-spec cache entries are
     # not production evidence and retain their existing development-cache behavior.
-    if meta.get("outcome") == "render" and not scene_cache_identity_qualified(seg):
-        return None
+    if meta.get("outcome") == "render":
+        current_identity = scene_cache_backend_identity(seg)
+        if current_identity is None:
+            return None
+        if meta.get("backend_identity") != current_identity:
+            return None
     return hit
 
 
