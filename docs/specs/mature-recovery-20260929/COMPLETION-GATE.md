@@ -23,7 +23,7 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs excluded from grading | Excluded in this dossier; all existing grading consumers remain to inspect |
 | No unexplained orphan requirements/features/journeys | Not established without complete accepted graph |
 | No unresolved contradictions | NOT MET: M-F01 plus CLI/API/UI/output-layout and execution-vs-acceptance contradictions (M-F09–M-F15) |
-| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F15 |
+| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F18 |
 | Independent/fresh adversarial review | NOT PERFORMED; self-review and a local probe do not satisfy independence |
 
 ## Next minimal work packages
@@ -36,3 +36,8 @@ Do not replace blocked experimental work with additional horizontal adapters or 
 ## Pass 6 gate movement
 
 Closed sub-gate: finite tracked-tree enumeration. This is deliberately not credited as specification completion because semantic resolution remains open. New blocking evidence increases architectural certainty while reducing product-readiness: scene iteration is duplicated between orchestrator and adapters, bridge manifest layout does not match actual adapter output nesting, and active UIs can disagree on the same run. The next admissible progress is experimental repair/reproduction against the executable oracle, not additional scorecard/catalog expansion.
+
+
+### Revision/recovery blockers added in pass 6
+
+The advertised web single-scene rerender cannot launch with its current request shape; the CLI direct path emits a render command hint rather than executing it; default CLI job IDs are process-dependent; and cache fingerprints omit several render-affecting reference/character inputs. Therefore M-J-REVISE and M-J-RECOVER are not merely untested—they are contradicted by current source semantics. These must be closed experimentally before general developer handoff.
