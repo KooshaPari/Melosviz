@@ -38,3 +38,23 @@ The candidate's ffprobe validation is deliberately a product execution gate, not
 ## Disposition
 
 Keep experimental. If the execution matrix passes without weakening the external oracle, M-E02 may become **EXPERIMENTALLY ACCEPTED**. That still does not make Melosviz ready for general developer handoff or merge this branch automatically.
+
+
+## Independent audit delta — 2026-09-30
+
+The first exact experiment workflow on candidate `1f801487...` did **not** pass:
+- focused M-E02 scene contract passed;
+- broader conductor/bridge regression job failed;
+- web/desktop repository-wide TypeScript checks failed, largely on unchanged baseline dependency/type debt.
+
+The backend failures exposed two classes and were not blanket-waived:
+1. historical tests calling arbitrary bytes named `.mp4` “real media”; those positive fixtures are being converted to actually decodable WAV/media rather than weakening media validation;
+2. an intentional path change from shared scene-type roots to isolated `dispatch_NNN` roots; path expectations are updated only where they encode this new collision boundary.
+
+Additional independent review found a new design regression created by making `only_scenes` effective: selected-only scene artifacts would have produced a selected-only final assembly. The candidate now reconstructs a complete storyboard-order assembly using **only** current `render` cache evidence for untouched scenes plus newly rendered selected artifacts. If any untouched scene lacks valid current render evidence, partial rerender refuses to claim a complete assembly.
+
+A mounted no-GPU product test now invokes the real `melosviz.cli.main generate` path with two same-backend `video_export` scenes, independently ffprobes both scene outputs and final FFmpeg assembly, exercises the real FastAPI `/api/studio/generate` route without pre-seeding directories, then performs an R1→edit S1→R2 selective rerender in a new CLI process and requires the final assembly to remain a full timeline.
+
+Assembly typing was also tightened: a non-null MEAdapter job-spec result is `plan_only`; only an actual FFmpeg-produced file is `produced_unverified`.
+
+Current admissible evidence target is the **push** run for the exact candidate head, not a stale earlier run. Repository-wide typecheck debt remains visible separately; the experiment-specific UI gates execute the changed StudioConsole behavior and bundle the changed Electrobun webview rather than converting unrelated pre-existing tsc failures into M-E02 results.
