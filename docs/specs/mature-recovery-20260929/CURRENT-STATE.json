@@ -212,7 +212,11 @@
     "prior_dedicated_workflow": "SUCCESS_BUT_SUPERSEDED_BY_NEW_CACHE_IDENTITY_PATCH",
     "held_out_cache_identity": "PATCHED_REQUIRES_NEW_EXACT_HEAD_GREEN",
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
-    "general_acceptance": false
+    "general_acceptance": false,
+    "current_head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
+    "status": "EXACT_HEAD_REGRADING",
+    "latest_fix": "persist effective derived backend identity as producer evidence; preserve deterministic video_export cache reuse",
+    "dedicated_workflow_run": 36766323723
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "AUDIO_CONDITIONED_PROGRAMMABLE_MULTI_SCENE_VISUAL_COMPOSITION_AND_RUNTIME_FOR_OFFLINE_SHORT_LONG_FORM_AND_POTENTIAL_LIVE_USE",
@@ -233,7 +237,7 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "aa3be20988390817222ec4230f2877fbbbff76f8",
+    "head": "3317530d8a7ab5474ff836f7f86e808c72820a06",
     "status": "EXACT_HEAD_QUEUED",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
@@ -244,17 +248,19 @@
       "ordered accepted assembly inputs",
       "single live attempt",
       "stale lease recovery",
-      "missing acceptance blocks assembly"
+      "missing acceptance blocks assembly",
+      "external artifact deletion/equal-size replacement invalidates reuse",
+      "post-reuse corruption blocks assembly freeze"
     ]
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
     "policy_head": "d4a8f83ba1a1ebd8dae71ce259e75d7e3dba684e",
-    "candidate": "cefb683c82455d065cdac914b6e34b07b252b666",
+    "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
       "R2 final digest differs from R1 after S2 edit"
     ],
-    "status": "AWAITING_EXECUTION"
+    "status": "REBOUND_AWAITING_EXECUTION"
   }
 }
