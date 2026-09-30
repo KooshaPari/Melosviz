@@ -20,6 +20,11 @@ jobs:
       SOURCE_SHA: 1aec20a2ba41a01ed557d1c7f63f9a0089f842cf
       RECEIPTS: recovery-receipts
     steps:
+      - name: Checkout recovery branch with history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
       - name: Validate recovery metadata integrity
         run: |
           set -euo pipefail
@@ -28,10 +33,6 @@ jobs:
             --prefix M-F \
             --out "${RECEIPTS:-recovery-receipts}/recovery-metadata-integrity.json"
 
-      - name: Checkout recovery branch with history
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
 
       - name: Assert product implementation remains frozen
         run: |
