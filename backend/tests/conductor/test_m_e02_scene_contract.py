@@ -421,3 +421,20 @@ def test_real_render_cache_metadata_must_bind_backend_identity(tmp_path, monkeyp
     meta_path.write_text(json.dumps(meta))
     orch.render(spec)
     assert len(SceneAdapter.calls) == 2
+
+
+def test_video_export_effective_identity_is_persisted_and_reused(tmp_path, monkeypatch):
+    from melosviz.conductor import registry
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    monkeypatch.setattr(registry, "ADAPTER_REGISTRY", {"video_export": SceneAdapter})
+    spec = Spec([{"scene_type": "video_export", "name": "S0", "marker": "deterministic"}])
+    orch = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True)
+    orch.render(spec)
+    orch.render(spec)
+    assert len(SceneAdapter.calls) == 1, "deterministic exporter should reuse qualified cache evidence"
+    metas = list(orch._render_cache.cache_dir.glob("*.json"))
+    assert len(metas) == 1
+    import json
+    meta = json.loads(metas[0].read_text())
+    assert meta["backend_identity"] == "video_export:ffmpeg:v1"
