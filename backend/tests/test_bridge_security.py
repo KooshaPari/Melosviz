@@ -18,8 +18,7 @@ Coverage:
 4. **Audit log** — every protected call records a row (timestamp, IP, method,
    path, status, dur_ms) to $MELOSVIZ_DATA_DIR/audit/bridge.jsonl.
 
-5. **Loopback assertion** — main() refuses --host 0.0.0.0 unless
-   MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1.
+5. **Bind assertion** — only true loopback addresses/localhost bind by default; LAN, link-local, public IPs and arbitrary hostnames require explicit public authorization, and an authorized public bind additionally requires bearer auth + token.
 
 6. **Body size cap** — POST bodies > 1 MiB rejected with 413 before parse.
 
@@ -464,3 +463,82 @@ class TestCircuitBreaker:
         assert b.state == "open"
         now["t"] = 7.0
         assert b.allow() is False
+
+# ---------------------------------------------------------------------------
+# Pass-6 recovery: generalized bind + Studio route protection
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("host", ["127.0.0.1", "127.12.3.4", "::1", "localhost"])
+def test_loopback_classifier_accepts_only_true_loopback_controls(bridge_env, monkeypatch, host):
+    from melosviz.bridge import security
+    monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+    ok, reason = security.loopback_check(host)
+    assert ok is True
+    assert reason == "loopback"
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "192.168.1.10", "10.0.0.7", "172.16.1.2", "169.254.1.2",
+        "8.8.8.8", "2001:4860:4860::8888", "example.com", "my-laptop.local",
+        "0.0.0.0", "::", "*",
+    ],
+)
+def test_non_loopback_classifier_fails_closed_without_public_authorization(
+    bridge_env, monkeypatch, host
+):
+    from melosviz.bridge import security
+    monkeypatch.delenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", raising=False)
+    ok, _reason = security.loopback_check(host)
+    assert ok is False
+
+@pytest.mark.parametrize("host", ["0.0.0.0", "::", "192.168.1.10", "8.8.8.8", "example.com"])
+def test_explicit_public_authorization_classifies_non_loopback_as_public(
+    bridge_env, monkeypatch, host
+):
+    from melosviz.bridge import security
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", "1")
+    ok, reason = security.loopback_check(host)
+    assert ok is True
+    assert reason == "ALLOW_PUBLIC=1"
+
+def test_main_refuses_authorized_public_bind_when_auth_disabled(
+    bridge_env, monkeypatch, capsys
+):
+    from melosviz.bridge import server
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", "1")
+    monkeypatch.delenv("MELOSVIZ_BRIDGE_REQUIRE_AUTH", raising=False)
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_TOKEN", "still-not-enough")
+    monkeypatch.setattr("sys.argv", ["server", "--host", "192.168.1.10", "--port", "0"])
+    with pytest.raises(SystemExit) as excinfo:
+        server.main()
+    assert excinfo.value.code == 2
+    assert "REQUIRE_AUTH" in capsys.readouterr().err
+
+def test_main_refuses_authorized_public_bind_without_token(
+    bridge_env, monkeypatch, capsys
+):
+    from melosviz.bridge import server
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOW_PUBLIC", "1")
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_REQUIRE_AUTH", "1")
+    monkeypatch.delenv("MELOSVIZ_BRIDGE_TOKEN", raising=False)
+    monkeypatch.setattr("sys.argv", ["server", "--host", "192.168.1.10", "--port", "0"])
+    with pytest.raises(SystemExit) as excinfo:
+        server.main()
+    assert excinfo.value.code == 2
+    assert "BRIDGE_TOKEN" in capsys.readouterr().err
+
+@pytest.mark.parametrize(
+    "method,path",
+    [
+        ("post", "/api/studio/generate"),
+        ("post", "/api/studio/direct"),
+        ("get", "/api/render/events/recent"),
+        ("get", "/debug/profile"),
+    ],
+)
+def test_new_control_surfaces_are_bearer_protected(bridge_env, method, path):
+    client, _ = _client(bridge_env)
+    response = getattr(client, method)(path, json={} if method == "post" else None)
+    assert response.status_code == 401, response.text
+    assert response.headers.get("WWW-Authenticate") == "Bearer"
