@@ -120,6 +120,14 @@ class Ledger:
             cur=self.db.execute("UPDATE render_attempt SET state='leased',lease_owner=?,lease_expires=? WHERE id=? AND state='queued'",(worker,now+ttl,attempt))
         return cur.rowcount==1
 
+    def recover_expired_leases(self, now:float|None=None)->int:
+        now=time.time() if now is None else now
+        with self.db:
+            cur=self.db.execute("""UPDATE render_attempt
+              SET state='queued',lease_owner=NULL,lease_expires=NULL
+              WHERE state='leased' AND lease_expires IS NOT NULL AND lease_expires<=?""",(now,))
+        return cur.rowcount
+
     def execute(self,attempt:int,artifact_sha:str):
         with self.db:
             cur=self.db.execute("UPDATE render_attempt SET state='executed',artifact_sha256=?,lease_owner=NULL,lease_expires=NULL WHERE id=? AND state='leased'",(artifact_sha,attempt))
