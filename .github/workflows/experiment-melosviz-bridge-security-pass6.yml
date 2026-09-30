@@ -55,10 +55,17 @@ jobs:
           python -m pip install -e "backend[test]"
           python -m pip freeze > "$RECEIPTS/pip-freeze.txt"
 
-      - name: Compile changed Python
+      - name: Compile and lint changed Python
         run: |
           set -euo pipefail
-          python -m py_compile             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py             backend/tests/test_bridge_public_bind_policy.py
+          files=(
+            backend/src/melosviz/bridge/security.py
+            backend/src/melosviz/bridge/server.py
+            backend/tests/test_bridge_security.py
+            backend/tests/test_bridge_public_bind_policy.py
+          )
+          python -m py_compile "${files[@]}"
+          python -m ruff check "${files[@]}" | tee "$RECEIPTS/ruff.log"
 
       - name: Run bridge security contract
         env:
