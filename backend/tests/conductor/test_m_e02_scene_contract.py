@@ -276,3 +276,47 @@ def test_cli_assembly_state_distinguishes_plan_from_real_media(tmp_path):
     assert _assembly_execution_state(produced) == "plan_only"
     produced.ffmpeg_output_path.write_bytes(b"media")
     assert _assembly_execution_state(produced) == "produced_unverified"
+
+
+def test_partial_rerender_reuses_only_valid_unchanged_cache_for_full_assembly(
+    tmp_path, monkeypatch
+):
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    _registry(monkeypatch)
+    out = tmp_path / "out"
+    orch = Orchestrator(output_dir=out)
+    r1 = _spec()
+    orch.render(r1)
+    assert len(AssemblyAdapter.calls[-1]) == 3
+    r1_bytes = [Path(p).read_bytes() for p in AssemblyAdapter.calls[-1]]
+
+    r2 = _spec()
+    r2.scene_segments[1] = dict(r2.scene_segments[1])
+    r2.scene_segments[1]["marker"] = "one-r2"
+    SceneAdapter.calls = []
+    AssemblyAdapter.calls = []
+
+    result = Orchestrator(output_dir=out, only_scenes=[1]).render(r2)
+
+    assert [x[0]["marker"] for x in SceneAdapter.calls] == ["one-r2"]
+    assert list(result.per_scene_results) == [1]
+    assert len(AssemblyAdapter.calls) == 1
+    r2_paths = [Path(p) for p in AssemblyAdapter.calls[0]]
+    assert len(r2_paths) == 3
+    r2_bytes = [p.read_bytes() for p in r2_paths]
+    assert r2_bytes[0] == r1_bytes[0]
+    assert r2_bytes[2] == r1_bytes[2]
+    assert r2_bytes[1] != r1_bytes[1]
+
+
+def test_partial_rerender_without_prior_unchanged_evidence_refuses_full_assembly(
+    tmp_path, monkeypatch
+):
+    from melosviz.conductor.orchestrator import ConductorError, Orchestrator
+
+    _registry(monkeypatch)
+    with pytest.raises(ConductorError, match="lack current render evidence"):
+        Orchestrator(output_dir=tmp_path / "out", only_scenes=[1]).render(_spec())
+    assert [x[0]["marker"] for x in SceneAdapter.calls] == ["one"]
+    assert AssemblyAdapter.calls == []
