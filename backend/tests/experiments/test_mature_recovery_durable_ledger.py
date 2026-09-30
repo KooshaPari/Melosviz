@@ -87,3 +87,21 @@ def test_equal_size_replacement_and_deletion_break_reuse(tmp_path):
     assert not l.reusable(a,"P",r2,"S1")
     artifact.unlink()
     assert not l.reusable(a,"P",r2,"S1")
+
+
+def test_corruption_after_reuse_receipt_blocks_assembly_freeze(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    artifact=tmp_path/"s1.bin"; artifact.write_bytes(b"GOOD"); sha=m.hashlib.sha256(b"GOOD").hexdigest()
+    a=l.queue("P",r1,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(artifact)); l.accept(a,"oracle",sha)
+    # Other scenes can be symbolic in this isolated metadata experiment.
+    accepted(l,"P",r1,"S2","A2"); accepted(l,"P",r1,"S3","A3")
+    r2=l.author_revision("P",scenes(),parent=r1)
+    assert l.reusable(a,"P",r2,"S1")
+    # establish valid reuse/fresh evidence for the rest
+    a2=l.db.execute("SELECT id FROM render_attempt WHERE project_revision=? AND scene_id='S2'",(r1,)).fetchone()[0]
+    a3=l.db.execute("SELECT id FROM render_attempt WHERE project_revision=? AND scene_id='S3'",(r1,)).fetchone()[0]
+    assert l.reusable(a2,"P",r2,"S2"); assert l.reusable(a3,"P",r2,"S3")
+    artifact.write_bytes(b"EVIL")
+    try: l.freeze_assembly("P",r2)
+    except RuntimeError as e: assert "corrupt" in str(e)
+    else: raise AssertionError("assembly froze after accepted artifact corruption")
