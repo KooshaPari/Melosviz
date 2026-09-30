@@ -1095,6 +1095,16 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(2)
+        if not (
+            os.environ.get("MELOSVIZ_BRIDGE_ALLOWED_DIR")
+            or os.environ.get("MELOSVIZ_DATA_DIR")
+        ):
+            print(
+                "[melosviz bridge] Refusing authorized public bind without an "
+                "explicit MELOSVIZ_BRIDGE_ALLOWED_DIR or MELOSVIZ_DATA_DIR.",
+                file=sys.stderr,
+            )
+            sys.exit(2)
 
     print(f"[melosviz bridge] binding {args.host}:{args.port} ({reason})")
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
