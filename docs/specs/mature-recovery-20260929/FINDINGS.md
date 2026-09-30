@@ -222,3 +222,11 @@ The cache key includes prompt, seed, dimensions/fps, camera, scene-level continu
 Therefore changing a storyboard-level reference image/strength or resolved character reference can leave the cache fingerprint unchanged and reuse media rendered from different visual inputs. The global `edit_count` does not rescue this.
 
 Closure requires cache identity to cover every render-affecting dependency by immutable content/config identity, not a manual edit counter. Add negative controls that change only reference image bytes/path, strength, character sheet/ref/model/workflow and prove the old artifact cannot qualify.
+
+## M-F19 — bridge bind classifier fails open for arbitrary non-wildcard hosts (security blocker)
+
+`bridge/security.py::loopback_check` only treats `_PUBLIC_HOSTS` (wildcards such as `0.0.0.0`, `::`, `*`) as public. After that branch, it returns `(True, "loopback")` for **anything else**. The docstring claims only loopback IP literals or `localhost` should pass by default, but the implementation therefore accepts RFC1918 addresses, link-local addresses, public IP literals and arbitrary hostnames without `MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1`.
+
+The mounted bridge `main()` calls this helper before `uvicorn.run`, so the classifier participates in the real startup boundary. A source-equivalent pass-6 probe reproduced the false positives for `192.168.1.10`, `10.0.0.7`, and `example.com`, while true loopback controls passed and wildcard hosts were denied as expected. A full-checkout regression test is committed but not yet executed.
+
+Public-bind authorization and bearer authentication are separate controls. A repair must fail closed for every non-loopback target unless explicit public binding is authorized, and startup must also require or explicitly waive an authentication/path policy for that public exposure. Do not treat packaged-desktop defaults as proof that manual/dev/server invocation is safe.
