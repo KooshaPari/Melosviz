@@ -237,7 +237,7 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "3317530d8a7ab5474ff836f7f86e808c72820a06",
+    "head": "9984cae480da62e06eafeeb295d6e2629057f4b2",
     "status": "EXACT_HEAD_QUEUED",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
@@ -250,16 +250,22 @@
       "stale lease recovery",
       "missing acceptance blocks assembly",
       "external artifact deletion/equal-size replacement invalidates reuse",
-      "post-reuse corruption blocks assembly freeze"
-    ]
+      "post-reuse corruption blocks assembly freeze",
+      "failed verifier evidence durable but non-accepting",
+      "queued/leased attempt cannot be accepted",
+      "assembly frozen/executed/accepted states distinct",
+      "wrong final assembly digest cannot be accepted"
+    ],
+    "workflow_run": 36770605484
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "d4a8f83ba1a1ebd8dae71ce259e75d7e3dba684e",
+    "policy_head": "d1895ad31011eb34882d3d45323f3cb4fe8d4a8e",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
-      "R2 final digest differs from R1 after S2 edit"
+      "R2 final digest differs from R1 after S2 edit",
+      "post-success final media corruption is non-green"
     ],
     "status": "REBOUND_AWAITING_EXECUTION"
   }
