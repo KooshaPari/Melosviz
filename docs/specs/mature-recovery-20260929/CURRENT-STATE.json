@@ -104,7 +104,7 @@
     "unique_blobs": 688,
     "semantic_state": "OPEN"
   },
-  "security_boundary": "M-F19_FAIL_OPEN_BIND_CLASSIFIER_READY_FOR_M_ESEC",
+  "security_boundary": "M-F20_FAIL_OPEN_BIND_AND_ROUTE_PROTECTION_GAPS; EXPERIMENTAL_CANDIDATE_OPEN",
   "semantic_spine": "CONDUCTOR_API_CLI_HIGH_RISK_FAMILY_PARTIALLY_RESOLVED",
   "durable_product_state": "FILE_BASED_STORYBOARD_CACHE_PROVENANCE; NO_DURABLE_PROJECT_JOB_STORE_FOUND_IN_MOUNTED_SPINE",
   "M_ESEC_progress": {
@@ -122,5 +122,13 @@
       "M-F08",
       "M-F23"
     ]
+  },
+  "experimental_candidates": {
+    "M-ESEC": {
+      "branch": "experiment/melosviz-bridge-security-pass6",
+      "pr": 300,
+      "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+      "status": "IN_PROGRESS_UNACCEPTED"
+    }
   }
 }
