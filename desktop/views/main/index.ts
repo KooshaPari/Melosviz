@@ -435,7 +435,7 @@ function renderRenderQueue() {
     listEl.appendChild(li);
   }
   // Footer summary
-  const done = renderQueue.filter((e) => e.status === "done").length;
+  const done = renderQueue.filter((e) => e.status === "accepted").length;
   const total = renderQueue.length;
   qs("#queue-progress-summary").textContent = `${done}/${total} scenes complete`;
 }
@@ -469,12 +469,12 @@ function updateQueueEntry(
     renderRenderQueue();
   }
   // Footer counter
-  const done = renderQueue.filter((e) => e.status === "done").length;
+  const done = renderQueue.filter((e) => e.status === "accepted").length;
   qs("#queue-progress-summary").textContent = `${done}/${renderQueue.length} scenes complete`;
 }
 
 /** Set the queue header status pill. */
-function setQueueHeaderState(state: "idle" | "queued" | "running" | "done" | "error") {
+function setQueueHeaderState(state: "idle" | "queued" | "running" | "produced" | "accepted" | "error") {
   const el = qs<HTMLElement>("#queue-status");
   (el as HTMLElement).dataset["state"] = state === "idle" ? "" : state;
   el.textContent = state;
@@ -777,14 +777,15 @@ async function onStudioGenerate() {
     );
     let allRealMedia = true;
     for (const entry of renderQueue) {
-      const scene = byIndex.get(entry.index);
-      const acceptedExecution = scene?.outcome === "render" && !!scene.artifact_path;
-      allRealMedia &&= acceptedExecution;
+      // Queue display is 1-based; conductor scene_index is 0-based.
+      const scene = byIndex.get(entry.index - 1);
+      const producedRealMedia = scene?.outcome === "render" && !!scene.artifact_path;
+      allRealMedia &&= producedRealMedia;
       updateQueueEntry(entry.index, {
-        status: acceptedExecution ? "done" : "error",
-        progressPct: acceptedExecution ? 100 : entry.progressPct,
-        message: acceptedExecution
-          ? scene?.artifact_path ?? ""
+        status: producedRealMedia ? "produced" : "error",
+        progressPct: producedRealMedia ? 100 : entry.progressPct,
+        message: producedRealMedia
+          ? `Produced, not independently accepted: ${scene?.artifact_path ?? ""}`
           : `Non-production or missing scene outcome: ${scene?.outcome ?? "missing"}`,
       });
     }
@@ -793,7 +794,7 @@ async function onStudioGenerate() {
       ? t("shell.progress.studio_generate_done")
       : "Generate completed with non-production scene outcomes");
     setStatus(
-      allRealMedia ? t("shell.status.studio_generate_done") : "Generate requires review",
+      allRealMedia ? "Generate produced media; verification pending" : "Generate requires review",
       allRealMedia ? "ready" : "error",
     );
     lastMasterDir = pathJoinSafe(
