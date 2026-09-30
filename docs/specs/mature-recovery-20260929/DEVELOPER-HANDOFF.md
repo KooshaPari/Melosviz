@@ -89,3 +89,10 @@ Source tracing found two new blockers that M-E01/M-E02 must reproduce before rep
 Release CI establishes Electrobun as the current packaged desktop; Tauri is a separate alternate scaffold/surface at this snapshot.
 
 **Next executable Melosviz work:** on a runnable checkout, create a two-scene same-backend fixture and count actual adapter calls, media writes and event identities. Exercise the real bridge generate route without pre-seeding output. Preserve the failing receipts. Then make the smallest typed repair so iteration has exactly one owner (scene-targeted call OR explicit batch call), return structured per-scene results, and have bridge/UI consume those results rather than infer from subprocess exit or directory guessing. The independent media oracle remains reviewer-controlled and must reject placeholders/plan-only/wrong scene evidence.
+
+
+## Pass 7 delta — selective rerender is currently inert
+
+Do not assume `--only-scenes` works. Frozen source proves both selector entry points are dead: constructor `self._only_scenes` is assigned and never read; `render(..., only_scenes=...)` mentions the parameter only in signature/docstring. The CLI passes selection into the constructor. Therefore the advertised one-scene/neighbor rerender does not currently select conductor work.
+
+M-E02 minimum patch should reuse existing `scene_index` identity already present in events/provenance/cache/API. Resolve one effective selector at render entry, validate/filter dispatch, and make exactly one layer own scene iteration. Replace `per_scene_results: {scene_type: result}` with a scene-indexed/ordered result projection. Do not invent UUID infrastructure unless later requirements prove storyboard indices insufficient. Add same-backend two-scene call-count assertions and verify unselected adapters/scenes are untouched.
