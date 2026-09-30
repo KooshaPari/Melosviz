@@ -4,15 +4,16 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 10,
+  "assessment_pass": 9,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-m-e02",
-    "sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
-    "pr": 302,
-    "status": "EXPERIMENTAL_UNVERIFIED"
+    "tested_sha": "df72dcd80ecd39d17f4fa6e8733e00574226f360",
+    "workflow_run": 36751162085,
+    "workflow_conclusion": "SUCCESS",
+    "scope": "DETERMINISTIC_VIDEO_EXPORT_VERTICAL_SPINE_ONLY"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
@@ -181,5 +182,19 @@
     "workflow": ".github/workflows/reviewer-m-e02.yml",
     "candidate_sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
     "status": "WORKFLOW_ADDED_NOT_YET_OBSERVED"
-  }
+  },
+  "M_E02_status": "PARTIAL_EXPERIMENTAL_SUCCESS_BLOCKED_ON_HELD_OUT_GENERATIVE_CACHE_IDENTITY_AND_INDEPENDENT_GRADING",
+  "M_E02_evidence": {
+    "focused_contract": "PASS",
+    "mounted_cli_bridge_ffmpeg": "PASS",
+    "broader_conductor_bridge_regressions": "PASS",
+    "web_delta": "PASS",
+    "desktop_delta": "PASS"
+  },
+  "remaining_M_E02_blockers": [
+    "backend/model/workflow/tool identity required for trustworthy generative cache reuse",
+    "external reviewer-controlled product-media oracle not yet run on candidate outputs",
+    "real generative backend not qualified",
+    "real application persistence/restart not demonstrated"
+  ]
 }
