@@ -755,27 +755,54 @@ async function onStudioGenerate() {
       storyboardPath,
       outDir: outPath ?? undefined,
     });
-    // After the orchestrator returns, mark every scene done with the
-    // orchestrator output as the per-scene message.
-    const trimmed = (out ?? "").trim().split("\n")[0] || "";
+    let manifest: {
+      out_dir?: string;
+      assembly_state?: string;
+      scenes?: Array<{
+        scene_index?: number;
+        scene_type?: string;
+        outcome?: string | null;
+        artifact_path?: string | null;
+      }>;
+    };
+    try {
+      manifest = JSON.parse(out);
+    } catch {
+      throw new Error("Orchestrator returned a non-JSON scene manifest");
+    }
+    const byIndex = new Map(
+      (manifest.scenes ?? [])
+        .filter((s) => typeof s.scene_index === "number")
+        .map((s) => [s.scene_index as number, s]),
+    );
+    let allRealMedia = true;
     for (const entry of renderQueue) {
+      const scene = byIndex.get(entry.index);
+      const acceptedExecution = scene?.outcome === "render" && !!scene.artifact_path;
+      allRealMedia &&= acceptedExecution;
       updateQueueEntry(entry.index, {
-        status: "done",
-        progressPct: 100,
-        message: trimmed,
+        status: acceptedExecution ? "done" : "error",
+        progressPct: acceptedExecution ? 100 : entry.progressPct,
+        message: acceptedExecution
+          ? scene?.artifact_path ?? ""
+          : `Non-production or missing scene outcome: ${scene?.outcome ?? "missing"}`,
       });
     }
-    setQueueHeaderState("done");
-    setProgress(100, t("shell.progress.studio_generate_done"));
-    setStatus(t("shell.status.studio_generate_done"), "ready");
+    setQueueHeaderState(allRealMedia ? "done" : "error");
+    setProgress(allRealMedia ? 100 : 0, allRealMedia
+      ? t("shell.progress.studio_generate_done")
+      : "Generate completed with non-production scene outcomes");
+    setStatus(
+      allRealMedia ? t("shell.status.studio_generate_done") : "Generate requires review",
+      allRealMedia ? "ready" : "error",
+    );
     lastMasterDir = pathJoinSafe(
       outPath ?? wavPath.replace(/[^/]+$/, ""),
       "master"
     );
     syncStudioButtons();
-    // Reveal the output directory for the user.
-    if (trimmed.length > 0) {
-      await rpc.request.revealInFinder({ filePath: trimmed });
+    if (manifest.out_dir) {
+      await rpc.request.revealInFinder({ filePath: manifest.out_dir });
     }
   } catch (err) {
     setQueueHeaderState("error");
