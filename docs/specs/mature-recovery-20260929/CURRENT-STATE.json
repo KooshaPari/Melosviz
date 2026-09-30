@@ -33,7 +33,7 @@
       "experimental result contract review"
     ]
   },
-  "contract_authority": "CURRENT_USER_INTENT_AUTHORITATIVE_20260930",
+  "contract_authority": "CURRENT_USER_INTENT_RESOLVED_2026_09_30",
   "authority_correction": "Prior uncertainty about whether multi-scene/hybrid composition was user intent is superseded by explicit current user clarification. Historical details still require reconciliation.",
   "source_denominator": {
     "state": "OPEN_SEMANTIC_RESOLUTION",
@@ -225,5 +225,9 @@
     "assembly/review/evidence",
     "offline delivery",
     "real-time/live projection where qualified"
-  ]
+  ],
+  "authoritative_product_intent": "AUTHORITATIVE-PRODUCT-INTENT.md",
+  "product_identity": "MULTI_SCENE_AUDIO_CONDITIONED_VISUAL_COMPOSITION_AND_GENERATION",
+  "cvp_constraint": "MULTI_SCENE_REQUIRED_SINGLE_SCENE_IS_PRIMITIVE",
+  "editorial_bootstrap": "OTIO_CANDIDATE_PROJECTION_NOT_CANONICAL_GENERATIVE_STATE"
 }
