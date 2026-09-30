@@ -79,6 +79,7 @@ interface GenerateSceneMeta {
   scene_type?: string;
   outcome?: string | null;
   artifact_path?: string | null;
+  artifact_sha256?: string | null;
 }
 
 interface GeneratePayload {
