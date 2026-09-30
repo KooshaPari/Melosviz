@@ -71,8 +71,8 @@ let lastMasterDir: string | null = null;
 let lastFinalZip: string | null = null;
 
 // Render queue state — one entry per scene, indexed by scene number.
-// Status lifecycle: queued → rendering → done | error.
-type QueueStatus = "queued" | "rendering" | "done" | "error";
+// Status lifecycle: queued → rendering → produced → accepted | error.\n// `produced` is worker/conductor output and MUST NOT be displayed as independent acceptance.
+type QueueStatus = "queued" | "rendering" | "produced" | "accepted" | "error";
 interface QueueEntry {
   index: number;
   sceneName: string;
@@ -788,7 +788,7 @@ async function onStudioGenerate() {
           : `Non-production or missing scene outcome: ${scene?.outcome ?? "missing"}`,
       });
     }
-    setQueueHeaderState(allRealMedia ? "done" : "error");
+    setQueueHeaderState(allRealMedia ? "produced" : "error");
     setProgress(allRealMedia ? 100 : 0, allRealMedia
       ? t("shell.progress.studio_generate_done")
       : "Generate completed with non-production scene outcomes");
