@@ -539,6 +539,9 @@ def test_main_refuses_authorized_public_bind_without_token(
 )
 def test_new_control_surfaces_are_bearer_protected(bridge_env, method, path):
     client, _ = _client(bridge_env)
-    response = getattr(client, method)(path, json={} if method == "post" else None)
+    if method == "post":
+        response = client.post(path, json={})
+    else:
+        response = client.get(path)
     assert response.status_code == 401, response.text
     assert response.headers.get("WWW-Authenticate") == "Bearer"
