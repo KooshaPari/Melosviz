@@ -325,3 +325,49 @@ def test_partial_rerender_without_prior_unchanged_evidence_refuses_full_assembly
         Orchestrator(output_dir=tmp_path / "out", only_scenes=[1]).render(_spec())
     assert [x[0]["marker"] for x in SceneAdapter.calls] == ["one"]
     assert AssemblyAdapter.calls == []
+
+
+def test_real_render_without_backend_identity_is_not_reused(tmp_path, monkeypatch):
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    _registry(monkeypatch)
+    orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
+    orch.render(_spec())
+    orch.render(_spec())
+
+    assert len(SceneAdapter.calls) == 6, (
+        "three unqualified real-render scenes must execute again rather than "
+        "reusing evidence with unknown renderer/model/workflow identity"
+    )
+
+
+def test_backend_identity_change_invalidates_real_render_cache(tmp_path, monkeypatch):
+    from melosviz.conductor.orchestrator import Orchestrator
+
+    _registry(monkeypatch)
+    base = _spec()
+    for seg in base.scene_segments:
+        seg["cache_extra"] = {"backend_identity": "fixture-model-workflow:v1"}
+    orch = Orchestrator(output_dir=tmp_path, skip_assembly=True, only_scenes=[0])
+    orch.render(base)
+    orch.render(base)
+    assert len(SceneAdapter.calls) == 1, "qualified identical evidence should be reusable"
+
+    changed = _spec()
+    for seg in changed.scene_segments:
+        seg["cache_extra"] = {"backend_identity": "fixture-model-workflow:v2"}
+    orch.render(changed)
+    assert len(SceneAdapter.calls) == 2, (
+        "renderer/model/workflow identity change must invalidate the old real-render cache"
+    )
+
+
+def test_video_export_has_explicit_stable_cache_identity():
+    from melosviz.conductor.render_cache import scene_cache_backend_identity
+
+    assert scene_cache_backend_identity({"scene_type": "video_export"}) == "video_export:ffmpeg:v1"
+    assert scene_cache_backend_identity({"scene_type": "comfyui_image"}) is None
+    assert scene_cache_backend_identity({
+        "scene_type": "comfyui_image",
+        "cache_extra": {"backend_identity": "comfyui:model-x:workflow-y:nodes-z"},
+    }) == "comfyui:model-x:workflow-y:nodes-z"
