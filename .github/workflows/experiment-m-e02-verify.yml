@@ -11,6 +11,7 @@ on:
       - "web/**"
       - "desktop/**"
       - ".github/workflows/experiment-m-e02-verify.yml"
+      - "docs/experiments/m-e02/**"
 
 permissions:
   contents: read
