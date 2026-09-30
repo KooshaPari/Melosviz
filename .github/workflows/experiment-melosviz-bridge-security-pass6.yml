@@ -10,6 +10,7 @@ on:
       - "backend/src/melosviz/bridge/security.py"
       - "backend/src/melosviz/bridge/server.py"
       - "backend/tests/test_bridge_security.py"
+      - "backend/tests/test_bridge_public_bind_policy.py"
       - ".github/workflows/experiment-melosviz-bridge-security-pass6.yml"
 
 permissions:
@@ -31,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --name-only "$SOURCE_SHA"...HEAD | tee changed-files.txt
-          unexpected="$(grep -Ev '^(backend/src/melosviz/bridge/(security|server)\.py|backend/tests/test_bridge_security\.py|\.github/workflows/experiment-melosviz-bridge-security-pass6\.yml)$' changed-files.txt || true)"
+          unexpected="$(grep -Ev '^(backend/src/melosviz/bridge/(security|server)\.py|backend/tests/test_bridge_(security|public_bind_policy)\.py|\.github/workflows/experiment-melosviz-bridge-security-pass6\.yml)$' changed-files.txt || true)"
           if [ -n "$unexpected" ]; then
             echo "Unexpected experimental changes:" >&2
             echo "$unexpected" >&2
@@ -54,7 +55,8 @@ jobs:
       - name: Lint changed Python
         run: |
           set -euo pipefail
-          ruff check             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py
+          ruff check             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py \
+            backend/tests/test_bridge_public_bind_policy.py
 
       - name: Run bridge security contract
         run: |
