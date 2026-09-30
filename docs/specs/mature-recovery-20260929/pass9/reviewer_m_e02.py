@@ -90,6 +90,11 @@ def main():
         a2=probe(assembly)
         assert a2["duration"]>1.5,(r2,a2)
         result["checks"]["r2_selected_scene_full_timeline"]=True
+        # R2 must not merely be valid media; the final assembly must differ from
+        # R1 after the declared scene edit, otherwise selective rerender/reassembly
+        # may have laundered stale final output.
+        assert a2["sha256"] != a1["sha256"], (a1, a2)
+        result["checks"]["r2_final_digest_changed"]=True
         result["observations"]={"r1_scenes":scene_obs,"r1_assembly":a1,"r2_assembly":a2}
         # Wrong selector must fail before claiming product output.
         env=os.environ.copy();env["PYTHONPATH"]=str(candidate/"backend")
