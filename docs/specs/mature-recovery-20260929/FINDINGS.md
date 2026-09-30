@@ -308,3 +308,14 @@ Minimum repair must append each **accepted scene-specific artifact** to an order
 After adapter return, the orchestrator computes `_artifact_issue` and typed `_outcome`, but `bus.emit_done(...)` is called without those values in `extras`. The event's artifact path can therefore accompany a malformed, offline-placeholder, job-spec-only or unavailable outcome while consumers see the same `done` state.
 
 This explains why UI code treating `done` as accepted product output is structurally unsafe even after scene identity is fixed. The minimum repair should either rename/interpret this as execution completion and expose outcome/acceptance separately, or include a typed outcome that consumers are forbidden to collapse to green. Independent acceptance still belongs to the grader, not the worker event bus.
+
+
+## M-F20 — ComfyUI backend execution identity is already available but discarded before conductor/cache evidence
+
+The adapter submits the exact built workflow to ComfyUI and receives a `prompt_id`; it then polls `/history/{prompt_id}` and obtains the completed history entry with outputs. However, `_dispatch_scene` returns only downloaded file paths. The prompt ID, completed history/status, canonical workflow content and backend/system identity do not reach `OrchestratorResult`, provenance or `SceneCacheKey`.
+
+This makes the held-out generative cache defect concrete rather than theoretical: the backend provides an execution identity, but Melosviz drops it at the adapter boundary and later attempts evidence reuse from scene inputs alone.
+
+Bootstrap rather than hand-roll: preserve a structured adapter receipt containing at least prompt_id, canonical submitted-workflow SHA-256, output descriptors and relevant backend configuration identity. Official ComfyUI server APIs expose prompt submission IDs, per-prompt history, model lists/model metadata, object/node information, workflow templates, features and system stats; deployment configuration must add source/custom-node/model content identity where the server API cannot prove it. The ComfyUI history receipt is execution evidence, not independent Melosviz acceptance.
+
+Until this is implemented, real generative cache reuse cannot satisfy the mature evidence-identity contract even though the deterministic video_export M-E02 spine now passes its exact-head experiment.
