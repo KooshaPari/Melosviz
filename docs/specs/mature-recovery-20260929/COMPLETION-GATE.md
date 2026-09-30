@@ -51,3 +51,10 @@ M-F19 blocks any claim that arbitrary configured bridge binds are loopback-only 
 ## Finding-ID integrity
 
 Pass 6 detected duplicate Melosviz finding IDs created by parallel recovery edits. The namespace is now canonicalized: each distinct finding has one stable ID from M-F01 through M-F28; the repeated bridge-bind section was merged as additional evidence under M-F20. Future tooling must reject duplicate stable IDs before committing trace graphs.
+
+
+## Pass 6 durable-state and authenticated-web blockers
+
+M-F29 establishes that the current mounted state cannot reconstruct authoritative project/render/acceptance truth after process replacement from events/cache/sidecars alone. M-E03 must compare a minimal atomic file journal against a small transactional local ledger and prove R1→restart→R2 before architecture freeze; SQLite is an architecture-to-beat, not an accepted choice.
+
+M-F30 establishes that server-side bearer hardening and client capability are separate gates. The current release Electrobun proxy can attach bearer headers; direct web StudioConsole cannot. M-ESEC may qualify the server boundary for the release desktop without pretending standalone authenticated web is closed. M-E03 owns the web transport/auth projection or an explicit authorized scope removal.
