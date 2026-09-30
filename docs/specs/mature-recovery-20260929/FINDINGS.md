@@ -239,3 +239,18 @@ The RPC contract in `desktop/src/rpc.ts` names the optional fields `reRender`, `
 Therefore a caller honoring the published TypeScript RPC schema does not supply the property names that the handler checks for `--re-render` and `--render-out`; the offline flag is ignored entirely by that handler. This is a deterministic interface mismatch in a mounted desktop RPC definition/implementation, even though current source search did not find `rpc.request.runDirect` used by the existing Electrobun view.
 
 The web StudioConsole uses the separate FastAPI `/api/studio/direct` path, so this finding must not be generalized into “all edit/re-render is broken.” It does show that the desktop RPC surface and documentation cannot be treated as self-validating. Closure requires generated/checked schema parity and an actual consumer test that asserts the CLI argv, including negative cases for omitted versus supplied flags.
+
+
+## M-F29 — render/job state is process-local or sidecar-derived; restart cannot reconstruct authoritative product state (blocking durable-lifetime journey)
+
+The complete tracked-tree inventory and targeted source review found no project/job state store, resume API, or checkpoint state machine. This is no longer based on filename absence alone:
+
+- `conductor/events.py` explicitly defines its event bus as in-process only; events live for the process lifetime/bounded ring buffer and there is no cross-process coordination.
+- `render_cache.py` persists content-addressed artifact blobs + metadata, but it is a cache and its stats do not represent durable job transitions; cache existence cannot establish accepted product state.
+- `provenance.py` writes per-artifact JSON sidecars and can scan them back, but orchestration writes are best-effort in observed paths and sidecars do not form an atomic ProjectRevision/RenderAttempt/Acceptance ledger.
+- storyboard/project edits are JSON files; default job identity is separately process-dependent (M-F26).
+- source searches over the finite tree found no resume/checkpoint/project/job-store implementation under the expected concepts.
+
+Therefore killing/replacing the renderer/app cannot currently reconstruct authoritative queued/running/completed/accepted attempts from durable product state. Scanning artifacts, cache files, or filenames after restart would conflate execution residue with accepted truth.
+
+This finding does **not** mandate SQLite. The required semantic spine is immutable project/scene revisions, render/assembly attempts, artifact/evidence identity and explicit state transitions. M-E03 must first compare (a) an atomic append-only/file manifest + write-ahead journal adequate for the single-user local product against (b) a small transactional SQLite metadata ledger. Select the smaller mechanism that survives the R1→restart→edit-S2→R2 adversarial journey without corrupting history. Distributed workflow engines remain escalation alternatives, not default product truth.
