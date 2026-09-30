@@ -112,3 +112,10 @@ A candidate M-E02 repair is admissible only if all of these hold on the same exa
 8. **R2:** edit only S1, restart the relevant process, rerender requested policy, and prove reuse/recompute by identity. The independent oracle, controlled outside the candidate, must accept final media and reject stale R1 substitution.
 
 Required negative mutations: restore `setdefault(scene_type,...)`; remove selector filter; make adapter render full spec; omit one collected artifact; swap assembly order; return exit 0 with malformed media; delay audio PTS; substitute equal-size stale cache bytes. Each must make at least one critical criterion non-green.
+
+
+## Pass 9 authoritative product constraint
+
+Current user intent makes **multi-scene composition the product spine**. Do not “fix” M-E02 by reducing the system to one scene per job or by treating the multi-scene fixture as merely a test convenience. The repair must make a composition with multiple, potentially heterogeneous scenes truthful end-to-end. A scene-targeted adapter call is an execution primitive inside a composition; the conductor still owns composition ordering, audio/timeline alignment, transitions, evidence and assembly.
+
+Preserve future offline short/long-form and live projections: do not couple canonical scene/timeline identity to a specific offline renderer directory layout. Beat/rhythm, semantic/musical structure and editorial timing are distinct signals. M-E02 need not implement all of them, but it must not collapse the model so they cannot be added without replacing the spine.
