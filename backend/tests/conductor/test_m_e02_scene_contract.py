@@ -183,3 +183,32 @@ def test_cache_hit_done_event_carries_outcome(tmp_path, monkeypatch):
     done = [e for e in result.events if getattr(e, "state", None) == "done"]
     assert len(done) == 1
     assert (getattr(done[0], "extras", None) or {}).get("outcome") == OUTCOME_RENDER
+
+
+def test_same_named_same_prompt_scenes_get_distinct_cache_identity(tmp_path, monkeypatch):
+    from melosviz.conductor.orchestrator import Orchestrator
+    import melosviz.conductor.orchestrator as orchestrator_module
+
+    _registry(monkeypatch)
+    seen_fingerprints = []
+
+    class NoHit:
+        cache_dir = tmp_path / "cache"
+
+        def store(self, key, **kwargs):
+            seen_fingerprints.append(key.fingerprint())
+
+    spec = Spec(
+        [
+            {"scene_type": "comfyui_image", "name": "same", "prompt": "same", "marker": "x"},
+            {"scene_type": "comfyui_image", "name": "same", "prompt": "same", "marker": "x"},
+        ]
+    )
+    orch = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True)
+    orch._render_cache = NoHit()
+    monkeypatch.setattr(orchestrator_module, "scene_render_cached", lambda *_: None)
+
+    orch.render(spec)
+
+    assert len(seen_fingerprints) == 2
+    assert seen_fingerprints[0] != seen_fingerprints[1]
