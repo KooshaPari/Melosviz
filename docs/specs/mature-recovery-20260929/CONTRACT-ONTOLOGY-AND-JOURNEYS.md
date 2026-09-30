@@ -54,3 +54,10 @@ Hybrid/live obligations cannot be discarded to manufacture an easier percentage;
 Track browser-versus-studio and Tauri-versus-Electrobun authority; old backend/SDK ownership; scene-type versus scene-instance accounting; display/event 'done' versus accepted media; best-effort versus required evidence; and unpinned workflow/model reproducibility. Each needs compatibility/migration disposition and a witnessing journey, not just a rewrite ticket.
 
 Future accepted obligations carry stable ID, statement, rationale, source/decision authority, parent capability, dependencies, product role, stages/configurations, journeys, positive/negative acceptance, quality references, actual work/implementation surfaces, verification strategy, required traces and growth disposition. Represent implemented/mounted/persisted/tested/evidenced/current/stale/conflicting separately. Requirement count remains an output of semantic decomposition, not a target.
+
+
+## Pass 9 backend evidence-identity refinement
+
+For generative render reuse, scene inputs alone are insufficient. A cache/evidence subject must include a backend execution configuration identity. For ComfyUI, bootstrap from existing official API primitives rather than inventing a parallel job tracker: submitted workflows return a prompt_id; history is queryable by prompt_id; model lists, model metadata, node/object information, workflow templates, features and system stats are exposed by the server. Product evidence should additionally hash the exact submitted workflow JSON and record the Melosviz adapter revision. Where model/custom-node content digests or source revisions cannot be obtained from ComfyUI itself, require them from deployment configuration rather than silently omitting them.
+
+Candidate minimum subject for a reusable generative scene artifact: `scene revision + audio/input digests + adapter revision + canonical workflow hash + selected model/checkpoint identities + custom-node/environment identity + backend execution/prompt identity`. This is a design constraint, not a claim that every field is already available or that ComfyUI history is independent product acceptance.
