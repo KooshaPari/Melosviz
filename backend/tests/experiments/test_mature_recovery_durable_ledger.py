@@ -75,3 +75,15 @@ def test_revision_rows_cannot_be_rewritten_by_second_authoring(tmp_path):
     r2=l.author_revision("P",scenes("changed"),parent=r1)
     assert r2==r1+1
     assert l.db.execute("SELECT spec_sha256 FROM revision WHERE project_id='P' AND revision=?",(r1,)).fetchone()[0]==original
+
+
+def test_equal_size_replacement_and_deletion_break_reuse(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"GOOD")
+    sha=m.hashlib.sha256(artifact.read_bytes()).hexdigest()
+    a=l.queue("P",r1,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(artifact)); l.accept(a,"oracle",sha)
+    r2=l.author_revision("P",scenes(),parent=r1)
+    artifact.write_bytes(b"EVIL")  # same byte length, wrong content
+    assert not l.reusable(a,"P",r2,"S1")
+    artifact.unlink()
+    assert not l.reusable(a,"P",r2,"S1")
