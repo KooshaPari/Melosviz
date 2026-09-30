@@ -58,3 +58,8 @@ A mounted no-GPU product test now invokes the real `melosviz.cli.main generate` 
 Assembly typing was also tightened: a non-null MEAdapter job-spec result is `plan_only`; only an actual FFmpeg-produced file is `produced_unverified`.
 
 Current admissible evidence target is the **push** run for the exact candidate head, not a stale earlier run. Repository-wide typecheck debt remains visible separately; the experiment-specific UI gates execute the changed StudioConsole behavior and bundle the changed Electrobun webview rather than converting unrelated pre-existing tsc failures into M-E02 results.
+
+
+## Recovery-controller recheck — exact-head rerun required
+
+The latest completed push run inspected by the recovery controller was run 37 at `64115866783383c4be6f94bbbcce02f628cdab2d`, failing the partial-rerender call-count assertion. The current branch source fetched after that run contains selector filtering and one-scene RenderSpec projection. This commit intentionally triggers the experiment workflow again so acceptance is based on the current exact head, not the stale failing run. No criterion is waived; the mounted journey, regression suite and UI delta jobs must all execute on the same head.
