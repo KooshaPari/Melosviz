@@ -26,6 +26,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 import uuid
 from collections.abc import Sequence
@@ -140,8 +141,33 @@ def _artifact_rejection(artifact: str) -> str | None:
             return "artifact is empty (0 bytes)"
     except OSError as exc:  # unreadable path/metadata
         return f"artifact could not be inspected: {exc}"
-    if _is_zero_duration(artifact) is True:
+    zero_duration = _is_zero_duration(artifact)
+    if zero_duration is True:
         return "artifact is zero-duration media (no playable frames)"
+    if path.suffix.lower() == ".wav" and zero_duration is None:
+        return "artifact WAV could not be decoded"
+    if path.suffix.lower() in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+        ffprobe = shutil.which("ffprobe")
+        if ffprobe is None:
+            return "media verification unavailable (ffprobe not found)"
+        try:
+            probe = subprocess.run(
+                [ffprobe, "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=codec_type,duration,nb_frames",
+                 "-of", "json", str(path)],
+                capture_output=True, text=True, timeout=15, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return f"media probe failed: {exc}"
+        if probe.returncode != 0:
+            return "artifact is not decodable media"
+        try:
+            payload = json.loads(probe.stdout or "{}")
+        except json.JSONDecodeError:
+            return "media probe returned invalid metadata"
+        streams = payload.get("streams") if isinstance(payload, dict) else None
+        if not isinstance(streams, list) or not streams:
+            return "artifact has no decodable video stream"
     return None
 
 
@@ -945,7 +971,11 @@ class Orchestrator:
                         materialised,
                     )
                     elapsed_ms = 0.0
-                    _cached_outcome = scene_cache_meta(_seg_for_render, cache_root).get("outcome")
+                    _cached_meta = scene_cache_meta(_seg_for_render, cache_root)
+                    _cached_outcome = _cached_meta.get("outcome")
+                    _cached_issue = _artifact_rejection(str(materialised))
+                    if _cached_outcome == OUTCOME_RENDER and _cached_issue:
+                        _cached_outcome = OUTCOME_MALFORMED
                     done_evt = bus.emit_done(
                         job_id=job_id,
                         scene_index=scene_idx,
@@ -958,6 +988,7 @@ class Orchestrator:
                             "from_cache": True,
                             "cache_key": _cache_key,
                             "outcome": _cached_outcome,
+                            "rejection_reason": _cached_issue or "",
                         },
                     )
                     emitted.append(done_evt)
@@ -977,7 +1008,7 @@ class Orchestrator:
                         scene_type=scene_type,
                         backend=backend_key,
                         artifact_path=str(materialised),
-                        outcome=scene_cache_meta(_seg_for_render, cache_root).get("outcome"),
+                        outcome=_cached_outcome,
                         render_spec=render_spec,
                     )
                     continue
