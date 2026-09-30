@@ -10,24 +10,9 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-m-e02",
-    "head": "0af1e6df103f9f107ac990d012db76f8c4295313",
+    "sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
     "pr": 302,
-    "status": "REVIEWED_BLOCKED",
-    "positive_changes": [
-      "scene-indexed results",
-      "selector filtering",
-      "one-scene adapter projection",
-      "ordered artifact collection",
-      "structured bridge/UI results"
-    ],
-    "blocking_review": [
-      "equal-size cache substitution survives",
-      "cache-hit done omits outcome causing UI false-red",
-      "malformed nonempty media still accepted",
-      "full mutation/restart/media oracle not executed",
-      "qgate coverage generation failed",
-      "DCO failed"
-    ]
+    "status": "EXPERIMENTAL_UNVERIFIED"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
@@ -180,5 +165,20 @@
     "source_grade": "CRITICAL_SOURCE_DEFECTS_REPAIRED_AFTER_REVIEW",
     "hard_gate_workflow": 36719757382,
     "dco": "FAIL_MISSING_SIGNOFF_HISTORY_POLICY_NOT_PRODUCT_CORRECTNESS"
+  },
+  "exact_candidate_ci": {
+    "prior_sha": "fb17f09b50e665039583082a2e89656b05c29621",
+    "run": 36741126607,
+    "result": "FAIL_1_OF_13_FOCUSED_TESTS",
+    "diagnosis": "synthetic marker changed without declared cache input; reviewer corrected test to also change prompt",
+    "new_sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
+    "new_run": 36744451604,
+    "status": "QUEUED"
+  },
+  "reviewer_owned_grader": {
+    "script": "pass9/reviewer_m_e02.py",
+    "workflow": ".github/workflows/reviewer-m-e02.yml",
+    "candidate_sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
+    "status": "WORKFLOW_ADDED_NOT_YET_OBSERVED"
   }
 }
