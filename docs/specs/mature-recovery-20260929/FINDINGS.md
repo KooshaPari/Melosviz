@@ -136,7 +136,7 @@ The desktop generate path marks every scene done/100% after the CLI call returns
 Thus the earlier execution-vs-acceptance issue is systemic across generate → master → ship, not local to the scene queue. UI state must distinguish planned/executed/validated/accepted and surface the exact evidence subject.
 
 
-## M-F13 — bridge non-loopback guard is fail-open for arbitrary LAN/hostname binds (blocking security boundary)
+## M-F20 — bridge non-loopback guard is fail-open for arbitrary LAN/hostname binds (blocking security boundary)
 
 `backend/src/melosviz/bridge/security.py::loopback_check` documents that anything other than a true loopback literal/localhost should require `MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1`. The implementation only rejects three wildcard hosts: `0.0.0.0`, `::`, and `*`. Every other string falls through to `return True, "loopback"`.
 
@@ -147,7 +147,7 @@ The threat is compounded by the explicitly supported legacy auth-off mode: prote
 Required repair experiment: parse host with `ipaddress.ip_address` when literal; allow only `.is_loopback`; resolve hostnames conservatively or reject non-`localhost` names unless explicit public-bind authorization is present. Add negative tests for RFC1918, link-local, public IPv4/IPv6 and arbitrary hostnames. Verify auth + allowed-dir policy is automatically required for any authorized public bind. Do not treat `0.0.0.0` coverage as proof of the general property.
 
 
-## M-F13 — per-scene orchestrator dispatch calls whole-spec adapters, causing duplicated work and identity collapse (blocking)
+## M-F21 — per-scene orchestrator dispatch calls whole-spec adapters, causing duplicated work and identity collapse (blocking)
 
 The orchestrator constructs one dispatch tuple per scene, then instantiates the adapter and calls `adapter.render(render_spec, ...)` with the **entire RenderSpec**. The ComfyUI adapter explicitly documents and implements `render every scene of render_spec`; it extracts all scenes and writes `scene_NNN` subdirectories. Therefore two same-backend scenes cause two orchestrator invocations, and each invocation can render the whole storyboard again into the same scene-type directory. The corresponding C4D and Unreal adapters filter all scenes of their supported type and likewise loop all matching scenes on every call.
 
@@ -157,7 +157,7 @@ Existing event tests do not catch this. The multi-scene event test uses two `vid
 
 Closure requires a scene-targeted adapter contract (scene ID/index + scene payload or equivalent) or an explicitly batch-targeted contract invoked exactly once. The orchestrator and adapters cannot both own iteration.
 
-## M-F14 — Studio generate bridge manifest scans a layout different from the real orchestrator layout (blocking API journey)
+## M-F22 — Studio generate bridge manifest scans a layout different from the real orchestrator layout (blocking API journey)
 
 `/api/studio/generate` claims that outputs live under `<out_dir>/<scene_type>/scene_*`, but after running the CLI it scans only `out.glob("scene_*")` — flat children of the output root. The real orchestrator passes `output_dir / scene_type` as each adapter's output path. ComfyUI, C4D and Unreal then write their own `scene_NNN` children **inside that scene-type directory**. Thus those real outputs are not discovered by the bridge's manifest loop.
 
@@ -167,7 +167,7 @@ Consequences: the web StudioConsole can receive an empty scene manifest after re
 
 Closure: one canonical scene-result schema returned by the mounted generate operation; bridge discovers from structured receipts, not directory guessing. Integration test must run the actual generate path or at minimum the real orchestrator output-layout producer, not pre-seed the expected output.
 
-## M-F15 — current release desktop is Electrobun; Tauri is a separate non-release surface
+## M-F23 — current release desktop is Electrobun; Tauri is a separate non-release surface
 
 The frozen release workflow has explicit `macos-desktop` and `windows-desktop` jobs that run `bunx electrobun build/package` and upload Electrobun artifacts. No Tauri build appears in the release workflow. `src-tauri/` is a real buildable/scaffolded surface consuming `web/dist`, but it is not the frozen release desktop path.
 
@@ -179,7 +179,7 @@ Therefore mature/current implementation mapping should treat:
 This resolves one implementation ambiguity without deciding whether the mature product should continue to own both shells.
 
 
-## M-F14 — two scene ontologies exist; only the weaker index/dict model is on the orchestration spine (blocking identity migration)
+## M-F24 — two scene ontologies exist; only the weaker index/dict model is on the orchestration spine (blocking identity migration)
 
 `analysis/models.py::RenderSpec` stores `scene_segments` as mutable `list[dict[str, Any]]`. The typed `SceneSegment` helper has an integer `index`, label/start/end and analysis summaries but no stable scene ID or revision. `cli/partial_rerender.py` targets and expands rerenders entirely by integer scene index.
 
@@ -195,7 +195,7 @@ Migration consequence: do not replace RenderSpec wholesale. Add stable `scene_id
 
 Required oracle: reorder scenes without changing IDs; insert a new scene before S2; edit only S2; verify cache/evidence/rerender/assembly follow identity rather than old numerical position. Also prove a hybrid SceneSpec projection round-trips against the same scene ID instead of creating a second product object.
 
-## M-F16 — the advertised web “Re-render this scene” journey cannot reach a render (blocking revision journey)
+## M-F25 — the advertised web “Re-render this scene” journey cannot reach a render (blocking revision journey)
 
 The web StudioConsole's edit action POSTs `/api/studio/direct` with `storyboard_path`, `scene_index`, `replace_prompt`, and `re_render: true`; it supplies neither `wav_path` nor `render_out`.
 
@@ -205,7 +205,7 @@ Even with WAV supplied, `_cmd_direct` does **not** execute the render despite co
 
 This blocks M-J-REVISE independently of cache correctness. Closure requires one truthful contract: either direct edit persists only and returns a next-action plan, or it actually schedules/executes a revision-bound render and returns that durable job identity.
 
-## M-F17 — default render job identity is process-dependent and not a durable restart identity
+## M-F26 — default render job identity is process-dependent and not a durable restart identity
 
 `_cmd_generate` computes a default job ID as `job-{hash(str(out_dir)) & 0xFFFFFFFF:08x}` when the caller does not provide `--job-id`. No `PYTHONHASHSEED` configuration exists in the repository. Python string hashing is process-randomized; an isolated local check in this recovery environment produced different 32-bit values for the same path in two separate Python processes.
 
@@ -213,7 +213,7 @@ The web bridge avoids this for its immediate run by generating/passing an explic
 
 Consequence: restart/recovery cannot use default `job_id` as the durable key required by M-J-RECOVER. A stable product job/revision ID must be persisted independently from the worker process and event-stream correlation ID.
 
-## M-F18 — cache identity omits reference/character render inputs despite comments claiming edit_count invalidates caches
+## M-F27 — cache identity omits reference/character render inputs despite comments claiming edit_count invalidates caches
 
 `_cmd_direct` increments storyboard-level `edit_count` with the comment “so downstream caches invalidate.” `_cmd_generate` does not carry `edit_count` into the render spec or scene cache key. Cache invalidation actually depends on fields selected by `SceneCacheKey.from_scene`.
 
@@ -223,7 +223,7 @@ Therefore changing a storyboard-level reference image/strength or resolved chara
 
 Closure requires cache identity to cover every render-affecting dependency by immutable content/config identity, not a manual edit counter. Add negative controls that change only reference image bytes/path, strength, character sheet/ref/model/workflow and prove the old artifact cannot qualify.
 
-## M-F19 — bridge bind classifier fails open for arbitrary non-wildcard hosts (security blocker)
+### Additional evidence for M-F20 — mounted classifier reproduction and startup implications
 
 `bridge/security.py::loopback_check` only treats `_PUBLIC_HOSTS` (wildcards such as `0.0.0.0`, `::`, `*`) as public. After that branch, it returns `(True, "loopback")` for **anything else**. The docstring claims only loopback IP literals or `localhost` should pass by default, but the implementation therefore accepts RFC1918 addresses, link-local addresses, public IP literals and arbitrary hostnames without `MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1`.
 
@@ -232,7 +232,7 @@ The mounted bridge `main()` calls this helper before `uvicorn.run`, so the class
 Public-bind authorization and bearer authentication are separate controls. A repair must fail closed for every non-loopback target unless explicit public binding is authorized, and startup must also require or explicitly waive an authentication/path policy for that public exposure. Do not treat packaged-desktop defaults as proof that manual/dev/server invocation is safe.
 
 
-## M-F16 — Electrobun partial-rerender RPC schema and handler disagree on parameter names
+## M-F28 — Electrobun partial-rerender RPC schema and handler disagree on parameter names
 
 The RPC contract in `desktop/src/rpc.ts` names the optional fields `reRender`, `renderOut`, and `renderOffline`. The corresponding Bun main-process handler in `desktop/src/index.ts` destructures `rerender` and `renderOutDir`, and does not destructure/use `renderOffline`.
 
