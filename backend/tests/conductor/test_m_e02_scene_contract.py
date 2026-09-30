@@ -137,3 +137,49 @@ def test_done_event_exposes_execution_outcome(tmp_path, monkeypatch):
     assert len(done) == 1
     extras = getattr(done[0], "extras", None) or {}
     assert extras.get("outcome") == OUTCOME_RENDER
+
+
+def test_cache_materialisation_replaces_equal_size_wrong_bytes(tmp_path):
+    from melosviz.conductor.orchestrator import _materialise_cached_artifact
+
+    output = tmp_path / "out"
+    scene = output / "comfyui_image" / "dispatch_000"
+    scene.mkdir(parents=True)
+    blob = tmp_path / "cache.bin"
+    blob.write_bytes(b"NEW!")
+    blob.with_suffix(".json").write_text(
+        '{"artifact_relpath":"comfyui_image/dispatch_000/clip.mp4"}'
+    )
+    target = scene / "clip.mp4"
+    target.write_bytes(b"OLD!")
+
+    got = _materialise_cached_artifact(blob, output, scene)
+
+    assert got == target
+    assert target.read_bytes() == b"NEW!"
+
+
+def test_cache_hit_done_event_carries_outcome(tmp_path, monkeypatch):
+    from melosviz.conductor.events import OUTCOME_RENDER
+    from melosviz.conductor.orchestrator import Orchestrator
+    import melosviz.conductor.orchestrator as orchestrator_module
+
+    _registry(monkeypatch)
+    cached = tmp_path / "cached.mp4"
+    cached.write_bytes(b"cached-real-media")
+    monkeypatch.setattr(orchestrator_module, "scene_render_cached", lambda *_: cached)
+    monkeypatch.setattr(
+        orchestrator_module,
+        "scene_cache_meta",
+        lambda *_: {"outcome": OUTCOME_RENDER},
+    )
+
+    result = Orchestrator(
+        output_dir=tmp_path / "out", skip_assembly=True, only_scenes=[0]
+    ).render(_spec())
+
+    assert SceneAdapter.calls == []
+    assert result.per_scene_results[0]["outcome"] == OUTCOME_RENDER
+    done = [e for e in result.events if getattr(e, "state", None) == "done"]
+    assert len(done) == 1
+    assert (getattr(done[0], "extras", None) or {}).get("outcome") == OUTCOME_RENDER
