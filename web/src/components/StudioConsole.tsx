@@ -499,10 +499,10 @@ export function StudioConsole({
   }, [stage, tr]);
 
   const totalScenes = scenes.length;
-  const completedScenes = scenes.filter((s) => s.status === "done").length;
+  const acceptedScenes = scenes.filter((s) => s.status === "accepted").length;\n  const producedScenes = scenes.filter((s) => s.status === "produced").length;
   const errorScenes = scenes.filter((s) => s.status === "error").length;
   const queueProgress =
-    totalScenes === 0 ? 0 : Math.round((completedScenes / totalScenes) * 100);
+    totalScenes === 0 ? 0 : Math.round((acceptedScenes / totalScenes) * 100);
 
   return (
     <section
@@ -851,7 +851,7 @@ export function StudioConsole({
                   tr("studio.queue.badge.queued", "queued")}
                 {s.status === "rendering" &&
                   tr("studio.queue.badge.rendering", "rendering")}
-                {s.status === "done" && tr("studio.queue.badge.done", "done")}
+                {s.status === "produced" && "produced · verification pending"}\n                {s.status === "accepted" && "accepted"}
                 {s.status === "error" &&
                   tr("studio.queue.badge.error", "error")}
               </span>
