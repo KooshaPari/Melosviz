@@ -23,11 +23,20 @@ cache changes what downstream consumers and release acceptance observe.
 
 from __future__ import annotations
 
+import wave
 from pathlib import Path
 from typing import Any
 
 from melosviz.conductor import registry as registry_mod
 from melosviz.conductor.orchestrator import Orchestrator
+
+
+def _write_real_wav(path: Path) -> None:
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x01\x00" * 256)
 
 
 class _FileAdapter:
@@ -36,8 +45,8 @@ class _FileAdapter:
     def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
         out = Path(str(kwargs["output_path"]))
         out.mkdir(parents=True, exist_ok=True)
-        clip = out / "clip.mp4"
-        clip.write_bytes(b"\x00" * 32)
+        clip = out / "clip.wav"
+        _write_real_wav(clip)
         return [clip]
 
 
