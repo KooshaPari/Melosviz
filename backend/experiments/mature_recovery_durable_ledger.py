@@ -159,6 +159,17 @@ class Ledger:
             self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0]))
         return True
 
+    def execute_assembly(self,assembly:int,artifact_sha:str):
+        with self.db:
+            cur=self.db.execute("UPDATE assembly_attempt SET state='executed',artifact_sha256=? WHERE id=? AND state='frozen'",(artifact_sha,assembly))
+            if cur.rowcount!=1: raise RuntimeError("assembly not frozen")
+
+    def accept_assembly(self,assembly:int,artifact_sha:str):
+        row=self.db.execute("SELECT state,artifact_sha256 FROM assembly_attempt WHERE id=?",(assembly,)).fetchone()
+        if row != ("executed",artifact_sha): raise RuntimeError("assembly acceptance does not bind executed artifact")
+        with self.db:
+            self.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=?",(assembly,))
+
     def record_failed_evidence(self,attempt:int,verifier:str,artifact_sha:str,collection_state:str='failed'):
         if collection_state not in ('rejected','failed'): raise ValueError(collection_state)
         with self.db:
