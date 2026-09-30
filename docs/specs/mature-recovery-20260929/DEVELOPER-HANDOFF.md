@@ -69,3 +69,10 @@ These two may run concurrently. **M-E02 is not ready until M-E01 receipts are re
 ## Pass 6 M-ESEC review status
 
 Draft #300 candidate `f43717dc25c0021c47b41f638e0ecd184942931c` remains **experimental / unaccepted**. The five-file diff is within the declared write scope. Source review supports the intended bind classifier, public-bind auth/token/root preconditions and prefix protection for Studio/render/debug routes. The dedicated evidence workflow has been tightened to run Ruff in addition to compile + focused/adjacent tests and artifact identity capture. Do not promote or merge until that exact candidate's dedicated workflow completes and raw receipts are inspected. The broader middleware currently rate-limits unprotected requests too; that is an unresolved operational-policy question outside this narrow repair and must not be silently redefined here.
+
+
+## Pass 6 web/auth boundary discovered during M-ESEC review
+
+M-ESEC may harden the server for the shipping Electrobun path without expanding into web UI work. The direct React StudioConsole currently has no bearer-token input: POST requests send no Authorization header and render progress uses native EventSource. Therefore authenticated `/api/studio/*` and `/api/render/*` cannot work from that surface. Do not weaken the bridge or put bearer secrets in SSE URLs to make the experiment green.
+
+**M-E03 additionally owns the web auth projection:** choose an authenticated fetch-stream/polling transport or a trusted shell/proxy, add authenticated POST support, and prove 401/403/valid-token behavior. If standalone authenticated web is later explicitly removed from mature scope, preserve that as an authorized scope decision instead.
