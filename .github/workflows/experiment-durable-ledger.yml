@@ -1,0 +1,23 @@
+name: Experiment - durable revision ledger
+on:
+  push:
+    branches: [experiment/melosviz-durable-ledger-pass10]
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/experiments/mature_recovery_durable_ledger.py"
+      - "backend/tests/experiments/test_mature_recovery_durable_ledger.py"
+      - ".github/workflows/experiment-durable-ledger.yml"
+permissions:
+  contents: read
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with: {python-version: "3.11"}
+      - run: python -m pip install pytest
+      - name: Durable state adversarial controls
+        run: pytest -q backend/tests/experiments/test_mature_recovery_durable_ledger.py
