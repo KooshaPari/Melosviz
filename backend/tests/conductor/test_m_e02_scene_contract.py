@@ -287,11 +287,19 @@ def test_partial_rerender_reuses_only_valid_unchanged_cache_for_full_assembly(
     out = tmp_path / "out"
     orch = Orchestrator(output_dir=out)
     r1 = _spec()
+    # Partial-rerender reuse is only admissible for real renders whose backend /
+    # model / workflow identity is explicit. This fixture is a synthetic real
+    # renderer, so qualify its cache evidence rather than weakening production
+    # cache policy.
+    for seg in r1.scene_segments:
+        seg["cache_extra"] = {"backend_identity": "fixture-model-workflow:v1"}
     orch.render(r1)
     assert len(AssemblyAdapter.calls[-1]) == 3
     r1_bytes = [Path(p).read_bytes() for p in AssemblyAdapter.calls[-1]]
 
     r2 = _spec()
+    for seg in r2.scene_segments:
+        seg["cache_extra"] = {"backend_identity": "fixture-model-workflow:v1"}
     r2.scene_segments[1] = dict(r2.scene_segments[1])
     # Change a declared production cache input (prompt) and the synthetic
     # fixture marker that SceneAdapter turns into output bytes. Marker alone is
