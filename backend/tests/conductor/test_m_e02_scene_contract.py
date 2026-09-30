@@ -213,8 +213,20 @@ def test_same_named_same_prompt_scenes_get_distinct_cache_identity(tmp_path, mon
 
     spec = Spec(
         [
-            {"scene_type": "comfyui_image", "name": "same", "prompt": "same", "marker": "x"},
-            {"scene_type": "comfyui_image", "name": "same", "prompt": "same", "marker": "x"},
+            {
+                "scene_type": "comfyui_image",
+                "name": "same",
+                "prompt": "same",
+                "marker": "x",
+                "cache_extra": {"backend_identity": "fixture-model-workflow:v1"},
+            },
+            {
+                "scene_type": "comfyui_image",
+                "name": "same",
+                "prompt": "same",
+                "marker": "x",
+                "cache_extra": {"backend_identity": "fixture-model-workflow:v1"},
+            },
         ]
     )
     orch = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True)
