@@ -33,8 +33,8 @@
       "experimental result contract review"
     ]
   },
-  "contract_authority": "HISTORICAL_ACCEPTANCE_ATTRIBUTIONS_REQUIRE_PRIMARY_SOURCE",
-  "authority_correction": "Earlier direct-recovery claims are not independently reproduced. Pass 5 found prior assistant summaries; original April 18 transcript search returned no primary match. Preserve as imported attribution, not authorized fact.",
+  "contract_authority": "CURRENT_USER_INTENT_AUTHORITATIVE_20260930",
+  "authority_correction": "Prior uncertainty about whether multi-scene/hybrid composition was user intent is superseded by explicit current user clarification. Historical details still require reconciliation.",
   "source_denominator": {
     "state": "OPEN_SEMANTIC_RESOLUTION",
     "tracked_tree_enumeration": "CLOSED",
@@ -213,5 +213,17 @@
     "held_out_cache_identity": "PATCHED_REQUIRES_NEW_EXACT_HEAD_GREEN",
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
     "general_acceptance": false
-  }
+  },
+  "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
+  "product_horizon": "AUDIO_CONDITIONED_PROGRAMMABLE_MULTI_SCENE_VISUAL_COMPOSITION_AND_RUNTIME_FOR_OFFLINE_SHORT_LONG_FORM_AND_POTENTIAL_LIVE_USE",
+  "core_spine": [
+    "audio/time/semantic analysis",
+    "multi-scene planning/sequence",
+    "scene instance/revision identity",
+    "heterogeneous generation/render execution",
+    "cross-scene timeline/transitions",
+    "assembly/review/evidence",
+    "offline delivery",
+    "real-time/live projection where qualified"
+  ]
 }
