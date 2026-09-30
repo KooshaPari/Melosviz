@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 15
     env:
       SOURCE_SHA: 1aec20a2ba41a01ed557d1c7f63f9a0089f842cf
+      RECEIPTS: recovery-security-receipts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -48,34 +49,37 @@ jobs:
       - name: Install focused test environment
         run: |
           set -euo pipefail
+          mkdir -p "$RECEIPTS"
+          python --version | tee "$RECEIPTS/python-version.txt"
           python -m pip install --upgrade pip
           python -m pip install -e "backend[test]"
-          python -m pip install ruff
+          python -m pip freeze > "$RECEIPTS/pip-freeze.txt"
 
-      - name: Lint changed Python
+      - name: Compile changed Python
         run: |
           set -euo pipefail
-          ruff check             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py \
-            backend/tests/test_bridge_public_bind_policy.py
+          python -m py_compile             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py             backend/tests/test_bridge_public_bind_policy.py
 
       - name: Run bridge security contract
+        env:
+          MELOSVIZ_DATA_DIR: ${{ runner.temp }}/melosviz-sec
         run: |
           set -euo pipefail
-          MELOSVIZ_DATA_DIR="$RUNNER_TEMP/melosviz-sec"           python -m pytest backend/tests/test_bridge_security.py             -q --no-header --timeout=60
+          python -m pytest             backend/tests/test_bridge_security.py             backend/tests/test_bridge_public_bind_policy.py             -q --no-header --timeout=60             | tee "$RECEIPTS/security-pytest.log"
 
       - name: Run adjacent bridge studio regressions
         run: |
           set -euo pipefail
-          python -m pytest backend/tests/test_bridge_studio_pipeline.py             -q --no-header --timeout=60
+          python -m pytest             backend/tests/test_bridge_studio_pipeline.py             -q --no-header --timeout=60             | tee "$RECEIPTS/studio-bridge-pytest.log"
 
       - name: Record exact candidate identity
         if: always()
         run: |
-          mkdir -p recovery-security-receipts
-          git rev-parse HEAD > recovery-security-receipts/candidate-sha.txt
-          git rev-parse "$SOURCE_SHA" > recovery-security-receipts/source-sha.txt
-          git diff --name-status "$SOURCE_SHA"...HEAD > recovery-security-receipts/change-scope.tsv
-          sha256sum             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py             > recovery-security-receipts/changed-files.sha256
+          mkdir -p "$RECEIPTS"
+          git rev-parse HEAD > "$RECEIPTS/candidate-sha.txt"
+          git rev-parse "$SOURCE_SHA" > "$RECEIPTS/source-sha.txt"
+          git diff --name-status "$SOURCE_SHA"...HEAD > "$RECEIPTS/change-scope.tsv"
+          sha256sum             backend/src/melosviz/bridge/security.py             backend/src/melosviz/bridge/server.py             backend/tests/test_bridge_security.py             backend/tests/test_bridge_public_bind_policy.py             > "$RECEIPTS/changed-files.sha256"
 
       - name: Upload M-ESEC receipts
         if: always()
