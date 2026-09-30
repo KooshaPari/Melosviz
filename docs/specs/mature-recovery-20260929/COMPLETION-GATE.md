@@ -23,7 +23,7 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs excluded from grading | Excluded in this dossier; all existing grading consumers remain to inspect |
 | No unexplained orphan requirements/features/journeys | Not established without complete accepted graph |
 | No unresolved contradictions | NOT MET: M-F01 plus CLI/API/UI/output-layout and execution-vs-acceptance contradictions (M-F09–M-F15) |
-| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F19 |
+| No blocking findings | NOT MET: see CURRENT-STATE blocking_findings; finding namespace canonicalized through M-F28 |
 | Independent/fresh adversarial review | NOT PERFORMED; self-review and a local probe do not satisfy independence |
 
 ## Next minimal work packages
@@ -46,3 +46,8 @@ The advertised web single-scene rerender cannot launch with its current request 
 ### Bridge security sub-gate
 
 M-F19 blocks any claim that arbitrary configured bridge binds are loopback-only by default. M-ESEC is an independent READY experimental lane and may proceed without waiting for rendering/result-schema work, provided it does not broaden scope into unrelated bridge rewrites.
+
+
+## Finding-ID integrity
+
+Pass 6 detected duplicate Melosviz finding IDs created by parallel recovery edits. The namespace is now canonicalized: each distinct finding has one stable ID from M-F01 through M-F28; the repeated bridge-bind section was merged as additional evidence under M-F20. Future tooling must reject duplicate stable IDs before committing trace graphs.
