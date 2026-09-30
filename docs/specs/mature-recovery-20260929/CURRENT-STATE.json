@@ -4,7 +4,7 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -16,12 +16,13 @@
     "scope": "DETERMINISTIC_VIDEO_EXPORT_VERTICAL_SPINE_ONLY"
   },
   "status": "INCOMPLETE_BLOCKED",
-  "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
+  "handoff_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION",
   "general_dev_handoff": false,
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "M-E02_EXPERIMENT_EXECUTION_AND_GRADING"
+    "M-E02_EXPERIMENT_EXECUTION_AND_GRADING",
+    "M-E02-GENERATIVE-IDENTITY"
   ],
   "dependent_experimental_work_packages": {
     "M_E02": [
@@ -196,5 +197,14 @@
     "external reviewer-controlled product-media oracle not yet run on candidate outputs",
     "real generative backend not qualified",
     "real application persistence/restart not demonstrated"
-  ]
+  ],
+  "generative_cache_identity": {
+    "status": "EXECUTABLY_REPRODUCED_RED",
+    "branch": "experiment/m-e02-generative-identity",
+    "draft_pr": 303,
+    "tested_sha": "43c195f410e4464ab83aa433e7d7342128e52a78",
+    "workflow_run": 36752692502,
+    "negative": "no backend identity reused cache unexpectedly",
+    "positive": "explicit renderer_identity reuses and identity change invalidates"
+  }
 }
