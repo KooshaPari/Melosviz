@@ -10,7 +10,7 @@
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": null,
   "status": "INCOMPLETE_BLOCKED",
-  "handoff_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION",
+  "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
   "general_dev_handoff": false,
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
@@ -129,6 +129,13 @@
       "pr": 300,
       "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
       "status": "IN_PROGRESS_UNACCEPTED"
+    },
+    "M-E01": {
+      "branch": "experiment/melosviz-baseline-pass6",
+      "pr": 301,
+      "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+      "status": "IN_PROGRESS_DIAGNOSTIC_ONLY"
     }
-  }
+  },
+  "parallel_experimental_handoff": true
 }
