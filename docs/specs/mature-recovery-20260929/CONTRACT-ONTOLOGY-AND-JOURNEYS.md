@@ -1,63 +1,91 @@
-# Melosviz candidate mature horizon, ontology and journeys
+# Melosviz mature contract ontology and journeys — authority-anchored 2026-09-30
 
-Program MR-20260929. Source 1aec20a2ba41a01ed557d1c7f63f9a0089f842cf. Status: PROPOSAL, NOT ACCEPTED; mature scope and later pivot authority remain unresolved. This is not a complete requirements catalog.
+Authority: current explicit user clarification in `AUTHORITATIVE-INTENT-20260930.md`. This replaces the earlier candidate framing that treated multi-scene/hybrid scope as potentially historical-only. Implementation details remain subject to SOTA/design gates.
 
-## Horizon recovered before stages
+## Product identity
 
-Earlier user-intent retrieval supports music-driven programmable visuals, including simpler loops/lyrics and advanced hybrid scenes, with strong script/API access and GUI review. Later repository history centers a multi-tool music-video studio. A candidate mature identity is an audio-constrained, editable visual-production conductor: durable structured intent and revisioned assets drive one or more rendering tools, human/agent edits remain inspectable, and deliverables are verified against their actual project and configuration.
+Melosviz is an **audio-conditioned programmable multi-scene visual composition and production/runtime system**. Its product unit is not an isolated generated scene. It is a temporally coherent audiovisual composition/session whose scenes may use different representations, renderers and generation methods while remaining aligned to one audio work and one accepted creative/programmatic intent.
 
-That identity may retain hybrid/live and studio-generation as distinct projections. It may instead be narrowed by a later accepted decision. Do not resolve this by treating the latest code as authority. A new DCC, video model, general workflow platform or handwritten media engine is not automatically required; consult registry SOTA before building replacements.
+Representative mature use projections:
+- multi-minute music-video / YouTube visualization;
+- short-form derived output;
+- other offline long-form audiovisual work;
+- real-time/live-audience visual performance where qualified.
 
-## Product ontology: intersecting structures
+A three-minute graphics-driven music video is a representative product-scale workload, not a requirement that every work be exactly that duration.
 
-| Projection | Principal entities and relations | Required distinction |
-|---|---|---|
-| Authored intent | Project identity, immutable revision, concept, constraints, approved overrides and decision provenance | Human instruction versus inferred creative suggestion |
-| Music / time | Source audio digest, sample clock, timebase, analysis revision, beat/section annotations and uncertainty | Measured/estimated beat versus accepted editorial anchor |
-| Editorial | Sequence, scene/shot identity, timing, transitions, track, references | A scene instance is not a backend type; two same-type scenes are distinct |
-| Spatial / hybrid | Assets, representation, camera, material, scanner/mask, occlusion and transforms | Semantic scene model versus a renderer-specific file; applicability awaits scope decision |
-| Production | Render job, scene attempt, tool capability/version, workflow/model/configuration, desired versus observed artifacts | Job-plan, offline rehearsal, real render and cache reuse are separate outcomes |
-| Review / revision | Human or agent edit, structured delta, preview, acceptance/rejection and selective invalidation | Browser-local state or DCC-only change is not a durable canonical edit |
-| Evidence / delivery | Criterion, run, raw media, provenance, artifact digests, qualified profile, bundle and release | 'Done', path existence, schema validity and product acceptance differ |
-| Operations | Budget authorization, queue/lease, checkpoint, recovery, observability, install and support | Render executor lifetime is not durable project/job lifetime |
+## Core ontology
 
-Do not flatten these into a single feature tree or multiply generic concerns across every scene feature. Applicable quality overlays bind to precise subjects/configurations: audiovisual timing, decode/profile correctness, budget/reliability, operator UX/accessibility, asset/workflow security, creative quality and evidence completeness. Accepted numerical targets are not recovered yet; no arbitrary latency, cost or creative-quality pass threshold is invented.
+```
+Composition / Project
+  ├─ accepted creative + programmable intent
+  ├─ source audio + immutable asset identity
+  ├─ analysis
+  │    ├─ sample/timebase
+  │    ├─ beat/rhythm/onset structure + uncertainty
+  │    ├─ musical/section structure
+  │    └─ semantic/lyric/mood/context signals where applicable
+  ├─ timeline / sequence
+  │    ├─ SceneInstance[0..N]
+  │    │    ├─ revision
+  │    │    ├─ start/end/transition relationship
+  │    │    ├─ scene program/spec
+  │    │    ├─ representation/render backend selection
+  │    │    ├─ assets/references
+  │    │    └─ execution attempts → artifacts → evidence
+  │    └─ cross-scene continuity/coherence constraints
+  ├─ offline projection
+  │    └─ ordered accepted artifacts → transition/assembly/master → deliverable
+  └─ live projection
+       └─ same accepted composition/time/scene intent → bounded-latency runtime/adapters
+```
 
-## Identity, timing and growth constraints
+Scene type/backend is **not identity**. For the current studio pipeline, existing `scene_index` is the minimum viable work identity; a more durable cross-revision scene ID is introduced only if requirements prove index stability insufficient.
 
-Candidate canonical keys distinguish project/revision, scene/shot revision, input asset digest, render configuration and artifact identity. A content-addressed cache entry needs matching inputs and origin evidence; path or size equality is not enough. Tool/workflow/model changes, scene edits and relevant neighbor transitions must invalidate the correct projection. Generated suggestions remain suggestions until accepted; confidence is not approval.
+Beat alignment, editorial timing alignment, semantic alignment and generative motion alignment are different claims with different evaluators. Storing BPM does not prove them all.
 
-Audio synchronization needs a declared rational mapping from sample time to editorial/render time, plus explicit frame rounding and allowed error. Detector uncertainty is not eliminated by storing a BPM. A guarantee about edit/cut timing is not a guarantee that generative dancers move on beat. The oracle must state which promise is being evaluated and use an appropriate external reference.
+## Product projections
 
-Existing RenderSpec, SceneSpec and job formats are starting evidence, not a mandate to replace or duplicate them. The preferred migration extends a stable identity/time/receipt spine. OTIO and USD may supply projections, not necessarily the complete product truth model. Their integration/fidelity must be tested before architecture freeze.
+| Projection | Principal obligation |
+|---|---|
+| Creative/programmatic intent | Human/agent can specify constraints, structure, scene behavior and accepted overrides without losing authority/provenance |
+| Audio intelligence | Produce evidence-bound timing/structural/semantic signals with uncertainty and stable source identity |
+| Multi-scene planning | Generate/revise an ordered scene sequence appropriate to the audio and requested output/use |
+| Scene execution | Execute heterogeneous scene programs without losing scene identity or duplicating work |
+| Cross-scene composition | Maintain transitions, ordering, timing, continuity and composition-level coherence |
+| Review/revision | Human/agent can inspect and modify one or more scenes and understand the exact delta |
+| Offline delivery | Assemble/master independently verified scene artifacts into intended short/long-form media |
+| Live runtime | Project accepted scene/timeline intent into a real-time execution model with explicit latency/failure semantics |
+| Evidence/recovery | Distinguish plan, execution, artifact validation, creative acceptance, cache reuse and final acceptance across restarts/workers |
 
-## Candidate actor-to-outcome journeys
+## Normative mature journeys
 
-**M-J-PRODUCE:** creator imports known audio/assets, reviews analysis/constraints, creates an editable sequence, runs a real renderer, independently validates per-scene output, assembles and exports a playable intended deliverable.
+**M-J-COMPOSE-LONGFORM:** import an audio work; derive/review timing + semantic structure; create a multi-scene composition; generate heterogeneous scenes; independently verify them; assemble in intended order with intended audio; review and export a multi-minute deliverable.
 
-**M-J-REVISE:** creator opens the project in the human interface, changes one scene, persists a structured revision, inspects the exact delta, selectively rerenders affected work, and reopens the same accepted state after restart.
+**M-J-REVISE-SCENE:** open a durable composition; change one scene or transition; preserve the revision delta; recompute only the work required by accepted dependency policy; reassemble and prove the new composition contains the new scene while unaffected evidence remains valid only when identity matches.
 
-**M-J-RECOVER:** operator loses an executor/service, restarts or replaces it, identifies completed versus incomplete scene attempts, resumes or deliberately reruns work, and retains correct provenance without false cache hits or duplicate scene acceptance.
+**M-J-SHORTFORM:** derive/reframe a selected temporal/semantic region or alternate scene projection for a short-form target while retaining provenance to the source composition/audio and explicitly handling aspect/timing changes.
 
-**M-J-HYBRID:** artist uses accepted spatial/scanner/representation semantics and obtains a faithful render/projection. Live operation is a separate applicability axis awaiting scope reconciliation, not an implied capability of the studio demo.
+**M-J-LIVE:** load an accepted composition/program and audio/live timing source; schedule/generate/project scene state in real time; tolerate/declare latency/degradation and transition behavior; retain enough runtime evidence for operator diagnosis. Exact live latency and renderer guarantees remain to be researched/accepted.
 
-**M-J-DELIVER:** recipient receives the required playable profiles and referenced assets/manifest, verifies their identity, reopens or traces the project as required, and can distinguish production media from plans/rehearsal placeholders.
+**M-J-HYBRID:** use accepted heterogeneous representations/renderers in one composition and preserve semantic/timeline identity across them. Historical scanner/photo/mesh/splat details remain candidates to reconcile, not automatically mandatory implementations.
 
-## Stage projections over that horizon
+**M-J-RECOVER:** replace a renderer/worker/application after failure and resume from durable project/job/evidence truth without treating stale cache, a plan, or an old revision as accepted current output.
 
-An earliest usable projection closes a narrow approved M-J-PRODUCE outcome with actual media, durable project/scene identities and qualified failure reporting. Placeholder breadth is allowed but labeled unavailable/deferred. An MVP adds the required revision and recovery paths using the same core state, not a new disposable product. Beta widens selected adapters/configurations and closes their failure/quality cases. GA qualifies the accepted install/support/delivery/security/accessibility obligations. Mature is the full recovered contract, not a count or expansion quota.
+## Stage projections
 
-Hybrid/live obligations cannot be discarded to manufacture an easier percentage; they must be assigned to justified stages or explicitly superseded by authority. Conversely, no assistant-created adapter inventory automatically becomes mandatory mature scope.
+**CVP:** a small but real **multi-scene** composition on one qualified audio fixture and narrow renderer set, using the mature scene/time/evidence spine. Single-scene output alone is not a Melosviz CVP.
 
-## Transition debt and specification record shape
+**MVP:** closes composition + revision + offline delivery with at least one heterogeneous or meaningfully distinct scene workflow and independently verified assembly.
 
-Track browser-versus-studio and Tauri-versus-Electrobun authority; old backend/SDK ownership; scene-type versus scene-instance accounting; display/event 'done' versus accepted media; best-effort versus required evidence; and unpinned workflow/model reproducibility. Each needs compatibility/migration disposition and a witnessing journey, not just a rewrite ticket.
+**Beta:** widens renderer/scene-program adapters, quality/creative review, recovery, output formats and selected live/runtime experiments.
 
-Future accepted obligations carry stable ID, statement, rationale, source/decision authority, parent capability, dependencies, product role, stages/configurations, journeys, positive/negative acceptance, quality references, actual work/implementation surfaces, verification strategy, required traces and growth disposition. Represent implemented/mounted/persisted/tested/evidenced/current/stale/conflicting separately. Requirement count remains an output of semantic decomposition, not a target.
+**GA:** closes accepted offline production/support/security/accessibility/reproducibility obligations for supported configurations.
 
+**Mature:** full recovered offline + selected live/hybrid contract. Live may have a separate support matrix; it must not be faked by calling offline frame generation “real-time.”
 
-## Pass 9 backend evidence-identity refinement
+## Current implementation consequences
 
-For generative render reuse, scene inputs alone are insufficient. A cache/evidence subject must include a backend execution configuration identity. For ComfyUI, bootstrap from existing official API primitives rather than inventing a parallel job tracker: submitted workflows return a prompt_id; history is queryable by prompt_id; model lists, model metadata, node/object information, workflow templates, features and system stats are exposed by the server. Product evidence should additionally hash the exact submitted workflow JSON and record the Melosviz adapter revision. Where model/custom-node content digests or source revisions cannot be obtained from ComfyUI itself, require them from deployment configuration rather than silently omitting them.
+M-F13/M-F16/M-F18 are core-spine failures, not peripheral defects: iteration is duplicated, scene selection is inert, scene-type collapses results, and generated artifacts do not reach assembly. M-E02 is therefore a critical-path architecture repair experiment.
 
-Candidate minimum subject for a reusable generative scene artifact: `scene revision + audio/input digests + adapter revision + canonical workflow hash + selected model/checkpoint identities + custom-node/environment identity + backend execution/prompt identity`. This is a design constraint, not a claim that every field is already available or that ComfyUI history is independent product acceptance.
+“Stub breadth; mature spine” here means: support a narrow set of scene generators initially, but make composition identity, audio timebase, scene identity/revision, ordering, execution result, artifact/evidence and assembly truthful from the beginning.
