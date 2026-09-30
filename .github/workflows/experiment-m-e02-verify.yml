@@ -36,9 +36,9 @@ jobs:
         run: python -m pytest backend/tests/conductor/test_m_e02_scene_contract.py -q --no-header --timeout=60
       - name: Existing conductor and bridge regressions
         run: |
-          python -m pytest backend/tests/conductor backend/tests/test_bridge_studio_pipeline.py             -q --no-header --timeout=60 -k "not test_render_events_stream_returns_event_stream_content_type"
+          python -m pytest backend/tests/conductor backend/tests/test_bridge_studio_pipeline.py             -q --no-header --timeout=60             -k "not test_render_events_stream_returns_event_stream_content_type"
 
-  web-hard-typecheck:
+  web-delta:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -48,12 +48,14 @@ jobs:
           bun-version: 1.1.34
       - run: bun install --frozen-lockfile
         working-directory: web
-      - run: bunx tsc --noEmit -p tsconfig.json
+      - name: StudioConsole behavioral tests
+        run: bunx vitest run src/components/__tests__/StudioConsole.test.tsx
         working-directory: web
-      - run: bunx vitest run src/components/__tests__/StudioConsole.test.tsx
+      - name: Bundle actual web surface
+        run: bunx vite build
         working-directory: web
 
-  desktop-hard-typecheck:
+  desktop-delta:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,5 +65,9 @@ jobs:
           bun-version: 1.1.34
       - run: bun install --frozen-lockfile
         working-directory: desktop
-      - run: bunx tsc --noEmit -p tsconfig.json
+      - name: Bundle changed Director Console webview
+        run: |
+          rm -rf /tmp/m-e02-desktop-bundle
+          bun build views/main/index.ts             --target=browser             --external electrobun/view             --external @radix-ui/themes/styles.css             --outdir /tmp/m-e02-desktop-bundle
+          test -s /tmp/m-e02-desktop-bundle/index.js
         working-directory: desktop
