@@ -96,3 +96,19 @@ Release CI establishes Electrobun as the current packaged desktop; Tauri is a se
 Do not assume `--only-scenes` works. Frozen source proves both selector entry points are dead: constructor `self._only_scenes` is assigned and never read; `render(..., only_scenes=...)` mentions the parameter only in signature/docstring. The CLI passes selection into the constructor. Therefore the advertised one-scene/neighbor rerender does not currently select conductor work.
 
 M-E02 minimum patch should reuse existing `scene_index` identity already present in events/provenance/cache/API. Resolve one effective selector at render entry, validate/filter dispatch, and make exactly one layer own scene iteration. Replace `per_scene_results: {scene_type: result}` with a scene-indexed/ordered result projection. Do not invent UUID infrastructure unless later requirements prove storyboard indices insufficient. Add same-backend two-scene call-count assertions and verify unselected adapters/scenes are untouched.
+
+
+## Pass 8 M-E02 acceptance contract
+
+A candidate M-E02 repair is admissible only if all of these hold on the same exact candidate:
+
+1. **Selector:** `--only-scenes=1` on a 3-scene fixture invokes no adapter work for scenes 0/2. Invalid indices fail before rendering. Constructor/render selector ambiguity is removed by one documented precedence rule.
+2. **Iteration cardinality:** with S0 and S1 using the same backend, exactly two scene work units occur—not four whole-spec renders. The adapter contract is either scene-targeted once per selected scene or explicitly batch-targeted once; never both loops.
+3. **Result identity:** result cardinality equals selected-scene cardinality and keys/order preserve scene_index. Same scene_type does not overwrite another result.
+4. **Artifact identity:** every accepted real-media scene has its own artifact + digest/provenance; malformed, unavailable, placeholder and plan-only outcomes remain non-accepted.
+5. **Assembly connectivity:** accepted scene artifacts (including qualified cache hits) enter assembly once, in storyboard order. The final assembly may not infer inputs by globbing or receive an empty list after successful scene renders.
+6. **Events:** queued/rendering/done remain execution telemetry. A done event must expose typed outcome or consumers must separately fetch typed result; no UI may translate bare done/process exit into accepted green.
+7. **Bridge/UI:** generate returns structured scene results from conductor truth. No pre-created directory fixture or filesystem-layout guess may stand in for the producer contract.
+8. **R2:** edit only S1, restart the relevant process, rerender requested policy, and prove reuse/recompute by identity. The independent oracle, controlled outside the candidate, must accept final media and reject stale R1 substitution.
+
+Required negative mutations: restore `setdefault(scene_type,...)`; remove selector filter; make adapter render full spec; omit one collected artifact; swap assembly order; return exit 0 with malformed media; delay audio PTS; substitute equal-size stale cache bytes. Each must make at least one critical criterion non-green.
