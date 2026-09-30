@@ -23,7 +23,7 @@ Program MR-20260929, 2026-09-29. **INCOMPLETE / BLOCKED. No percentage awarded.*
 | Invalid/generated catalogs excluded from grading | Excluded in this dossier; all existing grading consumers remain to inspect |
 | No unexplained orphan requirements/features/journeys | Not established without complete accepted graph |
 | No unresolved contradictions | NOT MET: M-F01 plus CLI/API/UI/output-layout and execution-vs-acceptance contradictions (M-F09–M-F15) |
-| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F18 |
+| No blocking findings | NOT MET: M-F01–M-F04, M-F07, M-F09–M-F19 |
 | Independent/fresh adversarial review | NOT PERFORMED; self-review and a local probe do not satisfy independence |
 
 ## Next minimal work packages
@@ -41,3 +41,8 @@ Closed sub-gate: finite tracked-tree enumeration. This is deliberately not credi
 ### Revision/recovery blockers added in pass 6
 
 The advertised web single-scene rerender cannot launch with its current request shape; the CLI direct path emits a render command hint rather than executing it; default CLI job IDs are process-dependent; and cache fingerprints omit several render-affecting reference/character inputs. Therefore M-J-REVISE and M-J-RECOVER are not merely untested—they are contradicted by current source semantics. These must be closed experimentally before general developer handoff.
+
+
+### Bridge security sub-gate
+
+M-F19 blocks any claim that arbitrary configured bridge binds are loopback-only by default. M-ESEC is an independent READY experimental lane and may proceed without waiting for rendering/result-schema work, provided it does not broaden scope into unrelated bridge rewrites.
