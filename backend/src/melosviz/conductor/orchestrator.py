@@ -1132,7 +1132,7 @@ class Orchestrator:
             _offline_placeholder = bool(
                 _offline_env
                 and getattr(adapter, "emits_offline_placeholders", False) is True
-                and artifact.endswith(".mp4")
+                and bool(artifact)
             )
             # Cinema 4D / Unreal / Blender emit a render *plan* offline and no
             # media at all: calling that a render overstates the artifact, and
