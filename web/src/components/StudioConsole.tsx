@@ -32,7 +32,7 @@ export interface StudioScene {
   prompt: string;
   palette: string[];
   seed: number;
-  status: "queued" | "rendering" | "done" | "error";
+  status: "queued" | "rendering" | "produced" | "accepted" | "error";
   /** Path to the emitted workflow.json / job_spec.json / plan.json */
   artifactPath?: string;
   errorMessage?: string;
