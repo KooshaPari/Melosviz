@@ -61,7 +61,8 @@
     "M-F15",
     "M-F16",
     "M-F17",
-    "M-F18"
+    "M-F18",
+    "M-F19"
   ],
   "additional_verification_risk": [
     "M-F05",
@@ -95,7 +96,7 @@
     "unique_blobs": 688,
     "semantic_state": "OPEN"
   },
-  "security_boundary": "BRIDGE_LOOPBACK_CLASSIFIER_FAILS_OPEN_FOR_ARBITRARY_NON_WILDCARD_HOSTS",
+  "security_boundary": "M-F19_FAIL_OPEN_BIND_CLASSIFIER_READY_FOR_M_ESEC",
   "semantic_spine": "CONDUCTOR_API_CLI_HIGH_RISK_FAMILY_PARTIALLY_RESOLVED",
   "durable_product_state": "FILE_BASED_STORYBOARD_CACHE_PROVENANCE; NO_DURABLE_PROJECT_JOB_STORE_FOUND_IN_MOUNTED_SPINE",
   "M_ESEC_progress": {
