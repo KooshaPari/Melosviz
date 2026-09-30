@@ -3,7 +3,7 @@
   "program_id": "MR-20260929",
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
-  "observed_on": "2026-09-29",
+  "observed_on": "2026-09-30",
   "assessment_pass": 6,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
@@ -128,7 +128,9 @@
       "branch": "experiment/melosviz-bridge-security-pass6",
       "pr": 300,
       "base": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
-      "status": "IN_PROGRESS_UNACCEPTED"
+      "candidate": "f43717dc25c0021c47b41f638e0ecd184942931c",
+      "status": "AWAITING_DEDICATED_CI_AND_RECEIPT_REVIEW",
+      "review_note": "Diff is scope-bounded to 5 files. Bind classifier/startup auth/root policy and Studio/render/debug route protection are directionally consistent. Dedicated workflow was tightened to require ruff + focused tests; no acceptance until it completes and artifacts are inspected. Global rate limiting of unprotected routes remains separate policy question."
     },
     "M-E01": {
       "branch": "experiment/melosviz-baseline-pass6",
