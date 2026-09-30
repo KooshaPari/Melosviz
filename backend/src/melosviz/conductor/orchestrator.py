@@ -50,6 +50,7 @@ from melosviz.conductor.render_cache import (
     RenderCache,
     scene_cache_key,
     scene_cache_meta,
+    scene_cache_identity_qualified,
     scene_render_cached,
 )
 from melosviz.conductor.visual_diff import compute_visual_diff
@@ -1248,7 +1249,12 @@ class Orchestrator:
                     if cache_root
                     else scene_cache_key(_seg_for_render, self._output_dir)
                 )
-                if self._render_cache is not None and artifact and not _artifact_issue:
+                if (
+                    self._render_cache is not None
+                    and artifact
+                    and not _artifact_issue
+                    and (_outcome != OUTCOME_RENDER or scene_cache_identity_qualified(_seg_for_render))
+                ):
                     self._render_cache.store(
                         cache_key,
                         src_artifact_path=Path(artifact),
