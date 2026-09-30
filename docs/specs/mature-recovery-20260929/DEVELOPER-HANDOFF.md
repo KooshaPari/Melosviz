@@ -119,3 +119,12 @@ Required negative mutations: restore `setdefault(scene_type,...)`; remove select
 Current user intent makes **multi-scene composition the product spine**. Do not “fix” M-E02 by reducing the system to one scene per job or by treating the multi-scene fixture as merely a test convenience. The repair must make a composition with multiple, potentially heterogeneous scenes truthful end-to-end. A scene-targeted adapter call is an execution primitive inside a composition; the conductor still owns composition ordering, audio/timeline alignment, transitions, evidence and assembly.
 
 Preserve future offline short/long-form and live projections: do not couple canonical scene/timeline identity to a specific offline renderer directory layout. Beat/rhythm, semantic/musical structure and editorial timing are distinct signals. M-E02 need not implement all of them, but it must not collapse the model so they cannot be added without replacing the spine.
+
+
+## Pass 9 authority correction — multi-scene is mandatory product shape
+
+Current user intent explicitly defines Melosviz as a multi-scene audio-conditioned visual generation/programming system. Agents must not optimize the architecture around a single generated scene. A scene is a composition work unit.
+
+M-E02 positive fixture must therefore remain multi-scene and audio-bound. At minimum it must prove: distinct same-backend scenes; ordered timing; meaningful audio alignment anchors; transitions/neighborhood semantics where fixture uses them; selective revision; accepted assembly. Linear video is the first executable projection, not the only mature output. Preserve a path for live/festival playout over shared project/audio/scene intent rather than baking the canonical model around files-only offline assembly.
+
+OTIO may be used as an editorial projection/interchange experiment for rational time/tracks/transitions/markers/media references, but it must not erase generative scene programs, audio-analysis uncertainty, backend/model/workflow identity or live-control state.
