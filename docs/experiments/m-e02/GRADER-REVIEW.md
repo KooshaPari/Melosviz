@@ -63,3 +63,12 @@ Current admissible evidence target is the **push** run for the exact candidate h
 ## Recovery-controller recheck — exact-head rerun required
 
 The latest completed push run inspected by the recovery controller was run 37 at `64115866783383c4be6f94bbbcce02f628cdab2d`, failing the partial-rerender call-count assertion. The current branch source fetched after that run contains selector filtering and one-scene RenderSpec projection. This commit intentionally triggers the experiment workflow again so acceptance is based on the current exact head, not the stale failing run. No criterion is waived; the mounted journey, regression suite and UI delta jobs must all execute on the same head.
+
+
+## Recovery-controller held-out finding — cache evidence identity still incomplete
+
+Source review after the implementation candidate found a remaining critical gap independent of the currently queued workflow. Partial-rerender reconstruction treats a cache hit with stored outcome=render plus current media validation as sufficient evidence for an untouched scene. But SceneCacheKey intrinsically binds scene/backend/prompt/seed/geometry/fps/camera/continuity/palette/lyric/audio and optional cache_extra; it does **not** require renderer binary/version, model/checkpoint identity, workflow/custom-node graph identity, or other backend configuration. Those may be supplied ad hoc in cache_extra, but the conductor does not enforce them.
+
+Therefore a model/workflow/tool change can leave the key unchanged and allow old media to qualify for the R2 full assembly. This violates the pass-8 negative control requiring tool/model/workflow changes to invalidate relevant evidence.
+
+**Required before M-E02 experimental acceptance for generative backends:** define a backend-owned deterministic cache/evidence identity and require it in the key/metadata for cacheable real-render outcomes. Add a held-out test that changes model/workflow identity without changing prompt/scene index and proves no old cache hit is accepted. For deterministic video_export, an explicit stable backend identity can satisfy the same contract. Do not solve this by globally disabling cache; the recovery journey specifically needs trustworthy reuse.
