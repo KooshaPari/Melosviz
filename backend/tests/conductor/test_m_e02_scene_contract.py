@@ -133,7 +133,7 @@ def test_done_event_exposes_execution_outcome(tmp_path, monkeypatch):
     result = Orchestrator(output_dir=tmp_path, skip_assembly=True, only_scenes=[0]).render(
         _spec()
     )
-    done = [e for e in result.events if getattr(e, "status", None) == "done"]
+    done = [e for e in result.events if getattr(e, "state", None) == "done"]
     assert len(done) == 1
     extras = getattr(done[0], "extras", None) or {}
     assert extras.get("outcome") == OUTCOME_RENDER
