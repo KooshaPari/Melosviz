@@ -70,7 +70,9 @@
     "M-F25",
     "M-F26",
     "M-F27",
-    "M-F28"
+    "M-F28",
+    "M-F29",
+    "M-F30"
   ],
   "additional_verification_risk": [
     "M-F05",
@@ -111,11 +113,13 @@
     "source_function": "CONFIRMED_FAIL_OPEN",
     "source_equivalent_probe": "EXECUTED",
     "full_checkout_test": "NOT_EXECUTED",
-    "repair": "READY"
+    "repair": "READY",
+    "server_policy_review": "SOUND_FOR_ELECTROBUN_RELEASE_PATH_WITH_WEB_AUTH_LIMITATION",
+    "web_public_auth": "BLOCKED_M_F30"
   },
   "finding_namespace": {
     "state": "CANONICAL_UNIQUE",
-    "range": "M-F01..M-F28",
+    "range": "M-F01..M-F30",
     "duplicate_ids": false,
     "nonblocking_context": [
       "M-F06",
@@ -139,5 +143,6 @@
       "status": "IN_PROGRESS_DIAGNOSTIC_ONLY"
     }
   },
-  "parallel_experimental_handoff": true
+  "parallel_experimental_handoff": true,
+  "web_auth_state": "DIRECT_STUDIOCONSOLE_HAS_NO_BEARER_SUPPORT; ELECTROBUN_PROXY_DOES"
 }
