@@ -844,6 +844,13 @@ class Orchestrator:
             ]
 
         for scene_idx, scene_name, scene_type, _seg_for_render in per_scene_dispatch:
+            # scene_index is the conductor work identity. Storyboard scene dicts
+            # do not necessarily carry it, so project it explicitly before cache
+            # identity, provenance, or adapter work can consume the scene.
+            _seg_for_render = dict(_seg_for_render)
+            _seg_for_render["scene_index"] = scene_idx
+            _seg_for_render.setdefault("scene_name", scene_name)
+
             # Give every scene an isolated adapter root. Adapters currently
             # create their own scene_NNN children and cannot safely share a
             # scene-type directory when invoked once per scene.
