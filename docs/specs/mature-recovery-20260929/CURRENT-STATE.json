@@ -4,16 +4,16 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 10,
+  "assessment_pass": 9,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-m-e02",
-    "tested_sha": "df72dcd80ecd39d17f4fa6e8733e00574226f360",
-    "workflow_run": 36751162085,
-    "workflow_conclusion": "SUCCESS",
-    "scope": "DETERMINISTIC_VIDEO_EXPORT_VERTICAL_SPINE_ONLY"
+    "head": "65f6a5b551f9e5ca12846393c8ef44726754a9b5",
+    "draft_pr": 302,
+    "status": "EXPERIMENTAL_BLOCKED_PENDING_EXACT_HEAD_EXECUTION",
+    "baseline": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION",
@@ -206,5 +206,12 @@
     "workflow_run": 36752692502,
     "negative": "no backend identity reused cache unexpectedly",
     "positive": "explicit renderer_identity reuses and identity change invalidates"
+  },
+  "M_E02": {
+    "prior_exact_head": "5debc083553edecd80b6b8e1556fdb437d7614cc",
+    "prior_dedicated_workflow": "SUCCESS_BUT_SUPERSEDED_BY_NEW_CACHE_IDENTITY_PATCH",
+    "held_out_cache_identity": "PATCHED_REQUIRES_NEW_EXACT_HEAD_GREEN",
+    "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
+    "general_acceptance": false
   }
 }
