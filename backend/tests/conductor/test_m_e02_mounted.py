@@ -98,23 +98,26 @@ def _probe(path: Path) -> None:
     assert len(streams) == 1 and streams[0].get("codec_type") == "video", payload
 
 
-def _run_cli(wav: Path, sb: Path, out: Path) -> dict:
+def _run_cli(wav: Path, sb: Path, out: Path, *, only_scenes: str | None = None) -> dict:
     env = os.environ.copy()
     env.pop("MELOSVIZ_COMFYUI_OFFLINE", None)
+    cmd = [
+        sys.executable,
+        "-m",
+        "melosviz.cli.main",
+        "generate",
+        str(wav),
+        "--storyboard",
+        str(sb),
+        "--out",
+        str(out),
+        "--job-id",
+        "m-e02-mounted",
+    ]
+    if only_scenes is not None:
+        cmd += ["--only-scenes", only_scenes]
     proc = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "melosviz.cli.main",
-            "generate",
-            str(wav),
-            "--storyboard",
-            str(sb),
-            "--out",
-            str(out),
-            "--job-id",
-            "m-e02-mounted",
-        ],
+        cmd,
         env=env,
         capture_output=True,
         text=True,
@@ -186,3 +189,50 @@ def test_mounted_bridge_generate_returns_real_structured_scene_results(tmp_path:
     for scene in scenes:
         _probe(Path(scene["artifact_path"]))
     _probe(out / "assembly" / "melosviz-assembled.mp4")
+
+
+def _duration(path: Path) -> float:
+    proc = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1", str(path),
+        ],
+        capture_output=True, text=True, timeout=20, check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return float(proc.stdout.strip())
+
+
+@pytest.mark.skipif(
+    subprocess.run(["sh", "-c", "command -v ffmpeg && command -v ffprobe"], capture_output=True).returncode != 0,
+    reason="ffmpeg/ffprobe required for mounted media smoke",
+)
+def test_mounted_r2_selective_render_reuses_r1_evidence_for_complete_assembly(
+    tmp_path: Path,
+) -> None:
+    wav = tmp_path / "track.wav"
+    sb = tmp_path / "storyboard.json"
+    out = tmp_path / "r2-out"
+    _write_wav(wav)
+    _storyboard(sb)
+
+    r1 = _run_cli(wav, sb, out)
+    assert r1["dispatched_scenes"] == [0, 1]
+    assembled = out / "assembly" / "melosviz-assembled.mp4"
+    _probe(assembled)
+    r1_duration = _duration(assembled)
+    assert r1_duration > 1.5, r1_duration
+
+    payload = json.loads(sb.read_text(encoding="utf-8"))
+    payload["scenes"][1]["prompt"] = "fixture scene one revised"
+    sb.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    r2 = _run_cli(wav, sb, out, only_scenes="1")
+    assert r2["dispatched_scenes"] == [1], r2
+    assert r2["only_scenes"] == [1], r2
+    assert r2["assembly_state"] == "produced_unverified", r2
+    _probe(assembled)
+    r2_duration = _duration(assembled)
+    # A selected-only assembly would be ~1 second. Reuse of unchanged S0 must
+    # keep the complete two-scene timeline.
+    assert r2_duration > 1.5, r2_duration
