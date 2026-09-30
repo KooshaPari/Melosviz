@@ -57,3 +57,21 @@ def test_assembly_refuses_missing_acceptance(tmp_path):
     try: l.freeze_assembly("P",r)
     except RuntimeError as e: assert "S3" in str(e)
     else: raise AssertionError("assembly froze with missing scene evidence")
+
+
+def test_stale_lease_recovery_is_time_bounded(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    a=l.queue("P",r,"S1"); assert l.claim(a,"dead-worker",ttl=30)
+    expiry=l.db.execute("SELECT lease_expires FROM render_attempt WHERE id=?",(a,)).fetchone()[0]
+    assert l.recover_expired_leases(expiry-1)==0
+    assert not l.claim(a,"replacement")
+    assert l.recover_expired_leases(expiry+1)==1
+    assert l.claim(a,"replacement")
+
+
+def test_revision_rows_cannot_be_rewritten_by_second_authoring(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    original=l.db.execute("SELECT spec_sha256 FROM revision WHERE project_id='P' AND revision=?",(r1,)).fetchone()[0]
+    r2=l.author_revision("P",scenes("changed"),parent=r1)
+    assert r2==r1+1
+    assert l.db.execute("SELECT spec_sha256 FROM revision WHERE project_id='P' AND revision=?",(r1,)).fetchone()[0]==original
