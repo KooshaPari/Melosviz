@@ -42,3 +42,17 @@ Earlier passes described April 18 acceptance as directly recovered. Pass 5's ret
 ## General handoff blockers
 
 Full semantic source ledger; authority/supersession reconciliation; complete mature obligations/quality/journeys; SOTA integration decisions and high-risk experiments; mounted product verification; complete bidirectional trace graph; current CI/catalog enforcement; fresh independent review. Existing workflows were NOT changed to enforce catalog quarantine in this pass. General and parallel GENERAL development remain blocked.
+
+## Pass 6 mandatory regression set for M-E01/M-E02/M-E03
+
+The next agent must preserve these counterexamples as raw receipts before repair:
+
+1. Two same-backend scenes: count adapter invocations and generated scene artifacts. Current source predicts whole-spec adapter work repeated per orchestrator scene. A passing repair must prove exactly one intended render action per scene (or one explicit batch action for the whole set), not merely three event rows.
+2. Bridge layout: run actual `viz generate` through `/api/studio/generate`; verify returned manifest identifies nested `<scene_type>/scene_NNN` outputs. Pre-creating `out/scene_0` is prohibited as an integration fixture.
+3. Electrobun truth: subprocess exit alone must not make all queue rows accepted/done. Feed one malformed/plan-only result and observe a non-green user state.
+4. Web truth: bridge manifest absence must not convert real successful nested outputs to `No artifact emitted`; consume structured receipts rather than directory guesses.
+5. Partial rerender RPC parity: a typed Electrobun `runDirect` request with `reRender`, `renderOut`, and `renderOffline` must produce the corresponding CLI flags/environment. Current handler uses different property names. If this RPC remains unused, mark/remove/deprecate it explicitly rather than silently keeping a false contract.
+6. Assembly: `viz generate` may only report assembly accepted after actual scene media is assembled and independently validated; a non-null job spec is not assembly.
+7. Media/cache: retain pass-5 garbage-media and equal-size stale-cache controls.
+
+Do not repair these by changing only UI wording while leaving false product state underneath. The product-state/result schema is the spine; UI/CLI/API should project it.
