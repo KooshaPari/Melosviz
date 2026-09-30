@@ -35,8 +35,7 @@
   "parallel_general_dev_handoff": false,
   "handoff_document": "DEVELOPER-HANDOFF.md",
   "ready_work_packages": [
-    "M-E01",
-    "M-ESEC"
+    "M-E02_EXPERIMENT_EXECUTION_AND_GRADING"
   ],
   "dependent_experimental_work_packages": {
     "M_E02": [
@@ -120,7 +119,12 @@
     "semantic_family_resolution": "IN_PROGRESS",
     "human_surface_mapping": "ELECTROBUN_RELEASE_WEB_BRIDGE_AND_TAURI_ALTERNATE_RESOLVED",
     "scene_dispatch_trace": "WHOLE_SPEC_ADAPTER_DUPLICATION_CONFIRMED",
-    "revision_recovery_trace": "BROKEN_DIRECT_RERENDER_NONDURABLE_DEFAULT_JOB_ID_INCOMPLETE_CACHE_IDENTITY"
+    "revision_recovery_trace": "BROKEN_DIRECT_RERENDER_NONDURABLE_DEFAULT_JOB_ID_INCOMPLETE_CACHE_IDENTITY",
+    "baseline_reproduction_ci": {
+      "commit": "d8f75ed78f4dfb7c8078725009276eb8a21f0bd8",
+      "workflow_run": 36705844469,
+      "result": "3_TESTS_PASSED"
+    }
   },
   "tracked_product_relevant_inventory": {
     "unique_blobs": 688,
@@ -167,5 +171,14 @@
   "minimum_repair_model": "REUSE_EXISTING_SCENE_INDEX_AS_WORK_IDENTITY; SCENE_TYPE_IS_ADAPTER_SELECTION; SINGLE_ITERATION_OWNER",
   "M_E02_readiness": "WORKER_CANDIDATE_EXISTS_FAIL_REVISE",
   "assembly_input": "DISCONNECTED_FROM_RENDER_LOOP_EXCEPT_CALLER_SUPPLIED_SEGMENT_PATHS",
-  "event_semantics": "DONE_IS_EXECUTION_NOTIFICATION_NOT_ACCEPTANCE"
+  "event_semantics": "DONE_IS_EXECUTION_NOTIFICATION_NOT_ACCEPTANCE",
+  "M_E02_candidate": {
+    "branch": "experiment/mature-recovery-m-e02",
+    "pr": 302,
+    "head": "1f801487871a9d43b2e2a25c51e6c28e2a82ca0e",
+    "state": "BLOCKED_ON_EXACT_HEAD_EXECUTION",
+    "source_grade": "CRITICAL_SOURCE_DEFECTS_REPAIRED_AFTER_REVIEW",
+    "hard_gate_workflow": 36719757382,
+    "dco": "FAIL_MISSING_SIGNOFF_HISTORY_POLICY_NOT_PRODUCT_CORRECTNESS"
+  }
 }
