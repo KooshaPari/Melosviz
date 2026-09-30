@@ -254,3 +254,14 @@ The complete tracked-tree inventory and targeted source review found no project/
 Therefore killing/replacing the renderer/app cannot currently reconstruct authoritative queued/running/completed/accepted attempts from durable product state. Scanning artifacts, cache files, or filenames after restart would conflate execution residue with accepted truth.
 
 This finding does **not** mandate SQLite. The required semantic spine is immutable project/scene revisions, render/assembly attempts, artifact/evidence identity and explicit state transitions. M-E03 must first compare (a) an atomic append-only/file manifest + write-ahead journal adequate for the single-user local product against (b) a small transactional SQLite metadata ledger. Select the smaller mechanism that survives the R1→restart→edit-S2→R2 adversarial journey without corrupting history. Distributed workflow engines remain escalation alternatives, not default product truth.
+
+
+## M-F30 — authenticated bridge mode is incompatible with the direct web StudioConsole (blocking web/public deployment contract)
+
+The standalone React `web/src/components/StudioConsole.tsx` has no authentication input in `StudioConsoleProps`. Its generic POST helper sends only `Content-Type: application/json`, and its render-event subscription uses the browser's native `new EventSource(...)`. Neither carries the bridge bearer token.
+
+This matters because the bridge already supports `MELOSVIZ_BRIDGE_REQUIRE_AUTH=1`, and the M-ESEC candidate correctly extends bearer protection to `/api/studio/*` and `/api/render/*`. Under that policy the direct web StudioConsole cannot storyboard/generate/master/ship and cannot connect to render SSE.
+
+The shipping Electrobun path is different and should not be conflated with this defect. Its Bun main process spawns the authenticated bridge, attaches `Authorization: Bearer ...` via `bridgeAuthHeaders()` to ordinary requests, and proxies render SSE using streaming `fetch` with the same headers. Thus M-ESEC can close the current release-desktop server boundary while leaving standalone web/Tauri authenticated operation blocked.
+
+Do **not** solve this by putting a long-lived bearer token in an EventSource query string: URLs leak into logs/history/referrers and the candidate middleware intentionally does not accept query tokens. M-E03 must choose an authenticated web transport, e.g. a fetch-stream/polling client or a trusted local shell/proxy that injects headers. The web surface must also receive auth capability for its POST requests. If mature scope declares direct standalone web auth out-of-scope, record that authorized decision explicitly rather than silently leaving a broken advertised surface.
