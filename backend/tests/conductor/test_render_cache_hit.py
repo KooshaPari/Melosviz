@@ -52,7 +52,7 @@ class _FileAdapter:
 
 def _spec() -> dict[str, Any]:
     return {
-        "scene_segments": [{"scene_index": 0, "scene_name": "s0", "scene_type": "comfyui_image"}]
+        "scene_segments": [{"scene_index": 0, "scene_name": "s0", "scene_type": "comfyui_image", "cache_extra": {"backend_identity": "test-file-adapter:v1"}}]
     }
 
 
