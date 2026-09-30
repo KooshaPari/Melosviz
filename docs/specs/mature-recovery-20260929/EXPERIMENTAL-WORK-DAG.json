@@ -32,7 +32,7 @@
     },
     {
       "id": "M-E02",
-      "state": "BLOCKED",
+      "state": "ACTIVE_REGRADING",
       "depends_on": [
         "M-E01"
       ],
@@ -48,11 +48,18 @@
         "complete cache identity",
         "typed outcomes",
         "oracle counterexamples no longer false-green"
-      ]
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-m-e02",
+        "pr": 302,
+        "head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
+        "workflow_run": 36766323723,
+        "status": "EXACT_HEAD_QUEUED"
+      }
     },
     {
       "id": "M-E03",
-      "state": "BLOCKED",
+      "state": "BLOCKED_ON_M_E02_ACCEPTANCE",
       "depends_on": [
         "M-E02",
         "result contract review"
@@ -71,7 +78,13 @@
         "truthful direct edit/rerender",
         "stable persisted job/revision identity",
         "R1→edit S2→restart→R2 exact reuse/invalidation"
-      ]
+      ],
+      "preparatory_experiment": {
+        "branch": "experiment/melosviz-durable-ledger-pass10",
+        "pr": 304,
+        "head": "3317530d8a7ab5474ff836f7f86e808c72820a06",
+        "scope": "isolated durable-state feasibility only"
+      }
     },
     {
       "id": "M-ESEC",
