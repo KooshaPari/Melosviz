@@ -4,16 +4,18 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
   "implementation_candidate": {
     "branch": "experiment/mature-recovery-m-e02",
     "draft_pr": 302,
-    "head": "67ea65176a5261142b60556ede585230c57f9077",
+    "head": "0af1e6df103f9f107ac990d012db76f8c4295313",
     "status": "UNVERIFIED_EXPERIMENTAL",
-    "baseline": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf"
+    "baseline": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+    "scope": "CONDUCTOR_COMPOSE_CLI_BRIDGE_WEB_ELECTROBUN",
+    "ci": "QUEUED_PENDING; prior intermediate head had several successes but DCO failure/cancellations and no qualifying studio-pipeline result"
   },
   "status": "INCOMPLETE_BLOCKED",
   "handoff_status": "READY_FOR_PARALLEL_EXPERIMENTAL_IMPLEMENTATION",
