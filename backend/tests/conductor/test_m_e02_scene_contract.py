@@ -391,3 +391,33 @@ def test_video_export_has_explicit_stable_cache_identity():
         "scene_type": "comfyui_image",
         "cache_extra": {"backend_identity": "comfyui:model-x:workflow-y:nodes-z"},
     }) == "comfyui:model-x:workflow-y:nodes-z"
+
+
+def test_real_render_cache_metadata_must_bind_backend_identity(tmp_path, monkeypatch):
+    from melosviz.conductor.orchestrator import Orchestrator
+    from melosviz.conductor.render_cache import scene_cache_key
+
+    _registry(monkeypatch)
+    spec = _spec()
+    for seg in spec.scene_segments:
+        seg["cache_extra"] = {"backend_identity": "fixture:model-workflow:v1"}
+    orch = Orchestrator(output_dir=tmp_path, skip_assembly=True, only_scenes=[0])
+    orch.render(spec)
+    assert len(SceneAdapter.calls) == 1
+
+    seg = dict(spec.scene_segments[0])
+    seg["scene_index"] = 0
+    seg.setdefault("scene_name", seg.get("name", "scene_000"))
+    cache_root = orch._render_cache.cache_dir
+    key = scene_cache_key(seg, cache_root)
+    meta_path = cache_root / f"{key.fingerprint()}.json"
+    import json
+    meta = json.loads(meta_path.read_text())
+    assert meta["backend_identity"] == "fixture:model-workflow:v1"
+
+    # Adversarially strip producer identity while leaving the content-addressed
+    # filename intact. Current scene declaration must not re-authorize stale evidence.
+    meta.pop("backend_identity")
+    meta_path.write_text(json.dumps(meta))
+    orch.render(spec)
+    assert len(SceneAdapter.calls) == 2
