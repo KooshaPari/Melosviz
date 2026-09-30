@@ -89,3 +89,18 @@ Beat alignment, editorial timing alignment, semantic alignment and generative mo
 M-F13/M-F16/M-F18 are core-spine failures, not peripheral defects: iteration is duplicated, scene selection is inert, scene-type collapses results, and generated artifacts do not reach assembly. M-E02 is therefore a critical-path architecture repair experiment.
 
 “Stub breadth; mature spine” here means: support a narrow set of scene generators initially, but make composition identity, audio timebase, scene identity/revision, ordering, execution result, artifact/evidence and assembly truthful from the beginning.
+
+
+## Authoritative horizon correction — 2026-09-30
+
+Current user intent resolves Melosviz as a multi-scene, audio-conditioned visual composition/generation system. Replace any reading of this document that treats a scene renderer as the mature product.
+
+The canonical composition spine is:
+
+`AudioSource + Analysis/Annotations + ProjectRevision + Ordered SceneWork + Transitions/Neighbor Semantics + Generative/Programmed Intent + Render/Playout Projections + Evidence`.
+
+A linear music-video export and a live/festival playout are projections over this spine where applicable. They may use different renderer/runtime implementations while sharing accepted scene/audio/program intent.
+
+**Editorial bootstrap:** OpenTimelineIO is a candidate projection/interchange layer, not the canonical product database. Its RationalTime/TimeRange, tracks, clips, transitions, markers and external media references map well to accepted rendered/editable timeline state. Melosviz-specific generative scene programs, audio-analysis uncertainty, backend/workflow/model identity, live controls and evidence remain outside ordinary OTIO semantics and should be preserved in canonical product state or explicit metadata/adapters.
+
+The earliest usable stage must contain multiple scenes. A single-scene renderer success is an integration primitive.
