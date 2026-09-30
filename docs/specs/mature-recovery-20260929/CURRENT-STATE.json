@@ -4,7 +4,7 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 9,
+  "assessment_pass": 10,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -168,9 +168,10 @@
   },
   "exact_candidate_ci": {
     "prior_sha": "fb17f09b50e665039583082a2e89656b05c29621",
-    "run": 36741126607,
-    "result": "FAIL_1_OF_13_FOCUSED_TESTS",
-    "diagnosis": "synthetic marker changed without declared cache input; reviewer corrected test to also change prompt",
+    "prior_run": 36741126607,
+    "result": "FAIL_12_OF_13_FOCUSED_PASS",
+    "failure": "R2 synthetic marker changed without changing declared cache input",
+    "reviewer_disposition": "TEST_CONTRACT_DEFECT; prompt+marker correction only",
     "new_sha": "64115866783383c4be6f94bbbcce02f628cdab2d",
     "new_run": 36744451604,
     "status": "QUEUED"
