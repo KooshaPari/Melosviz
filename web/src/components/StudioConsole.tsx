@@ -232,10 +232,12 @@ export function StudioConsole({
           extras?: { outcome?: string };
         };
         const idx = payload.scene_index;
-        let next = payload.state;
-        if (next === "done" && payload.extras?.outcome !== "render") {
-          next = "error";
-        }
+        const next: StudioScene["status"] | undefined =
+          payload.state === "done"
+            ? payload.extras?.outcome === "render"
+              ? "produced"
+              : "error"
+            : payload.state;
         if (typeof idx !== "number" || !next) return;
         setScenes((prev) => {
           if (idx >= prev.length) return prev;
@@ -387,7 +389,9 @@ export function StudioConsole({
           }
           return {
             ...s,
-            status: "done" as const,
+            // A conductor render outcome means produced media, not
+            // independent product acceptance.
+            status: "produced" as const,
             artifactPath: meta.artifact_path,
             errorMessage: undefined,
           };
