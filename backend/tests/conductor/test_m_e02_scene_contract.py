@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import wave
 
 import pytest
 
@@ -30,8 +31,18 @@ class SceneAdapter:
         assert len(segs) == 1, "adapter work item must be one scene"
         output_path = Path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
-        artifact = output_path / "clip.mp4"
-        artifact.write_bytes(("scene:" + str(segs[0]["marker"])).encode())
+        artifact = output_path / "clip.wav"
+        marker = str(segs[0]["marker"]).encode()
+        # Real, decodable media fixture. Encode marker bytes as sample values so
+        # distinct scenes remain distinguishable without accepting fake .mp4 bytes.
+        pcm = bytes((b % 128 for b in marker)) * 256
+        if len(pcm) % 2:
+            pcm += b"\0"
+        with wave.open(str(artifact), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(8000)
+            w.writeframes(pcm)
         return artifact
 
 
@@ -86,11 +97,8 @@ def test_same_backend_scenes_are_one_work_item_each(tmp_path, monkeypatch):
     assert all(result.per_scene_results[i]["artifact_sha256"] for i in range(3))
     assert len(AssemblyAdapter.calls) == 1
     assert len(AssemblyAdapter.calls[0]) == 3
-    assert [Path(p).read_text() for p in AssemblyAdapter.calls[0]] == [
-        "scene:zero",
-        "scene:one",
-        "scene:two",
-    ]
+    assert all(Path(p).suffix == ".wav" and Path(p).stat().st_size > 44 for p in AssemblyAdapter.calls[0])
+    assert len({Path(p).read_bytes() for p in AssemblyAdapter.calls[0]}) == 3
 
 
 def test_constructor_only_scenes_filters_before_adapter_work(tmp_path, monkeypatch):
@@ -166,8 +174,12 @@ def test_cache_hit_done_event_carries_outcome(tmp_path, monkeypatch):
     import melosviz.conductor.orchestrator as orchestrator_module
 
     _registry(monkeypatch)
-    cached = tmp_path / "cached.mp4"
-    cached.write_bytes(b"cached-real-media")
+    cached = tmp_path / "cached.wav"
+    with wave.open(str(cached), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x01\x00" * 256)
     monkeypatch.setattr(orchestrator_module, "scene_render_cached", lambda *_: cached)
     monkeypatch.setattr(
         orchestrator_module,
@@ -213,3 +225,35 @@ def test_same_named_same_prompt_scenes_get_distinct_cache_identity(tmp_path, mon
 
     assert len(seen_fingerprints) == 2
     assert seen_fingerprints[0] != seen_fingerprints[1]
+
+
+def test_nonempty_garbage_mp4_is_not_render(tmp_path, monkeypatch):
+    from melosviz.conductor.orchestrator import OUTCOME_MALFORMED, Orchestrator
+
+    class GarbageAdapter:
+        def render(self, spec, *, output_path, **kwargs):
+            output_path = Path(output_path)
+            output_path.mkdir(parents=True, exist_ok=True)
+            artifact = output_path / "garbage.mp4"
+            artifact.write_bytes(bytes(64))
+            return artifact
+
+    from melosviz.conductor import registry
+    monkeypatch.setattr(registry, "ADAPTER_REGISTRY", {"comfyui_image": GarbageAdapter})
+    result = Orchestrator(output_dir=tmp_path, skip_assembly=True, only_scenes=[0]).render(_spec())
+    assert result.per_scene_results[0]["outcome"] == OUTCOME_MALFORMED
+    assert result.per_scene_results[0]["artifact_sha256"] is None
+
+
+def test_cache_historical_render_label_does_not_override_current_media_validation(tmp_path, monkeypatch):
+    from melosviz.conductor.events import OUTCOME_MALFORMED, OUTCOME_RENDER
+    from melosviz.conductor.orchestrator import Orchestrator
+    import melosviz.conductor.orchestrator as orchestrator_module
+
+    _registry(monkeypatch)
+    cached = tmp_path / "cached.mp4"
+    cached.write_bytes(bytes(64))
+    monkeypatch.setattr(orchestrator_module, "scene_render_cached", lambda *_: cached)
+    monkeypatch.setattr(orchestrator_module, "scene_cache_meta", lambda *_: {"outcome": OUTCOME_RENDER})
+    result = Orchestrator(output_dir=tmp_path / "out", skip_assembly=True, only_scenes=[0]).render(_spec())
+    assert result.per_scene_results[0]["outcome"] == OUTCOME_MALFORMED
