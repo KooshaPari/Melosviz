@@ -319,3 +319,18 @@ This makes the held-out generative cache defect concrete rather than theoretical
 Bootstrap rather than hand-roll: preserve a structured adapter receipt containing at least prompt_id, canonical submitted-workflow SHA-256, output descriptors and relevant backend configuration identity. Official ComfyUI server APIs expose prompt submission IDs, per-prompt history, model lists/model metadata, object/node information, workflow templates, features and system stats; deployment configuration must add source/custom-node/model content identity where the server API cannot prove it. The ComfyUI history receipt is execution evidence, not independent Melosviz acceptance.
 
 Until this is implemented, real generative cache reuse cannot satisfy the mature evidence-identity contract even though the deterministic video_export M-E02 spine now passes its exact-head experiment.
+
+
+## M-F20 — current user authority resolves product identity: multi-scene composition is the product, not a scene renderer
+
+On 2026-09-30 the user directly clarified current authoritative intent: Melosviz is a multi-scene scene-generation/visual-programming system that consumes audio plus configuration/programming/tailoring and produces unique beat- and/or semantically aligned visual compositions. Intended projections include multi-minute music/YouTube visualization, short and long form, and real-time/live audience/festival use.
+
+This resolves the prior authority blocker around whether the studio pivot narrowed the product to isolated generated clips. It did not. A scene is a work unit; the product owns composition across scenes/time and must eventually project the same authored/audio intent into applicable linear and live contexts.
+
+Consequences for existing findings:
+- M-F13/M-F16/M-F18 are **core product failures**, not edge cases: duplicated whole-spec work, inert selective rerender and disconnected assembly directly violate multi-scene composition.
+- the mature contract must include scene sequencing, transitions/neighborhood effects, audio structure/alignment, revision and playout/assembly;
+- a one-scene success cannot qualify CVP;
+- ComfyUI/DCC/tool selection remains implementation architecture, not product identity.
+
+See `AUTHORITATIVE-PRODUCT-INTENT.md`. Historical April-18 attribution no longer blocks current product identity; it remains useful archaeology only.
