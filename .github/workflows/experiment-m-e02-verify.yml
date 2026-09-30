@@ -34,6 +34,8 @@ jobs:
           python -m pip install python-multipart
       - name: Focused M-E02 contract
         run: python -m pytest backend/tests/conductor/test_m_e02_scene_contract.py -q --no-header --timeout=60
+      - name: Mounted CLI + bridge FFmpeg journey
+        run: python -m pytest backend/tests/conductor/test_m_e02_mounted.py -q --no-header --timeout=150
       - name: Existing conductor and bridge regressions
         run: |
           python -m pytest backend/tests/conductor backend/tests/test_bridge_studio_pipeline.py             -q --no-header --timeout=60             -k "not test_render_events_stream_returns_event_stream_content_type"
