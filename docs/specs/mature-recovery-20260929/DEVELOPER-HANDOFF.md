@@ -76,3 +76,16 @@ Draft #300 candidate `f43717dc25c0021c47b41f638e0ecd184942931c` remains **experi
 M-ESEC may harden the server for the shipping Electrobun path without expanding into web UI work. The direct React StudioConsole currently has no bearer-token input: POST requests send no Authorization header and render progress uses native EventSource. Therefore authenticated `/api/studio/*` and `/api/render/*` cannot work from that surface. Do not weaken the bridge or put bearer secrets in SSE URLs to make the experiment green.
 
 **M-E03 additionally owns the web auth projection:** choose an authenticated fetch-stream/polling transport or a trusted shell/proxy, add authenticated POST support, and prove 401/403/valid-token behavior. If standalone authenticated web is later explicitly removed from mature scope, preserve that as an authorized scope decision instead.
+
+
+## Pass 6 delta — narrowed experimental target
+
+Tracked-tree enumeration is complete at the frozen source: 688 exact blobs across every top-level tree, all recursive responses untruncated. Do not re-enumerate files.
+
+Source tracing found two new blockers that M-E01/M-E02 must reproduce before repair:
+1. The orchestrator dispatches once per scene but passes the whole RenderSpec; ComfyUI explicitly renders every scene per call, while C4D/UE render all matching scenes. Two same-backend scenes can therefore cause repeated whole-set work into shared directories while per-scene events imply isolated work.
+2. The Studio bridge documents nested `<out>/<scene_type>/scene_*` outputs but scans only flat `out/scene_*`. Its regression test pre-creates the flat directory and mocks the subprocess. The web path can false-red while the release Electrobun path marks all scenes done on CLI return.
+
+Release CI establishes Electrobun as the current packaged desktop; Tauri is a separate alternate scaffold/surface at this snapshot.
+
+**Next executable Melosviz work:** on a runnable checkout, create a two-scene same-backend fixture and count actual adapter calls, media writes and event identities. Exercise the real bridge generate route without pre-seeding output. Preserve the failing receipts. Then make the smallest typed repair so iteration has exactly one owner (scene-targeted call OR explicit batch call), return structured per-scene results, and have bridge/UI consume those results rather than infer from subprocess exit or directory guessing. The independent media oracle remains reviewer-controlled and must reject placeholders/plan-only/wrong scene evidence.
