@@ -4,7 +4,7 @@
   "product": "KooshaPari/Melosviz",
   "repository_id": 1262466303,
   "observed_on": "2026-09-30",
-  "assessment_pass": 7,
+  "assessment_pass": 8,
   "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
   "registry_snapshot": "85d7cd00cf59c379c05b740e8130a85b0d5bd31b",
   "specification_branch": "docs/mature-recovery-20260929",
@@ -147,5 +147,7 @@
   "web_auth_state": "DIRECT_STUDIOCONSOLE_HAS_NO_BEARER_SUPPORT; ELECTROBUN_PROXY_DOES",
   "partial_rerender": "BROKEN_SELECTORS_DECLARED_BUT_UNUSED",
   "minimum_repair_model": "REUSE_EXISTING_SCENE_INDEX_AS_WORK_IDENTITY; SCENE_TYPE_IS_ADAPTER_SELECTION; SINGLE_ITERATION_OWNER",
-  "M_E02_readiness": "READY_AFTER_BASELINE_REPRODUCTION; CONTRACT_TARGET_NOW_BOUNDED"
+  "M_E02_readiness": "READY_AFTER_BASELINE_REPRODUCTION; CONTRACT_TARGET_NOW_BOUNDED",
+  "assembly_input": "DISCONNECTED_FROM_RENDER_LOOP_EXCEPT_CALLER_SUPPLIED_SEGMENT_PATHS",
+  "event_semantics": "DONE_IS_EXECUTION_NOTIFICATION_NOT_ACCEPTANCE"
 }
