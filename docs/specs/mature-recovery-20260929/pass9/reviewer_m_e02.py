@@ -55,6 +55,33 @@ def main():
         assembly=out/"assembly"/"melosviz-assembled.mp4";a1=probe(assembly)
         assert r1.get("assembly_state")=="produced_unverified",r1
         result["checks"]["r1_two_scene_real_media"]=True
+
+        # Held-out producer-identity mutation. The candidate's own tests know
+        # about this contract, so the reviewer independently corrupts the
+        # stored producer identity and requires an unchanged selected scene to
+        # render again rather than laundering the stale cache entry.
+        cache_meta=list((out/"_render_cache").glob("*.json"))
+        scene0_meta=None
+        for meta_path in cache_meta:
+            meta=json.loads(meta_path.read_text())
+            if meta.get("scene_index")==0 and meta.get("outcome")=="render":
+                scene0_meta=(meta_path,meta)
+                break
+        assert scene0_meta is not None,cache_meta
+        meta_path,meta=scene0_meta
+        assert meta.get("backend_identity"),meta
+        accepted_identity=meta["backend_identity"]
+        meta["backend_identity"]="reviewer:stale-producer"
+        meta_path.write_text(json.dumps(meta,indent=2)+"\n")
+        stale=cli(candidate,w,sb,out,0)
+        stale_scenes=stale.get("scenes") or []
+        assert stale.get("dispatched_scenes")==[0],stale
+        assert len(stale_scenes)==1 and stale_scenes[0].get("scene_index")==0,stale_scenes
+        assert stale_scenes[0].get("outcome")=="render",stale_scenes
+        repaired=json.loads(meta_path.read_text())
+        assert repaired.get("backend_identity")==accepted_identity,repaired
+        result["checks"]["stale_producer_identity_forces_rerender"]=True
+
         # New process + selected S1. Prompt is a declared cache input.
         storyboard(sb,"scene one revised")
         r2=cli(candidate,w,sb,out,1)
