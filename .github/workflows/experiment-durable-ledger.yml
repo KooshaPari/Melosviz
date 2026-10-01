@@ -25,3 +25,8 @@ jobs:
           python -m py_compile backend/tests/experiments/test_mature_recovery_durable_ledger.py
       - name: Durable state adversarial controls
         run: pytest -q backend/tests/experiments/test_mature_recovery_durable_ledger.py
+      - name: Record SQLite runtime
+        run: python - <<'PY'
+          import sqlite3
+          print(sqlite3.sqlite_version)
+          PY
