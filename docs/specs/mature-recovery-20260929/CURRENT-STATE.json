@@ -275,7 +275,7 @@
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "55e9358ffd331382545a7874b19e4975310fdcd9",
+    "policy_head": "984d12570f0c94f2aba044a85b7b5a3ddc0f2fdc",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
@@ -284,13 +284,13 @@
       "selective R2 leaves unselected S0 bytes unchanged",
       "exact repeated R2 produces no scene work and identical final digest"
     ],
-    "status": "INDEPENDENT_POLICY_EXPANDED_PENDING_RECEIPT"
+    "status": "R2_REPEAT_HELPER_FIXED__RECEIPT_REQUIRED"
   },
   "M_E03": {
-    "status": "ACCEPTANCE_AUTHORITY_AND_ASSEMBLY_EVIDENCE_ACTIVE",
+    "status": "ASSEMBLY_EXECUTION_ACCEPTANCE_SEPARATION_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "7df4942052885651b096c6ac0262826b8df831cc",
+    "head": "98a51da632bf919a0ad1c7e0bd5ba767283580eb",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -309,7 +309,10 @@
       "running/failed attempt cannot freeze assembly",
       "accepted evidence requires completed attempt + sha256 + verifier identity",
       "assembly inputs require accepted scene evidence",
-      "duplicate scene identity rejected before assembly freeze"
+      "duplicate scene identity rejected before assembly freeze",
+      "assembly frozen→completed→accepted states distinct",
+      "assembly acceptance binds exact final digest + verifier",
+      "assembly acceptance emits attempt evidence"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
@@ -319,11 +322,9 @@
       "independent M-E02 media acceptance"
     ],
     "last_green": {
-      "head": "ff870f1518ae73437a0a8afb859a7586a1d8ab12",
-      "dedicated_run": 36874338523,
-      "main_ci": 36874337752,
-      "studio_pipeline": 36874337394,
-      "status": "ATTEMPT_EVIDENCE_AND_ASSEMBLY_LINEAGE_PASS"
+      "head": "7df4942052885651b096c6ac0262826b8df831cc",
+      "dedicated_run": 36899250810,
+      "status": "ACCEPTANCE_AUTHORITY_AND_ASSEMBLY_EVIDENCE_PASS"
     }
   }
 }
