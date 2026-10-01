@@ -60,3 +60,27 @@ def test_failed_conductor_attempt_is_durable(tmp_path,monkeypatch):
     l=ProjectLedger(db)
     assert l.db.execute("SELECT state FROM render_attempt").fetchone()==("failed",)
     l.close()
+
+
+def test_attempt_evidence_and_assembly_lineage_are_bound_to_completed_attempt(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): return type("R",(),{"job_id":"J"})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    l.record_evidence(out.project_attempt_id,"scene","abc","reviewer:v1","accepted")
+    asm=l.freeze_assembly(out.project_attempt_id,[(0,"abc")])
+    assert l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",'[[0,"abc"]]')
+    assert l.db.execute("SELECT verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()==("reviewer:v1","accepted")
+
+def test_failed_or_running_attempt_cannot_freeze_assembly(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r)
+    try:l.freeze_assembly(a,[(0,"abc")])
+    except RuntimeError:pass
+    else:raise AssertionError("running attempt froze assembly")
+    l.fail_attempt(a)
+    try:l.freeze_assembly(a,[(0,"abc")])
+    except RuntimeError:pass
+    else:raise AssertionError("failed attempt froze assembly")
