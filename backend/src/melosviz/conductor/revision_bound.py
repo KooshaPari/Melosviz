@@ -42,7 +42,7 @@ class RevisionBoundConductor:
             # Persist only observed concrete scene artifacts as non-accepted
             # execution evidence. Independent verifier authority promotes them
             # later; the conductor cannot self-accept its own output.
-            for scene_index,scene_result in sorted(result.per_scene_results.items()):
+            for scene_index,scene_result in sorted((getattr(result,"per_scene_results",None) or {}).items()):
                 path=None
                 if isinstance(scene_result,dict): path=scene_result.get("artifact_path")
                 else: path=getattr(scene_result,"artifact_path",None)
