@@ -85,13 +85,33 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: 1.1.34
+          bun-version: 1.3.14
       - name: Install deps
         working-directory: web
-        # --frozen-lockfile asserts that web/bun.lock already matches
-        # package.json and fails loudly otherwise, so CI installs exactly the
-        # committed resolution. The lockfile was stale on main (its overrides
-        # no longer matched package.json) and is regenerated in this branch.
+        # --frozen-lockfile makes this a real assertion: it fails if
+        # web/bun.lock does not already satisfy package.json, so CI installs
+        # exactly the committed resolution and nothing else.
+        #
+        # That is only true at the bun version pinned above, and the lockfile
+        # format is what makes it true. web/bun.lock is lockfileVersion 1
+        # because that is the newest format bun 1.3.14 writes. The lock was
+        # briefly regenerated into lockfileVersion 3, which no 1.x bun before
+        # 1.4 can parse: 1.1.34 then ignores bun.lock entirely and falls back
+        # to web/package-lock.json, and 1.2/1.3 fail with "Unknown lockfile
+        # version". Both outcomes make this step pass without reading the
+        # lock, so the assertion silently stopped meaning anything. Verified by
+        # pinning vitest to 99.99.99 inside the lock: 1.1.34 installed clean,
+        # 1.3.14 fails with a 404 on the tarball.
+        #
+        # Do NOT raise the pin to 1.4.x without also passing
+        # --linker=isolated. 1.4.0 regressed into refusing the
+        # file:../packages/* workspace deps (oven-sh/bun#40561) on Linux as
+        # well as Windows; --linker=isolated works around it but changes
+        # node_modules layout, so it is a worse trade than staying on 1.3.14.
+        #
+        # web/package-lock.json is deliberately kept and is unrelated to this
+        # step: ci.yml and a11y.yml run `npm ci` against it for the a11y job.
+        # bun never reads it now that the lock is v1.
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Run vitest (StudioConsole component)
         working-directory: web
@@ -102,7 +122,7 @@ jobs:
         #
         # Do NOT add `--bun` here. vite@8.2.2 does
         # `import { parseEnv } from "node:util"`, and util.parseEnv is a
-        # Node >= 20.12 API that Bun 1.1.34 (the version pinned above) does not
+        # Node >= 20.12 API that Bun 1.3.14 (the version pinned above) does not
         # implement, so forcing the vitest process onto Bun's runtime dies at
         # startup with "Export named 'parseEnv' not found in module 'util'".
         # Plain `bunx` runs vitest on Node, where the import resolves.
@@ -119,12 +139,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: 1.1.34
+          bun-version: 1.3.14
       - name: Install deps
         working-directory: desktop
-        # Same assertion as the web job above. desktop/bun.lock pinned
-        # electrobun 1.18.1 while package.json asks for ^2.0.1, so it was
-        # stale on main too; it is regenerated in this branch.
+        # Same assertion as the web job above, and this one was already
+        # genuine: desktop/bun.lock is lockfileVersion 1, which bun 1.1.34
+        # parses. Confirmed by pinning electrobun to 99.99.99 in the lock,
+        # which fails the install with a 404.
+        #
+        # The lock was stale on main (electrobun 1.18.1 against a package.json
+        # asking for ^2.0.1) and is regenerated in this branch.
         run: bun install --frozen-lockfile --ignore-scripts
       - name: Run bun test (renderBinary helper)
         working-directory: desktop
