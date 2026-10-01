@@ -199,6 +199,8 @@ class Ledger:
         if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone():
             raise RuntimeError("unknown acceptance policy")
         if collection_state not in ('rejected','failed'): raise ValueError(collection_state)
+        if not self.db.execute("SELECT 1 FROM render_attempt WHERE id=?",(attempt,)).fetchone():
+            raise RuntimeError("unknown render attempt")
         with self.db:
             self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,policy_revision,collection_state,created_at) VALUES(?,?,?,?,?,?)",(attempt,verifier,artifact_sha,policy_revision,collection_state,time.time()))
 
