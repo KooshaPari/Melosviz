@@ -252,8 +252,8 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "078720bbff37c16cf7f7449396e5ab2f15fda248",
-    "status": "EXPANDED_POLICY_AND_INTEGRITY_CONTROLS__AWAITING_RUN",
+    "head": "0fdc6a1436afb79867a1e93a15dc64ff620a6bb2",
+    "status": "BEHAVIORAL_RED_REPAIRED_AND_DIAGNOSTIC_EXPANDED",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
       "R1 close/reopen R2",
@@ -280,9 +280,10 @@
     ],
     "workflow_run": 36821171954,
     "latest_repairs": [
-      "pathless symbolic artifact cannot qualify for reuse",
-      "fixtures use concrete content-addressed bytes",
-      "malformed failed-verifier test block repaired"
+      "acceptance requires intact concrete bytes at acceptance time",
+      "wrong-digest/pre-execution fixtures use concrete bytes",
+      "failed evidence requires known attempt",
+      "full per-test traceback enabled"
     ],
     "policy_revision": {
       "evidence_binds_policy": true,
@@ -293,14 +294,15 @@
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "925fda9b158b12f8ddfdbc05b4b30ac0633b0689",
+    "policy_head": "55e9358ffd331382545a7874b19e4975310fdcd9",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
       "R2 final digest differs from R1 after S2 edit",
       "post-success final media corruption is non-green",
-      "selective R2 leaves unselected S0 bytes unchanged"
+      "selective R2 leaves unselected S0 bytes unchanged",
+      "exact repeated R2 produces no scene work and identical final digest"
     ],
-    "status": "TRIGGER_REPAIRED__AWAITING_RECEIPT"
+    "status": "INDEPENDENT_POLICY_EXPANDED_PENDING_RECEIPT"
   }
 }
