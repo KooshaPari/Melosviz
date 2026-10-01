@@ -108,7 +108,16 @@ def main():
         a3=probe(assembly)
         assert a3["sha256"]==a2["sha256"],(a2,a3)
         result["checks"]["r2_repeat_is_media_idempotent"]=True
-        result["observations"]={"r1_scenes":scene_obs,"r1_assembly":a1,"r2_assembly":a2}
+        result["observations"]={
+            "r1_scenes":scene_obs,
+            "r1_assembly":a1,
+            "r2_assembly":a2,
+            "promotion_receipt":{
+                "project_revision":"R2",
+                "scene_artifacts":[{"scene_index":i,"sha256":o["sha256"],"verifier":"reviewer-m-e02:v1"} for i,o in enumerate(scene_obs)],
+                "final_artifact":{"sha256":a2["sha256"],"verifier":"reviewer-m-e02:v1"},
+            },
+        }
         # Wrong selector must fail before claiming product output.
         env=os.environ.copy();env["PYTHONPATH"]=str(candidate/"backend")
         bad=run([sys.executable,"-m","melosviz.cli.main","generate",str(w),"--storyboard",str(sb),"--out",str(root/"bad"),"--only-scenes","99"],cwd=candidate,env=env)
