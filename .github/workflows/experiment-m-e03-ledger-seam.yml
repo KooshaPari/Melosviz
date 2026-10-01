@@ -8,7 +8,7 @@ on:
       - "backend/src/melosviz/project_ledger.py"
       - "backend/tests/test_project_ledger.py"
       - "backend/src/melosviz/conductor/revision_bound.py"
-      - "backend/tests/conductor/test_revision_bound.py backend/tests/test_reviewer_promotion.py"
+      - "backend/tests/conductor/test_revision_bound.py"
       - "backend/src/melosviz/reviewer_promotion.py"
       - "backend/tests/test_reviewer_promotion.py"
       - ".github/workflows/experiment-m-e03-ledger-seam.yml"
