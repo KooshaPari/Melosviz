@@ -101,8 +101,15 @@ class ProjectLedger:
 
     def record_evidence(self,attempt_id:int,kind:str,artifact_sha256:str,verifier:str,state:str):
         if state not in {"accepted","rejected","failed"}: raise ValueError(state)
-        if not self.db.execute("SELECT 1 FROM render_attempt WHERE id=?",(attempt_id,)).fetchone():
-            raise KeyError(attempt_id)
+        row=self.db.execute("SELECT state,spec_sha256 FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
+        if not row: raise KeyError(attempt_id)
+        if state=="accepted" and row[0]!="completed":
+            raise RuntimeError("accepted evidence requires completed render attempt")
+        if not artifact_sha256 or len(artifact_sha256)!=64:
+            raise ValueError("artifact digest must be sha256 hex")
+        try: int(artifact_sha256,16)
+        except ValueError as exc: raise ValueError("artifact digest must be sha256 hex") from exc
+        if not verifier.strip(): raise ValueError("verifier identity required")
         with self.db:
             self.db.execute("INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",(attempt_id,kind,artifact_sha256,verifier,state,time.time()))
 
