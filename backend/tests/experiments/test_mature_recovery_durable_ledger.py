@@ -19,6 +19,7 @@ def accepted(l,pid,rev,sid,artifact):
 
 def test_r1_restart_r2_selective_reuse_and_immutable_history(tmp_path):
     db=tmp_path/"state.sqlite"; l=m.Ledger(db); l.create_project("P")
+    policy=l.add_policy({"verifier":"oracle:v1"})
     r1=l.author_revision("P",scenes())
     a1=accepted(l,"P",r1,"S1","A1"); a2=accepted(l,"P",r1,"S2","A2"); a3=accepted(l,"P",r1,"S3","A3")
     asm1=l.freeze_assembly("P",r1); l.close()
@@ -39,7 +40,7 @@ def test_r1_restart_r2_selective_reuse_and_immutable_history(tmp_path):
     l.close()
 
 def test_execution_cannot_self_accept_and_wrong_digest_evidence_fails(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,"GOOD")
     try: l.accept(a,"oracle","WRONG")
     except RuntimeError: pass
@@ -149,3 +150,17 @@ def test_assembly_execution_cannot_self_accept_and_digest_must_match(tmp_path):
     else: raise AssertionError("wrong final digest accepted")
     l.accept_assembly(asm,"FINAL")
     assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
+
+
+def test_policy_revision_is_explicit_and_old_receipts_are_not_rewritten(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P")
+    p1=l.add_policy({"verifier":"oracle:v1","decode":True})
+    r1=l.author_revision("P",scenes())
+    a=accepted(l,"P",r1,"S1","A1")
+    r2=l.author_revision("P",scenes(),parent=r1)
+    assert l.reusable(a,"P",r2,"S1",p1)
+    before=l.db.execute("SELECT policy_revision FROM reuse_receipt WHERE project_revision=? AND scene_id='S1'",(r2,)).fetchone()
+    p2=l.add_policy({"verifier":"oracle:v2","decode":True,"nonce":True})
+    assert p2==p1+1
+    assert before==(p1,)
+    assert l.db.execute("SELECT policy_revision FROM reuse_receipt WHERE project_revision=? AND scene_id='S1'",(r2,)).fetchone()==(p1,)
