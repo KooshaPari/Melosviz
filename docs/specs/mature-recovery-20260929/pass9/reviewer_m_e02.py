@@ -113,7 +113,7 @@ def main():
             "r1_assembly":a1,
             "r2_assembly":a2,
             "promotion_receipt":{
-                "project_revision":"R2",
+                "project_revision":2,
                 "scene_artifacts":[{"scene_index":i,"sha256":o["sha256"],"verifier":"reviewer-m-e02:v1"} for i,o in enumerate(scene_obs)],
                 "final_artifact":{"sha256":a2["sha256"],"verifier":"reviewer-m-e02:v1"},
             },
