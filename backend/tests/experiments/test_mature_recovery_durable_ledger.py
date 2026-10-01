@@ -112,10 +112,15 @@ def test_corruption_after_reuse_receipt_blocks_assembly_freeze(tmp_path):
 
 def test_failed_verifier_is_durable_but_never_reusable(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
-    path=tmp_path/"bad.bin"; path.write_bytes(b"BAD"); sha=m.hashlib.sha256(b"BAD").hexdigest()\n    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(path))\n    l.record_failed_evidence(a,"oracle:v1",sha,"failed")
+    path=tmp_path/"bad.bin"
+    path.write_bytes(b"BAD")
+    sha=m.hashlib.sha256(b"BAD").hexdigest()
+    a=l.queue("P",r,"S1")
+    assert l.claim(a,"w")
+    l.execute(a,sha,str(path))
+    l.record_failed_evidence(a,"oracle:v1",sha,"failed")
     assert l.db.execute("SELECT collection_state FROM evidence WHERE attempt_id=?",(a,)).fetchone()==("failed",)
     assert not l.reusable(a,"P",r,"S1")
-
 
 def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
