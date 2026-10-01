@@ -287,10 +287,10 @@
     "status": "PROMOTION_RECEIPT_SCHEMA_ADDED"
   },
   "M_E03": {
-    "status": "REVIEWER_RECEIPT_TO_LEDGER_PROMOTION_ACTIVE",
+    "status": "REVIEWER_PROMOTION_SEAM_REPAIRED_REQUEUED",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "bfb30af75d6d653b81ee6fca7ed87b54d2201d8f",
+    "head": "0b1e89192ab457b6492304fffb09ce5279cc8647",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -336,6 +336,14 @@
       "main_ci": 36899758029,
       "studio_pipeline": 36899757991,
       "status": "ASSEMBLY_EXECUTION_ACCEPTANCE_SEPARATION_PASS"
-    }
+    },
+    "prior_red": {
+      "head": "bfb30af75d6d653b81ee6fca7ed87b54d2201d8f",
+      "run": 36910611523,
+      "artifact_digest": "sha256:24bf2aade3383e6789b134866578be16d91803950e0f174a59fce2d09dd9f175",
+      "classification": "TEST_COMPATIBILITY_REGRESSION",
+      "detail": "legacy fake Orchestrator results omitted per_scene_results; new observation loop assumed field present"
+    },
+    "latest_repair": "scene observation loop treats absent per_scene_results as empty while preserving real-result hashing when present"
   }
 }
