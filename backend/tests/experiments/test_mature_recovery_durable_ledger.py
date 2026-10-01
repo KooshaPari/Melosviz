@@ -48,7 +48,7 @@ def test_execution_cannot_self_accept_and_wrong_digest_evidence_fails(tmp_path):
     assert not l.reusable(a,"P",r,"S1")
 
 def test_only_one_live_claimable_attempt_per_scene(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     a=l.queue("P",r,"S1")
     try: l.queue("P",r,"S1")
     except m.sqlite3.IntegrityError: pass
@@ -56,7 +56,7 @@ def test_only_one_live_claimable_attempt_per_scene(tmp_path):
     assert l.claim(a,"w1"); assert not l.claim(a,"w2")
 
 def test_assembly_refuses_missing_acceptance(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     accepted(l,"P",r,"S1","A1"); accepted(l,"P",r,"S2","A2")
     try: l.freeze_assembly("P",r)
     except RuntimeError as e: assert "S3" in str(e)
@@ -64,7 +64,7 @@ def test_assembly_refuses_missing_acceptance(tmp_path):
 
 
 def test_stale_lease_recovery_is_time_bounded(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     a=l.queue("P",r,"S1"); assert l.claim(a,"dead-worker",ttl=30)
     expiry=l.db.execute("SELECT lease_expires FROM render_attempt WHERE id=?",(a,)).fetchone()[0]
     assert l.recover_expired_leases(expiry-1)==0
@@ -74,7 +74,7 @@ def test_stale_lease_recovery_is_time_bounded(tmp_path):
 
 
 def test_revision_rows_cannot_be_rewritten_by_second_authoring(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r1=l.author_revision("P",scenes())
     original=l.db.execute("SELECT spec_sha256 FROM revision WHERE project_id='P' AND revision=?",(r1,)).fetchone()[0]
     r2=l.author_revision("P",scenes("changed"),parent=r1)
     assert r2==r1+1
@@ -82,7 +82,7 @@ def test_revision_rows_cannot_be_rewritten_by_second_authoring(tmp_path):
 
 
 def test_equal_size_replacement_and_deletion_break_reuse(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r1=l.author_revision("P",scenes())
     artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"GOOD")
     sha=m.hashlib.sha256(artifact.read_bytes()).hexdigest()
     a=l.queue("P",r1,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(artifact)); l.accept(a,"oracle",sha)
@@ -94,7 +94,7 @@ def test_equal_size_replacement_and_deletion_break_reuse(tmp_path):
 
 
 def test_corruption_after_reuse_receipt_blocks_assembly_freeze(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r1=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r1=l.author_revision("P",scenes())
     artifact=tmp_path/"s1.bin"; artifact.write_bytes(b"GOOD"); sha=m.hashlib.sha256(b"GOOD").hexdigest()
     a=l.queue("P",r1,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(artifact)); l.accept(a,"oracle",sha)
     # Other scenes can be symbolic in this isolated metadata experiment.
@@ -112,7 +112,7 @@ def test_corruption_after_reuse_receipt_blocks_assembly_freeze(tmp_path):
 
 
 def test_failed_verifier_is_durable_but_never_reusable(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     path=tmp_path/"bad.bin"
     path.write_bytes(b"BAD")
     sha=m.hashlib.sha256(b"BAD").hexdigest()
@@ -124,7 +124,7 @@ def test_failed_verifier_is_durable_but_never_reusable(tmp_path):
     assert not l.reusable(a,"P",r,"S1")
 
 def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     a=l.queue("P",r,"S1")
     try: l.accept(a,"oracle","A1")
     except RuntimeError: pass
@@ -136,7 +136,7 @@ def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
 
 
 def test_assembly_execution_cannot_self_accept_and_digest_must_match(tmp_path):
-    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); r=l.author_revision("P",scenes())
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
     accepted(l,"P",r,"S1","A1"); accepted(l,"P",r,"S2","A2"); accepted(l,"P",r,"S3","A3")
     asm=l.freeze_assembly("P",r)
     assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",)
