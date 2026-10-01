@@ -162,3 +162,21 @@ def test_independent_verifier_can_promote_only_observed_scene_digest(tmp_path,mo
     else:raise AssertionError("unobserved digest promoted")
     l.promote_scene_evidence(out.project_attempt_id,digest,"reviewer:v1")
     assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND artifact_sha256=? AND state='accepted'",(out.project_attempt_id,digest)).fetchone()==(1,)
+
+
+def test_assembly_requires_full_persisted_scene_denominator(tmp_path):
+    from melosviz.analysis.models import RenderSpec
+    l=ProjectLedger(tmp_path/"p.sqlite")
+    spec=RenderSpec(scene_segments=[
+      {"scene_index":0,"scene_type":"fixture"},
+      {"scene_index":1,"scene_type":"fixture"},
+    ])
+    r=l.commit("P",spec); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    d0="a"*64; d1="b"*64
+    l.record_evidence(a,"scene",d0,"reviewer","accepted")
+    l.record_evidence(a,"scene",d1,"reviewer","accepted")
+    try:l.freeze_assembly(a,[(0,d0)])
+    except RuntimeError as e: assert "denominator" in str(e)
+    else:raise AssertionError("partial storyboard froze assembly")
+    asm=l.freeze_assembly(a,[(0,d0),(1,d1)])
+    assert asm>0
