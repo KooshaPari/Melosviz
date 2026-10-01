@@ -58,11 +58,13 @@ jobs:
           }
           # grep must not be allowed to fail the step: mutmut missing from the
           # dev group is the case the diagnostic below exists to report, and
-          # under pipefail a bare `grep` returning 1 would abort here with no
-          # ::error:: and no context. Tolerant grep, strict everything else.
+          # under pipefail a bare `grep` returning 1 aborts this step right
+          # here with no ::error:: and no context. Verified: with the
+          # `|| true` removed, the pipeline below exits 1 and the next command
+          # never runs. Tolerant grep, strict everything else.
           MUTMUT_VERSION="$(printf '%s\n' "$EXPORT_OUT" | { grep -E '^mutmut==' || true; } | cut -d'=' -f3 | tr -d '[:space:]\\')"
           test -n "$MUTMUT_VERSION" || {
-            echo "::error::could not read the locked mutmut version from uv.lock (uv export failed or mutmut is gone from the dev group)"
+            echo "::error::could not read the locked mutmut version from backend/uv.lock (mutmut is no longer declared in the dev group)"
             printf '%s\n' "$EXPORT_OUT" | tail -20 >&2
             exit 1
           }

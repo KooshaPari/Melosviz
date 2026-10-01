@@ -87,7 +87,13 @@ for wf in "${WORKFLOWS[@]}"; do
   # \+ is not portable inside a sed bracket across BSD/GNU sed, so spell the
   # digits out twice.
   c="$(sed -n 's/.*-gt \([0-9][0-9]*\).*/\1/p' "$WF_DIR/$wf" | tail -n 1)"
-  [[ -z "$c" ]] && continue
+  # A workflow that has lost its `-gt` guard must not be skipped silently: the
+  # other workflows still supply a reference cap, so continuing here would let
+  # the shared guard cases pass while this file publishes an uncapped pattern.
+  if [[ -z "$c" ]]; then
+    bad "$wf defines no length cap (no -gt <n> found)"
+    continue
+  fi
   if [[ -z "$cap" ]]; then
     cap="$c"
     note "  reference cap: $cap (from $wf)"
