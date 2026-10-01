@@ -19,5 +19,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with: {python-version: "3.11"}
       - run: python -m pip install pytest
+      - name: Syntax gate
+        run: |
+          python -m py_compile backend/experiments/mature_recovery_durable_ledger.py
+          python -m py_compile backend/tests/experiments/test_mature_recovery_durable_ledger.py
       - name: Durable state adversarial controls
         run: pytest -q backend/tests/experiments/test_mature_recovery_durable_ledger.py
