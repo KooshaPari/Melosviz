@@ -101,3 +101,15 @@ def test_accepted_evidence_requires_completed_attempt_valid_digest_and_verifier(
         else:raise AssertionError((digest,verifier))
     l.record_evidence(a,"scene",good,"reviewer:v1","accepted")
     assert l.db.execute("SELECT state FROM attempt_evidence").fetchone()==("accepted",)
+
+
+def test_assembly_rejects_unaccepted_or_duplicate_scene_inputs(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    d="b"*64
+    try:l.freeze_assembly(a,[(0,d)])
+    except RuntimeError as e: assert "accepted evidence" in str(e)
+    else:raise AssertionError("unaccepted scene entered assembly")
+    l.record_evidence(a,"scene",d,"reviewer:v1","accepted")
+    try:l.freeze_assembly(a,[(0,d),(0,d)])
+    except RuntimeError as e: assert "duplicate" in str(e)
+    else:raise AssertionError("duplicate scene identity entered assembly")
