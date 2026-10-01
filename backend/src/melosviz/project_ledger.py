@@ -36,6 +36,22 @@ CREATE TABLE IF NOT EXISTS render_attempt(
 );
 CREATE INDEX IF NOT EXISTS render_attempt_revision_idx
 ON render_attempt(project_id,project_revision);
+CREATE TABLE IF NOT EXISTS attempt_evidence(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ attempt_id INTEGER NOT NULL REFERENCES render_attempt(id),
+ kind TEXT NOT NULL,
+ artifact_sha256 TEXT NOT NULL,
+ verifier TEXT NOT NULL,
+ state TEXT NOT NULL CHECK(state IN ('accepted','rejected','failed')),
+ created_at REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS assembly_attempt(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ render_attempt_id INTEGER NOT NULL REFERENCES render_attempt(id),
+ ordered_inputs_json TEXT NOT NULL,
+ state TEXT NOT NULL CHECK(state IN ('frozen','completed','accepted','failed')),
+ artifact_sha256 TEXT
+);
 """
 
 def canonical_spec(spec:RenderSpec)->tuple[str,str]:
@@ -82,6 +98,22 @@ class ProjectLedger:
         with self.db:
             cur=self.db.execute("UPDATE render_attempt SET state='failed',completed_at=? WHERE id=? AND state='running'",(time.time(),attempt_id))
             if cur.rowcount!=1: raise RuntimeError("attempt not running")
+
+    def record_evidence(self,attempt_id:int,kind:str,artifact_sha256:str,verifier:str,state:str):
+        if state not in {"accepted","rejected","failed"}: raise ValueError(state)
+        if not self.db.execute("SELECT 1 FROM render_attempt WHERE id=?",(attempt_id,)).fetchone():
+            raise KeyError(attempt_id)
+        with self.db:
+            self.db.execute("INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",(attempt_id,kind,artifact_sha256,verifier,state,time.time()))
+
+    def freeze_assembly(self,attempt_id:int,ordered_inputs:list[tuple[int,str]])->int:
+        row=self.db.execute("SELECT state FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
+        if row != ("completed",): raise RuntimeError("render attempt not completed")
+        if not ordered_inputs: raise RuntimeError("assembly input denominator empty")
+        raw=json.dumps(ordered_inputs,separators=(",",":"))
+        with self.db:
+            cur=self.db.execute("INSERT INTO assembly_attempt(render_attempt_id,ordered_inputs_json,state) VALUES(?,?,'frozen')",(attempt_id,raw))
+        return cur.lastrowid
 
     def latest_revision(self,project_id:str)->int|None:
         row=self.db.execute("SELECT MAX(revision) FROM project_revision WHERE project_id=?",(project_id,)).fetchone()
