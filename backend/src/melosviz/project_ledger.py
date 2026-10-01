@@ -113,6 +113,14 @@ class ProjectLedger:
         with self.db:
             self.db.execute("INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",(attempt_id,kind,artifact_sha256,verifier,state,time.time()))
 
+    def promote_scene_evidence(self,attempt_id:int,artifact_sha256:str,verifier:str):
+        observed=self.db.execute(
+            "SELECT 1 FROM attempt_evidence WHERE attempt_id=? AND kind='scene' AND artifact_sha256=? AND state='rejected'",
+            (attempt_id,artifact_sha256),
+        ).fetchone()
+        if not observed: raise RuntimeError("no candidate observation for scene artifact")
+        self.record_evidence(attempt_id,"scene",artifact_sha256,verifier,"accepted")
+
     def freeze_assembly(self,attempt_id:int,ordered_inputs:list[tuple[int,str]])->int:
         row=self.db.execute("SELECT state FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
         if row != ("completed",): raise RuntimeError("render attempt not completed")
