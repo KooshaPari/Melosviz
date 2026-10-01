@@ -24,7 +24,21 @@ jobs:
           python -m py_compile backend/experiments/mature_recovery_durable_ledger.py
           python -m py_compile backend/tests/experiments/test_mature_recovery_durable_ledger.py
       - name: Durable state adversarial controls
-        run: pytest -vv --tb=long backend/tests/experiments/test_mature_recovery_durable_ledger.py
+        id: pytest
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pytest -vv --tb=long backend/tests/experiments/test_mature_recovery_durable_ledger.py 2>&1 | tee durable-ledger-pytest.txt
+      - name: Upload behavioral failure receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: durable-ledger-pytest
+          path: durable-ledger-pytest.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Require behavioral pass
+        run: test "${{ steps.pytest.outcome }}" = success
       - name: Record SQLite runtime
         run: python - <<'PY'
           import sqlite3
