@@ -70,9 +70,10 @@ def test_attempt_evidence_and_assembly_lineage_are_bound_to_completed_attempt(tm
     monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
     out=RevisionBoundConductor(db).render_revision("P",r)
     l=ProjectLedger(db)
-    l.record_evidence(out.project_attempt_id,"scene","abc","reviewer:v1","accepted")
-    asm=l.freeze_assembly(out.project_attempt_id,[(0,"abc")])
-    assert l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",'[[0,"abc"]]')
+    digest="a"*64
+    l.record_evidence(out.project_attempt_id,"scene",digest,"reviewer:v1","accepted")
+    asm=l.freeze_assembly(out.project_attempt_id,[(0,digest)])
+    assert l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",'[[0,"'+digest+'"]]')
     assert l.db.execute("SELECT verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()==("reviewer:v1","accepted")
 
 def test_failed_or_running_attempt_cannot_freeze_assembly(tmp_path):
@@ -84,3 +85,18 @@ def test_failed_or_running_attempt_cannot_freeze_assembly(tmp_path):
     try:l.freeze_assembly(a,[(0,"abc")])
     except RuntimeError:pass
     else:raise AssertionError("failed attempt froze assembly")
+
+
+def test_accepted_evidence_requires_completed_attempt_valid_digest_and_verifier(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r)
+    good="a"*64
+    try:l.record_evidence(a,"scene",good,"reviewer:v1","accepted")
+    except RuntimeError:pass
+    else:raise AssertionError("running attempt accepted evidence")
+    l.finish_attempt(a,"J")
+    for digest,verifier in [("abc","reviewer:v1"),(good,"")]:
+        try:l.record_evidence(a,"scene",digest,verifier,"accepted")
+        except ValueError:pass
+        else:raise AssertionError((digest,verifier))
+    l.record_evidence(a,"scene",good,"reviewer:v1","accepted")
+    assert l.db.execute("SELECT state FROM attempt_evidence").fetchone()==("accepted",)
