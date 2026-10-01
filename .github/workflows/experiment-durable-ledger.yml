@@ -38,7 +38,12 @@ jobs:
           if-no-files-found: error
           retention-days: 30
       - name: Require behavioral pass
-        run: test "${{ steps.pytest.outcome }}" = success
+        if: always()
+        env:
+          PYTEST_OUTCOME: ${{ steps.pytest.outcome }}
+        run: |
+          echo "pytest outcome=$PYTEST_OUTCOME"
+          test "$PYTEST_OUTCOME" = success
       - name: Record SQLite runtime
         run: python - <<'PY'
           import sqlite3
