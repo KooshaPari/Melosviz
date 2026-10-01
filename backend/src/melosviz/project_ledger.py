@@ -128,6 +128,24 @@ class ProjectLedger:
             cur=self.db.execute("INSERT INTO assembly_attempt(render_attempt_id,ordered_inputs_json,state) VALUES(?,?,'frozen')",(attempt_id,raw))
         return cur.lastrowid
 
+    def complete_assembly(self,assembly_id:int,artifact_sha256:str):
+        if len(artifact_sha256)!=64:
+            raise ValueError("assembly artifact digest must be sha256")
+        try: int(artifact_sha256,16)
+        except ValueError as exc: raise ValueError("assembly artifact digest must be sha256") from exc
+        with self.db:
+            cur=self.db.execute("UPDATE assembly_attempt SET state='completed',artifact_sha256=? WHERE id=? AND state='frozen'",(artifact_sha256,assembly_id))
+            if cur.rowcount!=1: raise RuntimeError("assembly not frozen")
+
+    def accept_assembly(self,assembly_id:int,artifact_sha256:str,verifier:str):
+        row=self.db.execute("SELECT state,artifact_sha256,render_attempt_id FROM assembly_attempt WHERE id=?",(assembly_id,)).fetchone()
+        if not row or row[:2] != ("completed",artifact_sha256):
+            raise RuntimeError("assembly acceptance does not bind completed artifact")
+        if not verifier.strip(): raise ValueError("verifier identity required")
+        with self.db:
+            self.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=?",(assembly_id,))
+            self.db.execute("INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",(row[2],"assembly",artifact_sha256,verifier,"accepted",time.time()))
+
     def latest_revision(self,project_id:str)->int|None:
         row=self.db.execute("SELECT MAX(revision) FROM project_revision WHERE project_id=?",(project_id,)).fetchone()
         return row[0] if row and row[0] is not None else None
