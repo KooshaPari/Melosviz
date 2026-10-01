@@ -23,6 +23,19 @@ CREATE TABLE IF NOT EXISTS project_revision(
  created_at REAL NOT NULL,
  PRIMARY KEY(project_id,revision)
 );
+CREATE TABLE IF NOT EXISTS render_attempt(
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ project_id TEXT NOT NULL,
+ project_revision INTEGER NOT NULL,
+ spec_sha256 TEXT NOT NULL,
+ state TEXT NOT NULL CHECK(state IN ('running','completed','failed')),
+ job_id TEXT,
+ started_at REAL NOT NULL,
+ completed_at REAL,
+ FOREIGN KEY(project_id,project_revision) REFERENCES project_revision(project_id,revision)
+);
+CREATE INDEX IF NOT EXISTS render_attempt_revision_idx
+ON render_attempt(project_id,project_revision);
 """
 
 def canonical_spec(spec:RenderSpec)->tuple[str,str]:
