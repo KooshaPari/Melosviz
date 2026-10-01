@@ -52,8 +52,15 @@ jobs:
           # yielding an empty string that surfaces much later as the
           # unrelated-looking "could not read the locked mutmut version".
           set -o pipefail
-          EXPORT_OUT="$(uv export --locked --only-group dev --no-hashes)"
-          MUTMUT_VERSION="$(printf '%s\n' "$EXPORT_OUT" | grep -E '^mutmut==' | cut -d'=' -f3 | tr -d '[:space:]\\')"
+          EXPORT_OUT="$(uv export --locked --only-group dev --no-hashes)" || {
+            echo "::error::uv export failed: backend/uv.lock no longer satisfies backend/pyproject.toml, or the dev group is gone" >&2
+            exit 1
+          }
+          # grep must not be allowed to fail the step: mutmut missing from the
+          # dev group is the case the diagnostic below exists to report, and
+          # under pipefail a bare `grep` returning 1 would abort here with no
+          # ::error:: and no context. Tolerant grep, strict everything else.
+          MUTMUT_VERSION="$(printf '%s\n' "$EXPORT_OUT" | { grep -E '^mutmut==' || true; } | cut -d'=' -f3 | tr -d '[:space:]\\')"
           test -n "$MUTMUT_VERSION" || {
             echo "::error::could not read the locked mutmut version from uv.lock (uv export failed or mutmut is gone from the dev group)"
             printf '%s\n' "$EXPORT_OUT" | tail -20 >&2
