@@ -53,6 +53,23 @@ class ProjectLedger:
         raw,expected=row
         if hashlib.sha256(raw.encode()).hexdigest()!=expected: raise RuntimeError("stored RenderSpec digest mismatch")
         return RenderSpec.model_validate_json(raw)
+    def start_attempt(self,project_id:str,revision:int)->int:
+        row=self.db.execute("SELECT spec_sha256 FROM project_revision WHERE project_id=? AND revision=?",(project_id,revision)).fetchone()
+        if not row: raise KeyError((project_id,revision))
+        with self.db:
+            cur=self.db.execute("INSERT INTO render_attempt(project_id,project_revision,spec_sha256,state,started_at) VALUES(?,?,?,'running',?)",(project_id,revision,row[0],time.time()))
+        return cur.lastrowid
+
+    def finish_attempt(self,attempt_id:int,job_id:str|None):
+        with self.db:
+            cur=self.db.execute("UPDATE render_attempt SET state='completed',job_id=?,completed_at=? WHERE id=? AND state='running'",(job_id,time.time(),attempt_id))
+            if cur.rowcount!=1: raise RuntimeError("attempt not running")
+
+    def fail_attempt(self,attempt_id:int):
+        with self.db:
+            cur=self.db.execute("UPDATE render_attempt SET state='failed',completed_at=? WHERE id=? AND state='running'",(time.time(),attempt_id))
+            if cur.rowcount!=1: raise RuntimeError("attempt not running")
+
     def latest_revision(self,project_id:str)->int|None:
         row=self.db.execute("SELECT MAX(revision) FROM project_revision WHERE project_id=?",(project_id,)).fetchone()
         return row[0] if row and row[0] is not None else None
