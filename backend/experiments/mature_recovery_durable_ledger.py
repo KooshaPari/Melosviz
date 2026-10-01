@@ -96,6 +96,13 @@ class Ledger:
 
     def close(self): self.db.close()
 
+    def integrity_check(self)->bool:
+        return self.db.execute("PRAGMA integrity_check").fetchone()==("ok",)
+
+    def sqlite_version(self)->tuple[int,...]:
+        return tuple(int(x) for x in sqlite3.sqlite_version.split("."))
+
+
     def add_policy(self,policy:dict)->int:
         rev=self.db.execute("SELECT COALESCE(MAX(revision),0)+1 FROM acceptance_policy").fetchone()[0]
         with self.db:
