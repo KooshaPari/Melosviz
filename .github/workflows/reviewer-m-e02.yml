@@ -34,6 +34,7 @@ jobs:
       - name: Compile reviewer policy
         run: python -m py_compile reviewer/docs/specs/mature-recovery-20260929/pass9/reviewer_m_e02.py
       - name: Reviewer-owned mounted grade
+        id: reviewer
         run: python reviewer/docs/specs/mature-recovery-20260929/pass9/reviewer_m_e02.py --candidate candidate --expected-sha "$CANDIDATE_SHA" --out reviewer-m-e02.json
       - name: Upload raw reviewer receipt
         if: always()
