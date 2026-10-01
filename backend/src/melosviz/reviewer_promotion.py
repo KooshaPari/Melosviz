@@ -13,6 +13,8 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     receipt=json.loads(Path(receipt_path).read_text())
     if not str(receipt.get("verdict","")).startswith("PASS"):
         raise RuntimeError("reviewer receipt is not passing")
+    candidate=receipt.get("candidate")
+    if not candidate: raise RuntimeError("reviewer receipt lacks candidate identity")
     promotion=(receipt.get("observations") or {}).get("promotion_receipt") or {}
     scenes=promotion.get("scene_artifacts") or []
     final=promotion.get("final_artifact") or {}
