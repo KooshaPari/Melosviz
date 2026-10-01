@@ -190,3 +190,14 @@ def test_unknown_policy_fails_closed_for_acceptance_and_reuse(tmp_path):
     l.accept(a,"oracle",sha,p1)
     r2=l.author_revision("P",scenes(),parent=r)
     assert not l.reusable(a,"P",r2,"S1",999)
+
+
+def test_database_integrity_survives_restart_and_runtime_is_identified(tmp_path):
+    db=tmp_path/"s.sqlite"; l=m.Ledger(db); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
+    accepted(l,"P",r,"S1","A1")
+    assert l.integrity_check()
+    version=l.sqlite_version(); assert len(version)>=3 and all(isinstance(x,int) for x in version)
+    l.close()
+    l=m.Ledger(db)
+    assert l.integrity_check()
+    assert l.db.execute("SELECT COUNT(*) FROM render_attempt").fetchone()==(1,)
