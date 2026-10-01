@@ -10,7 +10,7 @@ def test_reviewer_receipt_promotes_only_matching_observed_bytes(tmp_path):
     l.record_evidence(a,"scene",s,"conductor:scene:0","rejected")
     l.promote_scene_evidence(a,s,"precheck:v1")
     asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
-    receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","observations":{"promotion_receipt":{"scene_artifacts":[{"scene_index":0,"sha256":s,"verifier":"reviewer-m-e02:v1"}],"final_artifact":{"sha256":f,"verifier":"reviewer-m-e02:v1"}}}}
+    receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"candidate-sha","observations":{"promotion_receipt":{"scene_artifacts":[{"scene_index":0,"sha256":s,"verifier":"reviewer-m-e02:v1"}],"final_artifact":{"sha256":f,"verifier":"reviewer-m-e02:v1"}}}}
     p=tmp_path/"receipt.json"; p.write_text(json.dumps(receipt))
     out=apply_reviewer_receipt(db,a,p); assert out["final_sha256"]==f
     l=ProjectLedger(db); assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
