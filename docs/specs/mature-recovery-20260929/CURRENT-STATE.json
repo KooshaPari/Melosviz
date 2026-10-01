@@ -252,8 +252,8 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "0ff97741ef00270fac2c11e2c94a3f2aee31acd8",
-    "status": "POLICY_REVISION_CONTROLS_ADDED__EXACT_HEAD_QUEUED",
+    "head": "078720bbff37c16cf7f7449396e5ab2f15fda248",
+    "status": "EXPANDED_POLICY_AND_INTEGRITY_CONTROLS__AWAITING_RUN",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
       "R1 close/reopen R2",
@@ -274,14 +274,22 @@
       "reuse receipt binds policy revision",
       "new policy cannot inherit old acceptance without new evidence",
       "unknown policy fails closed",
-      "syntax gate separate from behavioral grade"
+      "syntax gate separate from behavioral grade",
+      "SQLite integrity_check survives reopen",
+      "SQLite runtime version recorded with evidence"
     ],
     "workflow_run": 36821171954,
     "latest_repairs": [
       "pathless symbolic artifact cannot qualify for reuse",
       "fixtures use concrete content-addressed bytes",
       "malformed failed-verifier test block repaired"
-    ]
+    ],
+    "policy_revision": {
+      "evidence_binds_policy": true,
+      "reuse_binds_policy": true,
+      "new_policy_requires_new_accepted_evidence": true,
+      "unknown_policy_fail_closed": true
+    }
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
