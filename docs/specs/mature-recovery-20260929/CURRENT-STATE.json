@@ -285,5 +285,27 @@
       "exact repeated R2 produces no scene work and identical final digest"
     ],
     "status": "INDEPENDENT_POLICY_EXPANDED_PENDING_RECEIPT"
+  },
+  "M_E03": {
+    "status": "STACKED_PRODUCT_LEDGER_SEAM_ACTIVE",
+    "branch": "experiment/m-e03-ledger-seam",
+    "pr": 305,
+    "head": "8fed57543bd9d9c27b93320a4c1258134f0200d1",
+    "workflow_run": 36854769275,
+    "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
+    "scope": [
+      "canonical RenderSpec immutable revisions",
+      "parent lineage",
+      "digest verification",
+      "process reopen reconstruction",
+      "R1/R2 historical preservation"
+    ],
+    "not_yet": [
+      "render attempts",
+      "evidence/reuse receipts",
+      "assembly attempts",
+      "CLI/UI persistence",
+      "M-E03 acceptance"
+    ]
   }
 }
