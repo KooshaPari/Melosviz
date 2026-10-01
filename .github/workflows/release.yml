@@ -41,10 +41,32 @@ jobs:
         # oven-sh/setup-bun v2 — SHA-pinned
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
-          bun-version: latest
+          # Pinned to the same version as studio-tests.yml. This job is the
+          # only thing that builds and ships the desktop app, and the
+          # `bun install` below (no --frozen-lockfile) resolves silently
+          # rather than failing, so an unpinned bun turns the shipped
+          # artifact's dependency versions into whatever the registry served
+          # that day. Measured on
+          # Windows against desktop/bun.lock: with electrobun pinned to
+          # 99.99.99 in the lock, bun 1.3.14 installs 2.0.1 clean from the
+          # lock while bun 1.4.2 installs 2.0.2 — the lock's resolution is
+          # only honoured at the pinned version.
+          #
+          # See the comment on the "Install desktop dependencies" step for
+          # what happens to the lockfile when the version drifts.
+          bun-version: 1.3.14
 
       - name: Install desktop dependencies
         working-directory: desktop
+        # Not --frozen-lockfile, unlike the npm-publish build, so this step
+        # CANNOT report a lockfile mismatch. That is exactly why the bun
+        # version above has to be pinned: when bun cannot parse
+        # desktop/bun.lock it does not fail, it regenerates. Measured at bun
+        # 1.3.14 with the lock's lockfileVersion set to 3: "Unknown lockfile
+        # version", "warn: Ignoring lockfile", then "Saved lockfile" and
+        # exit 0, with @types/bun floating 1.4.0 -> 1.4.2 and electrobun
+        # 2.0.1 -> 2.0.2. The release would then ship dependency floats
+        # that no committed lockfile described.
         run: bun install
 
       - name: Build desktop app (Electrobun, stable channel)
@@ -210,10 +232,17 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
-          bun-version: latest
+          # Same pin as the macOS job above and as studio-tests.yml. Same
+          # reason: this step runs plain `bun install`, which silently
+          # re-resolves instead of failing when it cannot read
+          # desktop/bun.lock.
+          bun-version: 1.3.14
 
       - name: Install desktop dependencies
         working-directory: desktop
+        # See the comment on this step in the macOS desktop job above: plain
+        # `bun install` silently regenerates an unparseable desktop/bun.lock,
+        # so the pin above is what keeps the release install reproducible.
         run: bun install
 
       - name: Build desktop app (Electrobun, stable channel)
