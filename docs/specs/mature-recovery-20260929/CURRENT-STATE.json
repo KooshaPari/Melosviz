@@ -287,10 +287,10 @@
     "status": "INDEPENDENT_POLICY_EXPANDED_PENDING_RECEIPT"
   },
   "M_E03": {
-    "status": "REVISION_BOUND_CONDUCTOR_SEAM_ACTIVE",
+    "status": "REVISION_BOUND_CONDUCTOR_PLUS_ATTEMPT_LINEAGE_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "ac8d5a4af7194f966908fcdd6df52e55cb37ceae",
+    "head": "92fb747bb7542728c647d980ac8936cef6343b6d",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -300,7 +300,10 @@
       "process reopen reconstruction",
       "R1/R2 historical preservation",
       "real conductor execution requires persisted project_id/revision",
-      "result carries project/revision/spec digest identity"
+      "result carries project/revision/spec digest identity",
+      "durable render attempt starts before conductor execution",
+      "completed/failed attempt state persisted",
+      "attempt binds project revision + spec digest + job id"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
@@ -308,6 +311,13 @@
       "CLI/UI persistence",
       "M-E03 acceptance",
       "independent M-E02 media acceptance"
-    ]
+    ],
+    "last_green": {
+      "head": "ac8d5a4af7194f966908fcdd6df52e55cb37ceae",
+      "dedicated_run": 36856642904,
+      "main_ci": 36856643064,
+      "studio_pipeline": 36856643350,
+      "status": "REVISION_BOUND_SEAM_PASS"
+    }
   }
 }
