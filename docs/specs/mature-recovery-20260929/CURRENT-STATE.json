@@ -287,10 +287,10 @@
     "status": "R2_REPEAT_HELPER_FIXED__RECEIPT_REQUIRED"
   },
   "M_E03": {
-    "status": "REAL_RESULT_OBSERVATION_NON_ACCEPTING_ACTIVE",
+    "status": "INDEPENDENT_SCENE_EVIDENCE_PROMOTION_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "48087509e4d377056bdac52451407ed7d6ffaa96",
+    "head": "681580ef66b2c0ae53cea657d9684d96da01a42e",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -315,7 +315,9 @@
       "assembly acceptance emits attempt evidence",
       "revision-bound conductor hashes concrete scene artifacts",
       "candidate-produced scene observation is persisted non-accepted",
-      "candidate cannot self-author independent acceptance"
+      "candidate cannot self-author independent acceptance",
+      "candidate hashes actual scene bytes into non-accepted observation",
+      "independent verifier may promote only exact previously observed digest"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
