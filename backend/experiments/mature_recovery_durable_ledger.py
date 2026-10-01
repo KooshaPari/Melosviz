@@ -148,6 +148,8 @@ class Ledger:
             if cur.rowcount!=1: raise RuntimeError("attempt not leased")
 
     def accept(self,attempt:int,verifier:str,artifact_sha:str,policy_revision:int=1):
+        if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone():
+            raise RuntimeError("unknown acceptance policy")
         row=self.db.execute("SELECT state,artifact_sha256 FROM render_attempt WHERE id=?",(attempt,)).fetchone()
         if not row or row != ("executed",artifact_sha): raise RuntimeError("evidence does not bind executed artifact")
         with self.db:
@@ -185,6 +187,8 @@ class Ledger:
             self.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=?",(assembly,))
 
     def record_failed_evidence(self,attempt:int,verifier:str,artifact_sha:str,collection_state:str='failed',policy_revision:int=1):
+        if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone():
+            raise RuntimeError("unknown acceptance policy")
         if collection_state not in ('rejected','failed'): raise ValueError(collection_state)
         with self.db:
             self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,policy_revision,collection_state,created_at) VALUES(?,?,?,?,?,?)",(attempt,verifier,artifact_sha,policy_revision,collection_state,time.time()))
