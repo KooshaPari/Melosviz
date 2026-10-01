@@ -73,7 +73,8 @@ def test_attempt_evidence_and_assembly_lineage_are_bound_to_completed_attempt(tm
     digest="a"*64
     l.record_evidence(out.project_attempt_id,"scene",digest,"reviewer:v1","accepted")
     asm=l.freeze_assembly(out.project_attempt_id,[(0,digest)])
-    assert l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("frozen",'[[0,"'+digest+'"]]')
+    state,raw=l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()
+    assert state=="frozen" and __import__("json").loads(raw)==[[0,digest]]
     assert l.db.execute("SELECT verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()==("reviewer:v1","accepted")
 
 def test_failed_or_running_attempt_cannot_freeze_assembly(tmp_path):
