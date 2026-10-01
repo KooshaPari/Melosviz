@@ -16,6 +16,8 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     candidate=receipt.get("candidate")
     if not candidate: raise RuntimeError("reviewer receipt lacks candidate identity")
     promotion=(receipt.get("observations") or {}).get("promotion_receipt") or {}
+    receipt_revision=promotion.get("project_revision")
+    if receipt_revision is None: raise RuntimeError("reviewer receipt lacks project revision")
     scenes=promotion.get("scene_artifacts") or []
     final=promotion.get("final_artifact") or {}
     if not scenes or not final.get("sha256"):
@@ -23,10 +25,13 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     ledger=ProjectLedger(Path(ledger_path))
     promoted=[]
     try:
-        attempt=ledger.db.execute("SELECT candidate_sha FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
+        attempt=ledger.db.execute("SELECT candidate_sha,project_revision FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
         if not attempt: raise RuntimeError("unknown render attempt")
         if attempt[0] is not None and attempt[0] != candidate:
             raise RuntimeError("reviewer candidate does not match render attempt")
+        normalized_revision=str(receipt_revision).removeprefix("R")
+        if normalized_revision != str(attempt[1]):
+            raise RuntimeError("reviewer revision does not match render attempt")
         for scene in scenes:
             digest=scene["sha256"]; verifier=scene["verifier"]
             ledger.promote_scene_evidence(attempt_id,digest,verifier)
