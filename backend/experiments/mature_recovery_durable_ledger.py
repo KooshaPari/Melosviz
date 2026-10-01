@@ -144,7 +144,7 @@ class Ledger:
         row=self.db.execute("SELECT artifact_sha256,artifact_path FROM render_attempt WHERE id=? AND state='executed'",(attempt,)).fetchone()
         if not row: return False
         expected,path=row
-        if path is None: return True  # symbolic fixture; product integration must always provide a path
+        if path is None: return False  # no concrete bytes means no reusable product artifact
         p=Path(path)
         return p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==expected
 
