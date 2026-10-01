@@ -32,7 +32,7 @@
     },
     {
       "id": "M-E02",
-      "state": "ACTIVE_REGRADING",
+      "state": "CANDIDATE_CONTROLLED_STRUCTURAL_PASS",
       "depends_on": [
         "M-E01"
       ],
@@ -54,12 +54,17 @@
         "pr": 302,
         "head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
         "workflow_run": 36766323723,
-        "status": "EXACT_HEAD_QUEUED"
-      }
+        "status": "STRUCTURAL_PASS_REVIEWER_PENDING"
+      },
+      "residual": [
+        "reviewer-owned media grade",
+        "real generative backend qualification",
+        "durable app restart integration"
+      ]
     },
     {
       "id": "M-E03",
-      "state": "BLOCKED_ON_M_E02_ACCEPTANCE",
+      "state": "BLOCKED_ON_M_E02_INDEPENDENT_ACCEPTANCE",
       "depends_on": [
         "M-E02",
         "result contract review"
@@ -82,7 +87,9 @@
       "preparatory_experiment": {
         "branch": "experiment/melosviz-durable-ledger-pass10",
         "pr": 304,
-        "head": "3317530d8a7ab5474ff836f7f86e808c72820a06",
+        "head": "799fcdfec7c9ad96a5e2535a9774ac99d5054e8b",
+        "workflow_run": 36820739135,
+        "status": "REPAIRED_REQUEUED",
         "scope": "isolated durable-state feasibility only"
       }
     },
