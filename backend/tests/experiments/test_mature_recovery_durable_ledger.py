@@ -126,15 +126,15 @@ def test_failed_verifier_is_durable_but_never_reusable(tmp_path):
 
 def test_acceptance_requires_executed_state_not_queued_or_leased(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
+    path=tmp_path/"a.bin"; path.write_bytes(b"A"); sha=m.hashlib.sha256(b"A").hexdigest()
     a=l.queue("P",r,"S1")
-    try: l.accept(a,"oracle","A1")
+    try: l.accept(a,"oracle",sha)
     except RuntimeError: pass
     else: raise AssertionError("queued attempt accepted")
     assert l.claim(a,"w")
-    try: l.accept(a,"oracle","A1")
+    try: l.accept(a,"oracle",sha)
     except RuntimeError: pass
     else: raise AssertionError("leased attempt accepted")
-
 
 def test_assembly_execution_cannot_self_accept_and_digest_must_match(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
@@ -202,3 +202,13 @@ def test_database_integrity_survives_restart_and_runtime_is_identified(tmp_path)
     l=m.Ledger(db)
     assert l.integrity_check()
     assert l.db.execute("SELECT COUNT(*) FROM render_attempt").fetchone()==(1,)
+
+
+def test_missing_or_replaced_bytes_cannot_be_accepted_even_with_matching_declared_digest(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
+    path=tmp_path/"a.bin"; path.write_bytes(b"GOOD"); sha=m.hashlib.sha256(b"GOOD").hexdigest()
+    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(path))
+    path.write_bytes(b"EVIL")
+    try: l.accept(a,"oracle",sha)
+    except RuntimeError as e: assert "concrete" in str(e)
+    else: raise AssertionError("replaced bytes accepted")
