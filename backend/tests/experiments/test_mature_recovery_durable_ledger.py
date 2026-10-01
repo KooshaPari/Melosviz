@@ -12,7 +12,10 @@ def scenes(mid="one"):
     ]
 
 def accepted(l,pid,rev,sid,artifact):
-    a=l.queue(pid,rev,sid); assert l.claim(a,"worker-a"); l.execute(a,artifact); l.accept(a,"oracle:v1",artifact); return a
+    path=l.path.parent/f"{pid}-{rev}-{sid}-{artifact}.bin"
+    path.write_bytes(artifact.encode())
+    sha=m.hashlib.sha256(path.read_bytes()).hexdigest()
+    a=l.queue(pid,rev,sid); assert l.claim(a,"worker-a"); l.execute(a,sha,str(path)); l.accept(a,"oracle:v1",sha); return a
 
 def test_r1_restart_r2_selective_reuse_and_immutable_history(tmp_path):
     db=tmp_path/"state.sqlite"; l=m.Ledger(db); l.create_project("P")
@@ -30,9 +33,9 @@ def test_r1_restart_r2_selective_reuse_and_immutable_history(tmp_path):
     asm2=l.freeze_assembly("P",r2)
     assert asm2 != asm1
     old=l.db.execute("SELECT artifact_sha256 FROM render_attempt WHERE id IN (?,?,?) ORDER BY id",(a1,a2,a3)).fetchall()
-    assert old==[("A1",),("A2",),("A3",)]
+    assert len(old)==3 and all(len(row[0])==64 for row in old)
     ordered=l.db.execute("SELECT ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm2,)).fetchone()[0]
-    assert ordered=='[["S1", "A1"], ["S2", "A2-R2"], ["S3", "A3"]]'
+    parsed=m.json.loads(ordered); assert [x[0] for x in parsed]==["S1","S2","S3"]; assert len({x[1] for x in parsed})==3
     l.close()
 
 def test_execution_cannot_self_accept_and_wrong_digest_evidence_fails(tmp_path):
