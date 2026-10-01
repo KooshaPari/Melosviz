@@ -117,6 +117,12 @@ class ProjectLedger:
         row=self.db.execute("SELECT state FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
         if row != ("completed",): raise RuntimeError("render attempt not completed")
         if not ordered_inputs: raise RuntimeError("assembly input denominator empty")
+        seen=set()
+        for scene_id,digest in ordered_inputs:
+            if scene_id in seen: raise RuntimeError("duplicate scene identity in assembly")
+            seen.add(scene_id)
+            evidence=self.db.execute("SELECT 1 FROM attempt_evidence WHERE attempt_id=? AND kind='scene' AND artifact_sha256=? AND state='accepted'",(attempt_id,digest)).fetchone()
+            if not evidence: raise RuntimeError(f"scene {scene_id} lacks accepted evidence for assembly digest")
         raw=json.dumps(ordered_inputs,separators=(",",":"))
         with self.db:
             cur=self.db.execute("INSERT INTO assembly_attempt(render_attempt_id,ordered_inputs_json,state) VALUES(?,?,'frozen')",(attempt_id,raw))
