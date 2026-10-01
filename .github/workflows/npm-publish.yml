@@ -65,25 +65,24 @@ jobs:
         run: bunx npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-# The publish-cli-frontend job was removed here rather than fixed.
-#
-# It built and published packages/cli-frontend, a directory that does not
-# exist and never has: not on this branch, not on origin/main, and no commit
-# in any reachable ref ever added it. The job therefore could not start --
-# a missing working-directory fails the step before the command runs -- so
-# every release and every workflow_dispatch of this workflow went red on a
-# path that was never going to publish anything.
-#
-# Two things rule out "just repoint it at the real directory":
-#   - desktop/package.json is `private: true` (name melosviz-desktop), as is
-#     web/package.json. Publishing either would fail on the private flag.
-#   - @melosviz/cli-frontend has never existed on the npm registry (404), and
-#     there is no consumer of it anywhere in the tree -- the only references
-#     to the string are the four lines of this job itself. So there is no
-#     package to resurrect, only a job to stop running.
-#
-# If a publishable frontend package is wanted later, it has to be added to
-# the tree first, with a non-private name and a bun lockfile, and this job
-# reintroduced pointing at it. Reinstating it now would reintroduce a
-# guaranteed-red job.
+      # The publish-cli-frontend job was removed here rather than fixed.
+      #
+      # It built and published packages/cli-frontend, a directory that does not
+      # exist and never has: not on this branch, not on origin/main, and no commit
+      # in any reachable ref ever added it. The job therefore could not start --
+      # a missing working-directory fails the step before the command runs -- so
+      # every release and every workflow_dispatch of this workflow went red on a
+      # path that was never going to publish anything.
+      #
+      # Two things rule out "just repoint it at the real directory":
+      #   - desktop/package.json is `private: true` (name melosviz-desktop), as is
+      #     web/package.json. Publishing either would fail on the private flag.
+      #   - @melosviz/cli-frontend has never existed on the npm registry (404), and
+      #     there is no consumer of it anywhere in the tree -- the only references
+      #     to the string are the four lines of this job itself. So there is no
+      #     package to resurrect, only a job to stop running.
+      #
+      # If a publishable frontend package is wanted later, it has to be added to
+      # the tree first, with a non-private name and a bun lockfile, and this job
+      # reintroduced pointing at it. Reinstating it now would reintroduce a
+      # guaranteed-red job.
