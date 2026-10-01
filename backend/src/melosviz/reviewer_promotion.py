@@ -34,10 +34,15 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
         normalized_revision=str(receipt_revision).removeprefix("R")
         if normalized_revision != str(attempt[1]):
             raise RuntimeError("reviewer revision does not match render attempt")
+        # Validate the complete receipt before mutating any acceptance state.
         for scene in scenes:
             digest=scene["sha256"]; verifier=scene["verifier"]
-            ledger.promote_scene_evidence(attempt_id,digest,verifier)
-            promoted.append(digest)
+            if not verifier.strip(): raise RuntimeError("scene verifier identity missing")
+            observed=ledger.db.execute(
+                "SELECT 1 FROM attempt_evidence WHERE attempt_id=? AND kind='scene' AND artifact_sha256=? AND state='rejected'",
+                (attempt_id,digest),
+            ).fetchone()
+            if not observed: raise RuntimeError("reviewer scene digest was not observed by candidate")
         assembly=ledger.db.execute(
             "SELECT id,artifact_sha256,state FROM assembly_attempt WHERE render_attempt_id=? ORDER BY id DESC LIMIT 1",
             (attempt_id,),
@@ -46,7 +51,21 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
             raise RuntimeError("no completed assembly for reviewer promotion")
         if assembly[1] != final["sha256"]:
             raise RuntimeError("reviewer final digest does not match completed assembly")
-        ledger.accept_assembly(assembly[0],final["sha256"],final["verifier"])
+        if not str(final.get("verifier","")).strip():
+            raise RuntimeError("final verifier identity missing")
+        with ledger.db:
+            for scene in scenes:
+                digest=scene["sha256"]; verifier=scene["verifier"]
+                ledger.db.execute(
+                    "INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",
+                    (attempt_id,"scene",digest,verifier,"accepted",__import__("time").time()),
+                )
+                promoted.append(digest)
+            ledger.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=? AND state='completed'",(assembly[0],))
+            ledger.db.execute(
+                "INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",
+                (attempt_id,"assembly",final["sha256"],final["verifier"],"accepted",__import__("time").time()),
+            )
         return {"attempt_id":attempt_id,"scene_digests":promoted,"assembly_id":assembly[0],"final_sha256":final["sha256"]}
     finally:
         ledger.close()
