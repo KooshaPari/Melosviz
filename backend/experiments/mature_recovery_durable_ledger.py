@@ -167,7 +167,9 @@ class Ledger:
             SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256)""",(source_attempt,)).fetchone()
         if not target or not source or target[0]!=source[0]: return False
         if not self.artifact_intact(source_attempt): return False
-        if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone(): return False\n        with self.db:\n            self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0],policy_revision))
+        if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone(): return False
+        with self.db:
+            self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0],policy_revision))
         return True
 
     def execute_assembly(self,assembly:int,artifact_sha:str):
