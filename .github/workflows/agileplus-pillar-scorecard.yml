@@ -10,7 +10,22 @@ permissions:
   issues: write
 
 concurrency:
-  group: agileplus-pillar-scorecard
+  # Must be scoped by ref. The previous value was the bare literal
+  # `agileplus-pillar-scorecard`, which is one repo-global group, so
+  # cancel-in-progress made this workflow cancel itself whenever any other
+  # branch pushed or opened a PR. Observed on 2026-10-01: this branch's run
+  # was cancelled by the concurrent run from docs/mature-recovery-20260929,
+  # and a moment later that one was cancelled by
+  # experiment/m-e03-ledger-seam. Neither branch had anything to do with the
+  # other; both runs died with
+  #   "Canceling since a higher priority waiting request for
+  #    agileplus-pillar-scorecard exists"
+  # rather than on any test or lint result. Every other workflow in this
+  # repo scopes its group by ${{ github.workflow }}-${{ github.ref }} for
+  # exactly this reason; this file was the sole exception. Scoping by ref
+  # keeps the intended behaviour (a new push to the same branch cancels that
+  # branch's own stale run) and stops unrelated PRs cancelling each other.
+  group: agileplus-pillar-scorecard-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
