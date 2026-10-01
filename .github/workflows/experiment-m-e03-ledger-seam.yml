@@ -21,4 +21,22 @@ jobs:
         with: {python-version: "3.11"}
       - run: python -m pip install -e "backend[test]"
       - run: python -m py_compile backend/src/melosviz/project_ledger.py backend/src/melosviz/conductor/revision_bound.py backend/tests/test_project_ledger.py backend/tests/conductor/test_revision_bound.py
-      - run: pytest -q backend/tests/test_project_ledger.py backend/tests/conductor/test_revision_bound.py
+      - name: M-E03 lineage controls
+        id: pytest
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          pytest -vv --tb=long backend/tests/test_project_ledger.py backend/tests/conductor/test_revision_bound.py 2>&1 | tee m-e03-pytest.txt
+      - name: Upload M-E03 receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: m-e03-lineage
+          path: m-e03-pytest.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Require M-E03 controls
+        if: always()
+        env:
+          PYTEST_OUTCOME: ${{ steps.pytest.outcome }}
+        run: test "$PYTEST_OUTCOME" = success
