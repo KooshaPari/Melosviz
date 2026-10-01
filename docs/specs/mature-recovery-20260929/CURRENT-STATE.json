@@ -287,10 +287,10 @@
     "status": "NUMERIC_REVISION_PROMOTION_RECEIPT"
   },
   "M_E03": {
-    "status": "ATOMIC_CANDIDATE_BOUND_REVIEWER_PROMOTION_ACTIVE",
+    "status": "ATOMIC_PROMOTION_PLUS_STORYBOARD_DENOMINATOR_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "24cc0c5e2d05529f9bfa81e9c0afa5979d3a1bde",
+    "head": "19f6531e1010b51b63d5bea02031e87ad6dd4683",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -332,7 +332,11 @@
       "reviewer promotion validates all scene/final evidence before mutation",
       "bad final digest leaves zero partial reviewer promotions",
       "attempt without candidate identity cannot be reviewer-promoted",
-      "reviewer project revision must match durable attempt revision"
+      "reviewer project revision must match durable attempt revision",
+      "reviewer scene identities must be present and unique",
+      "assembly ordered inputs must cover full persisted scene denominator",
+      "partial storyboard cannot freeze final assembly",
+      "lineage grader trigger/dispatch repaired"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
