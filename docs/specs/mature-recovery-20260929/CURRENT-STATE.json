@@ -287,10 +287,10 @@
     "status": "INDEPENDENT_POLICY_EXPANDED_PENDING_RECEIPT"
   },
   "M_E03": {
-    "status": "ATTEMPT_EVIDENCE_AND_ASSEMBLY_LINEAGE_ACTIVE",
+    "status": "ACCEPTANCE_AUTHORITY_AND_ASSEMBLY_EVIDENCE_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "ff870f1518ae73437a0a8afb859a7586a1d8ab12",
+    "head": "7df4942052885651b096c6ac0262826b8df831cc",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -306,7 +306,10 @@
       "attempt binds project revision + spec digest + job id",
       "attempt evidence rows bind verifier/kind/artifact digest",
       "assembly freeze binds ordered inputs to completed render attempt",
-      "running/failed attempt cannot freeze assembly"
+      "running/failed attempt cannot freeze assembly",
+      "accepted evidence requires completed attempt + sha256 + verifier identity",
+      "assembly inputs require accepted scene evidence",
+      "duplicate scene identity rejected before assembly freeze"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
@@ -316,11 +319,11 @@
       "independent M-E02 media acceptance"
     ],
     "last_green": {
-      "head": "92fb747bb7542728c647d980ac8936cef6343b6d",
-      "dedicated_run": 36870784682,
-      "main_ci": 36870784652,
-      "studio_pipeline": 36870784514,
-      "status": "REVISION_BOUND_ATTEMPT_LINEAGE_PASS"
+      "head": "ff870f1518ae73437a0a8afb859a7586a1d8ab12",
+      "dedicated_run": 36874338523,
+      "main_ci": 36874337752,
+      "studio_pipeline": 36874337394,
+      "status": "ATTEMPT_EVIDENCE_AND_ASSEMBLY_LINEAGE_PASS"
     }
   }
 }
