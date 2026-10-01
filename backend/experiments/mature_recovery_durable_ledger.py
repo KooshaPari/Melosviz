@@ -48,6 +48,11 @@ CREATE TABLE IF NOT EXISTS render_attempt(
 CREATE UNIQUE INDEX IF NOT EXISTS one_live_attempt
 ON render_attempt(project_id, project_revision, scene_id)
 WHERE state IN ('queued','leased');
+CREATE TABLE IF NOT EXISTS acceptance_policy(
+ revision INTEGER PRIMARY KEY,
+ policy_sha256 TEXT NOT NULL,
+ created_at REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS evidence(
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  attempt_id INTEGER NOT NULL REFERENCES render_attempt(id),
@@ -55,11 +60,6 @@ CREATE TABLE IF NOT EXISTS evidence(
  artifact_sha256 TEXT NOT NULL,
  policy_revision INTEGER NOT NULL REFERENCES acceptance_policy(revision),
  collection_state TEXT NOT NULL CHECK(collection_state IN ('accepted','rejected','failed')),
- created_at REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS acceptance_policy(
- revision INTEGER PRIMARY KEY,
- policy_sha256 TEXT NOT NULL,
  created_at REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS reuse_receipt(
