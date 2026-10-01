@@ -164,3 +164,15 @@ def test_policy_revision_is_explicit_and_old_receipts_are_not_rewritten(tmp_path
     assert p2==p1+1
     assert before==(p1,)
     assert l.db.execute("SELECT policy_revision FROM reuse_receipt WHERE project_revision=? AND scene_id='S1'",(r2,)).fetchone()==(p1,)
+
+
+def test_new_policy_cannot_reuse_artifact_accepted_only_under_old_policy(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P")
+    p1=l.add_policy({"verifier":"oracle:v1"})
+    r1=l.author_revision("P",scenes())
+    a=accepted(l,"P",r1,"S1","A1")
+    r2=l.author_revision("P",scenes(),parent=r1)
+    p2=l.add_policy({"verifier":"oracle:v2","requires_nonce":True})
+    assert l.reusable(a,"P",r2,"S1",p1)
+    r3=l.author_revision("P",scenes(),parent=r2)
+    assert not l.reusable(a,"P",r3,"S1",p2)
