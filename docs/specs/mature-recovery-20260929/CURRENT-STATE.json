@@ -253,52 +253,25 @@
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
     "head": "f42320d030c3dfc11395da7fc66a4ed818349c01",
-    "status": "BEHAVIORAL_SUITE_PASS__RUNTIME_RECEIPT_FIX_REGRADING",
-    "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
-    "demonstration_targets": [
-      "R1 close/reopen R2",
-      "immutable revision history",
-      "execution/evidence separation",
-      "exact unchanged-input reuse receipts",
-      "ordered accepted assembly inputs",
+    "status": "EXPERIMENTALLY_ACCEPTED_FEASIBILITY_SLICE",
+    "workflow_run": 36854431337,
+    "pytest_artifact_digest": "sha256:e5e49d0b65ffeccdef12e7b70ebbbd74e2826d2baa17f41acc169a781400a77c",
+    "runtime_artifact_digest": "sha256:ed370bc93a734d5aaa25519c683ed711cef82268ae72ecd1e51852cd726db31c",
+    "scope": "isolated metadata/state-machine feasibility only; not M-E03 product integration",
+    "accepted_controls": [
+      "immutable project/scene revisions",
+      "process close/reopen R1→R2",
       "single live attempt",
-      "stale lease recovery",
-      "missing acceptance blocks assembly",
-      "external artifact deletion/equal-size replacement invalidates reuse",
-      "post-reuse corruption blocks assembly freeze",
-      "failed verifier evidence durable but non-accepting",
-      "queued/leased attempt cannot be accepted",
-      "assembly frozen/executed/accepted states distinct",
-      "wrong final assembly digest cannot be accepted",
-      "acceptance policy is immutable revision",
-      "reuse receipt binds policy revision",
-      "new policy cannot inherit old acceptance without new evidence",
-      "unknown policy fails closed",
-      "syntax gate separate from behavioral grade",
-      "SQLite integrity_check survives reopen",
-      "SQLite runtime version recorded with evidence"
-    ],
-    "workflow_run": 36821171954,
-    "latest_repairs": [
-      "acceptance requires intact concrete bytes at acceptance time",
-      "wrong-digest/pre-execution fixtures use concrete bytes",
-      "failed evidence requires known attempt",
-      "full per-test traceback enabled"
-    ],
-    "policy_revision": {
-      "evidence_binds_policy": true,
-      "reuse_binds_policy": true,
-      "new_policy_requires_new_accepted_evidence": true,
-      "unknown_policy_fail_closed": true
-    },
-    "behavioral_evidence": {
-      "run": 36854274883,
-      "syntax": "PASS",
-      "pytest_controls": "PASS",
-      "behavioral_gate": "PASS",
-      "runtime_receipt": "HARNESS_RED"
-    },
-    "acceptance": "FEASIBILITY_ONLY_NOT_M_E03_INTEGRATION"
+      "lease recovery",
+      "execution != evidence acceptance",
+      "concrete artifact digest/path integrity",
+      "equal-size replacement/deletion/corruption rejection",
+      "policy-versioned evidence and reuse",
+      "unknown/new policy fail-closed",
+      "ordered assembly freeze",
+      "assembly execution != acceptance",
+      "SQLite integrity across reopen"
+    ]
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
