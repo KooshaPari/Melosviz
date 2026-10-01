@@ -23,6 +23,10 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     ledger=ProjectLedger(Path(ledger_path))
     promoted=[]
     try:
+        attempt=ledger.db.execute("SELECT candidate_sha FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
+        if not attempt: raise RuntimeError("unknown render attempt")
+        if attempt[0] is not None and attempt[0] != candidate:
+            raise RuntimeError("reviewer candidate does not match render attempt")
         for scene in scenes:
             digest=scene["sha256"]; verifier=scene["verifier"]
             ledger.promote_scene_evidence(attempt_id,digest,verifier)
