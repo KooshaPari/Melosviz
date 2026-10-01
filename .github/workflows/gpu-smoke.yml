@@ -64,7 +64,12 @@ jobs:
 
       - name: Install backend deps
         working-directory: backend
-        run: uv sync --all-extras --dev
+        # --locked makes this an assertion rather than a silent re-resolve.
+        # Without it `uv sync` re-locks backend/uv.lock whenever the lock no
+        # longer satisfies pyproject.toml, so drift between the two shows up
+        # as a green run against a resolution nobody reviewed. This is the same
+        # reason the other migrated workflows pass it.
+        run: uv sync --locked --all-extras --dev
 
       - name: Run GPU smoke test (slow)
         working-directory: backend
