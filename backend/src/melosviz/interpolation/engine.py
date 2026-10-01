@@ -268,9 +268,14 @@ def _ffmpeg_minterpolate_cmd(
     """Build the ffmpeg argv for motion-compensated minterpolate.
 
     ffmpeg's ``minterpolate`` has no frame-count option: output length is driven
-    by ``fps`` and the input clip duration. The caller's frame budget travels
-    separately, via the manifest and the ``frames_inserted`` return value of
-    :func:`interpolate_pair`, so it is not a parameter here.
+    by ``fps`` and the input clip duration, so the caller's frame budget cannot
+    be passed here.
+
+    The budget is still reported, via the manifest and the
+    ``frames_inserted`` key of :func:`interpolate_pair`, but note that on this
+    path that key is the *requested* budget echoed back, not a measured count
+    of frames in the produced file. The real output length follows ``fps`` and
+    the input clip duration.
     """
     filter_chain = (
         f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1[outv]"
@@ -318,6 +323,13 @@ def interpolate_pair(
     Returns:
         Dict with status, frames_inserted, output_path, and (if applicable)
         backend + ffmpeg_filter.
+
+        ``frames_inserted`` is the *requested* frame budget, not a measured
+        count. On the ffmpeg path ffmpeg's ``minterpolate`` takes no frame-count
+        option, so the real output length follows ``fps`` and the input clip
+        duration; the budget is reported so downstream callers have the
+        requested value, and it should not be read as the length of the file
+        that was written.
 
     Status semantics:
         - "ok": frames written to output_path
