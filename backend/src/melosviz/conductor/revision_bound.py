@@ -6,6 +6,7 @@ from ProjectLedger immediately before execution.
 """
 from __future__ import annotations
 from pathlib import Path
+import hashlib
 from .orchestrator import Orchestrator, OrchestratorResult
 from ..project_ledger import ProjectLedger, canonical_spec
 
@@ -36,8 +37,26 @@ class RevisionBoundConductor:
             finally: ledger.close()
             raise
         ledger=ProjectLedger(self.ledger_path)
-        try: ledger.finish_attempt(attempt_id,getattr(result,"job_id",None))
-        finally: ledger.close()
+        try:
+            ledger.finish_attempt(attempt_id,getattr(result,"job_id",None))
+            # Persist only observed concrete scene artifacts as non-accepted
+            # execution evidence. Independent verifier authority promotes them
+            # later; the conductor cannot self-accept its own output.
+            for scene_index,scene_result in sorted(result.per_scene_results.items()):
+                path=None
+                if isinstance(scene_result,dict): path=scene_result.get("artifact_path")
+                else: path=getattr(scene_result,"artifact_path",None)
+                if path:
+                    p=Path(path)
+                    if p.is_file():
+                        ledger.record_evidence(
+                            attempt_id,"scene",
+                            hashlib.sha256(p.read_bytes()).hexdigest(),
+                            f"conductor:scene:{scene_index}",
+                            "rejected",
+                        )
+        finally:
+            ledger.close()
         # Result identity is additive for this experiment; consumers that do not
         # know these fields remain compatible.
         result.project_id=project_id
