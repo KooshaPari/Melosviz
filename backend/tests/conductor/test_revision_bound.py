@@ -130,3 +130,18 @@ def test_assembly_completion_and_acceptance_are_distinct_and_digest_bound(tmp_pa
     l.accept_assembly(asm,final,"reviewer:v1")
     assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
     assert l.db.execute("SELECT kind,artifact_sha256,state FROM attempt_evidence WHERE attempt_id=? AND kind='assembly'",(a,)).fetchone()==("assembly",final,"accepted")
+
+
+def test_conductor_observes_scene_bytes_but_cannot_self_accept_them(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"SCENE")
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec):
+            return type("R",(),{"job_id":"J","per_scene_results":{0:{"artifact_path":str(artifact)}}})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    row=l.db.execute("SELECT kind,verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()
+    assert row==("scene","conductor:scene:0","rejected")
+    assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE state='accepted'").fetchone()==(0,)
