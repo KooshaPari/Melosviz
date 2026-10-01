@@ -103,9 +103,7 @@ def main():
         result["checks"]["r2_unselected_scene_bytes_unchanged"]=True
         # Re-running the exact same R2 request must be idempotent at media level:
         # no extra scene work and no changed final bytes.
-        rc,out3,err=run(cmd2, env)
-        assert rc==0,(out3,err)
-        r2_repeat=json.loads(out3)
+        r2_repeat=cli(candidate,w,sb,out,1)
         assert (r2_repeat.get("scenes") or [])==[],r2_repeat
         a3=probe(assembly)
         assert a3["sha256"]==a2["sha256"],(a2,a3)
