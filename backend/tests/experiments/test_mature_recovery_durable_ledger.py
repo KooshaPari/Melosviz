@@ -176,3 +176,17 @@ def test_new_policy_cannot_reuse_artifact_accepted_only_under_old_policy(tmp_pat
     assert l.reusable(a,"P",r2,"S1",p1)
     r3=l.author_revision("P",scenes(),parent=r2)
     assert not l.reusable(a,"P",r3,"S1",p2)
+
+
+def test_unknown_policy_fails_closed_for_acceptance_and_reuse(tmp_path):
+    l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P")
+    p1=l.add_policy({"verifier":"oracle:v1"})
+    r=l.author_revision("P",scenes())
+    path=tmp_path/"a.bin"; path.write_bytes(b"A"); sha=m.hashlib.sha256(b"A").hexdigest()
+    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(path))
+    try: l.accept(a,"oracle",sha,999)
+    except RuntimeError as e: assert "policy" in str(e)
+    else: raise AssertionError("unknown policy accepted evidence")
+    l.accept(a,"oracle",sha,p1)
+    r2=l.author_revision("P",scenes(),parent=r)
+    assert not l.reusable(a,"P",r2,"S1",999)
