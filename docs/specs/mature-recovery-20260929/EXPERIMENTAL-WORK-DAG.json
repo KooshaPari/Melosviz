@@ -64,7 +64,7 @@
     },
     {
       "id": "M-E03",
-      "state": "BLOCKED_ON_M_E02_INDEPENDENT_ACCEPTANCE_AND_PRODUCT_INTEGRATION",
+      "state": "STACKED_PRODUCT_LEDGER_SEAM_ACTIVE",
       "depends_on": [
         "M-E02",
         "result contract review"
@@ -90,6 +90,14 @@
         "head": "f42320d030c3dfc11395da7fc66a4ed818349c01",
         "workflow_run": 36854431337,
         "status": "EXPERIMENTALLY_ACCEPTED_FEASIBILITY_SLICE"
+      },
+      "candidate": {
+        "branch": "experiment/m-e03-ledger-seam",
+        "pr": 305,
+        "head": "8fed57543bd9d9c27b93320a4c1258134f0200d1",
+        "workflow_run": 36854769275,
+        "status": "QUEUED",
+        "stacked_on": "M-E02 candidate"
       }
     },
     {
