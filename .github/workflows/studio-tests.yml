@@ -113,12 +113,18 @@ jobs:
         # step: ci.yml and a11y.yml run `npm ci` against it for the a11y job.
         # bun never reads it now that the lock is v1.
         run: bun install --frozen-lockfile --ignore-scripts
-      - name: Run vitest (StudioConsole component)
+      - name: Run vitest (full web suite)
         working-directory: web
-        # Not advisory. This suite is the only thing that runs the StudioConsole
-        # component in CI, so leaving it on continue-on-error let a red suite
-        # pass while the job reported success. Verified green on the pinned
-        # lockfile (13/13) before removing the flag.
+        # Not advisory. This suite is the only thing that runs the web tests in
+        # CI, so leaving it on continue-on-error let a red suite pass while the
+        # job reported success.
+        #
+        # This runs the whole suite, not just StudioConsole. `vitest run` with
+        # no path argument is what package.json's "test" script does, and it is
+        # 27 files / 246 tests on the pinned lockfile. Naming a single file
+        # here meant the other 26 files were never executed in CI, which is the
+        # opposite of a gate: a break in any of them could not fail this job.
+        # Verified green on bun 1.3.14 + web/bun.lock before making it required.
         #
         # Do NOT add `--bun` here. vite@8.2.2 does
         # `import { parseEnv } from "node:util"`, and util.parseEnv is a
@@ -126,7 +132,7 @@ jobs:
         # implement, so forcing the vitest process onto Bun's runtime dies at
         # startup with "Export named 'parseEnv' not found in module 'util'".
         # Plain `bunx` runs vitest on Node, where the import resolves.
-        run: bunx vitest run src/components/__tests__/StudioConsole.test.tsx
+        run: bunx vitest run
       - name: Typecheck
         working-directory: web
         run: bunx tsc --noEmit -p tsconfig.json
