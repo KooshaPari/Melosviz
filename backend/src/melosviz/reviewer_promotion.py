@@ -27,7 +27,9 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     try:
         attempt=ledger.db.execute("SELECT candidate_sha,project_revision FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
         if not attempt: raise RuntimeError("unknown render attempt")
-        if attempt[0] is not None and attempt[0] != candidate:
+        if attempt[0] is None:
+            raise RuntimeError("render attempt lacks candidate identity")
+        if attempt[0] != candidate:
             raise RuntimeError("reviewer candidate does not match render attempt")
         normalized_revision=str(receipt_revision).removeprefix("R")
         if normalized_revision != str(attempt[1]):
