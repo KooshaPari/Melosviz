@@ -157,8 +157,10 @@ class Ledger:
     def accept(self,attempt:int,verifier:str,artifact_sha:str,policy_revision:int=1):
         if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone():
             raise RuntimeError("unknown acceptance policy")
-        row=self.db.execute("SELECT state,artifact_sha256 FROM render_attempt WHERE id=?",(attempt,)).fetchone()
-        if not row or row != ("executed",artifact_sha): raise RuntimeError("evidence does not bind executed artifact")
+        row=self.db.execute("SELECT state,artifact_sha256,artifact_path FROM render_attempt WHERE id=?",(attempt,)).fetchone()
+        if not row or row[:2] != ("executed",artifact_sha): raise RuntimeError("evidence does not bind executed artifact")
+        if row[2] is None or not self.artifact_intact(attempt):
+            raise RuntimeError("accepted evidence requires intact concrete artifact bytes")
         with self.db:
             self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,policy_revision,collection_state,created_at) VALUES(?,?,?,?,'accepted',?)",(attempt,verifier,artifact_sha,policy_revision,time.time()))
 
