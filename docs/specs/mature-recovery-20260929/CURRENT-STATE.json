@@ -284,13 +284,19 @@
       "selective R2 leaves unselected S0 bytes unchanged",
       "exact repeated R2 produces no scene work and identical final digest"
     ],
-    "status": "NUMERIC_REVISION_PROMOTION_RECEIPT"
+    "status": "NUMERIC_REVISION_PROMOTION_RECEIPT",
+    "cross_authority": {
+      "status": "QUEUED_BY_M_E03_WORKFLOW",
+      "reviewer_sha": "b977d5de7f6d99db6d8f5a660cf286e06b49c7ec",
+      "candidate_sha": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
+      "authority_caveat": "workflow shell is on M-E03 branch; reviewer code and candidate are separately pinned; not equivalent to independent default-branch reviewer workflow"
+    }
   },
   "M_E03": {
-    "status": "ATOMIC_PROMOTION_PLUS_STORYBOARD_DENOMINATOR_ACTIVE",
+    "status": "SCHEMA_MIGRATION_AND_CROSS_AUTHORITY_REVIEW_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "19f6531e1010b51b63d5bea02031e87ad6dd4683",
+    "head": "7a85869c110acc651642781c34e289526c4018f2",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -336,7 +342,11 @@
       "reviewer scene identities must be present and unique",
       "assembly ordered inputs must cover full persisted scene denominator",
       "partial storyboard cannot freeze final assembly",
-      "lineage grader trigger/dispatch repaired"
+      "lineage grader trigger/dispatch repaired",
+      "ledger schema user_version=2",
+      "legacy render-attempt rows migrate candidate_sha without loss",
+      "dedicated grader now actually executes reviewer-promotion tests",
+      "cross-authority job pins reviewer SHA and M-E02 candidate SHA separately"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
