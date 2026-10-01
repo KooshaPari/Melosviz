@@ -2,6 +2,9 @@ name: Reviewer - M-E02 exact candidate structural grade
 on:
   push:
     branches: [docs/mature-recovery-20260929]
+    paths:
+      - ".github/workflows/reviewer-m-e02.yml"
+      - "docs/specs/mature-recovery-20260929/pass9/reviewer_m_e02.py"
   workflow_dispatch:
 permissions:
   contents: read
