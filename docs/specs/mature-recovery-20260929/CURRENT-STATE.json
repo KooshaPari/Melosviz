@@ -287,10 +287,10 @@
     "status": "R2_REPEAT_HELPER_FIXED__RECEIPT_REQUIRED"
   },
   "M_E03": {
-    "status": "ASSEMBLY_EXECUTION_ACCEPTANCE_SEPARATION_ACTIVE",
+    "status": "REAL_RESULT_OBSERVATION_NON_ACCEPTING_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "98a51da632bf919a0ad1c7e0bd5ba767283580eb",
+    "head": "48087509e4d377056bdac52451407ed7d6ffaa96",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -312,7 +312,10 @@
       "duplicate scene identity rejected before assembly freeze",
       "assembly frozen→completed→accepted states distinct",
       "assembly acceptance binds exact final digest + verifier",
-      "assembly acceptance emits attempt evidence"
+      "assembly acceptance emits attempt evidence",
+      "revision-bound conductor hashes concrete scene artifacts",
+      "candidate-produced scene observation is persisted non-accepted",
+      "candidate cannot self-author independent acceptance"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
@@ -322,9 +325,11 @@
       "independent M-E02 media acceptance"
     ],
     "last_green": {
-      "head": "7df4942052885651b096c6ac0262826b8df831cc",
-      "dedicated_run": 36899250810,
-      "status": "ACCEPTANCE_AUTHORITY_AND_ASSEMBLY_EVIDENCE_PASS"
+      "head": "98a51da632bf919a0ad1c7e0bd5ba767283580eb",
+      "dedicated_run": 36899758153,
+      "main_ci": 36899758029,
+      "studio_pipeline": 36899757991,
+      "status": "ASSEMBLY_EXECUTION_ACCEPTANCE_SEPARATION_PASS"
     }
   }
 }
