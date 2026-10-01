@@ -18,11 +18,35 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        # Needed to read the locked mutmut version below. Pinned to the same
+        # version the other workflows in this repo use, so the export
+        # understands the committed uv.lock.
+        with:
+          version: "0.5"
       - name: Install
         working-directory: backend
         run: |
           pip install -e ".[test,bridge]" --only-binary :all:
-          pip install mutmut==3.8.0 --only-binary :all:
+          # mutmut is declared in the dev group in backend/pyproject.toml
+          # and pinned by backend/uv.lock. This job installs with pip, which
+          # cannot read the lock, so read the pinned version out of it
+          # instead of hard-coding one here: a literal pin is a second
+          # source of truth that drifts from the lock the moment someone
+          # re-resolves, and the drift is invisible until the two disagree.
+          # `uv export` needs the group named explicitly; it emits no
+          # dependency-groups unless asked.
+          MUTMUT_VERSION="$(uv export --locked --only-group dev \
+            | grep -E '^mutmut==' | cut -d'=' -f3)"
+          test -n "$MUTMUT_VERSION" || { echo "could not read the locked mutmut version from uv.lock" >&2; exit 1; }
+          case "$MUTMUT_VERSION" in
+            *[!0-9.]*|'')
+              echo "::error::locked mutmut version is not a version string: $MUTMUT_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          echo "installing mutmut==${MUTMUT_VERSION} (from backend/uv.lock)"
+          pip install "mutmut==${MUTMUT_VERSION}" --only-binary :all:
       - name: Run mutmut (bounded)
         working-directory: backend
         # Full suite is slow; mutate a high-value slice and report score.

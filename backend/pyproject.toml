@@ -83,13 +83,31 @@ otel = [
 # (githubactions:S8544) flagged each `pip install -e ".[...]"` line.
 #
 # `uv sync --all-extras --dev` now resolves all of them from uv.lock.
+#
+# Every entry here is installed under `--only-binary :all:`, which forbids
+# building an sdist (S8541). That makes a wheel a hard requirement, so each
+# lower bound sits at or above the first release that actually publishes
+# one, checked against PyPI's file listings rather than assumed:
+#
+#   mutmut  3.0.3 and 3.0.4 are sdist-only; every 3.x release from 3.0.5 on
+#           ships py3-none-any. `>=3.0` would let a future re-resolve pick
+#           3.0.4 and turn the quality gate's install into a hard failure
+#           whose message reads like a resolution problem, not a policy one.
+#
+# Verified 2026-10-01: all 95 packages in the quality-gate install closure
+# (base + test + bridge + lint + analysis + dev) publish a wheel usable on
+# linux-x86_64 at their locked version. The only sdist-only distributions in
+# uv.lock are demucs, dora-search and antlr4-python3-runtime, and all three
+# are reachable only through the `stems` extra, which no guarded workflow
+# installs. Before adding a dependency here, confirm it publishes a wheel:
+#   python -c "import json,urllib.request as u;d=json.load(u.urlopen('https://pypi.org/pypi/<name>/<version>/json'));print([f['packagetype'] for f in d['urls']])"
 [dependency-groups]
 dev = [
     "pytest-cov>=5.0",
     "coverage>=7.4",
     "bandit>=1.7",
     "pip-audit>=2.7",
-    "mutmut>=3.0",
+    "mutmut>=3.0.5",
 ]
 
 [tool.setuptools.packages.find]

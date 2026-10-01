@@ -1560,7 +1560,7 @@ provides-extras = ["test", "lint", "analysis", "stems", "all", "bridge", "otel"]
 dev = [
     { name = "bandit", specifier = ">=1.7" },
     { name = "coverage", specifier = ">=7.4" },
-    { name = "mutmut", specifier = ">=3.0" },
+    { name = "mutmut", specifier = ">=3.0.5" },
     { name = "pip-audit", specifier = ">=2.7" },
     { name = "pytest-cov", specifier = ">=5.0" },
 ]
