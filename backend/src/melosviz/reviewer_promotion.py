@@ -22,6 +22,11 @@ def apply_reviewer_receipt(ledger_path:Path|str,attempt_id:int,receipt_path:Path
     final=promotion.get("final_artifact") or {}
     if not scenes or not final.get("sha256"):
         raise RuntimeError("reviewer receipt lacks promotion evidence")
+    scene_ids=[scene.get("scene_index") for scene in scenes]
+    if any(scene_id is None for scene_id in scene_ids):
+        raise RuntimeError("reviewer scene identity missing")
+    if len(set(scene_ids)) != len(scene_ids):
+        raise RuntimeError("reviewer scene identity duplicated")
     ledger=ProjectLedger(Path(ledger_path))
     promoted=[]
     try:
