@@ -275,7 +275,7 @@
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "984d12570f0c94f2aba044a85b7b5a3ddc0f2fdc",
+    "policy_head": "cadde3290da7c25cd13cf4c6311c5f959dc6dc23",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
@@ -284,13 +284,13 @@
       "selective R2 leaves unselected S0 bytes unchanged",
       "exact repeated R2 produces no scene work and identical final digest"
     ],
-    "status": "R2_REPEAT_HELPER_FIXED__RECEIPT_REQUIRED"
+    "status": "PROMOTION_RECEIPT_SCHEMA_ADDED"
   },
   "M_E03": {
-    "status": "INDEPENDENT_SCENE_EVIDENCE_PROMOTION_ACTIVE",
+    "status": "REVIEWER_RECEIPT_TO_LEDGER_PROMOTION_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "681580ef66b2c0ae53cea657d9684d96da01a42e",
+    "head": "bfb30af75d6d653b81ee6fca7ed87b54d2201d8f",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -317,7 +317,11 @@
       "candidate-produced scene observation is persisted non-accepted",
       "candidate cannot self-author independent acceptance",
       "candidate hashes actual scene bytes into non-accepted observation",
-      "independent verifier may promote only exact previously observed digest"
+      "independent verifier may promote only exact previously observed digest",
+      "reviewer emits machine-readable scene/final promotion receipt",
+      "ledger applies receipt only to exact observed scene digests",
+      "final reviewer digest must equal completed assembly digest",
+      "passing receipt cannot invent evidence"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
