@@ -287,10 +287,10 @@
     "status": "PROMOTION_RECEIPT_SCHEMA_ADDED"
   },
   "M_E03": {
-    "status": "REVIEWER_PROMOTION_SEAM_REPAIRED_REQUEUED",
+    "status": "CANDIDATE_BOUND_REVIEWER_PROMOTION_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "0b1e89192ab457b6492304fffb09ce5279cc8647",
+    "head": "e87ad063f2eb59a567026e2942728a6ed924ee78",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -321,7 +321,11 @@
       "reviewer emits machine-readable scene/final promotion receipt",
       "ledger applies receipt only to exact observed scene digests",
       "final reviewer digest must equal completed assembly digest",
-      "passing receipt cannot invent evidence"
+      "passing receipt cannot invent evidence",
+      "durable render attempt optionally binds candidate SHA",
+      "reviewer receipt requires candidate identity",
+      "reviewer candidate must equal durable attempt candidate when present",
+      "wrong-candidate receipt rejected"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
