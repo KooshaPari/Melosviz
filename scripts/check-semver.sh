@@ -216,11 +216,29 @@ guard_check "$(printf '1.0.0\rcarriage')" "reject"
 # Over the cap: rejected by the length guard.
 long_ok="$(printf '1.0.0-alpha.%0.s' $(seq 1 40))${cap}"
 guard_check "$long_ok" "reject"
-# Under the cap but full of valid characters, still has to reach the pattern.
-guard_check "1.0.0-$(printf 'a%.0s' $(seq 1 "$cap"))" "reject"
+# Under the cap, built only from characters the charset guard allows, so it
+# survives all three guards and is judged by the pattern alone. This is the
+# case the nested-quantifier pattern is most likely to get wrong, and it is
+# the one the cost measurement below depends on being reachable.
+#
+# The suffix is sized from the remaining budget, so the whole input is exactly
+# $cap characters: one over would be turned away by the length guard and the
+# pattern would never run, which is the defect this case exists to catch.
+# The prerelease identifier is NUMERIC and carries a leading zero, which
+# SemVer forbids, so the pattern has to reject it on that alone.
+#
+# Letters would not work: an alphanumeric prerelease such as 1.0.0-aaaa is
+# valid SemVer, so a letter-padded input is accepted and tests nothing.
+guard_check "1.0.0-0$(printf '0%.0s' $(seq 1 $((cap - 7))))" "reject"
 # Underscore, space and shell metacharacters are outside the allowed charset.
 guard_check "1.2.3-alpha_1" "reject"
+# Both ends of the charset guard: a leading space or tab is exactly the
+# input `*[!0-9A-Za-z.+-]*` exists to reject, and it is the variant that
+# would slip through if the pattern were ever widened to allow leading
+# whitespace, so it is tested here rather than only in REJECT.
 guard_check "1.2.3 " "reject"
+guard_check " 1.2.3" "reject"
+guard_check "$(printf '\t1.2.3')" "reject"
 guard_check '1.2.3-$(id)' "reject"
 guard_check '1.2.3-`id`' "reject"
 guard_check "1.2.3-rc.1+build.1" "accept"
@@ -245,15 +263,25 @@ if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
   py="$(command -v python3 || command -v python)"
   # Worst case for a backtracker: a long run of valid identifier characters
   # followed by one character that cannot match, forcing full backtracking.
-  "$py" - "$SEMVER" "$cap" <<'PY'
+  # `set -e` is on, so a bare call that exits non-zero would kill the script
+  # before `bad` ran and before the summary printed. Putting it in a
+  # condition routes the failure through the normal accounting instead.
+  if ! "$py" - "$SEMVER" "$cap" <<'PY'
 import re
 import sys
 import time
 
 pat, cap = re.compile(sys.argv[1]), int(sys.argv[2])
+PREFIX, SUFFIX = "1.0.0-", "!"
+OVERHEAD = len(PREFIX) + len(SUFFIX)
 worst = 0.0
+# n is the TOTAL input length, not the length of the a-run, so the
+# "<= cap" row really is an input the length guard admits. Offsetting by
+# OVERHEAD is what keeps the reported worst case inside the bound the
+# workflows actually enforce.
 for n in (16, 32, 64, 128, 256, 512, 1024, 2048, 4096):
-    s = "1.0.0-" + "a" * n + "!"
+    s = PREFIX + "a" * (n - OVERHEAD) + SUFFIX
+    assert len(s) == n, (len(s), n)
     reps = 200 if n <= 512 else 20
     t0 = time.perf_counter()
     for _ in range(reps):
@@ -268,7 +296,9 @@ print("  ok: worst case at the cap (%d chars) is %.3f ms" % (cap, worst * 1000)
       "  FAIL: a %d-char input costs %.3f ms; the cap is too high" % (cap, worst * 1000))
 sys.exit(0 if worst < 0.05 else 1)
 PY
-  [[ $? -eq 0 ]] || bad "the backtracking cost at the ${cap}-char cap is above the 50ms budget"
+  then
+    bad "the backtracking cost at the ${cap}-char cap is above the 50ms budget"
+  fi
 else
   note "  skipped: no python available to measure the backtracking cost"
 fi
