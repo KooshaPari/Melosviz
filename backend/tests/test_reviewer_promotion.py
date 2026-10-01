@@ -117,3 +117,23 @@ def test_bad_final_digest_leaves_no_partial_scene_promotions(tmp_path):
     l=ProjectLedger(db)
     assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND verifier='reviewer:v1'",(a,)).fetchone()[0]==before
     assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("completed",)
+
+
+def test_reviewer_receipt_rejects_duplicate_or_missing_scene_identity_before_mutation(tmp_path):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
+    from melosviz.analysis.models import RenderSpec
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    d="a"*64; f="f"*64
+    l.record_evidence(a,"scene",d,"conductor","rejected"); l.promote_scene_evidence(a,d,"precheck")
+    asm=l.freeze_assembly(a,[(0,d)]); l.complete_assembly(asm,f); l.close()
+    for scene_artifacts in [
+      [{"sha256":d,"verifier":"reviewer"}],
+      [{"scene_index":0,"sha256":d,"verifier":"reviewer"},{"scene_index":0,"sha256":d,"verifier":"reviewer"}],
+    ]:
+      receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"candidate-sha","observations":{"promotion_receipt":{"project_revision":"R1","scene_artifacts":scene_artifacts,"final_artifact":{"sha256":f,"verifier":"reviewer"}}}}
+      p=tmp_path/"bad-scene.json"; p.write_text(json.dumps(receipt))
+      try:apply_reviewer_receipt(db,a,p)
+      except RuntimeError:pass
+      else:raise AssertionError(scene_artifacts)
+    l=ProjectLedger(db)
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("completed",)
