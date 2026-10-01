@@ -214,9 +214,24 @@
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
     "general_acceptance": false,
     "current_head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
-    "status": "EXACT_HEAD_REGRADING",
+    "status": "CANDIDATE_CONTROLLED_STRUCTURAL_PASS__REVIEWER_MEDIA_PENDING",
     "latest_fix": "persist effective derived backend identity as producer evidence; preserve deterministic video_export cache reuse",
-    "dedicated_workflow_run": 36766323723
+    "dedicated_workflow_run": 36766323723,
+    "candidate_controlled_evidence": {
+      "backend_contract": "PASS",
+      "mounted_cli_bridge_ffmpeg": "PASS",
+      "conductor_bridge_regressions": "PASS",
+      "web_delta": "PASS",
+      "desktop_delta": "PASS",
+      "main_ci": "PASS",
+      "studio_pipeline": "PASS"
+    },
+    "acceptance": false,
+    "remaining": [
+      "reviewer-owned exact-candidate media receipt",
+      "real generative backend/model/workflow qualification",
+      "real app persistence/restart integration"
+    ]
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "AUDIO_CONDITIONED_PROGRAMMABLE_MULTI_SCENE_VISUAL_COMPOSITION_AND_RUNTIME_FOR_OFFLINE_SHORT_LONG_FORM_AND_POTENTIAL_LIVE_USE",
@@ -237,8 +252,8 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "9984cae480da62e06eafeeb295d6e2629057f4b2",
-    "status": "EXACT_HEAD_QUEUED",
+    "head": "799fcdfec7c9ad96a5e2535a9774ac99d5054e8b",
+    "status": "REPAIRED_REQUEUED",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
       "R1 close/reopen R2",
@@ -256,17 +271,22 @@
       "assembly frozen/executed/accepted states distinct",
       "wrong final assembly digest cannot be accepted"
     ],
-    "workflow_run": 36770605484
+    "workflow_run": 36820739135,
+    "latest_repairs": [
+      "pathless symbolic artifact cannot qualify for reuse",
+      "fixtures use concrete content-addressed bytes",
+      "malformed failed-verifier test block repaired"
+    ]
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "d1895ad31011eb34882d3d45323f3cb4fe8d4a8e",
+    "policy_head": "72408bec1e6815aa8feebd325fedded87fbd25f9",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
       "R2 final digest differs from R1 after S2 edit",
       "post-success final media corruption is non-green"
     ],
-    "status": "REBOUND_AWAITING_EXECUTION"
+    "status": "DISPATCHABLE_PENDING_RECEIPT"
   }
 }
