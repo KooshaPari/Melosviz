@@ -56,6 +56,11 @@ CREATE TABLE IF NOT EXISTS evidence(
  collection_state TEXT NOT NULL CHECK(collection_state IN ('accepted','rejected','failed')),
  created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS acceptance_policy(
+ revision INTEGER PRIMARY KEY,
+ policy_sha256 TEXT NOT NULL,
+ created_at REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS reuse_receipt(
  project_id TEXT NOT NULL,
  project_revision INTEGER NOT NULL,
@@ -63,6 +68,7 @@ CREATE TABLE IF NOT EXISTS reuse_receipt(
  source_attempt_id INTEGER NOT NULL REFERENCES render_attempt(id),
  artifact_sha256 TEXT NOT NULL,
  input_sha256 TEXT NOT NULL,
+ policy_revision INTEGER NOT NULL REFERENCES acceptance_policy(revision),
  PRIMARY KEY(project_id, project_revision, scene_id)
 );
 CREATE TABLE IF NOT EXISTS assembly_attempt(
@@ -88,6 +94,12 @@ class Ledger:
         self.db.commit()
 
     def close(self): self.db.close()
+
+    def add_policy(self,policy:dict)->int:
+        rev=self.db.execute("SELECT COALESCE(MAX(revision),0)+1 FROM acceptance_policy").fetchone()[0]
+        with self.db:
+            self.db.execute("INSERT INTO acceptance_policy VALUES(?,?,?)",(rev,digest(policy),time.time()))
+        return rev
 
     def create_project(self,pid:str):
         self.db.execute("INSERT INTO project VALUES(?,?)",(pid,time.time())); self.db.commit()
@@ -148,15 +160,14 @@ class Ledger:
         p=Path(path)
         return p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest()==expected
 
-    def reusable(self,source_attempt:int,pid:str,rev:int,sid:str)->bool:
+    def reusable(self,source_attempt:int,pid:str,rev:int,sid:str,policy_revision:int=1)->bool:
         target=self.db.execute("SELECT input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? AND scene_id=?",(pid,rev,sid)).fetchone()
         source=self.db.execute("""SELECT a.input_sha256,a.artifact_sha256 FROM render_attempt a
           WHERE a.id=? AND a.state='executed' AND EXISTS(
             SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256)""",(source_attempt,)).fetchone()
         if not target or not source or target[0]!=source[0]: return False
         if not self.artifact_intact(source_attempt): return False
-        with self.db:
-            self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0]))
+        if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone(): return False\n        with self.db:\n            self.db.execute("INSERT INTO reuse_receipt VALUES(?,?,?,?,?,?,?)",(pid,rev,sid,source_attempt,source[1],source[0],policy_revision))
         return True
 
     def execute_assembly(self,assembly:int,artifact_sha:str):
