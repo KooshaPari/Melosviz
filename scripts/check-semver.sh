@@ -36,6 +36,17 @@ fail=0
 note() { printf '%s\n' "$*"; }
 bad() { printf 'FAIL  %s\n' "$*"; fail=1; }
 
+# The verdict words are spelled once and reused. They are the comparison key on
+# both sides of every case below, so a typo in one copy would otherwise turn a
+# self-check into a checker that agrees with itself for the wrong reason.
+#
+# Named VERDICT_* rather than ACCEPT/REJECT on purpose: ACCEPT and REJECT are
+# already the case-list array names further down, and `readonly ACCEPT=accept`
+# would make the later `ACCEPT=( ... )` abort with "readonly variable". Same
+# word, two meanings, so they need two names.
+readonly VERDICT_ACCEPT=accept
+readonly VERDICT_REJECT=reject
+
 # ------------------------------------------------------- extract the deployed pattern
 note "=== 1. extract the deployed pattern from each workflow ==="
 declare -A PATTERNS
@@ -190,24 +201,34 @@ note "=== 5. guard cases (CR/LF, length cap, charset) ==="
 
 guard_check() {
   # $1 = version, $2 = expect(accept|reject)
-  local v="$1" expect="$2" verdict="accept"
-  case "$v" in
-    *$'\n'*|*$'\r'*) verdict="reject" ;;
+  # $2 is validated before anything else: an expectation outside the two
+  # verdicts would make the comparison below vacuously true for every input,
+  # turning this case into a no-op that always reports ok.
+  local v="$1" expect="$2" verdict=$VERDICT_ACCEPT
+  case "$expect" in
+    "$VERDICT_ACCEPT"|"$VERDICT_REJECT") ;;
+    *)
+      bad "internal error: guard_check expectation must be '$VERDICT_ACCEPT' or '$VERDICT_REJECT', got: $expect"
+      return 0
+      ;;
   esac
-  if [[ "$verdict" == "accept" && ${#v} -gt "$cap" ]]; then
-    verdict="reject"
+  case "$v" in
+    *$'\n'*|*$'\r'*) verdict=$VERDICT_REJECT ;;
+  esac
+  if [[ "$verdict" == "$VERDICT_ACCEPT" && ${#v} -gt "$cap" ]]; then
+    verdict=$VERDICT_REJECT
   fi
-  if [[ "$verdict" == "accept" ]]; then
+  if [[ "$verdict" == "$VERDICT_ACCEPT" ]]; then
     case "$v" in
-      ''|*[!0-9A-Za-z.+-]*) verdict="reject" ;;
+      ''|*[!0-9A-Za-z.+-]*) verdict=$VERDICT_REJECT ;;
     esac
   fi
-  if [[ "$verdict" == "reject" ]]; then
+  if [[ "$verdict" == "$VERDICT_REJECT" ]]; then
     :
   elif printf '%s' "$v" | grep -Eq "$SEMVER"; then
-    verdict="accept"
+    verdict=$VERDICT_ACCEPT
   else
-    verdict="reject"
+    verdict=$VERDICT_REJECT
   fi
   if [[ "$verdict" == "$expect" ]]; then
     printf '  ok    %s %s\n' "$expect" "$(printf '%q' "$v")"
@@ -217,11 +238,11 @@ guard_check() {
 }
 
 # Newline injection: must be caught by the CR/LF guard, before grep ever runs.
-guard_check "$(printf '1.0.0\nEVIL=1')" "reject"
-guard_check "$(printf '1.0.0\rcarriage')" "reject"
+guard_check "$(printf '1.0.0\nEVIL=1')" $VERDICT_REJECT
+guard_check "$(printf '1.0.0\rcarriage')" $VERDICT_REJECT
 # Over the cap: rejected by the length guard.
 long_ok="$(printf '1.0.0-alpha.%0.s' $(seq 1 40))${cap}"
-guard_check "$long_ok" "reject"
+guard_check "$long_ok" $VERDICT_REJECT
 # Under the cap, built only from characters the charset guard allows, so it
 # survives all three guards and is judged by the pattern alone. This is the
 # case the nested-quantifier pattern is most likely to get wrong, and it is
@@ -235,20 +256,20 @@ guard_check "$long_ok" "reject"
 #
 # Letters would not work: an alphanumeric prerelease such as 1.0.0-aaaa is
 # valid SemVer, so a letter-padded input is accepted and tests nothing.
-guard_check "1.0.0-0$(printf '0%.0s' $(seq 1 $((cap - 7))))" "reject"
+guard_check "1.0.0-0$(printf '0%.0s' $(seq 1 $((cap - 7))))" $VERDICT_REJECT
 # Underscore, space and shell metacharacters are outside the allowed charset.
-guard_check "1.2.3-alpha_1" "reject"
+guard_check "1.2.3-alpha_1" $VERDICT_REJECT
 # Both ends of the charset guard: a leading space or tab is exactly the
 # input `*[!0-9A-Za-z.+-]*` exists to reject, and it is the variant that
 # would slip through if the pattern were ever widened to allow leading
 # whitespace, so it is tested here rather than only in REJECT.
-guard_check "1.2.3 " "reject"
-guard_check " 1.2.3" "reject"
-guard_check "$(printf '\t1.2.3')" "reject"
-guard_check '1.2.3-$(id)' "reject"
-guard_check '1.2.3-`id`' "reject"
-guard_check "1.2.3-rc.1+build.1" "accept"
-guard_check "1.0.0-alpha" "accept"
+guard_check "1.2.3 " $VERDICT_REJECT
+guard_check " 1.2.3" $VERDICT_REJECT
+guard_check "$(printf '\t1.2.3')" $VERDICT_REJECT
+guard_check '1.2.3-$(id)' $VERDICT_REJECT
+guard_check '1.2.3-`id`' $VERDICT_REJECT
+guard_check "1.2.3-rc.1+build.1" $VERDICT_ACCEPT
+guard_check "1.0.0-alpha" $VERDICT_ACCEPT
 
 # ------------------------------------------------- the cap must actually bound the cost
 # The pattern is a star inside a star over an overlapping class, so a
