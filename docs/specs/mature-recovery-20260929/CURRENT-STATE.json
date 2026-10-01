@@ -252,8 +252,8 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "0fdc6a1436afb79867a1e93a15dc64ff620a6bb2",
-    "status": "BEHAVIORAL_RED_REPAIRED_AND_DIAGNOSTIC_EXPANDED",
+    "head": "f42320d030c3dfc11395da7fc66a4ed818349c01",
+    "status": "BEHAVIORAL_SUITE_PASS__RUNTIME_RECEIPT_FIX_REGRADING",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
       "R1 close/reopen R2",
@@ -290,7 +290,15 @@
       "reuse_binds_policy": true,
       "new_policy_requires_new_accepted_evidence": true,
       "unknown_policy_fail_closed": true
-    }
+    },
+    "behavioral_evidence": {
+      "run": 36854274883,
+      "syntax": "PASS",
+      "pytest_controls": "PASS",
+      "behavioral_gate": "PASS",
+      "runtime_receipt": "HARNESS_RED"
+    },
+    "acceptance": "FEASIBILITY_ONLY_NOT_M_E03_INTEGRATION"
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
