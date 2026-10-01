@@ -54,3 +54,17 @@ def test_real_shaped_reviewer_receipt_roundtrip_to_attempt_and_final_acceptance(
     l=ProjectLedger(db)
     assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
     assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND state='accepted'",(a,)).fetchone()[0]>=2
+
+
+def test_reviewer_candidate_must_match_durable_attempt(tmp_path):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
+    from melosviz.analysis.models import RenderSpec
+    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"actual-sha"); l.finish_attempt(a,"J")
+    s="a"*64; f="f"*64
+    l.record_evidence(a,"scene",s,"conductor","rejected"); l.promote_scene_evidence(a,s,"precheck")
+    asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
+    receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"wrong-sha","observations":{"promotion_receipt":{"scene_artifacts":[{"scene_index":0,"sha256":s,"verifier":"reviewer"}],"final_artifact":{"sha256":f,"verifier":"reviewer"}}}}
+    p=tmp_path/"r.json"; p.write_text(json.dumps(receipt))
+    try:apply_reviewer_receipt(db,a,p)
+    except RuntimeError as e: assert "candidate" in str(e)
+    else:raise AssertionError("wrong candidate reviewer receipt accepted")
