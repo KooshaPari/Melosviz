@@ -15,7 +15,7 @@ class RevisionBoundConductor:
         self.ledger_path=Path(ledger_path)
         self.orchestrator_kwargs=orchestrator_kwargs
 
-    def render_revision(self,project_id:str,revision:int)->OrchestratorResult:
+    def render_revision(self,project_id:str,revision:int,candidate_sha:str|None=None)->OrchestratorResult:
         ledger=ProjectLedger(self.ledger_path)
         try:
             spec=ledger.load(project_id,revision)
@@ -25,7 +25,7 @@ class RevisionBoundConductor:
             ).fetchone()
             if expected is None or canonical_spec(spec)[1] != expected[0]:
                 raise RuntimeError("revision identity changed before execution")
-            attempt_id=ledger.start_attempt(project_id,revision)
+            attempt_id=ledger.start_attempt(project_id,revision,candidate_sha)
         finally:
             ledger.close()
         orchestrator=Orchestrator(**self.orchestrator_kwargs)
@@ -63,4 +63,5 @@ class RevisionBoundConductor:
         result.project_revision=revision
         result.project_spec_sha256=expected[0]
         result.project_attempt_id=attempt_id
+        result.candidate_sha=candidate_sha
         return result
