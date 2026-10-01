@@ -41,15 +41,23 @@ jobs:
         # package set comes from the committed uv.lock via `uv export`, and
         # --no-deps installs exactly those pinned versions without resolving
         # anything, so the install stays lock-exact (S8544).
+        #
+        # The hashes stay in the exported file and the install runs with
+        # --require-hashes, so uv re-verifies every downloaded wheel against
+        # the sha256 digests recorded in uv.lock. Dropping --no-hashes here
+        # would silently remove that check: --no-deps pins the VERSIONS, but
+        # without hashes a substituted wheel for a pinned version installs
+        # without complaint.
         # These flags are verified against the uv version pinned above,
         # not a globally installed one: `uv export --format` alone has
         # already changed its accepted value across uv releases.
         run: |
-          uv export --locked --no-emit-project --no-hashes \
+          uv export --locked --no-emit-project \
             --extra test \
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
-          uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
           # --no-build-isolation means uv will NOT provision a build
           # environment, so the setuptools backend has to already be in
           # the venv. `uv venv` on a Linux runner gives a bare venv with
@@ -66,6 +74,31 @@ jobs:
           # either.
           SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
           test -n "$SETUPTOOLS_VERSION" || { echo "could not read the locked setuptools version from uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as
+          # an opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid
+          # one, which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          case "$SETUPTOOLS_VERSION" in
+            [!0-9]*|'')
+              echo "::error::setuptools version from uv.lock is not numeric: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
           uv pip install --only-binary :all: --no-deps "setuptools==${SETUPTOOLS_VERSION}"
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
@@ -97,16 +130,24 @@ jobs:
         # package set comes from the committed uv.lock via `uv export`, and
         # --no-deps installs exactly those pinned versions without resolving
         # anything, so the install stays lock-exact (S8544).
+        #
+        # The hashes stay in the exported file and the install runs with
+        # --require-hashes, so uv re-verifies every downloaded wheel against
+        # the sha256 digests recorded in uv.lock. Dropping --no-hashes here
+        # would silently remove that check: --no-deps pins the VERSIONS, but
+        # without hashes a substituted wheel for a pinned version installs
+        # without complaint.
         # These flags are verified against the uv version pinned above,
         # not a globally installed one: `uv export --format` alone has
         # already changed its accepted value across uv releases.
         run: |
-          uv export --locked --no-emit-project --no-hashes \
+          uv export --locked --no-emit-project \
             --extra test \
             --extra bridge \
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
-          uv pip install --only-binary :all: --no-deps -r "$RUNNER_TEMP/uv-requirements.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
           # --no-build-isolation means uv will NOT provision a build
           # environment, so the setuptools backend has to already be in
           # the venv. `uv venv` on a Linux runner gives a bare venv with
@@ -123,6 +164,31 @@ jobs:
           # either.
           SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
           test -n "$SETUPTOOLS_VERSION" || { echo "could not read the locked setuptools version from uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as
+          # an opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid
+          # one, which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          case "$SETUPTOOLS_VERSION" in
+            [!0-9]*|'')
+              echo "::error::setuptools version from uv.lock is not numeric: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
           uv pip install --only-binary :all: --no-deps "setuptools==${SETUPTOOLS_VERSION}"
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
