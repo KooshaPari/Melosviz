@@ -95,6 +95,12 @@ def main():
         # may have laundered stale final output.
         assert a2["sha256"] != a1["sha256"], (a1, a2)
         result["checks"]["r2_final_digest_changed"]=True
+        # Selective rerender must preserve the unselected S0 artifact exactly.
+        r2_scenes=r2.get("scenes") or []
+        assert len(r2_scenes)==1 and r2_scenes[0].get("scene_index")==1,r2_scenes
+        s0_after=probe(p1[0])
+        assert s0_after["sha256"]==scene_obs[0]["sha256"],(scene_obs[0],s0_after)
+        result["checks"]["r2_unselected_scene_bytes_unchanged"]=True
         result["observations"]={"r1_scenes":scene_obs,"r1_assembly":a1,"r2_assembly":a2}
         # Wrong selector must fail before claiming product output.
         env=os.environ.copy();env["PYTHONPATH"]=str(candidate/"backend")
