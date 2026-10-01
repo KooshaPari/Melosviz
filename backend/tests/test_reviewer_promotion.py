@@ -23,7 +23,7 @@ def test_reviewer_receipt_cannot_promote_unobserved_or_wrong_final_digest(tmp_pa
     l.record_evidence(a,"scene",s,"conductor:scene:0","rejected")
     l.promote_scene_evidence(a,s,"precheck:v1"); asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
     for scene_digest,final_digest in [("e"*64,f),(s,"e"*64)]:
-        receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","observations":{"promotion_receipt":{"project_revision":"R1","scene_artifacts":[{"scene_index":0,"sha256":scene_digest,"verifier":"reviewer:v1"}],"final_artifact":{"sha256":final_digest,"verifier":"reviewer:v1"}}}}
+        receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"candidate-sha","observations":{"promotion_receipt":{"project_revision":"R1","scene_artifacts":[{"scene_index":0,"sha256":scene_digest,"verifier":"reviewer:v1"}],"final_artifact":{"sha256":final_digest,"verifier":"reviewer:v1"}}}}
         p=tmp_path/"r.json"; p.write_text(json.dumps(receipt))
         try:apply_reviewer_receipt(db,a,p)
         except RuntimeError:pass
