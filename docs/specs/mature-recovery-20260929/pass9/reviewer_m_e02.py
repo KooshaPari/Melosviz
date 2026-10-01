@@ -101,6 +101,15 @@ def main():
         s0_after=probe(p1[0])
         assert s0_after["sha256"]==scene_obs[0]["sha256"],(scene_obs[0],s0_after)
         result["checks"]["r2_unselected_scene_bytes_unchanged"]=True
+        # Re-running the exact same R2 request must be idempotent at media level:
+        # no extra scene work and no changed final bytes.
+        rc,out3,err=run(cmd2, env)
+        assert rc==0,(out3,err)
+        r2_repeat=json.loads(out3)
+        assert (r2_repeat.get("scenes") or [])==[],r2_repeat
+        a3=probe(assembly)
+        assert a3["sha256"]==a2["sha256"],(a2,a3)
+        result["checks"]["r2_repeat_is_media_idempotent"]=True
         result["observations"]={"r1_scenes":scene_obs,"r1_assembly":a1,"r2_assembly":a2}
         # Wrong selector must fail before claiming product output.
         env=os.environ.copy();env["PYTHONPATH"]=str(candidate/"backend")
