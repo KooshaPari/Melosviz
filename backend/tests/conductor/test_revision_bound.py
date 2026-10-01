@@ -145,3 +145,20 @@ def test_conductor_observes_scene_bytes_but_cannot_self_accept_them(tmp_path,mon
     row=l.db.execute("SELECT kind,verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()
     assert row==("scene","conductor:scene:0","rejected")
     assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE state='accepted'").fetchone()==(0,)
+
+
+def test_independent_verifier_can_promote_only_observed_scene_digest(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"SCENE")
+    digest=__import__("hashlib").sha256(b"SCENE").hexdigest()
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): return type("R",(),{"job_id":"J","per_scene_results":{0:{"artifact_path":str(artifact)}}})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    try:l.promote_scene_evidence(out.project_attempt_id,"e"*64,"reviewer:v1")
+    except RuntimeError:pass
+    else:raise AssertionError("unobserved digest promoted")
+    l.promote_scene_evidence(out.project_attempt_id,digest,"reviewer:v1")
+    assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND artifact_sha256=? AND state='accepted'",(out.project_attempt_id,digest)).fetchone()==(1,)
