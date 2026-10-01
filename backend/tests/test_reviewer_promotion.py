@@ -83,3 +83,17 @@ def test_reviewer_revision_must_match_durable_attempt(tmp_path):
     try:apply_reviewer_receipt(db,a,p)
     except RuntimeError as e: assert "revision" in str(e)
     else:raise AssertionError("stale revision reviewer receipt accepted")
+
+
+def test_attempt_without_candidate_identity_cannot_receive_reviewer_promotion(tmp_path):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
+    from melosviz.analysis.models import RenderSpec
+    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    s="a"*64; f="f"*64
+    l.record_evidence(a,"scene",s,"conductor","rejected"); l.promote_scene_evidence(a,s,"precheck")
+    asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
+    receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"candidate-sha","observations":{"promotion_receipt":{"project_revision":"R1","scene_artifacts":[{"scene_index":0,"sha256":s,"verifier":"reviewer"}],"final_artifact":{"sha256":f,"verifier":"reviewer"}}}}
+    p=tmp_path/"r.json"; p.write_text(json.dumps(receipt))
+    try:apply_reviewer_receipt(db,a,p)
+    except RuntimeError as e: assert "candidate identity" in str(e)
+    else:raise AssertionError("unbound attempt accepted reviewer receipt")
