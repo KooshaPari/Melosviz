@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS evidence(
  attempt_id INTEGER NOT NULL REFERENCES render_attempt(id),
  verifier TEXT NOT NULL,
  artifact_sha256 TEXT NOT NULL,
+ policy_revision INTEGER NOT NULL REFERENCES acceptance_policy(revision),
  collection_state TEXT NOT NULL CHECK(collection_state IN ('accepted','rejected','failed')),
  created_at REAL NOT NULL
 );
@@ -146,11 +147,11 @@ class Ledger:
             cur=self.db.execute("UPDATE render_attempt SET state='executed',artifact_sha256=?,artifact_path=?,lease_owner=NULL,lease_expires=NULL WHERE id=? AND state='leased'",(artifact_sha,artifact_path,attempt))
             if cur.rowcount!=1: raise RuntimeError("attempt not leased")
 
-    def accept(self,attempt:int,verifier:str,artifact_sha:str):
+    def accept(self,attempt:int,verifier:str,artifact_sha:str,policy_revision:int=1):
         row=self.db.execute("SELECT state,artifact_sha256 FROM render_attempt WHERE id=?",(attempt,)).fetchone()
         if not row or row != ("executed",artifact_sha): raise RuntimeError("evidence does not bind executed artifact")
         with self.db:
-            self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,collection_state,created_at) VALUES(?,?,?,'accepted',?)",(attempt,verifier,artifact_sha,time.time()))
+            self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,policy_revision,collection_state,created_at) VALUES(?,?,?,?,'accepted',?)",(attempt,verifier,artifact_sha,policy_revision,time.time()))
 
     def artifact_intact(self,attempt:int)->bool:
         row=self.db.execute("SELECT artifact_sha256,artifact_path FROM render_attempt WHERE id=? AND state='executed'",(attempt,)).fetchone()
@@ -164,7 +165,7 @@ class Ledger:
         target=self.db.execute("SELECT input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? AND scene_id=?",(pid,rev,sid)).fetchone()
         source=self.db.execute("""SELECT a.input_sha256,a.artifact_sha256 FROM render_attempt a
           WHERE a.id=? AND a.state='executed' AND EXISTS(
-            SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256)""",(source_attempt,)).fetchone()
+            SELECT 1 FROM evidence e WHERE e.attempt_id=a.id AND e.collection_state='accepted' AND e.artifact_sha256=a.artifact_sha256 AND e.policy_revision=?)""",(source_attempt,policy_revision)).fetchone()
         if not target or not source or target[0]!=source[0]: return False
         if not self.artifact_intact(source_attempt): return False
         if not self.db.execute("SELECT 1 FROM acceptance_policy WHERE revision=?",(policy_revision,)).fetchone(): return False
@@ -183,10 +184,10 @@ class Ledger:
         with self.db:
             self.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=?",(assembly,))
 
-    def record_failed_evidence(self,attempt:int,verifier:str,artifact_sha:str,collection_state:str='failed'):
+    def record_failed_evidence(self,attempt:int,verifier:str,artifact_sha:str,collection_state:str='failed',policy_revision:int=1):
         if collection_state not in ('rejected','failed'): raise ValueError(collection_state)
         with self.db:
-            self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,collection_state,created_at) VALUES(?,?,?,?,?)",(attempt,verifier,artifact_sha,collection_state,time.time()))
+            self.db.execute("INSERT INTO evidence(attempt_id,verifier,artifact_sha256,policy_revision,collection_state,created_at) VALUES(?,?,?,?,?,?)",(attempt,verifier,artifact_sha,policy_revision,collection_state,time.time()))
 
     def freeze_assembly(self,pid:str,rev:int)->int:
         scenes=list(self.db.execute("SELECT scene_id,input_sha256 FROM scene_revision WHERE project_id=? AND project_revision=? ORDER BY ordinal",(pid,rev)))
