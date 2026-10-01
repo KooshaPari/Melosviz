@@ -45,7 +45,11 @@ jobs:
           echo "pytest outcome=$PYTEST_OUTCOME"
           test "$PYTEST_OUTCOME" = success
       - name: Record SQLite runtime
-        run: python - <<'PY'
-          import sqlite3
-          print(sqlite3.sqlite_version)
-          PY
+        run: python -c 'import sqlite3; print(sqlite3.sqlite_version)' | tee sqlite-version.txt
+      - name: Upload runtime identity
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: durable-ledger-runtime
+          path: sqlite-version.txt
+          if-no-files-found: error
+          retention-days: 30
