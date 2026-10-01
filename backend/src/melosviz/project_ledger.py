@@ -133,10 +133,11 @@ class ProjectLedger:
             evidence=self.db.execute("SELECT 1 FROM attempt_evidence WHERE attempt_id=? AND kind='scene' AND artifact_sha256=? AND state='accepted'",(attempt_id,digest)).fetchone()
             if not evidence: raise RuntimeError(f"scene {scene_id} lacks accepted evidence for assembly digest")
         revision=self.db.execute("SELECT project_id,project_revision FROM render_attempt WHERE id=?",(attempt_id,)).fetchone()
-        scene_count=self.db.execute(
-            "SELECT json_array_length(spec_json,'$.scene_segments') FROM project_revision WHERE project_id=? AND revision=?",
+        spec_json=self.db.execute(
+            "SELECT spec_json FROM project_revision WHERE project_id=? AND revision=?",
             revision,
         ).fetchone()[0]
+        scene_count=len(json.loads(spec_json).get("scene_segments") or [])
         if len(ordered_inputs) != scene_count:
             raise RuntimeError(f"assembly scene denominator mismatch: expected {scene_count}, got {len(ordered_inputs)}")
         raw=json.dumps(ordered_inputs,separators=(",",":"))
