@@ -41,7 +41,8 @@ def test_r1_restart_r2_selective_reuse_and_immutable_history(tmp_path):
 
 def test_execution_cannot_self_accept_and_wrong_digest_evidence_fails(tmp_path):
     l=m.Ledger(tmp_path/"s.sqlite"); l.create_project("P"); l.add_policy({"verifier":"oracle:v1"}); r=l.author_revision("P",scenes())
-    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,"GOOD")
+    path=tmp_path/"good.bin"; path.write_bytes(b"GOOD"); sha=m.hashlib.sha256(b"GOOD").hexdigest()
+    a=l.queue("P",r,"S1"); assert l.claim(a,"w"); l.execute(a,sha,str(path))
     try: l.accept(a,"oracle","WRONG")
     except RuntimeError: pass
     else: raise AssertionError("wrong artifact evidence accepted")
