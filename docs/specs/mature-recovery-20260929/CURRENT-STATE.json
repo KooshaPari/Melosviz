@@ -275,7 +275,7 @@
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "cadde3290da7c25cd13cf4c6311c5f959dc6dc23",
+    "policy_head": "b977d5de7f6d99db6d8f5a660cf286e06b49c7ec",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
@@ -284,13 +284,13 @@
       "selective R2 leaves unselected S0 bytes unchanged",
       "exact repeated R2 produces no scene work and identical final digest"
     ],
-    "status": "PROMOTION_RECEIPT_SCHEMA_ADDED"
+    "status": "NUMERIC_REVISION_PROMOTION_RECEIPT"
   },
   "M_E03": {
-    "status": "FAIL_CLOSED_CANDIDATE_AND_REVISION_BOUND_PROMOTION_ACTIVE",
+    "status": "ATOMIC_CANDIDATE_BOUND_REVIEWER_PROMOTION_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "6b99df95fafc00a0319b0f9bf64ba5fe682a8cc3",
+    "head": "24cc0c5e2d05529f9bfa81e9c0afa5979d3a1bde",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -328,7 +328,11 @@
       "wrong-candidate receipt rejected",
       "reviewer revision must match durable attempt revision",
       "attempt without candidate identity cannot receive reviewer promotion",
-      "promotion requires candidate+revision+observed digest+completed final digest all match"
+      "promotion requires candidate+revision+observed digest+completed final digest all match",
+      "reviewer promotion validates all scene/final evidence before mutation",
+      "bad final digest leaves zero partial reviewer promotions",
+      "attempt without candidate identity cannot be reviewer-promoted",
+      "reviewer project revision must match durable attempt revision"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
