@@ -252,8 +252,8 @@
   "durable_state_experiment": {
     "branch": "experiment/melosviz-durable-ledger-pass10",
     "pr": 304,
-    "head": "799fcdfec7c9ad96a5e2535a9774ac99d5054e8b",
-    "status": "REPAIRED_REQUEUED",
+    "head": "0ff97741ef00270fac2c11e2c94a3f2aee31acd8",
+    "status": "POLICY_REVISION_CONTROLS_ADDED__EXACT_HEAD_QUEUED",
     "scope": "isolated schema/state-machine feasibility; not M-E03 integration",
     "demonstration_targets": [
       "R1 close/reopen R2",
@@ -269,9 +269,14 @@
       "failed verifier evidence durable but non-accepting",
       "queued/leased attempt cannot be accepted",
       "assembly frozen/executed/accepted states distinct",
-      "wrong final assembly digest cannot be accepted"
+      "wrong final assembly digest cannot be accepted",
+      "acceptance policy is immutable revision",
+      "reuse receipt binds policy revision",
+      "new policy cannot inherit old acceptance without new evidence",
+      "unknown policy fails closed",
+      "syntax gate separate from behavioral grade"
     ],
-    "workflow_run": 36820739135,
+    "workflow_run": 36821171954,
     "latest_repairs": [
       "pathless symbolic artifact cannot qualify for reuse",
       "fixtures use concrete content-addressed bytes",
@@ -280,13 +285,14 @@
   },
   "reviewer_grade": {
     "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "72408bec1e6815aa8feebd325fedded87fbd25f9",
+    "policy_head": "925fda9b158b12f8ddfdbc05b4b30ac0633b0689",
     "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
     "new_negative_controls": [
       "stored producer identity corruption forces rerender",
       "R2 final digest differs from R1 after S2 edit",
-      "post-success final media corruption is non-green"
+      "post-success final media corruption is non-green",
+      "selective R2 leaves unselected S0 bytes unchanged"
     ],
-    "status": "DISPATCHABLE_PENDING_RECEIPT"
+    "status": "TRIGGER_REPAIRED__AWAITING_RECEIPT"
   }
 }
