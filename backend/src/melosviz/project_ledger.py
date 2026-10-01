@@ -62,8 +62,18 @@ def canonical_spec(spec:RenderSpec)->tuple[str,str]:
 class ProjectLedger:
     def __init__(self,path:Path):
         self.path=Path(path); self.db=sqlite3.connect(self.path)
-        self.db.execute("PRAGMA foreign_keys=ON"); self.db.executescript(SCHEMA); self.db.commit()
+        self.db.execute("PRAGMA foreign_keys=ON"); self.db.executescript(SCHEMA); self._migrate(); self.db.commit()
     def close(self): self.db.close()
+    def _migrate(self):
+        columns={row[1] for row in self.db.execute("PRAGMA table_info(render_attempt)")}
+        if "candidate_sha" not in columns:
+            self.db.execute("ALTER TABLE render_attempt ADD COLUMN candidate_sha TEXT")
+        # user_version is the durable schema identity, independent of app version.
+        self.db.execute("PRAGMA user_version=2")
+
+    def schema_version(self)->int:
+        return self.db.execute("PRAGMA user_version").fetchone()[0]
+
     def ensure_project(self,project_id:str):
         with self.db:
             self.db.execute("INSERT OR IGNORE INTO project VALUES(?,?)",(project_id,time.time()))
