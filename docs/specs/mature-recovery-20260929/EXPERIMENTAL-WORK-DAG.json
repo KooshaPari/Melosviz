@@ -64,7 +64,7 @@
     },
     {
       "id": "M-E03",
-      "state": "BLOCKED_ON_M_E02_INDEPENDENT_ACCEPTANCE",
+      "state": "BLOCKED_ON_M_E02_INDEPENDENT_ACCEPTANCE_AND_PRODUCT_INTEGRATION",
       "depends_on": [
         "M-E02",
         "result contract review"
@@ -87,9 +87,9 @@
       "preparatory_experiment": {
         "branch": "experiment/melosviz-durable-ledger-pass10",
         "pr": 304,
-        "head": "9ba4ccdcd4a84a155b53209fa5017ed4d02bed50",
-        "status": "BEHAVIORAL_RED_DIAGNOSTIC_ARTIFACT_ENABLED",
-        "scope": "isolated durable-state feasibility only"
+        "head": "f42320d030c3dfc11395da7fc66a4ed818349c01",
+        "workflow_run": 36854431337,
+        "status": "EXPERIMENTALLY_ACCEPTED_FEASIBILITY_SLICE"
       }
     },
     {
