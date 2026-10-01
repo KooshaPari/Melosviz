@@ -99,7 +99,26 @@ jobs:
               exit 1
               ;;
           esac
-          uv pip install --only-binary :all: --no-deps "setuptools==${SETUPTOOLS_VERSION}"
+          # The wheel is hash-verified too. `uv export --no-emit-project`
+          # omits build-system requirements, so setuptools cannot ride in on
+          # the hash-verified requirements file and has to be installed
+          # separately -- which meant the one package whose integrity nothing
+          # checked was the build backend for the whole install. Read the wheel
+          # hash straight out of uv.lock (the same file the version came from)
+          # and install through --require-hashes, so this is no weaker than the
+          # rest of the install. The awk `exit` stops at the first
+          # py3-none-any wheel so a second matching record cannot contribute a
+          # second hash; the sdist hash deliberately does not match, and
+          # --only-binary :all: means the sdist is never fetched anyway.
+          SETUPTOOLS_HASH="$(awk '/^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || {
+            echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2
+            exit 1
+          }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
 
