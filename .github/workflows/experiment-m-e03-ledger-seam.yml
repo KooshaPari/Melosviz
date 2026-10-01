@@ -43,3 +43,42 @@ jobs:
         env:
           PYTEST_OUTCOME: ${{ steps.pytest.outcome }}
         run: test "$PYTEST_OUTCOME" = success
+
+  reviewer_cross_authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REVIEWER_SHA: b977d5de7f6d99db6d8f5a660cf286e06b49c7ec
+      CANDIDATE_SHA: 2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0
+    steps:
+      - name: Checkout pinned reviewer policy
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.REVIEWER_SHA }}
+          path: reviewer
+      - name: Checkout pinned M-E02 candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          path: candidate
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with: {python-version: "3.11"}
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install -e "candidate/backend[test]"
+      - name: Execute pinned reviewer against pinned candidate
+        run: |
+          python -m py_compile reviewer/docs/specs/mature-recovery-20260929/pass9/reviewer_m_e02.py
+          python reviewer/docs/specs/mature-recovery-20260929/pass9/reviewer_m_e02.py --candidate candidate --expected-sha "$CANDIDATE_SHA" --out reviewer-evidence.json
+      - name: Require receipt
+        if: always()
+        run: test -s reviewer-evidence.json
+      - name: Upload cross-authority receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: reviewer-cross-authority
+          path: reviewer-evidence.json
+          if-no-files-found: error
+          retention-days: 30
