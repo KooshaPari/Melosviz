@@ -2,6 +2,7 @@ name: Reviewer - M-E02 exact candidate structural grade
 on:
   push:
     branches: [docs/mature-recovery-20260929]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
