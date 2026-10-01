@@ -36,9 +36,29 @@ jobs:
           # re-resolves, and the drift is invisible until the two disagree.
           # `uv export` needs the group named explicitly; it emits no
           # dependency-groups unless asked.
-          MUTMUT_VERSION="$(uv export --locked --only-group dev \
-            | grep -E '^mutmut==' | cut -d'=' -f3)"
-          test -n "$MUTMUT_VERSION" || { echo "could not read the locked mutmut version from uv.lock" >&2; exit 1; }
+          #
+          # --no-hashes is required, not cosmetic. Without it `uv export`
+          # emits `mutmut==3.8.0 \` (the backslash continues onto the hash
+          # lines), so `cut -d'=' -f3` scrapes "3.8.0 \" and the version-shape
+          # guard below rejects it, failing this job on every run. The
+          # trailing `tr -d '[:space:]\\'` is belt-and-braces for the same
+          # reason: it makes the scrape correct whether or not hashes are
+          # present, so a future change to the export flags cannot silently
+          # reintroduce this.
+          #
+          # The export is captured before the grep/cut so a failing `uv
+          # export` (a lock that no longer matches pyproject.toml under
+          # --locked, a renamed dependency group) aborts here, instead of
+          # yielding an empty string that surfaces much later as the
+          # unrelated-looking "could not read the locked mutmut version".
+          set -o pipefail
+          EXPORT_OUT="$(uv export --locked --only-group dev --no-hashes)"
+          MUTMUT_VERSION="$(printf '%s\n' "$EXPORT_OUT" | grep -E '^mutmut==' | cut -d'=' -f3 | tr -d '[:space:]\\')"
+          test -n "$MUTMUT_VERSION" || {
+            echo "::error::could not read the locked mutmut version from uv.lock (uv export failed or mutmut is gone from the dev group)"
+            printf '%s\n' "$EXPORT_OUT" | tail -20 >&2
+            exit 1
+          }
           case "$MUTMUT_VERSION" in
             *[!0-9.]*|'')
               echo "::error::locked mutmut version is not a version string: $MUTMUT_VERSION" >&2
