@@ -97,3 +97,23 @@ def test_attempt_without_candidate_identity_cannot_receive_reviewer_promotion(tm
     try:apply_reviewer_receipt(db,a,p)
     except RuntimeError as e: assert "candidate identity" in str(e)
     else:raise AssertionError("unbound attempt accepted reviewer receipt")
+
+
+def test_bad_final_digest_leaves_no_partial_scene_promotions(tmp_path):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
+    from melosviz.analysis.models import RenderSpec
+    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    s="a"*64; final="f"*64
+    l.record_evidence(a,"scene",s,"conductor","rejected")
+    l.promote_scene_evidence(a,s,"precheck")
+    asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,final)
+    before=l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND verifier='reviewer:v1'",(a,)).fetchone()[0]
+    l.close()
+    receipt={"verdict":"PASS_REVIEWER_STRUCTURAL","candidate":"candidate-sha","observations":{"promotion_receipt":{"project_revision":"R1","scene_artifacts":[{"scene_index":0,"sha256":s,"verifier":"reviewer:v1"}],"final_artifact":{"sha256":"e"*64,"verifier":"reviewer:v1"}}}}
+    p=tmp_path/"bad.json"; p.write_text(json.dumps(receipt))
+    try:apply_reviewer_receipt(db,a,p)
+    except RuntimeError:pass
+    else:raise AssertionError("bad final accepted")
+    l=ProjectLedger(db)
+    assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND verifier='reviewer:v1'",(a,)).fetchone()[0]==before
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("completed",)
