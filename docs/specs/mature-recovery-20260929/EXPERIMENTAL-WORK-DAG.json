@@ -87,9 +87,8 @@
       "preparatory_experiment": {
         "branch": "experiment/melosviz-durable-ledger-pass10",
         "pr": 304,
-        "head": "799fcdfec7c9ad96a5e2535a9774ac99d5054e8b",
-        "workflow_run": 36820739135,
-        "status": "REPAIRED_REQUEUED",
+        "head": "9ba4ccdcd4a84a155b53209fa5017ed4d02bed50",
+        "status": "BEHAVIORAL_RED_DIAGNOSTIC_ARTIFACT_ENABLED",
         "scope": "isolated durable-state feasibility only"
       }
     },
