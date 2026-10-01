@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS render_attempt(
  spec_sha256 TEXT NOT NULL,
  state TEXT NOT NULL CHECK(state IN ('running','completed','failed')),
  job_id TEXT,
+ candidate_sha TEXT,
  started_at REAL NOT NULL,
  completed_at REAL,
  FOREIGN KEY(project_id,project_revision) REFERENCES project_revision(project_id,revision)
@@ -82,11 +83,11 @@ class ProjectLedger:
         raw,expected=row
         if hashlib.sha256(raw.encode()).hexdigest()!=expected: raise RuntimeError("stored RenderSpec digest mismatch")
         return RenderSpec.model_validate_json(raw)
-    def start_attempt(self,project_id:str,revision:int)->int:
+    def start_attempt(self,project_id:str,revision:int,candidate_sha:str|None=None)->int:
         row=self.db.execute("SELECT spec_sha256 FROM project_revision WHERE project_id=? AND revision=?",(project_id,revision)).fetchone()
         if not row: raise KeyError((project_id,revision))
         with self.db:
-            cur=self.db.execute("INSERT INTO render_attempt(project_id,project_revision,spec_sha256,state,started_at) VALUES(?,?,?,'running',?)",(project_id,revision,row[0],time.time()))
+            cur=self.db.execute("INSERT INTO render_attempt(project_id,project_revision,spec_sha256,state,candidate_sha,started_at) VALUES(?,?,?,'running',?,?)",(project_id,revision,row[0],candidate_sha,time.time()))
         return cur.lastrowid
 
     def finish_attempt(self,attempt_id:int,job_id:str|None):
