@@ -44,6 +44,15 @@ jobs:
           # the trust-on-first-use in the script.
           set -euo pipefail
           ARCH="$(dpkg --print-architecture)"
+          # INFISICAL_AMD64_SHA256 describes the amd64 asset only, and ARCH
+          # comes from whatever runner we land on. Guard the mismatch here so an
+          # arm64 runner fails with the real reason instead of falling through
+          # to a "pinned digest does not match upstream" error, which reads as
+          # a tampered or stale pin.
+          if [ "$ARCH" != "amd64" ]; then
+            echo "::error::INFISICAL_AMD64_SHA256 is only valid for amd64; this runner is ${ARCH}" >&2
+            exit 1
+          fi
           # The release tag is v0.43.138 but the asset filename drops the leading
           # v: infisical_0.43.138_linux_amd64.deb, not infisical_v0.43.138_...
           VER_NUM="${INFISICAL_VERSION#v}"
@@ -56,7 +65,15 @@ jobs:
           # Cross-check the digest against the release's published checksums
           # file as well as the pinned value, so a stale pin cannot silently
           # differ from upstream without being noticed here.
-          EXPECTED_UPSTREAM="$(awk -v f="${DEB}" '$2 == f { print $1 }' /tmp/checksums.txt)"
+          #
+          # Verified layout for v0.43.138 is coreutils: `<sha256><space><space><file>`.
+          # The leading `*` strip additionally tolerates the binary-mode shape
+          # `<sha256> *<file>` that `sha256sum -b` and GoReleaser emit, so a
+          # format-only change upstream does not read as a tampered pin and take
+          # secret pull-down with it. It deliberately does NOT try to parse the
+          # `SHA256 (<file>) = <hex>` shape -- that layout puts the filename in
+          # field 3, not 2.
+          EXPECTED_UPSTREAM="$(awk -v f="${DEB}" '{ sub(/^\*/, "", $2); if ($2 == f) print $1 }' /tmp/checksums.txt)"
           test -n "$EXPECTED_UPSTREAM" || {
             echo "::error::${DEB} is not listed in the published checksums.txt" >&2
             exit 1
@@ -69,7 +86,15 @@ jobs:
           }
 
           echo "${INFISICAL_AMD64_SHA256}  /tmp/${DEB}" | sha256sum --check --strict
-          sudo dpkg --install "/tmp/${DEB}"
+          # apt-get, not dpkg --install: dpkg only unpacks and configures, so the
+          # moment the deb declares a Depends: the runner does not already satisfy,
+          # dpkg exits non-zero with "dependency problems prevent the
+          # configuration of infisical" and `infisical --version` never runs.
+          # Installing the local, already-digest-verified file through apt keeps
+          # the integrity guarantee (apt is handed a path, not a repo or a URL)
+          # while restoring dependency resolution that the old
+          # `apt-get install -y infisical` had.
+          sudo apt-get install -y "/tmp/${DEB}"
 
           infisical --version
 

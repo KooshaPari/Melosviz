@@ -271,11 +271,17 @@ def _ffmpeg_minterpolate_cmd(
     by ``fps`` and the input clip duration, so the caller's frame budget cannot
     be passed here.
 
-    The budget is still reported, via the manifest and the
-    ``frames_inserted`` key of :func:`interpolate_pair`, but note that on this
-    path that key is the *requested* budget echoed back, not a measured count
-    of frames in the produced file. The real output length follows ``fps`` and
-    the input clip duration.
+    The budget is still reported by :func:`interpolate_pair`, in its
+    ``frames_inserted`` key -- but on this path that key is the *requested*
+    budget echoed back, not a measured count of frames in the produced file.
+    The real output length follows ``fps`` and the input clip duration.
+
+    No manifest is written on this path. ``_write_manifest`` runs only on the
+    ``missing_backend`` / ``fallback_manifest`` branches, which are exactly the
+    branches that report ``frames_inserted: 0``, so the budget reaches a
+    manifest only when frames were not rendered. The manifest records the
+    budget under its own ``frames_to_insert`` key; the two are never populated
+    together.
     """
     filter_chain = (
         f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1[outv]"
@@ -324,12 +330,16 @@ def interpolate_pair(
         Dict with status, frames_inserted, output_path, and (if applicable)
         backend + ffmpeg_filter.
 
-        ``frames_inserted`` is the *requested* frame budget, not a measured
-        count. On the ffmpeg path ffmpeg's ``minterpolate`` takes no frame-count
-        option, so the real output length follows ``fps`` and the input clip
-        duration; the budget is reported so downstream callers have the
-        requested value, and it should not be read as the length of the file
-        that was written.
+        ``frames_inserted`` has status-dependent meaning, so do not read it
+        as a frame count in general:
+
+        - on ``status: "ok"`` it is the *requested* frame budget echoed back,
+          not a measured count. On the ffmpeg path ffmpeg's ``minterpolate``
+          takes no frame-count option, so the real output length follows
+          ``fps`` and the input clip duration.
+        - on every other status it is hardcoded ``0``, regardless of what was
+          requested -- meaning nothing was produced, not that nothing was
+          asked for.
 
     Status semantics:
         - "ok": frames written to output_path
