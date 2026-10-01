@@ -69,7 +69,16 @@ jobs:
         # longer satisfies pyproject.toml, so drift between the two shows up
         # as a green run against a resolution nobody reviewed. This is the same
         # reason the other migrated workflows pass it.
-        run: uv sync --locked --all-extras --dev
+        #
+        # --no-build is the third half of the same guarantee (githubactions:S8541):
+        # without it `uv sync` runs each package's build backend, so a dependency
+        # that ships a setup script gets to execute during install. The other
+        # migrated workflows here already reach the same end state with
+        # `uv export` + `uv pip install --no-build-isolation` + `uv run --no-build`;
+        # this job keeps `uv sync` because it wants --all-extras --dev in one
+        # step, and --no-build makes it skip build-backend execution without
+        # changing which versions are installed.
+        run: uv sync --locked --all-extras --dev --no-build
 
       - name: Run GPU smoke test (slow)
         working-directory: backend

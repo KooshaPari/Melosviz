@@ -132,7 +132,18 @@ jobs:
         # implement, so forcing the vitest process onto Bun's runtime dies at
         # startup with "Export named 'parseEnv' not found in module 'util'".
         # Plain `bunx` runs vitest on Node, where the import resolves.
-        run: bunx vitest run
+        #
+        # `bunx <pkg>` also re-resolves <pkg> from the registry at run time, which
+        # is why this used to be flagged (githubactions:S8543): the step installed
+        # web/ from the committed lock and then threw the install away by fetching
+        # a different vitest to execute. `bun run` invokes the binary already in
+        # node_modules/.bin, which is the lock-verified one -- same script name,
+        # so no package.json change and no version to keep in sync here. Verified
+        # after a --frozen-lockfile install: node_modules/.bin/vitest is present
+        # and reports `vitest/5.0.1`, matching web/package.json's ^5.0.1.
+        #
+        # `--bun` is still deliberately absent, for the parseEnv reason above.
+        run: bun run vitest run
       - name: Typecheck
         working-directory: web
         run: bunx tsc --noEmit -p tsconfig.json
