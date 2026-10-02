@@ -281,9 +281,15 @@ class TestResolveFFmpegBinary:
             _resolve_ffmpeg_binary,
         )
 
+        # Narrow env patch on purpose: this function is mutated, so mutmut's
+        # trampoline reads os.environ.get("MUTMUT_DEPENDENCY_DEPTH") around every
+        # traced call. Patching os.environ.get wholesale hands that read a None,
+        # and int(None) raises TypeError inside the tracer instead of the code
+        # under test. Clearing the one key this function consults keeps the
+        # test's intent (no ffmpeg configured) without blinding the tracer.
         with (
             patch("shutil.which", return_value=None),
-            patch("os.environ.get", return_value=None),
+            patch.dict("os.environ", {"MELOSVIZ_FFMPEG_BIN": ""}),
             pytest.raises(FFMpegNotFoundError),
         ):
             _resolve_ffmpeg_binary()
@@ -1985,9 +1991,12 @@ class TestBlenderExporterCoverage:
         )
 
         spec = RenderSpec(metadata={"duration": 0.1})
+        # Narrow env patch for the same reason as TestResolveFFmpegBinary:
+        # a global os.environ.get patch breaks mutmut's trampoline, which reads
+        # MUTMUT_DEPENDENCY_DEPTH through os.environ.get on every traced call.
         with (
             patch("shutil.which", return_value=None),
-            patch("os.environ.get", return_value=None),
+            patch.dict("os.environ", {"MELOSVIZ_BLENDER_BIN": ""}),
             pytest.raises((BlenderNotFoundError, BlenderRenderError)),
         ):
             export_blender(spec, output_dir=tmp_path)
