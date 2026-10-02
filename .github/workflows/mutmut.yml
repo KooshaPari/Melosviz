@@ -57,11 +57,25 @@ jobs:
           #
           # The right set is whatever the suite under mutation actually imports.
           # `quality-gate-reusable.yml:172` runs this same backend suite with
-          # `--extra test --extra lint --extra analysis --extra bridge --group dev`,
-          # and that job is green, so those are the extras the tests need.
-          # `stems` is deliberately absent: its three distributions
-          # (demucs, dora-search, antlr4-python3-runtime) are sdist-only in
-          # uv.lock, which --only-binary :all: below refuses to build.
+          # `--extra test --extra lint --extra analysis --extra bridge --group dev`.
+          # This job deliberately narrows that to `--extra test --extra analysis
+          # --extra bridge`: `--extra lint` is omitted because ruff and mypy are
+          # not imported by any test, and `--group dev` is omitted because
+          # mutmut is installed below from its own locked record with its own
+          # hash check (and pytest-cov/bandit/pip-audit are irrelevant to a
+          # mutation sweep). Naming the narrowing so a future reader can tell a
+          # decision from an oversight.
+          #
+          # `stems` is deliberately absent, and the reason is download size, not
+          # wheel availability. `stems` is ["demucs>=4.0", "torch>=2.0"], and
+          # uv.lock carries 24 torch wheel records plus 28 for torchaudio, so
+          # `--only-binary :all:` and `--require-hashes` would both be
+          # satisfied by torch. What would not be satisfied is the mutants
+          # install budget: a multi-GB CUDA/torch wheel pulled into every
+          # mutation run buys nothing, because no test under mutation imports
+          # the stems chain. The genuinely sdist-only records are demucs and
+          # its transitive deps (dora-search, antlr4-python3-runtime), but
+          # omitting `stems` avoids that whole graph either way.
           uv export --locked --no-emit-project \
             --extra test --extra analysis --extra bridge \
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
@@ -183,9 +197,17 @@ jobs:
             printf '%s\n' "$EXPORT_OUT" | tail -20 >&2
             exit 1
           }
+          # Same allowlist as the setuptools guard above, and for the same
+          # reason: `[!0-9.]` rejects legitimate PEP 440 prerelease and local
+          # versions (3.9.0rc1, 3.9.0-rc1, 3.9.0+local), so a routine
+          # `uv lock --upgrade mutmut` landing on a prerelease would turn this
+          # weekly job red with a diagnostic that points at the workflow rather
+          # than at the lockfile. This value is interpolated into
+          # `mutmut==%s --hash=%s` identically to setuptools, so the same
+          # character set applies verbatim.
           case "$MUTMUT_VERSION" in
-            *[!0-9.]*|'')
-              echo "::error::locked mutmut version is not a version string: $MUTMUT_VERSION" >&2
+            *[!0-9A-Za-z.+-]*|'')
+              echo "::error::locked mutmut version is not a single safe version token: $MUTMUT_VERSION" >&2
               exit 1
               ;;
           esac
@@ -218,17 +240,34 @@ jobs:
         # "not killed" -- a 0% score that is an artefact of a missing system
         # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
         # ffmpeg. `quality-gate-reusable.yml` and `timing-budgets.yml` both run
-        # this same backend suite and both install it with this exact line;
+        # this same backend suite, and both install it with this exact line:
         # this job now does too, so there is one answer to "how does CI get
-        # ffmpeg" rather than three.
+        # ffmpeg" rather than three. (timing-budgets.yml:143 is a fourth site and
+        # is NOT the same line -- it uses `-qq` on both apt calls, chains with
+        # `&&` on one line, and does no version check at all.)
         #
-        # `ffmpeg -version | head -n 1` fails the step if the binary is absent,
-        # so a future runner-image change that drops the package is reported as
-        # "ffmpeg missing" rather than as a mysterious 0% mutation score.
+        # The version check has to be the pipeline-free form to be load-bearing.
+        # This step does not set `set -o pipefail`, and GitHub's default Linux
+        # shell for `run:` is `bash -e {0}`, which has no pipefail, so
+        # `ffmpeg -version | head -n 1` exits with head's status -- 0 whether or
+        # not ffmpeg exists. With the binary missing the step would print
+        # "ffmpeg: command not found" and go green, which is precisely the
+        # mysterious 0% mutation score this check exists to prevent.
+        # `ffmpeg -version > /dev/null` has no pipeline, so the exit status is
+        # ffmpeg's own. quality-gate-reusable.yml:147 has the same
+        # non-load-bearing line; see that file.
+        #
+        # The apt package is deliberately unpinned, which is the one install here
+        # that is not hash-verified from uv.lock. That is unavoidable and not a
+        # build input: ffmpeg is not a Python dependency, it is the video-export
+        # backend the test suite shells out to, and MELOSVIZ_FFMPEG_BIN is the
+        # supported override for anything that needs a specific build. Pinning
+        # it in this file would drift from the runner image for no security gain
+        # on a read-only, contents:read job.
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          ffmpeg -version | head -n 1
+          ffmpeg -version > /dev/null
       - name: Run mutmut (bounded)
         working-directory: backend
         # Full suite is slow; mutate a high-value slice and report score.
@@ -312,24 +351,64 @@ jobs:
             echo "::error::mutmut export-cicd-stats wrote no $STATS; the mutation pass produced no reportable data" >&2
             exit 1
           }
-          # Parse the score out of the JSON rather than grepping the human log,
-          # and fail if the file has no total, so a structurally wrong artifact
+          # Parse the score out of the JSON rather than grepping the human log, and
+          # fail if the file has no total, so a structurally wrong artifact
           # cannot pass as a result.
-          python - "$STATS" <<'PY'
+          #
+          # Required keys are read with no default, so a key rename in a future
+          # mutmut release raises KeyError naming the key instead of silently
+          # scoring 0 and blaming "no mutants were tested" for what is actually
+          # a schema change.
+          #
+          # The score is compared against the target rather than merely printed.
+          # The job name advertises "target >=75%" and .qgate.toml sets
+          # `mutation_threshold = 75`, but the only failure this block used to
+          # raise was `tested <= 0`, so a sweep that killed 1 of 26506 mutants
+          # printed "mutation score: 0.0%" and exited green. Reporting the
+          # number made the miss visible in the log while leaving the gate open,
+          # which is the worst of both.
+          #
+          # The threshold is scraped from .qgate.toml rather than hardcoded, so
+          # this workflow and the qgate evaluator cannot drift apart. Note the
+          # key is `mutation_threshold`, NOT `target_score`: qgate's config is
+          # flat keys with deny_unknown_fields, and the `target_score = 75` that
+          # appears in that file is inside a documentation comment block, not a
+          # real setting. Verified against the parsed TOML. An unreadable value
+          # is a hard error rather than a silent default, because defaulting to
+          # 75 would quietly stop the gate being a gate if the file ever moved.
+          TARGET_SCORE="$(sed -n 's/^[[:space:]]*mutation_threshold[[:space:]]*=[[:space:]]*\([0-9.]\+\).*/\1/p' \
+            "$GITHUB_WORKSPACE/.qgate.toml" | head -n 1)"
+          if [ -z "$TARGET_SCORE" ]; then
+            echo "::error::could not read mutation_threshold from .qgate.toml" >&2
+            exit 1
+          fi
+          python - "$STATS" "$TARGET_SCORE" <<'PY'
           import json, pathlib, sys
 
           stats = json.loads(pathlib.Path(sys.argv[1]).read_text("utf-8"))
-          total = int(stats.get("total", 0))
-          tested = total - int(stats.get("skipped", 0))
-          killed = int(stats.get("killed", 0)) + int(stats.get("timeout", 0))
+          # No .get defaults: a renamed key is a schema change and must say so.
+          total = int(stats["total"])
+          skipped = int(stats["skipped"])
+          killed = int(stats["killed"])
+          timeout = int(stats["timeout"])
+          survived = int(stats["survived"])
+
+          tested = total - skipped
+          # Timeouts are mutants the harness could not resolve, so they are
+          # reported but not credited as kills: crediting them is what lets an
+          # uncollectable suite score 100% without a single assertion running.
           score = (killed / tested * 100) if tested > 0 else 0.0
-          print(f"mutation score: {score:.1f}% "
-                f"({killed}/{tested} of {total} mutants killed) "
-                f"survived={stats.get('survived')} "
-                f"no_tests={stats.get('no_tests')} "
-                f"skipped={stats.get('skipped')}")
+          target = float(sys.argv[2])
+          print(f"mutation score: {score:.1f}% (target >= {target:.0f}%) "
+                f"{killed}/{tested} of {total} mutants killed "
+                f"survived={survived} timeout={timeout} "
+                f"no_tests={stats['no_tests']} skipped={skipped}")
           if tested <= 0:
               print("::error::no mutants were actually tested, so the score is not a result", file=sys.stderr)
+              sys.exit(1)
+          if score < target:
+              print(f"::error::mutation kill-score {score:.1f}% is below the "
+                    f"{target:.0f}% target ({killed}/{tested} killed)", file=sys.stderr)
               sys.exit(1)
           PY
           exit "$RUN_STATUS"
