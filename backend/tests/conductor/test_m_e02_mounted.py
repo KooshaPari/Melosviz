@@ -224,7 +224,11 @@ def test_mounted_r2_selective_render_reuses_r1_evidence_for_complete_assembly(
     assert r1_duration > 1.5, r1_duration
 
     payload = json.loads(sb.read_text(encoding="utf-8"))
+    r1_digest = __import__("hashlib").sha256(assembled.read_bytes()).hexdigest()
+    s0_path = Path(r1["scenes"][0]["artifact_path"])
+    s0_digest = __import__("hashlib").sha256(s0_path.read_bytes()).hexdigest()
     payload["scenes"][1]["prompt"] = "fixture scene one revised"
+    payload["scenes"][1]["palette"] = ["#00ff00"]
     sb.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     r2 = _run_cli(wav, sb, out, only_scenes="1")
@@ -236,3 +240,5 @@ def test_mounted_r2_selective_render_reuses_r1_evidence_for_complete_assembly(
     # A selected-only assembly would be ~1 second. Reuse of unchanged S0 must
     # keep the complete two-scene timeline.
     assert r2_duration > 1.5, r2_duration
+    assert __import__("hashlib").sha256(assembled.read_bytes()).hexdigest() != r1_digest
+    assert __import__("hashlib").sha256(s0_path.read_bytes()).hexdigest() == s0_digest
