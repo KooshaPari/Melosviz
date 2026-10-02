@@ -20,11 +20,33 @@ concurrency:
   # other; both runs died with
   #   "Canceling since a higher priority waiting request for
   #    agileplus-pillar-scorecard exists"
-  # rather than on any test or lint result. Every other workflow in this
-  # repo scopes its group by ${{ github.workflow }}-${{ github.ref }} for
-  # exactly this reason; this file was the sole exception. Scoping by ref
-  # keeps the intended behaviour (a new push to the same branch cancels that
-  # branch's own stale run) and stops unrelated PRs cancelling each other.
+  # rather than on any test or lint result. This file was the only workflow
+  # whose group named neither the workflow nor the ref, and therefore the only
+  # one whose group was not ref-scoped. Scoping by ref keeps the intended
+  # behaviour (a new push to the same branch cancels that branch's own stale
+  # run) and stops unrelated PRs cancelling each other.
+  #
+  # The `agileplus-pillar-scorecard-` literal prefix before
+  # `${{ github.workflow }}` is redundant. This workflow is `name: AgilePlus
+  # Pillar Scorecard`, so github.workflow already expands to that display name
+  # and the group resolves to something like
+  #   AgilePlus Pillar Scorecard-refs/heads/feature-x
+  # It is kept anyway because the 12 other workflows that carry a literal
+  # prefix do the same (a11y-<workflow>-<ref>, qgate-<workflow>-<ref>, ...),
+  # so the prefix is the house convention rather than something to be special
+  # here. Dropping it would change nothing functionally -- GitHub matches
+  # group names case-insensitively and imposes no length limit -- but it would
+  # make this one file the odd one out for no gain.
+  #
+  # Verified against the tree rather than asserted: 17 workflows declare a
+  # concurrency group and all 17 are ref-scoped. Four use a different shape
+  # from this one and are not ref-plus-workflow:
+  #   locale-parity.yml       locale-parity-${{ github.ref }}
+  #   trunk-check.yml         trunk-${{ github.ref }}
+  #   release-macos.yml       macos-release-Melosviz-${{ github.ref }}
+  #   ci.yml                  ${{ github.workflow }}-${{ github.ref }}  (no prefix)
+  # So ref-scoping is universal here; the exact expression is not, and this
+  # comment should not claim otherwise.
   group: agileplus-pillar-scorecard-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 

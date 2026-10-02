@@ -86,9 +86,16 @@ jobs:
             printf '%s\n' "$SETUPTOOLS_VERSION" >&2
             exit 1
           fi
+          # Reject anything that is not a non-empty run of digits and dots.
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
+          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
+          # passes it. uv.lock legitimately holds prerelease and local versions, so
+          # that guard rejected nothing in the cases it was written for. Listing the
+          # complement -- anything containing a character other than a digit or a dot,
+          # or the empty string -- is the version that actually holds.
           case "$SETUPTOOLS_VERSION" in
-            [!0-9]*|'')
-              echo "::error::setuptools version from uv.lock is not numeric: $SETUPTOOLS_VERSION" >&2
+            ''|*[!0-9.]*)
+              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
               exit 1
               ;;
           esac

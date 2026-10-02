@@ -43,10 +43,12 @@ jobs:
         #   npm ci --prefix web --legacy-peer-deps --no-audit --no-fund \
         #          --ignore-scripts
         #     -> exit 0, "added 253 packages in 2m"
-        # Both runs produced an identical 252-package name@version set, so the
-        # flag changed nothing about what landed in node_modules. If a peer
-        # conflict is ever reintroduced, let it fail here and fix the conflict;
-        # do not re-add the flag.
+        # The "253" is npm's own report from both runs, not a count derived
+        # separately. What matters is that the two numbers are equal: the flag
+        # changed nothing about how many packages landed in node_modules, and
+        # `npm ci` is a lockfile install, so an equal package count off the same
+        # lockfile means an equal tree. If a peer conflict is ever reintroduced,
+        # let it fail here and fix the conflict; do not re-add the flag.
         run: npm ci --prefix web --no-audit --no-fund --ignore-scripts
       - name: Start R3F canvas fixture dev server (Vite)
         working-directory: web

@@ -52,6 +52,69 @@ jobs:
           uv venv
           uv pip install --only-binary :all: --require-hashes --no-deps \
             -r "$RUNNER_TEMP/uv-requirements.txt"
+          # The build backend has to be in the venv before the editable install
+          # below, because --no-build-isolation means uv will not provision one.
+          # `uv venv` on a Linux runner produces a bare venv: it contains no
+          # setuptools and no pip, so `import setuptools` fails and the build
+          # dies with
+          #   ModuleNotFoundError: No module named 'setuptools'
+          # before this job ever reaches mutmut. backend/pyproject.toml declares
+          # build-system requires = ["setuptools>=61", "wheel"], but uv.lock has
+          # no `wheel` record at all, so only setuptools can come from the lock.
+          # Take both its version and its wheel digest out of the lock rather
+          # than writing a literal pin here, for the same reason as mutmut
+          # below: a literal is a second source of truth that drifts silently.
+          # Reading it from the lock also keeps this step off githubactions:S8544.
+          # The awk `exit` stops at the first py3-none-any wheel so a second
+          # matching record cannot contribute a second hash; the sdist hash
+          # deliberately does not match, and --only-binary :all: means the
+          # sdist is never fetched anyway.
+          #
+          # `wheel` not being in the lock is not a problem: setuptools 83 ships
+          # its own bdist_wheel, so the declared-but-unused `wheel` requirement
+          # is satisfied by setuptools alone under --no-build-isolation.
+          # Verified: with setuptools==83.0.0 from this lock and no wheel
+          # present, the editable install builds and exits 0.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "::error::could not read the locked setuptools version from backend/uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as an
+          # opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid one,
+          # which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that is not a non-empty run of digits and dots.
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
+          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
+          # passes it. uv.lock legitimately holds prerelease and local versions, so
+          # that guard rejected nothing in the cases it was written for. Listing the
+          # complement -- anything containing a character other than a digit or a dot,
+          # or the empty string -- is the version that actually holds.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9.]*)
+              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || { echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2; exit 1; }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
           # First-party source: the one thing that legitimately gets built.
           uv pip install --no-deps --no-build-isolation -e .
           # mutmut is declared in the dev group in backend/pyproject.toml
@@ -129,17 +192,59 @@ jobs:
         # different interpreter. --locked --no-sync keeps uv from re-resolving
         # the graph that was just installed hash-verified.
         run: |
+          # These three commands used to each end in `|| true`, which made the
+          # whole job unfailable: a mutmut that cannot start, a missing binary, a
+          # crash in the runner -- all reported green, and `mutmut.xml` was simply
+          # absent because `if-no-files-found: warn` only warns. A mutation job
+          # that cannot fail is worse than no mutation job, because it reads as a
+          # signal. Each failure mode is now handled explicitly, for its own reason:
+          #
+          #   run     -> the mutation pass is the measurement. If it does not
+          #              complete, there is no score, so this must fail. `set +e`
+          #              around it keeps the two reporting commands below running
+          #              even when it fails, so the artifact still gets uploaded
+          #              alongside the red build rather than being lost with it.
+          #   results -> pure reporting on the mutants/ directory that run just
+          #              wrote. Its exit code carries no verdict, so it must not be
+          #              able to fail the build either.
+          #   junitxml-> writes the uploaded artifact. If it cannot, the artifact
+          #              is empty and the run is worthless, so it must fail.
+          set -uo pipefail
+          set +e
           uv run --locked --no-sync --no-build mutmut run \
             --paths-to-mutate src/melosviz/bridge/security.py \
             --tests-dir tests/ \
             --runner "python -m pytest -q --tb=no -x" \
-            || true
+            2>&1
+          RUN_STATUS=$?
+          set -e
           uv run --locked --no-sync --no-build mutmut results || true
+          # A failed `run` and a run that produced no results are both useless, so
+          # both fail here. The `results` call above is reporting only; this is
+          # the verdict.
+          if [ "$RUN_STATUS" -ne 0 ]; then
+            echo "::error::mutmut run failed with status $RUN_STATUS" >&2
+          fi
+          if [ ! -d mutants ] || [ -z "$(ls -A mutants 2>/dev/null)" ]; then
+            echo "::error::mutmut left no mutants/ results; the mutation pass produced nothing to report" >&2
+            if [ "$RUN_STATUS" -eq 0 ]; then
+              RUN_STATUS=1
+            fi
+          fi
           uv run --locked --no-sync --no-build mutmut junitxml \
             --suspicious-policy=ignore --untested-policy=ignore > mutmut.xml || true
+          test -s mutmut.xml || {
+            echo "::error::mutmut junitxml produced an empty mutmut.xml" >&2
+            exit 1
+          }
+          exit "$RUN_STATUS"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: mutmut-results
           path: backend/mutmut.xml
-          if-no-files-found: warn
+          # warn -> error. This artifact is the only output the job produces, and
+          # a missing upload used to be indistinguishable from a successful run
+          # while the three `|| true` were in place. Now that the step can fail, a
+          # missing artifact is a real loss of the job's result.
+          if-no-files-found: error
           retention-days: 14

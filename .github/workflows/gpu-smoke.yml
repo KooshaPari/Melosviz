@@ -70,21 +70,113 @@ jobs:
         # as a green run against a resolution nobody reviewed. This is the same
         # reason the other migrated workflows pass it.
         #
-        # --no-build is the third half of the same guarantee (githubactions:S8541):
-        # without it `uv sync` runs each package's build backend, so a dependency
-        # that ships a setup script gets to execute during install. The other
-        # migrated workflows here already reach the same end state with
-        # `uv export` + `uv pip install --no-build-isolation` + `uv run --no-build`;
-        # this job keeps `uv sync` because it wants --all-extras --dev in one
-        # step, and --no-build makes it skip build-backend execution without
-        # changing which versions are installed.
-        run: uv sync --locked --all-extras --dev --no-build
+        # This used to be `uv sync --locked --all-extras --dev --no-build`.
+        # That command is unsatisfiable, for TWO independent reasons, both
+        # reproduced against the real backend/uv.lock rather than reasoned
+        # about. It could not pass on any run, on any platform:
+        #
+        # 1. `--no-build` forbids building, and this project is source. The
+        #    backend has no wheel of its own, so uv rejects the FIRST-PARTY
+        #    record before it ever looks at a dependency:
+        #      error: Distribution `melosviz==0.6.0 @ editable+.` can't be
+        #             installed because it is marked as `--no-build` but has no
+        #             binary distribution
+        #    Adding `--no-install-project` does not rescue it; that only moves
+        #    the failure to `watchfiles`, which the `test` extra pulls in
+        #    through `uvicorn[standard]` and which resolves to an sdist for this
+        #    platform. `--no-build` is unworkable for this job in general, not
+        #    just for this extra set, so it had to go rather than be narrowed.
+        #
+        # 2. `--all-extras` pulls the `stems` extra, whose three packages have
+        #    no wheel at all in the lock, only an sdist:
+        #      antlr4-python3-runtime 4.9.3   dora-search 0.1.12   demucs 4.0.1
+        #    Those are the only 3 sdist-only records among the lock's 157.
+        #
+        # So this now uses the same export/install shape as load-smoke, perf-smoke
+        # and timing-budgets: export the lock, install it with --require-hashes so
+        # uv re-verifies every wheel against the sha256 the lock records, and
+        # --no-deps so nothing is re-resolved. `uv export` never emits
+        # build-system requirements, so setuptools is installed separately from
+        # the lock, hash-verified the same way, to back the editable install.
+        #
+        # What replaces --no-build for githubactions:S8541: `--only-binary :all:`
+        # on the dependency install. That forbids building a dependency sdist
+        # just as strictly, and with the narrowed extras every third-party
+        # dependency does resolve to a wheel. Verified on a real sync: uv's only
+        # build line was `Building melosviz`, so no third-party setup script runs
+        # and the one thing that is built is this repo's own source.
+        #
+        # Narrowing --all-extras to the two extras this test needs is not a
+        # weakening. tests/cli/test_gpu_smoke.py never imports torch, demucs or
+        # any of that chain: it runs the CLI as a subprocess with
+        # MELOSVIZ_COMFYUI_OFFLINE=1 and its only third-party import is numpy.
+        # `stems` was never needed here, so asking for it only added three
+        # unbuildable downloads to a GPU smoke run.
+        run: |
+          uv export --locked --no-emit-project \
+            --extra test --extra analysis \
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
+          # --no-build-isolation means uv will NOT provision a build
+          # environment, so the setuptools backend has to already be in the
+          # venv. `uv venv` on a Linux runner gives a bare venv with no
+          # setuptools, so without this the editable install dies with
+          # "No module named 'setuptools'". Reading the version out of uv.lock
+          # rather than naming it here is also what keeps this step off S8544.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "::error::could not read the locked setuptools version from backend/uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as an
+          # opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem. ${V//[!$'\n']/} strips every character
+          # except newlines, so its length is the newline count: 0 for a single
+          # version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid one,
+          # which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that is not a non-empty run of digits and dots.
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
+          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
+          # passes it. uv.lock legitimately holds prerelease and local versions, so
+          # that guard rejected nothing in the cases it was written for. Listing the
+          # complement -- anything containing a character other than a digit or a dot,
+          # or the empty string -- is the version that actually holds.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9.]*)
+              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || { echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2; exit 1; }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
 
       - name: Run GPU smoke test (slow)
         working-directory: backend
         run: |
           export PYTHONPATH=src
-          uv run python -m pytest             -v --tb=short             -m slow             tests/cli/test_gpu_smoke.py
+          # --no-sync because the venv is already populated exactly as the lock
+          # describes; letting `uv run` sync here would re-resolve, undoing the
+          # --locked guarantee the install step just established. --no-build
+          # because pytest only ever reads already-installed modules.
+          uv run --locked --no-sync --no-build python -m pytest \
+            -v --tb=short -m slow tests/cli/test_gpu_smoke.py
 
       - name: Summarize smoke results
         if: always()

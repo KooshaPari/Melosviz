@@ -323,8 +323,21 @@ jobs:
           # every wheel against the sha256 digests the lock records, and --no-deps
           # so nothing is re-resolved. --only-binary :all: keeps sdist builds out,
           # so no third-party setup script runs at install time (S8541).
+          #
+          # --no-dev is load-bearing here, more so than anywhere else. `uv export`
+          # with no group selector emits the default groups, and the dev group in
+          # backend/pyproject.toml is [bandit, coverage, mutmut, pip-audit,
+          # pytest-cov]. Those are CI-only tools: none of them is imported by the
+          # shipped package, and none is installed into the release venv for the
+          # release artifacts. Without --no-dev they were installed here anyway
+          # and then written into sbom-python.cdx.json as if they had shipped, so
+          # a downstream consumer reading the SBOM would see mutmut and pip-audit
+          # as runtime dependencies of the released backend. An SBOM that
+          # overstates the dependency surface is the same class of defect as one
+          # that understates it: both make the artifact unreliable. --no-dev
+          # means the SBOM lists only what the release actually contains.
           cd backend
-          uv export --locked --no-emit-project \
+          uv export --locked --no-emit-project --no-dev \
             --output-file "$RUNNER_TEMP/sbom-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --require-hashes --no-deps \
@@ -339,6 +352,40 @@ jobs:
           # and --only-binary :all: means the sdist is never fetched anyway.
           SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
           test -n "$SETUPTOOLS_VERSION" || { echo "::error::could not read the locked setuptools version from backend/uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as an
+          # opaque "Invalid version" pointing at the install line. The awk below
+          # stops at the first match, so the hash guard would pass while the
+          # version stayed multi-line -- one half defended, one half not. Fail
+          # here, naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid one,
+          # which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that is not a non-empty run of digits and dots.
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
+          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
+          # passes it. uv.lock legitimately holds prerelease and local versions, so
+          # that guard rejected nothing in the cases it was written for. Listing the
+          # complement -- anything containing a character other than a digit or a dot,
+          # or the empty string -- is the version that actually holds.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9.]*)
+              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
           SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
           test -n "$SETUPTOOLS_HASH" || { echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2; exit 1; }
           printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
@@ -346,16 +393,80 @@ jobs:
           uv pip install --only-binary :all: --require-hashes --no-deps \
             -r "$RUNNER_TEMP/setuptools-req.txt"
           # First-party source: the one thing that legitimately gets built.
+          #
+          # backend/pyproject.toml declares build-system requires
+          # ["setuptools>=61", "wheel"], but backend/uv.lock has NO `wheel`
+          # record, so only setuptools can be installed from the lock here and
+          # `wheel` is deliberately absent from the venv. That is not an
+          # oversight below: it was verified rather than assumed. With
+          # `--no-build-isolation` and `wheel` genuinely absent, the editable
+          # build exits 0 and `import melosviz` succeeds, because setuptools
+          # vendors its own wheel implementation and `setuptools.build_meta`
+          # never imports the `wheel` package. The `wheel` entry in
+          # build-system.requires is a legacy artifact of the setup.py-era
+          # toolchain and has no effect on this backend path.
           uv pip install --no-deps --no-build-isolation -e .
-          # cyclonedx-py must report the environment that holds the backend and
-          # its dependencies, which is the venv just populated -- not the
-          # setup-python interpreter that cyclonedx-py itself lives in, which
-          # would describe an almost-empty environment and make the Python half
-          # of the SBOM describe nothing that shipped. Verified that the venv's
-          # own console script shadows the setup-python one, so this bare call
-          # resolves to the venv interpreter without needing an explicit path.
-          PATH="$PWD/.venv/bin:$PATH"
-          cyclonedx-py environment -o ../sbom-python.cdx.json
+          # The Python half of the SBOM has to describe the environment that
+          # actually holds the shipped backend and its dependencies, which is the
+          # venv populated above.
+          #
+          # Two traps here, both of which produced a well-formed SBOM of the
+          # wrong environment instead of an error, so neither looked wrong:
+          #
+          # 1. PATH. The old `PATH="$PWD/.venv/bin:$PATH"` could not do what its
+          #    comment claimed. Prepending a directory to PATH only changes
+          #    which file of a given NAME is found, and the venv has no
+          #    `cyclonedx-py` console script at all (the tools are installed into
+          #    setup-python's interpreter, not the venv). So the bare
+          #    `cyclonedx-py` still resolved to the setup-python script and
+          #    reported on THAT interpreter -- which holds cyclonedx-bom and its
+          #    own dependencies, and none of the backend.
+          #
+          # 2. Which process imports the module. cyclonedx-py takes the target
+          #    environment as a POSITIONAL argument; it is not run inside the
+          #    target interpreter. So `.venv/bin/python -m cyclonedx_py` fails
+          #    outright, with "No module named cyclonedx_py" -- reproduced
+          #    against a real 1.0.1 install, not reasoned about. The module must
+          #    be imported by the interpreter that HAS it (setup-python's), with
+          #    the venv's interpreter passed as the positional argument.
+          #
+          # Both of those were checked against cyclonedx-py 1.0.1: the positional
+          # form exits 0, writes a valid SBOM, and that SBOM describes the
+          # passed-in venv (it does NOT contain the outer interpreter's
+          # cyclonedx-bom).
+          #
+          # --pyproject names the root component. Without it the SBOM's metadata
+          # component is a generic placeholder, and a consumer reading the
+          # artifact cannot tell which release this describes. The step runs from
+          # backend/, so this file is the real backend metadata and reports the
+          # actual version from it.
+          cyclonedx-py environment "$PWD/.venv/bin/python" \
+            --pyproject "$PWD/pyproject.toml" \
+            --output-file ../sbom-python.cdx.json
+          test -s ../sbom-python.cdx.json || {
+            echo "::error::cyclonedx-py produced no SBOM" >&2
+            exit 1
+          }
+          # `test -s` only proves a file exists and is non-empty. An SBOM of the
+          # WRONG environment is non-empty and would sail through it, which is
+          # how the PATH bug survived. Assert the root component names this
+          # project, which only holds if the SBOM was built from the venv's
+          # pyproject rather than from a placeholder.
+          python - <<'PY'
+          import json, pathlib, sys
+
+          doc = json.loads(pathlib.Path("../sbom-python.cdx.json").read_text("utf-8"))
+          component = (doc.get("metadata") or {}).get("component") or {}
+          name = (component.get("name") or "").lower().replace("_", "-")
+          if name != "melosviz":
+              sys.exit(
+                  f"::error::SBOM root component is {component.get('name')!r}, "
+                  "expected 'melosviz'; the SBOM did not describe the release venv"
+              )
+          version = component.get("version")
+          print(f"SBOM root component: {component.get('name')} {version} "
+                f"({len(doc.get('components') or [])} components)")
+          PY
           cd ..
           cargo install cargo-cyclonedx --locked
           cargo cyclonedx --format json --all --override-filename sbom-cargo.cdx.json
