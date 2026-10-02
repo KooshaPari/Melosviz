@@ -29,11 +29,15 @@ from pathlib import Path
 
 import pytest
 
-REPO = Path(__file__).resolve().parents[2]
-SRC = REPO / "src"
-# `parents[0]` is `tests/`, `parents[1]` is `backend/`.  Resolve source
-# relative to `backend/` because the package source lives at backend/src/.
+from conftest import find_repo_root
+
+# Marker walk instead of parents[2]: under mutmut the tests/ directory is one
+# level deeper, so a fixed depth resolves to backend/ instead of the repo root.
+REPO = find_repo_root(__file__)
+# The package source lives at backend/src/. Accept either root so the suite
+# works whether it is run from the repo root or from backend/.
 SRC = REPO / "src" if (REPO / "src" / "melosviz").exists() else (REPO / "backend" / "src")
+BACKEND = SRC.parent
 MUTATIONS_DIR = REPO / ".mutations"
 TARGETS = [
     SRC / "melosviz" / "analysis" / "models.py",
@@ -276,7 +280,7 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                             "-q",
                             "-x",
                         ],
-                        cwd=target.parents[2],
+                        cwd=BACKEND,
                         capture_output=True,
                         text=True,
                         timeout=TIMEOUT_S,
@@ -360,7 +364,7 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                         "-q",
                         "-x",
                     ],
-                    cwd=target.parents[2],
+                    cwd=BACKEND,
                     capture_output=True,
                     text=True,
                     timeout=TIMEOUT_S,

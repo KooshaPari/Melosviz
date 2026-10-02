@@ -36,34 +36,15 @@ from pathlib import Path
 
 import pytest
 
+from conftest import find_repo_root
+
 # ---------------------------------------------------------------------------
-# Path resolution — robust to both repo-root and backend/ working dirs.
+# Path resolution — robust to both repo-root and backend/ working dirs, and to
+# mutmut's mutants/ tree. Shared with the other tests that reach repo-level
+# files; see conftest.find_repo_root for why a fixed parents[N] is wrong.
 # ---------------------------------------------------------------------------
 
-
-def _find_repo_root(start: Path) -> Path:
-    """Walk up from ``start`` until we find a directory containing ``Cargo.toml``.
-
-    The repository root is the only directory that is both a Python package
-    source root (``backend/src``) and a Rust workspace root (``Cargo.toml``).
-    We use the Rust marker because it is a single canonical file, whereas the
-    Python marker (pyproject.toml) exists under both the root and ``backend/``.
-    """
-    cur = start.resolve()
-    for _ in range(8):  # bounded walk; CI environments can be deeply nested
-        if (cur / "Cargo.toml").is_file() and (cur / "backend").is_dir():
-            return cur
-        parent = cur.parent
-        if parent == cur:
-            break
-        cur = parent
-    # Fall back to the CWD's ancestor if the marker walk failed (e.g. a
-    # monorepo where Cargo.toml is one level up). This still gives a stable,
-    # absolute path the rest of the suite can rely on.
-    return Path(__file__).resolve().parents[3]
-
-
-REPO_ROOT = _find_repo_root(Path(__file__))
+REPO_ROOT = find_repo_root(__file__)
 
 TOP_LEVEL_SPEC = REPO_ROOT / "SPEC.md"
 INNER_SPEC = REPO_ROOT / "docs" / "specs" / "SPEC.md"
