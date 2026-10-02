@@ -365,7 +365,8 @@ describe("StudioConsole (Director\u2019s Console)", () => {
     // Inject one programmatically via the mock fetch — skip if not available
     // The modal only opens after storyboarding, so we test the wiring exists.
     expect(screen.queryByTestId("studio-edit-modal")).toBeNull();
-  
+  });
+
   it("surfaces cache reuse as reused, never accepted", async () => {
     fetchSpy
       .mockResolvedValueOnce({
