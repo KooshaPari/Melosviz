@@ -331,7 +331,7 @@
     "prior_run": 36982081075
   },
   "M_E03": {
-    "status": "REAL_RECEIPT_REPLAY_WORKFLOW_PATH_FIXED_REGRADING",
+    "status": "ACCEPTED_EXPERIMENTAL_DURABLE_STRUCTURAL_CHAIN",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
     "head": "dfa42862e4a49863d4fb32183b0f2dbfb8c16493",
@@ -416,6 +416,23 @@
       "receipt": "PRESENT",
       "replay": "WORKFLOW_PATH_RED",
       "detail": "replay tool correctly lives on M-E03 checkout, not pinned M-E02 candidate"
-    }
+    },
+    "acceptance": true,
+    "acceptance_evidence": {
+      "head": "dfa42862e4a49863d4fb32183b0f2dbfb8c16493",
+      "run": 36999850630,
+      "seam": "PASS",
+      "pinned_reviewer": "PASS",
+      "receipt_restart_replay": "PASS",
+      "candidate": "9bf917ed10b125edcfb81600ecdd4549a503357c",
+      "reviewer": "c15ad7b9b24a3cb8c9d7a69c7b96c1a7322f118f"
+    },
+    "acceptance_limits": [
+      "bounded durable structural chain only",
+      "actual shipping application restart/recovery not yet proven",
+      "UI acceptance projection incomplete",
+      "not generative/artistic/live qualification"
+    ],
+    "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   }
 }
