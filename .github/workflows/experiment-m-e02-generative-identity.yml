@@ -1,0 +1,23 @@
+name: Experiment - M-E02 generative cache identity
+
+on:
+  push:
+    branches: [experiment/m-e02-generative-identity]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  held-out-cache-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.11"
+      - name: Install backend
+        run: python -m pip install -e backend pytest
+      - name: Held-out generative cache identity
+        run: pytest -q backend/tests/conductor/test_m_e02_generative_cache_identity.py
