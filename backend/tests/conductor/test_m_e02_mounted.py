@@ -240,5 +240,10 @@ def test_mounted_r2_selective_render_reuses_r1_evidence_for_complete_assembly(
     # A selected-only assembly would be ~1 second. Reuse of unchanged S0 must
     # keep the complete two-scene timeline.
     assert r2_duration > 1.5, r2_duration
-    assert __import__("hashlib").sha256(assembled.read_bytes()).hexdigest() != r1_digest
+    r2_digest = __import__("hashlib").sha256(assembled.read_bytes()).hexdigest()
+    assert r2_digest != r1_digest
     assert __import__("hashlib").sha256(s0_path.read_bytes()).hexdigest() == s0_digest
+    repeat = _run_cli(wav, sb, out, only_scenes="1")
+    assert len(repeat["scenes"]) == 1 and repeat["scenes"][0]["scene_index"] == 1
+    assert repeat["scenes"][0]["from_cache"] is True, repeat
+    assert __import__("hashlib").sha256(assembled.read_bytes()).hexdigest() == r2_digest
