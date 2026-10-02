@@ -58,8 +58,7 @@ try:
 except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
-        "Install with:  pip install 'melosviz[bridge]'
-"
+        "Install with: pip install 'melosviz[bridge]'. ",
         "The desktop app will use the CLI subprocess fallback.",
         file=sys.stderr,
     )
