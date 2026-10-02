@@ -100,6 +100,9 @@ def main():
         assert len(r2_scenes)==1 and r2_scenes[0].get("scene_index")==1,r2_scenes
         s0_after=probe(p1[0])
         assert s0_after["sha256"]==scene_obs[0]["sha256"],(scene_obs[0],s0_after)
+        r2_s1=probe(Path(r2_scenes[0]["artifact_path"]).resolve())
+        assert r2_s1["sha256"] != scene_obs[1]["sha256"],(scene_obs[1],r2_s1)
+        result["checks"]["r2_selected_scene_bytes_changed"]=True
         result["checks"]["r2_unselected_scene_bytes_unchanged"]=True
         # Re-running the exact same R2 request must be idempotent at media level:
         # no extra scene work and no changed final bytes.
@@ -114,7 +117,10 @@ def main():
             "r2_assembly":a2,
             "promotion_receipt":{
                 "project_revision":2,
-                "scene_artifacts":[{"scene_index":i,"sha256":o["sha256"],"verifier":"reviewer-m-e02:v1"} for i,o in enumerate(scene_obs)],
+                "scene_artifacts":[
+                    {"scene_index":0,"sha256":s0_after["sha256"],"verifier":"reviewer-m-e02:v1"},
+                    {"scene_index":1,"sha256":r2_s1["sha256"],"verifier":"reviewer-m-e02:v1"},
+                ],
                 "final_artifact":{"sha256":a2["sha256"],"verifier":"reviewer-m-e02:v1"},
             },
         }
