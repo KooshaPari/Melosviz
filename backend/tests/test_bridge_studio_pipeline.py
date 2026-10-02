@@ -603,3 +603,24 @@ def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp
     body=response.json()
     assert body["project_id"]=="P" and body["revision"]==1
     assert body["attempts"]==[{"attempt_id":a,"state":"completed","job_id":"job-1","candidate_sha":"candidate-sha","started_at":body["attempts"][0]["started_at"],"completed_at":body["attempts"][0]["completed_at"]}]
+
+
+def test_generate_persists_project_attempt_then_status_recovers_after_reopen(tmp_path, monkeypatch, client: TestClient):
+    wav=tmp_path/"track.wav"; _write_test_wav(wav)
+    sb=tmp_path/"storyboard.json"
+    sb.write_text(json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","start_sec":0,"end_sec":1}]}))
+    out=tmp_path/"out"; db=tmp_path/"project.sqlite"
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    fake={"returncode":0,"stdout":json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","outcome":"render","artifact_path":str(out/"scene.mkv"),"artifact_sha256":"a"*64,"from_cache":False}]}),"stderr":""}
+    monkeypatch.setattr(server,"_run_studio_subprocess",lambda args:fake)
+    generated=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r1","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r1"})
+    assert generated.status_code==200,generated.text
+    p=generated.json()["project"]
+    assert p["project_id"]=="P" and p["revision"]==1 and p["candidate_sha"]=="candidate-r1"
+    # Separate HTTP request reopens the durable ledger through project-status.
+    status=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"})
+    assert status.status_code==200,status.text
+    body=status.json()
+    assert body["revision"]==1
+    assert body["attempts"][0]["candidate_sha"]=="candidate-r1"
+    assert body["attempts"][0]["job_id"]=="job-r1"
