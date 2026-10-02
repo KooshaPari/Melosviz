@@ -216,10 +216,53 @@ omit = []
 # installed mutmut 3.8.0 configuration module.
 source_paths = ["src/melosviz/"]
 pytest_add_cli_args_test_selection = ["tests/"]
+# One module in that selection is itself a mutation driver, and this is the
+# reason the outer sweep needs a guard against itself.
+# tests/test_mutation_engine.py runs its OWN nested sweep of 3 targets x 60
+# mutants, each a separate pytest subprocess, and it took over 10 minutes on
+# clean source here. `pytest_add_cli_args_test_selection` runs it once per
+# OUTER mutant, for every one of the ~26506 mutants in the population, so the
+# outer sweep would pay the inner sweep's cost thousands of times over. That is
+# recursive work, not incidental overhead.
+#
+# What the deselect does NOT rest on. An earlier revision of this comment
+# argued the test "cannot hide a useful outer-mutant check" because
+# `source_paths` excludes backend/tests/. That premise is true of the MODULE
+# and false where it was used: all three TARGETS the test reads
+# (src/melosviz/analysis/models.py, .../analysis/audio.py,
+# src/melosviz/bridge/server.py) are inside source_paths, so they ARE mutated,
+# and a mutant of them can change what the test observes. The case has to be
+# made on other grounds, and these are the verified ones:
+#
+#   1. The test is not merely unmutated, it is non-orthogonal: its verdict is a
+#      threshold on a score it computes FROM mutated files. Under an outer
+#      mutant it measures a DIFFERENT quantity, so it can fail or pass for
+#      reasons unrelated to whether that mutant is caught.
+#   2. Its signal is not lost, it is enforced elsewhere. qgate.yml:73 sets
+#      run-baseline-checks: true and quality-gate-reusable.yml:273 runs a bare
+#      `pytest` with no path, no testpaths and no addopts, so it collects all
+#      1601 tests INCLUDING this one -- verified with `pytest --collect-only -q`,
+#      which lists it. The gate asserting TARGET_SCORE is met still runs, on
+#      unmutated source, which is the only context where a mutation-SCORE
+#      threshold is meaningful at all.
+#   3. Exactly one test is dropped, and only inside this sweep. Verified:
+#        pytest tests/ --collect-only --deselect <this test>
+#          1600/1601 tests collected (1 deselected)
+#      No other selection loses anything.
+#
+# The earlier warning not to widen this to the whole file is moot: the module
+# holds exactly ONE test (`pytest tests/test_mutation_engine.py --collect-only`
+# -> 1 test collected), so "the other tests in that module" are not a real set.
+pytest_add_cli_args = [
+    "-q",
+    "--tb=no",
+    "-x",
+    "--deselect",
+    "tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar",
+]
 # The mutmut 2.x `--runner "python -m pytest -q --tb=no -x"` has no mutmut 3
 # equivalent. mutmut 3 assembles its own pytest invocation and appends these to
 # it, so they carry the same intent: keep mutant runs short and output terse.
-pytest_add_cli_args = ["-q", "--tb=no", "-x"]
 # Copy the non-Python data the tests read into mutants/ alongside the source.
 #
 # mutmut 3 rebuilds the tree under `mutants/` and runs pytest from there, so a

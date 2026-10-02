@@ -226,11 +226,19 @@ MAX_TIMEOUT_RATIO = 0.10
 # under tests/, so it executes once per mutant. Verified rather than assumed:
 # `pytest tests/ --collect-only` lists
 # `tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar`.
-# What mutmut mutates is governed by `source_paths`, so this test's three TARGETS
-# are outside the mutated set -- but the test still runs, which is why mutmut's
-# own per-mutant runtime has to accommodate it. `.github/workflows/mutmut.yml`
-# still claims in its header comment that this test "is not collected here";
-# that claim is wrong and contradicts the verified collection above.
+#
+# Two earlier revisions got the consequence wrong, in the same direction. They
+# read "governed by source_paths" as meaning this module is outside the sweep,
+# and so is harmless there. Both are false, because source_paths is
+# `["src/melosviz/"]` and all three TARGETS below are
+# `src/melosviz/analysis/{models,audio}.py` and `src/melosviz/bridge/server.py`
+# -- inside it. An earlier pyproject.toml comment went further and said
+# `source_paths` "excludes backend/tests/", which is true only of the MODULE,
+# and was used to argue that dropping this test could not hide a mutant check.
+# That inference does not follow: the module is never mutated, but the three
+# TARGETS it reads are mutated files, so a mutant of models.py or server.py can
+# change what this test observes. That is precisely why the deselect is NOT
+# committed on the strength of that comment -- see the note in pyproject.toml.
 #
 # The old budget was @pytest.mark.timeout(300) -- 5 minutes for work that can
 # legitimately take hours. It only ever passed because killed mutants exit early

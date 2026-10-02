@@ -42,7 +42,9 @@ mutmut copies this file along with the rest of the tree (``also_copy`` unions
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import Final
 
 #: Markers that only the repository root carries, as a pair. ``Cargo.toml`` is
 #: the Rust workspace root; ``backend/`` is this package. Both are needed
@@ -59,7 +61,10 @@ from pathlib import Path
 #: workspace nor this package -- the silent-wrong-directory failure this function
 #: exists to rule out. Held as bound ``Path`` predicates rather than names, so a
 #: misspelling is an error here instead of a seven-module collection failure.
-_ROOT_MARKERS = (
+#: The annotation states that contract where a checker can verify it -- the
+#: docstring alone cannot be checked -- and ``Final`` keeps a later edit from
+#: rebinding what ``_has_root_markers`` closes over.
+_ROOT_MARKERS: Final[tuple[tuple[str, Callable[[Path], bool]], ...]] = (
     ("Cargo.toml", Path.is_file),
     ("backend", Path.is_dir),
 )
@@ -67,7 +72,7 @@ _ROOT_MARKERS = (
 #: How far up to walk before giving up. Bounded on purpose: an unbounded walk
 #: on a pathologically symlinked tree would keep climbing, and CI does nest
 #: deeper than a human would guess.
-_MAX_WALK_DEPTH = 8
+_MAX_WALK_DEPTH: Final = 8
 
 
 def _has_root_markers(directory: Path) -> bool:

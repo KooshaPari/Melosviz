@@ -36,8 +36,12 @@ jobs:
     # source_paths = ["src/melosviz/"] -- 80 files, 26506 mutants (counted from a
     # real run's export-cicd-stats), not three files.
     #
-    # What mutmut MUTATES is governed by source_paths, and these three files are
-    # not in that set. What mutmut RUNS is governed by
+    # What mutmut MUTATES is governed by source_paths = ["src/melosviz/"], and all
+    # three of those files ARE inside it -- src/melosviz/analysis/models.py,
+    # .../analysis/audio.py and .../bridge/server.py. Two earlier revisions of
+    # this comment said they were "not in that set"; both were wrong, and the
+    # error mattered, because it argued the nested sweep could not be affected
+    # by a mutant of the code it reads. It can. What mutmut RUNS is governed by
     # pytest_add_cli_args_test_selection = ["tests/"], and that DOES collect
     # tests/test_mutation_engine.py -- verified, not assumed:
     #     pytest tests/ --collect-only
@@ -347,17 +351,26 @@ jobs:
         # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
         # ffmpeg.
         #
-        # Five workflows install ffmpeg, and four of them use this exact
-        # apt-get pair -- gpu-smoke.yml:55, studio-tests.yml:33 and
-        # quality-gate-reusable.yml:146 all do, as does this job. Only
-        # timing-budgets.yml:143 differs: `-qq` on both apt calls, chained with
-        # `&&` on one line, no version check. An earlier revision of this comment
-        # claimed quality-gate-reusable.yml was the ONLY identical site, which was
-        # wrong by two; it also named timing-budgets.yml as both an identical site
-        # and the exception in consecutive sentences. The set of sites moves
-        # independently of this job, so the useful invariant is not a count but
-        # the two properties that make this step load-bearing: apt-get, and a
-        # pipeline-free version check.
+        # Five workflows install ffmpeg. Only THIS one uses the two-line
+        # apt-get pair AND a pipeline-free version check; the other four each
+        # miss at least one of those:
+        #
+        #   site                              apt-get pair   version check
+        #   mutmut.yml (this step)            two-line       ffmpeg -version > /dev/null
+        #   quality-gate-reusable.yml:145-147 two-line       ffmpeg -version | head -n 1
+        #   studio-tests.yml:32-33            two-line       none
+        #   gpu-smoke.yml:55                  && on one line none
+        #   timing-budgets.yml:143            -qq, && one line  none
+        #
+        # So this is not a count with exceptions, it is a single site. Earlier
+        # revisions of this comment got it wrong twice: once by naming
+        # quality-gate-reusable.yml the only identical site (wrong by two), and
+        # once by naming timing-budgets.yml as both an identical site and the
+        # exception in consecutive sentences. gpu-smoke.yml:55 was also missed
+        # entirely even though it differs in exactly the two ways attributed to
+        # timing-budgets.yml: chained with `&&` on one line, and no version check
+        # at all. The set of sites moves independently of this job, so the claim
+        # worth keeping is the property, not the roster.
         #
         # The version check has to be the pipeline-free form to be load-bearing.
         # This step does not set `set -o pipefail`, and GitHub's default Linux
@@ -418,11 +431,24 @@ jobs:
         # upload step's `if: always()` already survives a non-zero exit.
         continue-on-error: true
         working-directory: backend
-        # There is no slice to select: mutmut 3's `cli` group defines no options, so
-        # scope cannot be narrowed from the command line at all. It is whatever
-        # [tool.mutmut] source_paths names -- the whole package here. The only
-        # levers are the do_not_mutate globs, which skip files entirely rather
-        # than reduce coverage, and the 6h job ceiling.
+        # There is no slice of the sweep to select: the 2.x flags that chose
+        # paths and tests (`--paths-to-mutate`, `--tests-dir`, `--runner`) were
+        # removed in mutmut 3, so WHAT gets mutated comes only from
+        # [tool.mutmut] source_paths and do_not_mutate. `mutmut run` is not
+        # option-free -- it still takes mutant-name filters as positional
+        # arguments plus `--max-children`, which is a narrowing of HOW MUCH
+        # runs, not of what the sweep covers. Verified against the installed
+        # mutmut source: `def run(mutant_names, *, max_children)`.
+        #
+        # source_paths names the whole package, 80 files, and do_not_mutate
+        # excludes 20 of them (18 __init__.py plus cli/main.py and
+        # cli/partial_rerender.py; verified with fnmatch, the exact call mutmut
+        # makes), so this sweep mutates 60 files -- not 80. Both numbers are
+        # worth stating because "the whole package" reads as 80.
+        #
+        # The only levers that reduce what is swept are therefore the
+        # do_not_mutate globs, which skip files entirely rather than reduce
+        # coverage, and the 6h job ceiling.
         #
         # `uv run --locked --no-sync --no-build`, matching how the other
         # workflows in this repo invoke python after `uv venv`. Without it the
