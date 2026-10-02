@@ -94,13 +94,23 @@ MAX_TIMEOUT_RATIO = 0.10
 # minutes of platform headroom.
 #
 # What does NOT set this budget: `.github/workflows/mutmut.yml`. That job has
-# its own `timeout-minutes: 360` and runs `uv run mutmut run`, whose scope comes
-# from [tool.mutmut] source_paths = ["src/melosviz/"] -- the whole package, not
-# these three TARGETS. It never collects this test, so the 3 * 60 * 60
-# derivation above describes this test's own worst case and has no bearing on
-# that job's budget, nor does that job's cap constrain this one. An earlier
-# revision of this comment claimed the two "have to move together" and cited a
-# "420 cap" that no longer exists; neither claim was true.
+# its own `timeout-minutes: 360` and its real bound is unrelated to the 3 * 60 * 60
+# above, because it runs a different sweep: `uv run mutmut run`, whose scope comes
+# from [tool.mutmut] source_paths = ["src/melosviz/"] -- the whole package, 80
+# files and 26506 mutants, not these three TARGETS. The two numbers therefore do
+# not have to move together, in either direction.
+#
+# One genuine relationship, since it is easy to assume otherwise and wrong to:
+# this test IS collected inside that sweep. `pytest_add_cli_args_test_selection =
+# ["tests/"]` selects what pytest RUNS for every mutant, and this module lives
+# under tests/, so it executes once per mutant. What mutmut mutates is governed by
+# `source_paths`, so this test's three TARGETS are outside the mutated set -- but
+# the test still runs, which is why it is slow and why mutmut's own per-mutant
+# runtime has to accommodate a test whose outer budget is 270 minutes. An earlier
+# revision of this comment claimed the job "never collects this test"; that was
+# wrong, and it mattered, because it implied the two budgets were fully
+# independent when the real relationship is that this test's cost is inside the
+# other job's per-mutant budget.
 #
 # The old budget was @pytest.mark.timeout(300) -- 5 minutes for work that can
 # legitimately take hours. It only ever passed because killed mutants exit early

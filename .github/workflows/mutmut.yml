@@ -336,14 +336,17 @@ jobs:
         # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
         # ffmpeg.
         #
-        # Of the workflows that run this backend suite, only
-        # quality-gate-reusable.yml installs ffmpeg with this exact line, so this
-        # job now matches that single site and there is one answer to "how does
-        # CI get ffmpeg". timing-budgets.yml:143 also installs ffmpeg, but
-        # differently: it passes `-qq` on both apt calls, chains them with `&&`
-        # on one line, and does no version check at all. If
-        # quality-gate-reusable.yml is ever tightened, this should move with it
-        # rather than drift.
+        # Five workflows install ffmpeg, and four of them use this exact
+        # apt-get pair -- gpu-smoke.yml:55, studio-tests.yml:33 and
+        # quality-gate-reusable.yml:146 all do, as does this job. Only
+        # timing-budgets.yml:143 differs: `-qq` on both apt calls, chained with
+        # `&&` on one line, no version check. An earlier revision of this comment
+        # claimed quality-gate-reusable.yml was the ONLY identical site, which was
+        # wrong by two; it also named timing-budgets.yml as both an identical site
+        # and the exception in consecutive sentences. The set of sites moves
+        # independently of this job, so the useful invariant is not a count but
+        # the two properties that make this step load-bearing: apt-get, and a
+        # pipeline-free version check.
         #
         # The version check has to be the pipeline-free form to be load-bearing.
         # This step does not set `set -o pipefail`, and GitHub's default Linux
@@ -404,7 +407,11 @@ jobs:
         # upload step's `if: always()` already survives a non-zero exit.
         continue-on-error: true
         working-directory: backend
-        # Full suite is slow; mutate a high-value slice and report score.
+        # There is no slice to select: mutmut 3's `cli` group defines no options, so
+        # scope cannot be narrowed from the command line at all. It is whatever
+        # [tool.mutmut] source_paths names -- the whole package here. The only
+        # levers are the do_not_mutate globs, which skip files entirely rather
+        # than reduce coverage, and the 6h job ceiling.
         #
         # `uv run --locked --no-sync --no-build`, matching how the other
         # workflows in this repo invoke python after `uv venv`. Without it the

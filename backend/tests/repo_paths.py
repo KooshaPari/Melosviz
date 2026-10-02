@@ -57,8 +57,12 @@ from pathlib import Path
 #: a stray ``backend`` file sitting next to some unrelated ``Cargo.toml`` would
 #: satisfy the loose check and hand every caller a root that has neither the Rust
 #: workspace nor this package -- the silent-wrong-directory failure this function
-#: exists to rule out.
-_ROOT_MARKERS = (("Cargo.toml", "is_file"), ("backend", "is_dir"))
+#: exists to rule out. Held as bound ``Path`` predicates rather than names, so a
+#: misspelling is an error here instead of a seven-module collection failure.
+_ROOT_MARKERS = (
+    ("Cargo.toml", Path.is_file),
+    ("backend", Path.is_dir),
+)
 
 #: How far up to walk before giving up. Bounded on purpose: an unbounded walk
 #: on a pathologically symlinked tree would keep climbing, and CI does nest
@@ -67,8 +71,17 @@ _MAX_WALK_DEPTH = 8
 
 
 def _has_root_markers(directory: Path) -> bool:
-    """Whether ``directory`` carries the full marker pair, with correct types."""
-    return all(getattr(directory / name, kind)() for name, kind in _ROOT_MARKERS)
+    """Whether ``directory`` carries the full marker pair, with correct types.
+
+    The predicates are stored as bound ``Path`` methods rather than as method
+    names dispatched through ``getattr``. A string key is unchecked: a typo like
+    ``"is_files"`` would raise ``AttributeError`` from inside the generator, so
+    all seven importing modules would fail collection with an error that reads
+    like a platform problem rather than a misspelling. Binding the real objects
+    moves that failure to import time of this one module, where the offending
+    line is obvious, and lets a type checker verify the signature.
+    """
+    return all(marker(directory / name) for name, marker in _ROOT_MARKERS)
 
 
 def find_repo_root(start: Path | str | None = None) -> Path:
