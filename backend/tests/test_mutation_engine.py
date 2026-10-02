@@ -21,6 +21,7 @@ Use:
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -147,6 +148,26 @@ MAX_PER_FILE = 60
 # faster; below that margin a legitimately slow runner would convert real kills
 # into unmeasured mutants.
 TIMEOUT_S = 300
+# Flags every inner pytest subprocess gets, used both for the unmutated baseline
+# run and for each measured mutant so the two are comparable.
+#
+# `--no-cov` is passed ONLY when pytest-cov is importable, because that option is
+# contributed by the pytest-cov plugin and pytest exits 4 -- usage error -- on an
+# unrecognized argument. That exit code is not 0, so a naive `returncode != 0`
+# reads as "the mutant was killed". mutmut.yml installs `--extra test
+# --extra analysis --extra bridge` and deliberately omits `--group dev`, which
+# is the only place pytest-cov is declared, so inside that job every mutant was
+# being booked a kill in under a second with no test executed: a 100% score from
+# a missing plugin. Resolving the flag against the live environment removes the
+# trap instead of moving the dependency.
+INNER_PYTEST_ARGS: tuple[str, ...] = ("-q", "-x") + (
+    ("--no-cov",) if importlib.util.find_spec("pytest_cov") else ()
+)
+# pytest exit codes that mean "the suite did not run", not "an assertion
+# failed": 4 is a usage error (bad option, missing path) and 5 is an empty
+# collection. Both are non-zero, so treating them as kills would credit the
+# gate with catches it never observed.
+_COLLECTION_FAILURES: frozenset[int] = frozenset({4, 5})
 # The kill-score floor, set at 65 rather than the 75 the .qgate.toml
 # `mutation_threshold` names.
 #
@@ -255,10 +276,25 @@ MAX_TIMEOUT_RATIO = 0.10
 # budget: 1.5x of it is 22.5h, past the 360min platform cap, where
 # pytest-timeout could never fire first and the marker stops being load-bearing.
 #
-# The budget is therefore pinned to 210min -- below the cap, with 150min of
-# platform headroom, and ~4.4x the measured worst case of 60 * (56 + 114 + 70)
-# ~= 4.8h of healthy subprocess time. It exists to catch a sweep that has gone
-# pathological, not to bound a normal one.
+# The budget is therefore pinned to 210min, below the cap with real headroom.
+# The worst case is computed from the ACCEPTED counts this budget actually has
+# to cover, not from MAX_PER_FILE per target: models.py accepts 3 mutants
+# (it has only 3 sites), audio.py and server.py accept the full 60 each.
+#
+#     3 * 56s + 60 * 114s + 60 * 70s = 11208s ~= 187min
+#
+# so 210min is ~1.12x that measured worst case. An earlier version of this
+# comment wrote the worst case as `60 * (56 + 114 + 70)` and called it 4.8h; that
+# arithmetic was wrong twice over -- the product is 14400s = 4h, not 4.8h, and it
+# assumed all three targets accept 60 mutants when models.py has 3 sites total,
+# so it overstated the requirement. The corrected figure is smaller, but the
+# margin is thinner than the old text implied: 187min of 210min leaves ~23min on
+# an unloaded machine. That is deliberate. TIMEOUT_S already carries 2.6x for a
+# slower runner, and the alternative -- raising the budget -- would eat the
+# headroom against the 360min platform cap that the 15h pathological ceiling
+# still needs. A run that exceeds 210min is a run whose survivors each ran a
+# full selection past the healthy case, which is exactly what this budget exists
+# to surface rather than absorb.
 SUBPROCESS_CEILING_S = 3 * MAX_PER_FILE * TIMEOUT_S
 KILL_SCORE_TIMEOUT_S = 210 * 60
 
@@ -464,11 +500,11 @@ def _apply_one(source_text: str, target: Planned) -> str:
     altered = False
 
     class Hit(ast.NodeTransformer):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.remaining = target.index
 
-        def visit(self, node):  # type: ignore[override]
+        def visit(self, node: ast.AST) -> ast.AST:
             nonlocal altered
             self.generic_visit(node)
             if self.remaining < 0 or _op_for(node) != target.op:
@@ -523,6 +559,12 @@ class MutationReport:
     score: float = 0.0
     op_breakdown: dict[str, dict[str, int]] = field(default_factory=dict)
     survivors: list[dict] = field(default_factory=list)
+    # How many sites the planner found for this target, before any budget cut.
+    # Recorded because the gate measures a STRIDE of the plan, so `total` is a
+    # sample and the sites left unmeasured are otherwise invisible -- nothing
+    # in the report would distinguish "every site was measured and 70% were
+    # killed" from "60 of 442 sites were measured and all 60 were killed".
+    planned: int = 0
     # Planned mutants that never became mutants: the applier could not alter the
     # site, or the emitted text was identical to the original or to an earlier
     # mutant. Counted separately so they neither inflate the denominator nor
@@ -558,6 +600,10 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         "survived": 0,
         "timeout": 0,
         "rejected": 0,
+        # Sites the planner found, summed over targets. Larger than `total`
+        # because the gate measures a stride of each plan, so this is the
+        # honest denominator for "how much of this source was left unmeasured".
+        "planned": 0,
         "score": 0.0,
         "per_file": {},
     }
@@ -583,13 +629,77 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
             ],
         )
         report.selection = list(selection)
+        # The no-op baseline is the original source put through the SAME renderer
+        # the applier uses, so a mutant that changes nothing compares equal.
+        # `mutated` is `ast.unparse(...)` output; comparing it to the raw file
+        # text could never match, because unparsing normalises formatting and
+        # discards comments.
+        baseline_text = ast.unparse(ast.parse(src_text))
+        # Every mutant is measured by running this exact selection, so a selection
+        # that cannot run at all would fail fast and identically for every mutant.
+        # Under `killed = rc.returncode != 0` that reads as 100% kills with nothing
+        # executed, which is how a renamed test file could turn this gate green.
+        # Require the unmutated selection to be green once, before any mutant is
+        # measured, so a broken selection fails loudly instead of inflating the
+        # score.
+        missing = [p for p in selection if not (BACKEND / p).is_file()]
+        assert not missing, f"{target.name}: selection files missing: {missing}"
+        baseline_rc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pytest",
+                *selection,
+                *INNER_PYTEST_ARGS,
+            ],
+            cwd=BACKEND,
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_S,
+            check=False,
+        )
+        assert baseline_rc.returncode == 0, (
+            f"{target.name}: unmutated selection is not green "
+            f"(rc={baseline_rc.returncode}); every kill would be vacuous. "
+            f"tail: {baseline_rc.stdout[-500:]}"
+        )
         # Walk the WHOLE plan, not a prefix, and accept mutants until the budget
         # is full. Truncating first would waste the budget on entries that dedup
         # or get rejected later, silently shrinking the measured set.
         seen_texts: set[str] = set()
         accepted = 0
+        # Measure a STRIDE of the plan, not a prefix. `_Indexer` records sites
+        # children-before-parent and top-of-file first, so taking the first
+        # MAX_PER_FILE entries measures the head of each file and says nothing
+        # about the rest. That is not just imprecise, it breaks the denominator
+        # TARGET_SCORE is derived from: the 72.2% ceiling is over 597 PLANNED
+        # sites while the gate measures at most 3 + 60 + 60 = 123, and because
+        # the three files have very different reachability (server.py 38.2%,
+        # models.py 100%) an unrepresentative prefix can land the sampled score
+        # below the bar. Spreading the measured sites across the whole plan keeps the
+        # set proportional to the file, so the sampled reachability tracks the
+        # real one. The interval is recomputed per target because the plans
+        # differ in size by two orders of magnitude.
+        plan = _plan(target)
+        # Sample by INDEX INTERVAL rather than a fixed stride.
+        #
+        # A fixed stride cannot do both jobs at once: a large stride spans the
+        # file but leaves the budget unfilled (a stride of 7 over 442 sites picks
+        # 31, not the 60 the budget allows), and a stride of 1 fills the budget
+        # but is a prefix again. Spacing the picks evenly at
+        # `len(plan) / MAX_PER_FILE` intervals fills the budget exactly AND spans
+        # the file, which is the point of sampling rather than truncating.
+        # For plans no larger than the budget the step is <= 1, so every site is
+        # measured and a small file behaves exactly as before.
+        step = max(1.0, len(plan) / MAX_PER_FILE)
+        report.planned = len(plan)
         try:
-            for mutation in _plan(target):
+            for position, mutation in enumerate(plan):
+                # Land on each sampling boundary, plus the final site so the
+                # tail of the file is never excluded.
+                on_sample = int(position / step) != int((position - 1) / step) if position else True
+                if not on_sample and position != len(plan) - 1:
+                    continue
                 if accepted >= MAX_PER_FILE:
                     break
                 try:
@@ -610,7 +720,14 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                 # proves a node was altered, but the driver additionally refuses
                 # text identical to the original or to a mutant already measured,
                 # because either one would be booked twice for a single change.
-                if mutated == src_text:
+                #
+                # The no-op comparison is against the UNPARSED ORIGINAL, not
+                # `src_text`. `mutated` comes from `ast.unparse`, which
+                # renormalises quotes and whitespace and drops every comment, so
+                # it never equals the raw file text -- comparing against
+                # `src_text` made this guard unreachable, and a mutation that
+                # altered nothing would have been measured as a real mutant.
+                if mutated == baseline_text:
                     report.rejected += 1
                     report.rejections.append(
                         {
@@ -648,9 +765,7 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                             "-m",
                             "pytest",
                             *selection,
-                            "--no-cov",
-                            "-q",
-                            "-x",
+                            *INNER_PYTEST_ARGS,
                         ],
                         cwd=BACKEND,
                         capture_output=True,
@@ -658,6 +773,16 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                         timeout=TIMEOUT_S,
                         check=False,
                     )
+                    # Exit 4 (usage error) and 5 (nothing collected) mean the
+                    # suite did not run, which is not evidence that the mutant
+                    # was caught. Booking either as a kill is what let a broken
+                    # selection score 100%, so they abort the run instead.
+                    if rc.returncode in _COLLECTION_FAILURES:
+                        raise RuntimeError(
+                            f"{target.name}: pytest could not run the selection "
+                            f"(rc={rc.returncode}); kills would be vacuous. "
+                            f"tail: {rc.stdout[-500:]}"
+                        )
                     killed = rc.returncode != 0
                 except subprocess.TimeoutExpired:
                     # A timeout is not a kill: the suite never reported a
@@ -725,6 +850,7 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         overall["survived"] += report.survived
         overall["timeout"] += report.timeout
         overall["rejected"] += report.rejected
+        overall["planned"] += report.planned
         overall["per_file"][target.name] = report.score
 
     if overall["total"]:
@@ -749,4 +875,17 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         f"{TARGET_SCORE}%; killed={overall['killed']}/{overall['total']} "
         f"(timeouts={overall['timeout']} do not count as kills, "
         f"rejected={overall['rejected']} never became mutants)"
+    )
+    # Rejections shrink `total`, which is the score's DENOMINATOR, so a plan that
+    # starts collapsing into rejections raises the score with nothing failing.
+    # `MAX_TIMEOUT_RATIO` bounds the unmeasured-by-timeout share but nothing
+    # bounded this one; only the failure message above mentions the count, and
+    # that renders when the gate is already red. The honest expectation is
+    # that a correct planner/applier pair rejects nothing, so assert that
+    # outright rather than allowing a proportional slack: every rejection is a
+    # phantom mutant the no-op and dedup guards exist to prevent.
+    assert overall["rejected"] == 0, (
+        f"{overall['rejected']} planned sites never became mutants; a correct "
+        f"planner/applier pair rejects none, and rejections shrink the "
+        f"denominator ({overall['killed']}/{overall['total']})"
     )

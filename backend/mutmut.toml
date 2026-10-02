@@ -5,7 +5,17 @@
 #   python -m mutmut results                        # show survivors
 #   python -m mutmut show <id>                      # show a specific mutant
 #
-# Target: >=75% mutation kill-score (set in .qgate.toml [mutation].target_score).
+# Two different kill-score floors are in play and they are NOT the same gate:
+#   * .qgate.toml [mutation].target_score is >=75% and governs the Rust
+#     workspace via `cargo mutants`, which this Python config cannot influence.
+#   * backend/tests/test_mutation_engine.py's TARGET_SCORE is 65 and governs
+#     this Python AST-mutation harness over three modules.
+# An earlier revision of this file said only ">=75% mutation kill-score", which
+# read as the floor for the sweep configured here and overstated it. The Python
+# harness's measured ceiling is 72.2% over its own per-target selections, so 75
+# is unreachable for it at any assertion quality; see that module for the
+# measurement and for why 65 is set below it.
+#
 # Survivor mutants must either be killed by tightening tests or filtered
 # through `do_not_mutate` (fnmatch globs matched against source-file paths).
 #
@@ -41,7 +51,18 @@
 
 source_paths = ["src/melosviz/"]
 pytest_add_cli_args_test_selection = ["tests/"]
-pytest_add_cli_args = ["-q", "--tb=no", "-x"]
+# Mirrors [tool.mutmut].pytest_add_cli_args in pyproject.toml, including the
+# --deselect. That deselect is load-bearing, not cosmetic: without it mutmut
+# runs tests/test_mutation_engine.py once per outer mutant, and that module
+# drives its own nested mutation sweep, so the outer sweep recurses on itself
+# across the whole population. Keep this value identical to the pyproject one.
+pytest_add_cli_args = [
+    "-q",
+    "--tb=no",
+    "-x",
+    "--deselect",
+    "tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar",
+]
 # fnmatch's `*` crosses path separators (it becomes `.*`, and `/` is not
 # special), so the second pattern covers every package init at any depth and
 # the third covers the package root. The explicit touchdesigner entry that used

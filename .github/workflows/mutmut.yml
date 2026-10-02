@@ -33,8 +33,9 @@ jobs:
     # `1.5x` kill-score multiplier from backend/tests/test_mutation_engine.py.
     # Those are that test's TARGETS / MAX_PER_FILE / TIMEOUT_S, and this job runs
     # `uv run mutmut run`, whose scope comes from [tool.mutmut]
-    # source_paths = ["src/melosviz/"] -- 80 files, 26506 mutants (counted from a
-    # real run's export-cicd-stats), not three files.
+    # source_paths = ["src/melosviz/"] -- 80 files named, 60 mutated after
+    # do_not_mutate, 26506 mutants (counted from a real run's export-cicd-stats),
+    # not three files.
     #
     # What mutmut MUTATES is governed by source_paths = ["src/melosviz/"], and all
     # three of those files ARE inside it -- src/melosviz/analysis/models.py,
@@ -435,16 +436,25 @@ jobs:
         # paths and tests (`--paths-to-mutate`, `--tests-dir`, `--runner`) were
         # removed in mutmut 3, so WHAT gets mutated comes only from
         # [tool.mutmut] source_paths and do_not_mutate. `mutmut run` is not
-        # option-free -- it still takes mutant-name filters as positional
-        # arguments plus `--max-children`, which is a narrowing of HOW MUCH
-        # runs, not of what the sweep covers. Verified against the installed
-        # mutmut source: `def run(mutant_names, *, max_children)`.
+        # option-free -- verified against the installed source:
+        # `def run(mutant_names, *, max_children)`. But neither option narrows
+        # SCOPE in the way a flag like `--paths-to-mutate` did:
+        #
+        #   * mutant-name arguments name WHICH mutants to run, so they can select
+        #     a subset. Nothing else on the command line changes the population.
+        #   * `--max-children` is CONCURRENCY, not scope. It defaults to
+        #     os.cpu_count() and bounds how many pytest children run in
+        #     parallel; raising it makes the same mutants finish sooner and
+        #     lowering it makes them finish later. Describing it as narrowing
+        #     "how much runs" is the wrong axis, and it is why the conclusion
+        #     below still holds.
         #
         # source_paths names the whole package, 80 files, and do_not_mutate
         # excludes 20 of them (18 __init__.py plus cli/main.py and
         # cli/partial_rerender.py; verified with fnmatch, the exact call mutmut
         # makes), so this sweep mutates 60 files -- not 80. Both numbers are
-        # worth stating because "the whole package" reads as 80.
+        # worth stating because "the whole package" reads as 80. The 26506 in the
+        # header is a count over those 60 mutated files, not over all 80.
         #
         # The only levers that reduce what is swept are therefore the
         # do_not_mutate globs, which skip files entirely rather than reduce
@@ -470,10 +480,10 @@ jobs:
           # real ubuntu-22.04 runner:
           #   Error: No such option '--paths-to-mutate'.
           #   Error: No such command 'junitxml'.
-          # mutmut 3.8.0's `cli` group defines no options at all, so there is no
-          # command-line way to set scope: it is read from
-          # backend/pyproject.toml [tool.mutmut] only. Hence the bare `mutmut
-          # run` below, with the scope in that file rather than here.
+          # mutmut 3.8.0's `cli` group offers only mutant-name filters and
+          # `--max-children`, neither of which sets WHAT is mutated, so scope is
+          # read from backend/pyproject.toml [tool.mutmut] only. Hence the bare
+          # `mutmut run` below, with the scope in that file rather than here.
           #
           #   run       -> the mutation pass is the measurement. If it does not
           #                complete there is no score, so it must fail. `set +e`

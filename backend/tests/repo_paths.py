@@ -110,10 +110,12 @@ def find_repo_root(start: Path | str | None = None) -> Path:
 
     Raises:
         RuntimeError: When no ancestor of ``start`` carries both markers.
-            Returning a fallback would be worse than failing: by the time the
-            walk gives up, ``cur`` is the last ancestor reached, normally ``/``
-            or one of its ancestors rather than the backend directory, so every
-            caller would build repository-level paths (``REPO_ROOT / "docs" /
+            The message names the directory the walk STARTED at as well as the
+            last one it checked, because those differ: by the time the walk
+            gives up the cursor has usually reached ``/`` or an ancestor of it,
+            several levels above the caller's own tree. Returning a fallback
+            would be worse than failing, and every caller would build
+            repository-level paths (``REPO_ROOT / "docs" /
             "intent" / "MelosViz.md"``, ``REPO_ROOT / ".github" /
             "workflows"``, ``BACKEND / "src"``) from a root that has none of
             them, and a missing marker would surface as a confusing
@@ -136,9 +138,15 @@ def find_repo_root(start: Path | str | None = None) -> Path:
         docstring. It is a loud, early, structural error, which is the intended
         behaviour; it is just reported seven times over.
     """
-    cur = (Path(start) if start is not None else Path(__file__)).resolve()
-    if cur.is_file():
-        cur = cur.parent
+    start_path = (Path(start) if start is not None else Path(__file__)).resolve()
+    cur = start_path.parent if start_path.is_file() else start_path
+    # Keep the caller's own starting directory distinct from the walk cursor.
+    # `cur` is rebound on every iteration, so an error message built from it
+    # names the LAST directory examined -- normally a filesystem root, several
+    # levels above where the caller actually started. That reads as though the
+    # wrong directory were passed in when the real fault is a missing marker
+    # above the caller's own tree, which is a very different thing to go debug.
+    origin = cur
     for _ in range(_MAX_WALK_DEPTH):
         if _has_root_markers(cur):
             return cur
@@ -147,8 +155,8 @@ def find_repo_root(start: Path | str | None = None) -> Path:
             break
         cur = parent
     raise RuntimeError(
-        f"repo root not found: no ancestor of {cur!r} has both "
+        f"repo root not found: no ancestor of {origin!r} has both "
         f"{' and '.join(name for name, _ in _ROOT_MARKERS)} "
-        f"(Cargo.toml as a file, backend/ as a directory; walked up to "
-        f"{_MAX_WALK_DEPTH} levels)"
+        f"(Cargo.toml as a file, backend/ as a directory); walked up to "
+        f"{_MAX_WALK_DEPTH} levels and last checked {cur!r}"
     )
