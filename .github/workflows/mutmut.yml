@@ -31,10 +31,21 @@ jobs:
     # what THIS job actually does rather than against a sibling test's constants.
     # An earlier revision borrowed `3 targets * 60 mutants * 60s = 3h` and the
     # `1.5x` kill-score multiplier from backend/tests/test_mutation_engine.py.
-    # Those are that test's TARGETS / MAX_PER_FILE / TIMEOUT_S, and it is not
-    # collected here: this job runs `uv run mutmut run`, whose scope comes from
-    # [tool.mutmut] source_paths = ["src/melosviz/"] -- 80 files, 26506 mutants
-    # (counted from a real run's export-cicd-stats), not three files.
+    # Those are that test's TARGETS / MAX_PER_FILE / TIMEOUT_S, and this job runs
+    # `uv run mutmut run`, whose scope comes from [tool.mutmut]
+    # source_paths = ["src/melosviz/"] -- 80 files, 26506 mutants (counted from a
+    # real run's export-cicd-stats), not three files.
+    #
+    # What mutmut MUTATES is governed by source_paths, and these three files are
+    # not in that set. What mutmut RUNS is governed by
+    # pytest_add_cli_args_test_selection = ["tests/"], and that DOES collect
+    # tests/test_mutation_engine.py -- verified, not assumed:
+    #     pytest tests/ --collect-only
+    #     tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar
+    # An earlier revision of this comment asserted the opposite ("it is not
+    # collected here"). That was wrong, and it mattered: it implied this job's
+    # runtime budget was entirely independent of that test's cost, when in fact
+    # the test runs once per mutant inside this job.
     #
     # So the honest statement is that mutmut's real bound is per-mutant pytest
     # time multiplied by the whole mutant population, which no arithmetic here
