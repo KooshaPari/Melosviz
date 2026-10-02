@@ -670,6 +670,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
                         if scene_result.get("artifact_path")
                         else None
                     ),
+                    "from_cache": bool(scene_result.get("from_cache", False)),
                 }
             )
         else:
@@ -680,6 +681,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
                     "outcome": None,
                     "artifact_sha256": None,
                     "artifact_path": None,
+                    "from_cache": False,
                 }
             )
     summary = {
