@@ -107,7 +107,10 @@ def main():
         # Re-running the exact same R2 request must be idempotent at media level:
         # no extra scene work and no changed final bytes.
         r2_repeat=cli(candidate,w,sb,out,1)
-        assert (r2_repeat.get("scenes") or [])==[],r2_repeat
+        repeat_scenes=r2_repeat.get("scenes") or []
+        assert len(repeat_scenes)==1 and repeat_scenes[0].get("scene_index")==1,r2_repeat
+        assert repeat_scenes[0].get("from_cache") is True,r2_repeat
+        assert repeat_scenes[0].get("artifact_sha256")==r2_s1["sha256"],(repeat_scenes,r2_s1)
         a3=probe(assembly)
         assert a3["sha256"]==a2["sha256"],(a2,a3)
         result["checks"]["r2_repeat_is_media_idempotent"]=True
