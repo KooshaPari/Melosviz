@@ -21,10 +21,12 @@ Failure policy
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 import uuid
 from collections.abc import Sequence
@@ -48,6 +50,8 @@ from melosviz.conductor.render_cache import (
     RenderCache,
     scene_cache_key,
     scene_cache_meta,
+    scene_cache_identity_qualified,
+    scene_cache_backend_identity,
     scene_render_cached,
 )
 from melosviz.conductor.visual_diff import compute_visual_diff
@@ -139,8 +143,33 @@ def _artifact_rejection(artifact: str) -> str | None:
             return "artifact is empty (0 bytes)"
     except OSError as exc:  # unreadable path/metadata
         return f"artifact could not be inspected: {exc}"
-    if _is_zero_duration(artifact) is True:
+    zero_duration = _is_zero_duration(artifact)
+    if zero_duration is True:
         return "artifact is zero-duration media (no playable frames)"
+    if path.suffix.lower() == ".wav" and zero_duration is None:
+        return "artifact WAV could not be decoded"
+    if path.suffix.lower() in {".mp4", ".mov", ".mkv", ".webm", ".avi"}:
+        ffprobe = shutil.which("ffprobe")
+        if ffprobe is None:
+            return "media verification unavailable (ffprobe not found)"
+        try:
+            probe = subprocess.run(
+                [ffprobe, "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=codec_type,duration,nb_frames",
+                 "-of", "json", str(path)],
+                capture_output=True, text=True, timeout=15, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return f"media probe failed: {exc}"
+        if probe.returncode != 0:
+            return "artifact is not decodable media"
+        try:
+            payload = json.loads(probe.stdout or "{}")
+        except json.JSONDecodeError:
+            return "media probe returned invalid metadata"
+        streams = payload.get("streams") if isinstance(payload, dict) else None
+        if not isinstance(streams, list) or not streams:
+            return "artifact has no decodable video stream"
     return None
 
 
@@ -189,8 +218,12 @@ def _materialise_cached_artifact(blob: Path, output_dir: Path, scene_out_dir: Pa
 
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        if not (target.exists() and target.stat().st_size == blob.stat().st_size):
-            shutil.copy2(blob, target)
+        # A same-size target is not evidence of identical content. Always
+        # materialise the content-addressed cache blob atomically enough for
+        # this local path: copy to a sibling temp file, then replace.
+        tmp_target = target.with_name(target.name + ".cache-materialising")
+        shutil.copy2(blob, tmp_target)
+        tmp_target.replace(target)
     except OSError as exc:
         logger.debug("cache materialise failed for %s: %s", blob, exc)
         return None
@@ -321,7 +354,7 @@ class OrchestratorResult:
     """Aggregated result from a full :meth:`Orchestrator.render` run.
 
     Attributes:
-        per_scene_results: ``{scene_type: adapter_result}`` for each dispatched type.
+        per_scene_results: ``{scene_index: adapter_result}`` for each dispatched scene.
         assembly_result: Result from the final ``assembly_encode`` step.
         output_dir: Base directory used for all outputs.
         job_id: Unique identifier for this run (used to key SSE event streams).
@@ -330,7 +363,7 @@ class OrchestratorResult:
 
     def __init__(
         self,
-        per_scene_results: dict[str, Any],
+        per_scene_results: dict[int, Any],
         assembly_result: Any | None,
         output_dir: Path | None,
         job_id: str = "",
@@ -773,9 +806,28 @@ class Orchestrator:
         bus = get_bus()
         emitted: list[RenderEvent] = []
 
-        # ---- Dispatch per scene type ----------------------------------------
-        per_scene_results: dict[str, Any] = {}
+        # ---- Dispatch per scene instance ------------------------------------
+        # scene_type selects an adapter; scene_index is the work/result identity.
+        per_scene_results: dict[int, Any] = {}
         collected_paths: list[str | Path] = list(segment_paths or [])
+        # Accepted production artifacts keyed by storyboard scene_index. This is
+        # also the seed for reconstructing a complete timeline after a partial
+        # rerender; filesystem existence alone is never enough to reuse a scene.
+        scene_artifacts: dict[int, Path] = {}
+
+        # The constructor selector exists for CLI compatibility; an explicit
+        # render() selector wins. Validate before invoking any adapter so a bad
+        # request cannot partially render a storyboard.
+        _requested_scenes = only_scenes if only_scenes is not None else self._only_scenes
+        _selected_scene_indices: set[int] | None = None
+        if _requested_scenes is not None:
+            _selected_scene_indices = {int(i) for i in _requested_scenes}
+            _invalid = sorted(i for i in _selected_scene_indices if i < 0 or i >= len(segs))
+            if _invalid:
+                raise ConductorError(
+                    f"Orchestrator: only_scenes contains out-of-range indices {_invalid}; "
+                    f"scene count is {len(segs)}"
+                )
 
         # Build the list of (scene_index, scene_name, scene_type) for event
         # emission. One entry per individual scene so every render gets its
@@ -819,8 +871,23 @@ class Orchestrator:
                 if st != "assembly_encode"
             ]
 
+        if _selected_scene_indices is not None:
+            per_scene_dispatch = [
+                item for item in per_scene_dispatch if item[0] in _selected_scene_indices
+            ]
+
         for scene_idx, scene_name, scene_type, _seg_for_render in per_scene_dispatch:
-            scene_out_dir = self._output_dir / scene_type
+            # scene_index is the conductor work identity. Storyboard scene dicts
+            # do not necessarily carry it, so project it explicitly before cache
+            # identity, provenance, or adapter work can consume the scene.
+            _seg_for_render = dict(_seg_for_render)
+            _seg_for_render["scene_index"] = scene_idx
+            _seg_for_render.setdefault("scene_name", scene_name)
+
+            # Give every scene an isolated adapter root. Adapters currently
+            # create their own scene_NNN children and cannot safely share a
+            # scene-type directory when invoked once per scene.
+            scene_out_dir = self._output_dir / scene_type / f"dispatch_{scene_idx:03d}"
             scene_out_dir.mkdir(parents=True, exist_ok=True)
 
             adapter_cls = ADAPTER_REGISTRY.get(scene_type)
@@ -858,13 +925,11 @@ class Orchestrator:
             # there is no real scene work to render. Stub the per-scene
             # result and continue without invoking the adapter.
             if not _seg_for_render:
-                per_scene_results.setdefault(
-                    scene_type,
-                    {
+                if _selected_scene_indices is None or scene_idx in _selected_scene_indices:
+                    per_scene_results[scene_idx] = {
                         "artifact_path": None,
                         "cache_key": "",
-                    },
-                )
+                    }
                 continue
 
             # Defaulted getattr: a Mock adapter class raises AttributeError for
@@ -912,6 +977,11 @@ class Orchestrator:
                         materialised,
                     )
                     elapsed_ms = 0.0
+                    _cached_meta = scene_cache_meta(_seg_for_render, cache_root)
+                    _cached_outcome = _cached_meta.get("outcome")
+                    _cached_issue = _artifact_rejection(str(materialised))
+                    if _cached_outcome == OUTCOME_RENDER and _cached_issue:
+                        _cached_outcome = OUTCOME_MALFORMED
                     done_evt = bus.emit_done(
                         job_id=job_id,
                         scene_index=scene_idx,
@@ -920,13 +990,25 @@ class Orchestrator:
                         backend=backend_key,
                         duration_ms=0.0,
                         artifact_path=str(materialised),
-                        extras={"from_cache": True, "cache_key": _cache_key},
+                        extras={
+                            "from_cache": True,
+                            "cache_key": _cache_key,
+                            "outcome": _cached_outcome,
+                            "rejection_reason": _cached_issue or "",
+                        },
                     )
                     emitted.append(done_evt)
-                    per_scene_results.setdefault(
-                        scene_type,
-                        {"artifact_path": materialised, "cache_key": _cache_key},
-                    )
+                    per_scene_results[scene_idx] = {
+                        "artifact_path": materialised,
+                        "artifact_sha256": hashlib.sha256(materialised.read_bytes()).hexdigest(),
+                        "cache_key": _cache_key,
+                        "outcome": _cached_outcome,
+                        "scene_type": scene_type,
+                        "from_cache": True,
+                    }
+                    if per_scene_results[scene_idx]["outcome"] == OUTCOME_RENDER:
+                        collected_paths.append(materialised)
+                        scene_artifacts[scene_idx] = materialised
                     _record_cached_scene(
                         scene_out_dir=scene_out_dir,
                         scene_index=scene_idx,
@@ -934,7 +1016,7 @@ class Orchestrator:
                         scene_type=scene_type,
                         backend=backend_key,
                         artifact_path=str(materialised),
-                        outcome=scene_cache_meta(_seg_for_render, cache_root).get("outcome"),
+                        outcome=_cached_outcome,
                         render_spec=render_spec,
                     )
                     continue
@@ -984,7 +1066,17 @@ class Orchestrator:
                     # Backwards-compat alias for older adapters that
                     # still key off the pre-v2 on-wire name.
                     _render_kwargs.setdefault("scene_ip_adapter_image", str(_ref_img))
-                result = adapter.render(render_spec, **_render_kwargs)
+                # Existing adapters own an internal loop over scene_segments.
+                # Project the immutable/global RenderSpec down to exactly this
+                # scene so orchestrator+adapter do not both iterate the full set.
+                if hasattr(render_spec, "model_copy"):
+                    _scene_render_spec = render_spec.model_copy(
+                        update={"scene_segments": [_seg_for_render]}
+                    )
+                else:
+                    _scene_render_spec = dict(spec_dict)
+                    _scene_render_spec["scene_segments"] = [_seg_for_render]
+                result = adapter.render(_scene_render_spec, **_render_kwargs)
             except Exception as exc:
                 elapsed_ms = (time.monotonic() - t0) * 1000.0
                 err_evt = bus.emit_error(
@@ -1048,7 +1140,7 @@ class Orchestrator:
             _offline_placeholder = bool(
                 _offline_env
                 and getattr(adapter, "emits_offline_placeholders", False) is True
-                and artifact.endswith(".mp4")
+                and bool(artifact)
             )
             # Cinema 4D / Unreal / Blender emit a render *plan* offline and no
             # media at all: calling that a render overstates the artifact, and
@@ -1090,10 +1182,25 @@ class Orchestrator:
                 backend=backend_key,
                 duration_ms=elapsed_ms,
                 artifact_path=artifact,
+                extras={"outcome": _outcome},
             )
             emitted.append(done_evt)
 
-            per_scene_results.setdefault(scene_type, result)
+            per_scene_results[scene_idx] = {
+                "adapter_result": result,
+                "artifact_path": artifact or None,
+                "artifact_sha256": (
+                    hashlib.sha256(Path(artifact).read_bytes()).hexdigest()
+                    if _outcome == OUTCOME_RENDER and artifact and Path(artifact).is_file()
+                    else None
+                ),
+                "outcome": _outcome,
+                "scene_type": scene_type,
+                "from_cache": False,
+            }
+            if _outcome == OUTCOME_RENDER and artifact:
+                collected_paths.append(artifact)
+                scene_artifacts[scene_idx] = Path(artifact)
 
             # ---- Provenance sidecar + render cache store ----
             # Track wall-clock timestamps for duration_seconds in provenance.
@@ -1145,7 +1252,12 @@ class Orchestrator:
                     if cache_root
                     else scene_cache_key(_seg_for_render, self._output_dir)
                 )
-                if self._render_cache is not None and artifact and not _artifact_issue:
+                if (
+                    self._render_cache is not None
+                    and artifact
+                    and not _artifact_issue
+                    and (_outcome != OUTCOME_RENDER or scene_cache_identity_qualified(_seg_for_render))
+                ):
                     self._render_cache.store(
                         cache_key,
                         src_artifact_path=Path(artifact),
@@ -1155,10 +1267,65 @@ class Orchestrator:
                             "outcome": _outcome,
                             "artifact_name": Path(artifact).name,
                             "artifact_relpath": _artifact_relpath(artifact, self._output_dir),
+                            "backend_identity": scene_cache_backend_identity(_seg_for_render),
                         },
                     )
             except Exception as exc:  # cache store is best-effort
                 logger.debug("render cache store skipped: %s", exc)
+
+        # A selective rerender still needs a complete timeline before it may
+        # claim a final assembly. Reuse untouched scenes only through exact
+        # cache identity + current media validation; do not glob old outputs.
+        if (
+            _selected_scene_indices is not None
+            and segment_paths is None
+            and not self._skip_assembly
+            and segs
+        ):
+            cache_root = self._render_cache.cache_dir if self._render_cache is not None else None
+            expected_scene_indices = [
+                i
+                for i, seg in enumerate(segs)
+                if str(seg.get("scene_type", "video_export")) != "assembly_encode"
+            ]
+            missing_for_full_assembly: list[int] = []
+            for i in expected_scene_indices:
+                if i in scene_artifacts:
+                    continue
+                seg = dict(segs[i])
+                seg["scene_index"] = i
+                seg.setdefault("scene_name", _scene_label(seg, i))
+                if cache_root is None:
+                    missing_for_full_assembly.append(i)
+                    continue
+                cached = scene_render_cached(seg, cache_root)
+                meta = scene_cache_meta(seg, cache_root)
+                if (
+                    cached is None
+                    or not cached.exists()
+                    or meta.get("outcome") != OUTCOME_RENDER
+                ):
+                    missing_for_full_assembly.append(i)
+                    continue
+                scene_type = str(seg.get("scene_type", "video_export"))
+                scene_dir = self._output_dir / scene_type / f"dispatch_{i:03d}"
+                materialised = _materialise_cached_artifact(
+                    cached, self._output_dir, scene_dir
+                )
+                if materialised is None or _artifact_rejection(str(materialised)):
+                    missing_for_full_assembly.append(i)
+                    continue
+                scene_artifacts[i] = materialised
+
+            if missing_for_full_assembly:
+                raise ConductorError(
+                    "Orchestrator: partial rerender cannot produce a complete "
+                    "assembly because unchanged scenes lack current render evidence: "
+                    f"{missing_for_full_assembly}. Run a full render first."
+                )
+            # Replace selected-only collection with exactly one artifact per
+            # storyboard scene, in storyboard order.
+            collected_paths = [scene_artifacts[i] for i in expected_scene_indices]
 
         # ---- Final assembly step -------------------------------------------
         assembly_result: Any = None
