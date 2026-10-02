@@ -173,6 +173,28 @@ class ProjectLedger:
             self.db.execute("UPDATE assembly_attempt SET state='accepted' WHERE id=?",(assembly_id,))
             self.db.execute("INSERT INTO attempt_evidence(attempt_id,kind,artifact_sha256,verifier,state,created_at) VALUES(?,?,?,?,?,?)",(row[2],"assembly",artifact_sha256,verifier,"accepted",time.time()))
 
+    def project_status(self,project_id:str)->dict:
+        revision=self.latest_revision(project_id)
+        if revision is None: raise KeyError(project_id)
+        rev=self.db.execute(
+            "SELECT parent_revision,spec_sha256,created_at FROM project_revision WHERE project_id=? AND revision=?",
+            (project_id,revision),
+        ).fetchone()
+        attempts=self.db.execute(
+            "SELECT id,state,job_id,candidate_sha,started_at,completed_at FROM render_attempt WHERE project_id=? AND project_revision=? ORDER BY id",
+            (project_id,revision),
+        ).fetchall()
+        return {
+            "project_id":project_id,
+            "revision":revision,
+            "parent_revision":rev[0],
+            "spec_sha256":rev[1],
+            "attempts":[
+                {"attempt_id":a[0],"state":a[1],"job_id":a[2],"candidate_sha":a[3],"started_at":a[4],"completed_at":a[5]}
+                for a in attempts
+            ],
+        }
+
     def latest_revision(self,project_id:str)->int|None:
         row=self.db.execute("SELECT MAX(revision) FROM project_revision WHERE project_id=?",(project_id,)).fetchone()
         return row[0] if row and row[0] is not None else None
