@@ -42,10 +42,34 @@
 source_paths = ["src/melosviz/"]
 pytest_add_cli_args_test_selection = ["tests/"]
 pytest_add_cli_args = ["-q", "--tb=no", "-x"]
+# fnmatch's `*` crosses path separators (it becomes `.*`, and `/` is not
+# special), so the second pattern covers every package init at any depth and
+# the third covers the package root. The explicit touchdesigner entry that used
+# to be here was redundant: `src/melosviz/*/__init__.py` already matches it.
+# Mirrors the explanation and the pattern list in pyproject.toml [tool.mutmut].
 do_not_mutate = [
-    "src/melosviz/cli/*.py",                       # CLI glue / entry-points
-    "src/melosviz/runtime/touchdesigner/__init__.py",  # re-export only
-    "src/melosviz/*/__init__.py",                   # package init stubs, 1 level
-    "src/melosviz/__init__.py",                     # package root init
+    "src/melosviz/cli/*.py",            # CLI glue / entry-points (nested too)
+    "src/melosviz/*/__init__.py",       # package init stubs, any depth
+    "src/melosviz/__init__.py",         # package root init
 ]
+# Copy the non-Python data the tests read into mutants/ alongside the source.
+#
+# mutmut 3 rebuilds the tree under `mutants/` and runs pytest from there, so a
+# test that resolves a data file against the working directory looks inside
+# `mutants/` and finds nothing. `workflows/` holds the six Jinja2 templates the
+# render adapters load; without this the render adapters fail with
+# "Workflow template not found: .../backend/mutants/workflows/sdxl_image.json"
+# (dispatched run 36954491966 against fa31b74).
+#
+# only mutmut 3.8.0's `also_copy` does this. `copy_src_dir` copies source files
+# but `setup_source_paths` only puts `.`, `src` and `source` on sys.path.
+#
+# Note this list is UNIONED with mutmut's own defaults, which already include
+# `tests/` and `pyproject.toml` (configuration.py:184-195). tests/ matters here:
+# tests/fixtures/ (k.wav, test_tone.wav) is the other non-Python data in
+# backend/, and its two consumers are guarded by skipif(not K_WAV.exists()), so
+# if the copy ever stopped carrying tests/ they would skip silently and the
+# sweep would stay green while running two fewer tests. Do not add a redundant
+# `tests/` entry here.
+also_copy = ["workflows/"]
 # type_check_command is intentionally absent -- see the note in pyproject.toml.

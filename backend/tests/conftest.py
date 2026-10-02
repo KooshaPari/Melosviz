@@ -35,6 +35,17 @@ def find_repo_root(start: Path | str | None = None) -> Path:
     ``Cargo.toml`` (the Rust workspace root) together with ``backend/``. Using
     the Rust marker avoids ambiguity, since ``pyproject.toml`` exists under
     both the root and ``backend/``.
+
+    Raises:
+        RuntimeError: When no ancestor of ``start`` carries both markers.
+            Returning a fallback would be worse than failing: by the time the
+            walk gives up, ``cur`` is the last ancestor reached, normally ``/``
+            or one of its ancestors rather than the backend directory, so every
+            caller would build repository-level paths (``REPO_ROOT / "docs" /
+            "intent" / "MelosViz.md"``, ``REPO_ROOT / ".github" /
+            "workflows"``, ``BACKEND / "src"``) from a root that has none of
+            them, and a missing marker would surface as a confusing
+            ``FileNotFoundError`` instead of the structural error it is.
     """
     cur = (Path(start) if start is not None else Path(__file__)).resolve()
     for _ in range(8):  # bounded walk; CI can nest deeper than expected
@@ -44,10 +55,10 @@ def find_repo_root(start: Path | str | None = None) -> Path:
         if parent == cur:
             break
         cur = parent
-    # Nothing matched (a shallow export without the Rust workspace). Fall back
-    # to the backend directory itself, which keeps callers working with a stable
-    # absolute path instead of raising at import time.
-    return cur
+    raise RuntimeError(
+        f"repo root not found: no ancestor of {cur!r} has both Cargo.toml "
+        f"and backend/ (walked up to 8 levels)"
+    )
 
 
 @pytest.fixture(autouse=True)

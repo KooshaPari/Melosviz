@@ -220,8 +220,20 @@ pytest_add_cli_args = ["-q", "--tb=no", "-x"]
 # copies every source file, but `setup_source_paths` (line 80) only puts the
 # `.`, `src` and `source` trees on sys.path. Nothing copies data files, so
 # every CWD-relative data dependency in the test suite breaks under mutation.
-# `workflows/` holds the six Jinja2 templates the render adapters load; it is
-# the only data directory in backend/, so it is the only entry needed.
+# `workflows/` holds the six Jinja2 templates the render adapters load.
+#
+# It is not the only non-Python data in backend/: `tests/fixtures/` is the other
+# (k.wav, test_tone.wav), and it needs no entry here because mutmut's own
+# loader always appends `tests/` to also_copy (configuration.py:184-195, which
+# unions the configured list with tests/, test/, setup.cfg, pyproject.toml,
+# uv.lock, poetry.lock, Pipfile.lock, pdm.lock and test*.py). So the fixtures
+# already ride along and both test_beat_track_isolation.py tests still collect.
+#
+# That default is load-bearing and worth stating, because those two tests are
+# guarded by `@pytest.mark.skipif(not K_WAV.exists(), ...)`: if mutmut ever
+# stopped copying `tests/`, they would skip silently and the sweep would report
+# green while running two fewer tests. Verified against this tree: those are
+# the only non-Python data files under backend/ outside the venv.
 #
 # The alternative -- exporting MELOSVIZ_COMFYUI_WORKFLOWS_DIR to the real tree
 # -- would fix this one variable and leave the next bare-CWD reference
@@ -237,15 +249,21 @@ also_copy = ["workflows/"]
 # against this tree, they excluded 0 of 80 files, so the sweep was mutating
 # every __init__.py and the CLI entry-points it was meant to skip.
 #
-# fnmatch's `*` does NOT cross path separators, so the depths are spelled out:
-# `src/melosviz/*/__init__.py` covers one directory down and
-# `src/melosviz/__init__.py` the package root, which together exclude all 18
-# __init__.py files in this tree. Verified: 20 of 80 files excluded -- the 18
-# __init__.py files plus cli/__init__.py's sibling main.py and
-# partial_rerender.py -- and nothing outside those two groups.
+# fnmatch's `*` DOES cross path separators: it translates to `.*`, and `/` is
+# not a special character. So `src/melosviz/*/__init__.py` matches an
+# `__init__.py` at ANY depth below `src/melosviz/`, not only one directory down,
+# and `src/melosviz/cli/*.py` covers nested files under `cli/` as well. That is
+# what makes the two globs sufficient on their own, and why the explicit
+# touchdesigner entry that used to sit between them was redundant.
+#
+# Verified against this tree with fnmatch.fnmatch, the exact call mutmut makes
+# (configuration.py:299). All 18 __init__.py files are matched by one of these
+# two patterns, including the two nested a level deeper (llm/critic/ and
+# render/audio_finishing/), which a non-crossing `*` would have missed.
+# Excluded total: 20 of 80 source files -- the 18 __init__.py files plus
+# cli/main.py and cli/partial_rerender.py -- and nothing outside those groups.
 do_not_mutate = [
     "src/melosviz/cli/*.py",
-    "src/melosviz/runtime/touchdesigner/__init__.py",
     "src/melosviz/*/__init__.py",
     "src/melosviz/__init__.py",
 ]
