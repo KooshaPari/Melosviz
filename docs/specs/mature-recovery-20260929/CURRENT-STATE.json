@@ -331,10 +331,10 @@
     "prior_run": 36982081075
   },
   "M_E03": {
-    "status": "REAL_RECEIPT_REPLAY_PLUS_UI_CACHE_TRUTH_ACTIVE",
+    "status": "REAL_RECEIPT_REPLAY_WORKFLOW_PATH_FIXED_REGRADING",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "cb8469e178c268ac7e8e01da6ac97efe1d0fbe2e",
+    "head": "dfa42862e4a49863d4fb32183b0f2dbfb8c16493",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -409,6 +409,13 @@
       "classification": "TEST_COMPATIBILITY_REGRESSION",
       "detail": "legacy fake Orchestrator results omitted per_scene_results; new observation loop assumed field present"
     },
-    "latest_repair": "scene observation loop treats absent per_scene_results as empty while preserving real-result hashing when present"
+    "latest_repair": "cross-authority job now checks out M-E03 witness separately and executes replay with M-E03 product ledger code",
+    "last_cross_authority": {
+      "run": 36993999779,
+      "reviewer": "PASS",
+      "receipt": "PRESENT",
+      "replay": "WORKFLOW_PATH_RED",
+      "detail": "replay tool correctly lives on M-E03 checkout, not pinned M-E02 candidate"
+    }
   }
 }
