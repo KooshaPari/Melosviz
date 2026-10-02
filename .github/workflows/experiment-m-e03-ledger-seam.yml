@@ -48,8 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REVIEWER_SHA: b977d5de7f6d99db6d8f5a660cf286e06b49c7ec
-      CANDIDATE_SHA: 2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0
+      REVIEWER_SHA: 3499ee72ce05e9ac6716e9480b0cffb9f85d05df
+      CANDIDATE_SHA: 1c694905bda41d04887e9f2321927591dbaf4e36
     steps:
       - name: Checkout pinned reviewer policy
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
