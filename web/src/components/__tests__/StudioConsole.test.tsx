@@ -365,4 +365,24 @@ describe("StudioConsole (Director\u2019s Console)", () => {
     // Inject one programmatically via the mock fetch — skip if not available
     // The modal only opens after storyboarding, so we test the wiring exists.
     expect(screen.queryByTestId("studio-edit-modal")).toBeNull();
+  
+  it("surfaces cache reuse as reused, never accepted", async () => {
+    fetchSpy
+      .mockResolvedValueOnce({
+        ok: true, status: 200, statusText: "OK",
+        text: () => Promise.resolve(JSON.stringify({scenes:[{name:"S0",start_sec:0,end_sec:1,scene_type:"video_export",prompt:"x",palette:["#000"],seed:1}]})),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true, status: 200, statusText: "OK",
+        text: () => Promise.resolve(JSON.stringify({scenes:[{scene_index:0,scene_type:"video_export",outcome:"render",artifact_path:"/tmp/s0.mkv",artifact_sha256:"a".repeat(64),from_cache:true}]})),
+      } as Response);
+    renderStudio();
+    await act(async()=>{fireEvent.click(screen.getByTestId("studio-btn-storyboard"));});
+    await waitFor(()=>expect(document.querySelectorAll(".studio-queue-item").length).toBe(1));
+    await act(async()=>{fireEvent.click(screen.getByTestId("studio-btn-generate"));});
+    await waitFor(()=>expect(screen.getByText("reused · verification pending")).toBeTruthy());
+    const item=document.querySelector(".studio-queue-item");
+    expect(item?.getAttribute("data-state")).toBe("produced");
+    expect(screen.queryByText("accepted")).toBeNull();
   });
+});
