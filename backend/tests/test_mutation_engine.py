@@ -22,13 +22,11 @@ import json
 import shutil
 import subprocess
 import sys
-import time
 import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import pytest
-
 from conftest import find_repo_root
 
 # Marker walk instead of parents[2]: under mutmut the tests/ directory is one
@@ -46,6 +44,28 @@ TARGETS = [
 ]
 TIMEOUT_S = 60
 TARGET_SCORE = 75.0
+# Wall-clock budget for the whole test, derived from the work it does rather
+# than picked to make today's run pass.
+#
+# The test runs up to max_per_file(60) mutations per target across len(TARGETS)
+# targets, and every mutation is a separate pytest subprocess over four test
+# files. Measured on this tree: one such subprocess costs ~48s locally (the
+# suite is ~320 tests, ~47s with the audio tests dominating), so the worst case
+# is 60 x 3 x 48s ~= 144 minutes.
+#
+# The old budget was @pytest.mark.timeout(300) -- 5 minutes for work that can
+# legitimately take over two hours. It only ever passed because killed mutants
+# exit early under -x; a single surviving mutant, which by definition runs the
+# entire suite, blew it. Dispatched run 36957966430 against e3f3ddd is that
+# case:
+#     FAILED tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar
+#       - Failed: Timeout (>300.0s) from pytest-timeout
+# The bar being enforced is the 75% kill score, not a duration. A timeout that
+# fires before the measurement completes destroys the thing it is supposed to
+# protect, so the budget is sized to the work and still fails loudly if the
+# drive genuinely hangs (each subprocess has its own TIMEOUT_S=60 cap, so a real
+# hang surfaces as report.timeout, not as this outer budget).
+KILL_SCORE_TIMEOUT_S = 3 * 60 * 60
 
 
 # ----------------------- AST mutation plan -------------------------------
@@ -229,7 +249,7 @@ class MutationReport:
     elapsed_s: float = 0.0
 
 
-@pytest.mark.timeout(300)
+@pytest.mark.timeout(KILL_SCORE_TIMEOUT_S)
 @pytest.mark.skipif(
     not (SRC / "melosviz" / "analysis" / "models.py").exists(),
     reason="melosviz analysis models not in this checkout",
@@ -339,74 +359,4 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
     assert overall["score"] >= TARGET_SCORE, (
         f"mutation kill-score {overall['score']:.1f}% below qgate bar "
         f"{TARGET_SCORE}%; killed={overall['killed']}/{overall['total']}"
-    )
-    src_text = target.read_text()
-    backup = target.with_suffix(".py.mutbak")
-    shutil.copy(target, backup)
-    report = MutationReport(target=str(target))
-    started = time.monotonic()
-
-    try:
-        for i, mutation in enumerate(plan):
-            mutated = _apply_one(src_text, mutation, i)
-            target.write_text(mutated)
-            try:
-                rc = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "pytest",
-                        "tests/test_render_spec_v2.py",
-                        "tests/test_mutation_kill_score.py",
-                        "tests/test_coverage_100.py",
-                        "tests/test_coverage_gaps.py",
-                        "--no-cov",
-                        "-q",
-                        "-x",
-                    ],
-                    cwd=BACKEND,
-                    capture_output=True,
-                    text=True,
-                    timeout=TIMEOUT_S,
-                    check=False,
-                )
-                killed = rc.returncode != 0
-            except subprocess.TimeoutExpired:
-                killed = True
-                report.timeout += 1
-            finally:
-                shutil.copy(backup, target)
-
-            report.total += 1
-            if killed:
-                report.killed += 1
-            else:
-                report.survived += 1
-                report.survivors.append(
-                    {
-                        "mid": mutation.mid,
-                        "op": mutation.op,
-                        "line": mutation.line,
-                        "snippet": mutation.snippet,
-                    }
-                )
-            report.op_breakdown.setdefault(mutation.op, {"total": 0, "killed": 0})
-            report.op_breakdown[mutation.op]["total"] += 1
-            if killed:
-                report.op_breakdown[mutation.op]["killed"] += 1
-    finally:
-        shutil.copy(backup, target)
-        backup.unlink(missing_ok=True)
-
-    report.score = (report.killed / report.total * 100.0) if report.total else 0.0
-    report.elapsed_s = round(time.monotonic() - started, 2)
-
-    MUTATIONS_DIR.mkdir(exist_ok=True)
-    (MUTATIONS_DIR / "models.json").write_text(json.dumps(asdict(report), indent=2))
-
-    print(json.dumps(asdict(report), indent=2))
-
-    assert report.score >= TARGET_SCORE, (
-        f"mutation kill-score {report.score:.1f}% is below qgate bar "
-        f"{TARGET_SCORE}%; survived={report.survived}/{report.total}"
     )
