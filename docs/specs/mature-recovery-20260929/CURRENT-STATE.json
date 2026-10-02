@@ -331,10 +331,10 @@
     "prior_run": 36982081075
   },
   "M_E03": {
-    "status": "DURABLE_SEAM_AND_CROSS_AUTHORITY_GREEN__REAL_RECEIPT_PROMOTION_WITNESS_NEXT",
+    "status": "REAL_RECEIPT_REPLAY_PLUS_UI_CACHE_TRUTH_ACTIVE",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "0ddb238aeeb87f790e095394275f7da95684a94b",
+    "head": "cb8469e178c268ac7e8e01da6ac97efe1d0fbe2e",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -384,7 +384,10 @@
       "ledger schema user_version=2",
       "legacy render-attempt rows migrate candidate_sha without loss",
       "dedicated grader now actually executes reviewer-promotion tests",
-      "cross-authority job pins reviewer SHA and M-E02 candidate SHA separately"
+      "cross-authority job pins reviewer SHA and M-E02 candidate SHA separately",
+      "real held-out reviewer receipt replayed across durable restart",
+      "web scene state preserves from_cache provenance",
+      "UI labels reused media as verification pending, never accepted"
     ],
     "not_yet": [
       "render attempt/evidence persistence",
