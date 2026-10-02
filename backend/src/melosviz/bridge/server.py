@@ -451,8 +451,7 @@ async def ready() -> dict[str, object]:
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics() -> str:
     """Prometheus-text metrics for request counts, errors, latency, and RSS."""
-    lines = [obs.metrics_prometheus().rstrip("
-")]
+    lines = [obs.metrics_prometheus().rstrip("\\n")]
     rss = memory_cap.current_rss_mb()
     if rss is not None:
         lines.append("# HELP melosviz_memory_rss_mb Current bridge process RSS (MiB)")
@@ -461,9 +460,7 @@ async def metrics() -> str:
     lines.append("# HELP melosviz_memory_cap_mb Configured hard memory cap (MiB); 0 = disabled")
     lines.append("# TYPE melosviz_memory_cap_mb gauge")
     lines.append(f"melosviz_memory_cap_mb {max(memory_cap.hard_cap_mb, 0)}")
-    return "
-".join(lines) + "
-"
+    return "\\n".join(lines) + "\\n"
 
 
 @app.get("/debug/profile")
