@@ -27,11 +27,36 @@ jobs:
     # job would still be cancelled at 6h, reporting "cancelled" with no mutants/
     # tree, which is indistinguishable from a crash.
     #
-    # 360 now fits the real worst case with room to spare. The subprocess loop's
-    # ceiling is 3 targets * 60 mutants * 60s = 3h, the kill-score budget is
-    # 1.5x that = 4.5h, and install and setup add roughly 0.25h -- about 4.75h
-    # total, inside 6h. A run that still exceeds 6h is a genuine stall rather
-    # than a budget that was simply set above the platform's ceiling.
+    # 360 is the most this job can be granted, and the budget below is sized against
+    # what THIS job actually does rather than against a sibling test's constants.
+    # An earlier revision borrowed `3 targets * 60 mutants * 60s = 3h` and the
+    # `1.5x` kill-score multiplier from backend/tests/test_mutation_engine.py.
+    # Those are that test's TARGETS / MAX_PER_FILE / TIMEOUT_S, and it is not
+    # collected here: this job runs `uv run mutmut run`, whose scope comes from
+    # [tool.mutmut] source_paths = ["src/melosviz/"] -- 80 files, 26506 mutants
+    # (counted from a real run's export-cicd-stats), not three files.
+    #
+    # So the honest statement is that mutmut's real bound is per-mutant pytest
+    # time multiplied by the whole mutant population, which no arithmetic here
+    # can honestly compress into a figure that fits under 6h. What this job can
+    # state truthfully is the shape of the outcome:
+    #
+    #   * A sweep that completes reports a real score, and the job uploads
+    #     mutants/mutmut-cicd-stats.json every time.
+    #   * A sweep that exceeds 6h is cancelled with no mutants/ tree, and the
+    #     upload step's `if: always()` cannot rescue it -- GitHub does not run
+    #     steps of a timed-out job. That is indistinguishable from a crash, and
+    #     the fix is the same in both cases: read the run's log for how far it got.
+    #
+    # 360 therefore buys the maximum the platform allows rather than a budget
+    # derived from numbers that do not describe this job. Because the real bound
+    # is (per-mutant pytest time) x 26506, whether any given sweep completes
+    # inside 6h is an empirical question, not something this file can assert: if
+    # it does not, the job is cancelled with no artifact and the run's log is
+    # the only evidence of how far it got. Read the weekly artifact as a partial
+    # measurement whose coverage must come from that log, never as a whole-suite
+    # verdict. The 75% comparison below applies to whatever mutants the run did
+    # evaluate.
     timeout-minutes: 360
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -306,17 +331,19 @@ jobs:
         # real improvement for a recurring red weekly. The job is contents:read,
         # so there is no write surface here either.
         #
-        # quality-gate-reusable.yml:147 installs ffmpeg the same unpinned way.
-        # If that is ever tightened, this should move with it rather than drift.
         # Every mutant inherits that failure, so all 26506 are reported as
         # "not killed" -- a 0% score that is an artefact of a missing system
         # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
-        # ffmpeg. `quality-gate-reusable.yml` and `timing-budgets.yml` both run
-        # this same backend suite, and both install it with this exact line:
-        # this job now does too, so there is one answer to "how does CI get
-        # ffmpeg" rather than three. (timing-budgets.yml:143 is a fourth site and
-        # is NOT the same line -- it uses `-qq` on both apt calls, chains with
-        # `&&` on one line, and does no version check at all.)
+        # ffmpeg.
+        #
+        # Of the workflows that run this backend suite, only
+        # quality-gate-reusable.yml installs ffmpeg with this exact line, so this
+        # job now matches that single site and there is one answer to "how does
+        # CI get ffmpeg". timing-budgets.yml:143 also installs ffmpeg, but
+        # differently: it passes `-qq` on both apt calls, chains them with `&&`
+        # on one line, and does no version check at all. If
+        # quality-gate-reusable.yml is ever tightened, this should move with it
+        # rather than drift.
         #
         # The version check has to be the pipeline-free form to be load-bearing.
         # This step does not set `set -o pipefail`, and GitHub's default Linux
@@ -341,26 +368,40 @@ jobs:
           sudo apt-get install -y ffmpeg
           ffmpeg -version > /dev/null
       - name: Run mutmut (bounded)
-        # continue-on-error: the score block below compares against
-        # .qgate.toml and fails the STEP on a below-threshold result. That
-        # is deliberate -- it is what makes the number load-bearing -- but
-        # it is not what makes the JOB red, and the distinction is the point:
+        # continue-on-error and the threshold check below genuinely DO contradict
+        # each other, and the resolution is stated here rather than left for a
+        # reader to trip over:
         #
-        #   on: is schedule + workflow_dispatch only, so this is not a
-        #   required check and cannot block a merge;
-        #   nothing reads mutants/mutmut-cicd-stats.json, so no consumer
-        #   depends on the exit status;
-        #   there are no completed runs on this workflow yet.
+        #   * The `python - "$STATS" "$TARGET_SCORE"` block below exits non-zero on
+        #     a below-threshold score. That is a real comparison against
+        #     .qgate.toml, and it is the reason the number is load-bearing enough
+        #     to report at all.
+        #   * `continue-on-error: true` on this step then swallows that exit code,
+        #     so the number cannot currently fail the STEP, and therefore cannot
+        #     fail the JOB either. It is reported, not enforced.
         #
-        # So a run whose real kill rate sits below 75% reports a measured
-        # score and a successful job, rather than a red job that reads as a
-        # broken pipeline. The previous shape was worse in both directions:
-        # it printed "mutation score: 0.0%" on a GREEN job, so the miss was
-        # only visible to someone reading the log.
+        # An earlier revision of this comment claimed the score "fails the STEP
+        # on a below-threshold result ... it is what makes the number
+        # load-bearing" while the same step carried continue-on-error. That was
+        # self-contradictory and it misdescribed the job.
         #
-        # To make the gate actually block, drop this line. Nothing else
-        # needs to change: the comparison, the error annotation and the
-        # artifact upload all still run.
+        # Why the score is still worth computing and reporting while unenforced:
+        #   on: is schedule + workflow_dispatch only, so this is not a required
+        #   check and cannot block a merge;
+        #   nothing reads mutants/mutmut-cicd-stats.json, so no consumer depends
+        #   on the exit status;
+        #   a red weekly job nobody acts on trains everyone to ignore it. The
+        #   score is published in the log and the artifact on every run instead.
+        #
+        # What this does NOT paper over: a harness failure (`mutmut run` crashes,
+        # leaves no mutants/, or export-cicd-stats cannot write) is also
+        # downgraded to a green job by this line, and that IS a real loss of
+        # signal. It is accepted deliberately, for the reason above, and the
+        # score block's `::error::` annotations remain the thing a reader greps
+        # for. Making the gate enforce is a one-line change: delete
+        # continue-on-error. Nothing else needs to move -- the comparison, the
+        # error annotations and the artifact upload all still run, and the
+        # upload step's `if: always()` already survives a non-zero exit.
         continue-on-error: true
         working-directory: backend
         # Full suite is slow; mutate a high-value slice and report score.

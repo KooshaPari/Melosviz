@@ -87,16 +87,20 @@ MAX_TIMEOUT_RATIO = 0.10
 # diagnostic it exists to produce. Inside GitHub Actions,
 #     pytest-timeout (this value)  <  job `timeout-minutes`  <  360min default
 # and the gate job runs this test with NO `timeout-minutes` of its own, so it
-# inherits the 360-minute default. That makes 2x (exactly 360) unusable as a
-# budget: it would sit exactly on the platform cap and pytest-timeout could never
-# fire first.
+# inherits the 360-minute default. A budget at or above 360min is therefore
+# unusable: it would sit on or past the platform cap, and pytest-timeout could
+# never fire first, leaving this marker silently redundant rather than
+# load-bearing. At 1.5x the 3h ceiling (270min) the ordering holds with 90
+# minutes of platform headroom.
 #
-# A budget of exactly 6h is the trap: that is the 360-minute default, so
-# the outer timeout could never fire first and this marker would be
-# silently redundant rather than load-bearing. This test does not run in
-# `.github/workflows/mutmut.yml`, which is a separate scheduled job with
-# its own 420 cap; if that job ever adopts this test, the two numbers have
-# to move together.
+# What does NOT set this budget: `.github/workflows/mutmut.yml`. That job has
+# its own `timeout-minutes: 360` and runs `uv run mutmut run`, whose scope comes
+# from [tool.mutmut] source_paths = ["src/melosviz/"] -- the whole package, not
+# these three TARGETS. It never collects this test, so the 3 * 60 * 60
+# derivation above describes this test's own worst case and has no bearing on
+# that job's budget, nor does that job's cap constrain this one. An earlier
+# revision of this comment claimed the two "have to move together" and cited a
+# "420 cap" that no longer exists; neither claim was true.
 #
 # The old budget was @pytest.mark.timeout(300) -- 5 minutes for work that can
 # legitimately take hours. It only ever passed because killed mutants exit early
