@@ -23,10 +23,10 @@ def wav(path:Path):
         w.setnchannels(1);w.setsampwidth(2);w.setframerate(8000)
         for i in range(8000):w.writeframesraw(struct.pack("<h",((i%80)-40)*300))
 
-def storyboard(path:Path,prompt1="scene one"):
+def storyboard(path:Path,prompt1="scene one",palette1="#0000ff"):
     path.write_text(json.dumps({"concept":"reviewer M-E02","seed":17,"scenes":[
       {"index":0,"name":"s0","start":0.0,"end":0.5,"scene_type":"video_export","prompt":"scene zero","palette":["#ff0000"]},
-      {"index":1,"name":"s1","start":0.5,"end":1.0,"scene_type":"video_export","prompt":prompt1,"palette":["#0000ff"]}]},indent=2))
+      {"index":1,"name":"s1","start":0.5,"end":1.0,"scene_type":"video_export","prompt":prompt1,"palette":[palette1]}]},indent=2))
 
 def cli(candidate:Path,w:Path,sb:Path,out:Path,only=None):
     env=os.environ.copy();env["PYTHONPATH"]=str(candidate/"backend");env.pop("MELOSVIZ_COMFYUI_OFFLINE",None)
@@ -83,7 +83,7 @@ def main():
         result["checks"]["stale_producer_identity_forces_rerender"]=True
 
         # New process + selected S1. Prompt is a declared cache input.
-        storyboard(sb,"scene one revised")
+        storyboard(sb,"scene one revised","#00ff00")
         r2=cli(candidate,w,sb,out,1)
         assert r2.get("dispatched_scenes")==[1],r2
         assert r2.get("only_scenes")==[1],r2
