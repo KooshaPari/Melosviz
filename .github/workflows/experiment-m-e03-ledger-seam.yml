@@ -74,6 +74,9 @@ jobs:
       - name: Require receipt
         if: always()
         run: test -s reviewer-evidence.json
+      - name: Replay real reviewer receipt through durable ledger
+        run: |
+          PYTHONPATH=candidate/backend/src python candidate/backend/tests/tools/replay_real_reviewer_receipt.py --receipt reviewer-evidence.json --candidate "$CANDIDATE_SHA"
       - name: Upload cross-authority receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
