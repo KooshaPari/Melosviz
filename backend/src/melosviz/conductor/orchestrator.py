@@ -1004,6 +1004,7 @@ class Orchestrator:
                         "cache_key": _cache_key,
                         "outcome": _cached_outcome,
                         "scene_type": scene_type,
+                        "from_cache": True,
                     }
                     if per_scene_results[scene_idx]["outcome"] == OUTCOME_RENDER:
                         collected_paths.append(materialised)
@@ -1195,6 +1196,7 @@ class Orchestrator:
                 ),
                 "outcome": _outcome,
                 "scene_type": scene_type,
+                "from_cache": False,
             }
             if _outcome == OUTCOME_RENDER and artifact:
                 collected_paths.append(artifact)
