@@ -436,19 +436,25 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "APPLICATION_BRIDGE_RESTART_TRUTH_ACTIVE",
-    "branch": "experiment/m-e03-ledger-seam",
-    "head": "6287425117780c19a1a00db0964bbf95e4b8a635",
+    "status": "ACCEPTED_EXPERIMENTAL_BRIDGE_RESTART_TRUTH",
+    "head": "e358aa9e4d9ecd9b8716d070606a84d18486f7b6",
+    "evidence": {
+      "m_e03": 37037958871,
+      "studio": 37037958528,
+      "ci_ts_js": "PASS",
+      "bridge_endpoint": "PASS",
+      "web": "PASS",
+      "desktop": "PASS"
+    },
     "scope": [
-      "canonical project_status from durable ledger",
-      "bridge endpoint reads status after ledger/process reopen",
-      "project/revision/spec/attempt/candidate/job state surfaced without directory guessing"
+      "durable project status survives reopen",
+      "bridge exposes canonical project/revision/spec/attempt/candidate/job truth",
+      "cache provenance remains verification-pending in UI"
     ],
-    "not_yet": [
-      "generate endpoint writes ledger directly",
-      "Electrobun restart recovery",
-      "accepted evidence projected to UI",
-      "shipping app restart acceptance"
+    "limits": [
+      "generate endpoint not yet ledger-authoritative",
+      "Electrobun process replacement journey not yet held-out",
+      "accepted evidence not yet fully projected into UI"
     ]
   }
 }
