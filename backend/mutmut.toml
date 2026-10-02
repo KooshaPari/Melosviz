@@ -7,32 +7,45 @@
 #
 # Target: >=75% mutation kill-score (set in .qgate.toml [mutation].target_score).
 # Survivor mutants must either be killed by tightening tests or filtered
-# through `do_not_mutate` (path-style regex matched against source-file paths).
+# through `do_not_mutate` (fnmatch globs matched against source-file paths).
 #
 # NOTE: mutmut 3.x reads config from pyproject.toml [tool.mutmut]. This file
 # is preserved for CI scripts that grep documentation, and is mirrored in
 # pyproject.toml under [tool.mutmut]. Keep both in sync.
 #
-# Real schema (verified against mutmut 3.5.0 Config dataclass):
-#   paths_to_mutate            list[str]  source dirs to mutate
-#   tests_dir                  list[str]  test-dir roots
-#   do_not_mutate              list[str]  path-regex filter (mutate ONLY what matches)
-#   also_copy                  list[str]  extra paths to copy for the mutant env
-#   pytest_add_cli_args        list[str]  extra CLI args for every pytest invocation
-#   mutate_only_covered_lines  bool       skip lines outside coverage
-#   type_check_command         list[str]  external type-check (e.g. mypy) — runs
-#                                         before considering a mutant alive
-#   max_stack_depth            int        recursion guard
-#   debug                      bool       verbose tracing
+# Real schema (verified against mutmut 3.8.0's Config dataclass and its
+# `_load_config` reader -- see mutmut/configuration.py):
+#   source_paths                    list[str]  source dirs (or single files) to mutate
+#   pytest_add_cli_args_test_selection
+#                                   list[str]  test paths/dirs for every pytest run
+#   pytest_add_cli_args             list[str]  extra CLI args for every pytest run
+#   do_not_mutate                   list[str]  fnmatch GLOBS to exclude (not regexes)
+#   also_copy                       list[str]  extra paths to copy for the mutant env
+#   mutate_only_covered_lines       bool       skip lines outside coverage
+#   type_check_command              list[str]  external type-check, must emit JSON
+#                                         (must actually be installed, or the run
+#                                         raises before any mutant is generated)
+#   max_stack_depth                 int        recursion guard
+#   debug                           bool       verbose tracing
+#
+# mutmut 2.x keys that NO LONGER EXIST and warn on every run:
+#   paths_to_mutate, tests_dir  -> use source_paths /
+#                                  pytest_add_cli_args_test_selection
+# mutmut 3.x commands that NO LONGER EXIST (the 2.x CLI was removed):
+#   `mutmut junitxml`           -> use `mutmut export-cicd-stats`, which writes
+#                                  mutants/mutmut-cicd-stats.json
+#   `mutmut run --paths-to-mutate / --tests-dir / --runner`
+#                                -> scope and test selection come only from
+#                                   pyproject.toml; `mutmut run` takes just
+#                                   `--max-children` and mutant-name filters
 
-paths_to_mutate = ["src/melosviz/"]
-tests_dir = ["tests/"]
-# Type-check on surviving mutants (mypy catches more than tests alone).
-type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
-# Keep mutation locality tight — glob paths use prefix, then we
-# explicitly skip CLI dispatcher + re-export stubs below.
+source_paths = ["src/melosviz/"]
+pytest_add_cli_args_test_selection = ["tests/"]
+pytest_add_cli_args = ["-q", "--tb=no", "-x"]
 do_not_mutate = [
-    "src/melosviz/cli/.*\\.py$",          # CLI glue / entry-points
-    "src/melosviz/runtime/touchdesigner/__init__\\.py$",  # re-export only
-    "src/melosviz/.*/__init__\\.py$",      # package init stubs (no logic)
+    "src/melosviz/cli/*.py",                       # CLI glue / entry-points
+    "src/melosviz/runtime/touchdesigner/__init__.py",  # re-export only
+    "src/melosviz/*/__init__.py",                   # package init stubs, 1 level
+    "src/melosviz/__init__.py",                     # package root init
 ]
+# type_check_command is intentionally absent -- see the note in pyproject.toml.

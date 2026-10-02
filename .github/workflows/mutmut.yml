@@ -96,16 +96,26 @@ jobs:
             printf '%s\n' "$SETUPTOOLS_VERSION" >&2
             exit 1
           fi
-          # Reject anything that is not a non-empty run of digits and dots.
-          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
-          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
-          # passes it. uv.lock legitimately holds prerelease and local versions, so
-          # that guard rejected nothing in the cases it was written for. Listing the
-          # complement -- anything containing a character other than a digit or a dot,
-          # or the empty string -- is the version that actually holds.
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
           case "$SETUPTOOLS_VERSION" in
-            ''|*[!0-9.]*)
-              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
               exit 1
               ;;
           esac
@@ -192,36 +202,51 @@ jobs:
         # different interpreter. --locked --no-sync keeps uv from re-resolving
         # the graph that was just installed hash-verified.
         run: |
-          # These three commands used to each end in `|| true`, which made the
-          # whole job unfailable: a mutmut that cannot start, a missing binary, a
-          # crash in the runner -- all reported green, and `mutmut.xml` was simply
-          # absent because `if-no-files-found: warn` only warns. A mutation job
-          # that cannot fail is worse than no mutation job, because it reads as a
-          # signal. Each failure mode is now handled explicitly, for its own reason:
+          # These commands used to end in `|| true`, which made the whole job
+          # unfailable: a mutmut that cannot start, a missing binary, a crash in
+          # the runner -- all reported green, and the artifact was simply absent
+          # because `if-no-files-found: warn` only warns. A mutation job that
+          # cannot fail is worse than no mutation job, because it reads as a
+          # signal.
           #
-          #   run     -> the mutation pass is the measurement. If it does not
-          #              complete, there is no score, so this must fail. `set +e`
-          #              around it keeps the two reporting commands below running
-          #              even when it fails, so the artifact still gets uploaded
-          #              alongside the red build rather than being lost with it.
-          #   results -> pure reporting on the mutants/ directory that run just
-          #              wrote. Its exit code carries no verdict, so it must not be
-          #              able to fail the build either.
-          #   junitxml-> writes the uploaded artifact. If it cannot, the artifact
-          #              is empty and the run is worthless, so it must fail.
+          # Two of the three commands here were the mutmut 2.x CLI, which mutmut
+          # 3 removed. Dispatched run 36951224244 against 0e7143d proved it on a
+          # real ubuntu-22.04 runner:
+          #   Error: No such option '--paths-to-mutate'.
+          #   Error: No such command 'junitxml'.
+          # mutmut 3.8.0's `cli` group defines no options at all, so there is no
+          # command-line way to set scope: it is read from
+          # backend/pyproject.toml [tool.mutmut] only. Hence the bare `mutmut
+          # run` below, with the scope in that file rather than here.
+          #
+          #   run       -> the mutation pass is the measurement. If it does not
+          #                complete there is no score, so it must fail. `set +e`
+          #                around it keeps the reporting commands below running
+          #                even then, so the artifact is still produced and still
+          #                uploaded -- the upload step carries `if: always()`,
+          #                because without it a failed `run` skips the upload and
+          #                throws away the one output this job has.
+          #   results   -> pure reporting over the mutants/ directory `run` just
+          #                wrote. Its exit code carries no verdict, so it must not
+          #                be able to fail the build either.
+          #   export-cicd-stats -> writes the uploaded artifact. If it cannot,
+          #                the artifact is missing and the run is worthless, so
+          #                it must fail.
+          #
+          # `mutmut junitxml` is gone in mutmut 3; `export-cicd-stats` is the
+          # supported replacement and writes
+          # mutants/mutmut-cicd-stats.json with killed / survived / total /
+          # no_tests / skipped / suspicious / timeout counts. No JUnit consumer
+          # exists in this repo for the old file, so nothing downstream breaks.
           set -uo pipefail
           set +e
-          uv run --locked --no-sync --no-build mutmut run \
-            --paths-to-mutate src/melosviz/bridge/security.py \
-            --tests-dir tests/ \
-            --runner "python -m pytest -q --tb=no -x" \
-            2>&1
+          uv run --locked --no-sync --no-build mutmut run 2>&1
           RUN_STATUS=$?
           set -e
           uv run --locked --no-sync --no-build mutmut results || true
-          # A failed `run` and a run that produced no results are both useless, so
-          # both fail here. The `results` call above is reporting only; this is
-          # the verdict.
+          # A failed `run` and a run that produced no results are both useless,
+          # so both fail here. The `results` call above is reporting only; this
+          # is the verdict.
           if [ "$RUN_STATUS" -ne 0 ]; then
             echo "::error::mutmut run failed with status $RUN_STATUS" >&2
           fi
@@ -231,20 +256,69 @@ jobs:
               RUN_STATUS=1
             fi
           fi
-          uv run --locked --no-sync --no-build mutmut junitxml \
-            --suspicious-policy=ignore --untested-policy=ignore > mutmut.xml || true
-          test -s mutmut.xml || {
-            echo "::error::mutmut junitxml produced an empty mutmut.xml" >&2
+          # Report the score, and fail if the score file is missing or has no
+          # mutants in it. mutmut 3's export prints "No previous mutation data
+          # found" and exits 0 in that case, so exit status alone cannot tell
+          # success from an empty sweep.
+          set +e
+          uv run --locked --no-sync --no-build mutmut export-cicd-stats 2>&1
+          EXPORT_STATUS=$?
+          set -e
+          STATS=mutants/mutmut-cicd-stats.json
+          if [ "$EXPORT_STATUS" -ne 0 ]; then
+            echo "::error::mutmut export-cicd-stats failed with status $EXPORT_STATUS" >&2
+            exit 1
+          fi
+          test -s "$STATS" || {
+            echo "::error::mutmut export-cicd-stats wrote no $STATS; the mutation pass produced no reportable data" >&2
             exit 1
           }
+          # Parse the score out of the JSON rather than grepping the human log,
+          # and fail if the file has no total, so a structurally wrong artifact
+          # cannot pass as a result.
+          python - "$STATS" <<'PY'
+          import json, pathlib, sys
+
+          stats = json.loads(pathlib.Path(sys.argv[1]).read_text("utf-8"))
+          total = int(stats.get("total", 0))
+          tested = total - int(stats.get("skipped", 0))
+          killed = int(stats.get("killed", 0)) + int(stats.get("timeout", 0))
+          score = (killed / tested * 100) if tested > 0 else 0.0
+          print(f"mutation score: {score:.1f}% "
+                f"({killed}/{tested} of {total} mutants killed) "
+                f"survived={stats.get('survived')} "
+                f"no_tests={stats.get('no_tests')} "
+                f"skipped={stats.get('skipped')}")
+          if tested <= 0:
+              print("::error::no mutants were actually tested, so the score is not a result", file=sys.stderr)
+              sys.exit(1)
+          PY
           exit "$RUN_STATUS"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        # always(): without this the upload is SKIPPED whenever the run step
+        # exits non-zero -- which is the common case this step exists to cover
+        # (`mutmut run` fails, or produces no mutants/). That discarded the only
+        # output the job produces, discarding it on precisely the runs where the
+        # result is worth inspecting. The verdict still comes from the run step's
+        # own exit code; this only decides whether the evidence survives.
+        if: always()
         with:
           name: mutmut-results
-          path: backend/mutmut.xml
+          # mutmut 3 has no `junitxml` subcommand; `export-cicd-stats` writes
+          # mutants/mutmut-cicd-stats.json. The whole mutants/ tree goes up as
+          # well, because that is where the per-mutant exit codes live and it is
+          # what makes the score auditable after the fact.
+          path: |
+            backend/mutants/mutmut-cicd-stats.json
+            backend/mutants/
           # warn -> error. This artifact is the only output the job produces, and
           # a missing upload used to be indistinguishable from a successful run
           # while the three `|| true` were in place. Now that the step can fail, a
           # missing artifact is a real loss of the job's result.
+          #
+          # `if-no-files-found: error` only fires when NOTHING matched, so it
+          # still fails a run where the score file is absent; it cannot fail a
+          # run where mutants/ exists but the JSON is missing, which is why the
+          # run step asserts the JSON itself rather than relying on this.
           if-no-files-found: error
           retention-days: 14

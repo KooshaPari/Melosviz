@@ -373,16 +373,26 @@ jobs:
             printf '%s\n' "$SETUPTOOLS_VERSION" >&2
             exit 1
           fi
-          # Reject anything that is not a non-empty run of digits and dots.
-          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
-          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
-          # passes it. uv.lock legitimately holds prerelease and local versions, so
-          # that guard rejected nothing in the cases it was written for. Listing the
-          # complement -- anything containing a character other than a digit or a dot,
-          # or the empty string -- is the version that actually holds.
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
           case "$SETUPTOOLS_VERSION" in
-            ''|*[!0-9.]*)
-              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
               exit 1
               ;;
           esac
@@ -449,23 +459,69 @@ jobs:
           }
           # `test -s` only proves a file exists and is non-empty. An SBOM of the
           # WRONG environment is non-empty and would sail through it, which is
-          # how the PATH bug survived. Assert the root component names this
-          # project, which only holds if the SBOM was built from the venv's
-          # pyproject rather than from a placeholder.
+          # how the PATH bug survived.
+          #
+          # Asserting only that the root component is `melosviz` is NOT enough to
+          # catch that bug, and this is worth being precise about: `--pyproject`
+          # names the root component independently of which interpreter was
+          # scanned. So dropping the positional venv argument, misspelling it, or
+          # letting it resolve back to the setup-python interpreter would still emit
+          # an SBOM whose `metadata.component.name` is `melosviz` -- and the
+          # name-only check would pass. It would be asserting the wrong thing.
+          #
+          # So assert on the component SET, which is what actually differs
+          # between the two environments:
+          #
+          #   * the venv was installed from `uv export --no-dev`, so it holds
+          #     exactly the one declared runtime dependency, pydantic, and none
+          #     of the CI-only dev tools;
+          #   * the setup-python interpreter holds cyclonedx-bom and its own
+          #     dependency tree, and holds none of the backend.
+          #
+          # Requiring pydantic present and the dev/CI tools absent therefore
+          # holds only for a scan of the release venv, and fails for the outer
+          # interpreter -- which is the exact regression this guard exists for.
           python - <<'PY'
           import json, pathlib, sys
 
           doc = json.loads(pathlib.Path("../sbom-python.cdx.json").read_text("utf-8"))
           component = (doc.get("metadata") or {}).get("component") or {}
           name = (component.get("name") or "").lower().replace("_", "-")
+          names = {(c.get("name") or "").lower().replace("_", "-")
+                   for c in (doc.get("components") or [])}
+
+          # Installed into the setup-python interpreter, not the release venv.
+          # Its presence proves the SBOM describes the wrong environment.
+          outer_only = ("cyclonedx-bom", "cyclonedx-python-lib")
+          # CI-only tools. The export uses --no-dev precisely so these are not
+          # written into the SBOM as if they had shipped.
+          dev_only = ("mutmut", "pip-audit", "bandit", "pytest", "pytest-cov")
+          # The single declared runtime dependency of backend/pyproject.toml.
+          runtime = "pydantic"
+
+          problems = []
           if name != "melosviz":
-              sys.exit(
-                  f"::error::SBOM root component is {component.get('name')!r}, "
-                  "expected 'melosviz'; the SBOM did not describe the release venv"
-              )
+              problems.append(
+                  f"root component is {component.get('name')!r}, expected 'melosviz'")
+          if runtime not in names:
+              problems.append(
+                  f"{runtime!r} is absent, so this does not describe the release "
+                  f"venv (present: {sorted(names)[:8]})")
+          leaked = sorted(n for n in (*outer_only, *dev_only) if n in names)
+          if leaked:
+              problems.append(
+                  f"SBOM contains {leaked}, which are installed in the "
+                  f"outer interpreter or excluded by --no-dev, not in the venv")
+
+          if problems:
+              for p in problems:
+                  print(f"::error::SBOM verification failed: {p}", file=sys.stderr)
+              sys.exit(1)
+
           version = component.get("version")
-          print(f"SBOM root component: {component.get('name')} {version} "
-                f"({len(doc.get('components') or [])} components)")
+          print(f"SBOM root component: {component.get('name')} {version}; "
+                f"{len(doc.get('components') or [])} components; "
+                f"{runtime!r} present, no dev/outer-interpreter packages")
           PY
           cd ..
           cargo install cargo-cyclonedx --locked

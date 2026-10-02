@@ -93,16 +93,26 @@ jobs:
             printf '%s\n' "$SETUPTOOLS_VERSION" >&2
             exit 1
           fi
-          # Reject anything that is not a non-empty run of digits and dots.
-          # The obvious-looking `[!0-9]*` pattern does not do this: it tests only
-          # the FIRST character, so a real version like 83.0.0-rc1 or 83.0.0+local
-          # passes it. uv.lock legitimately holds prerelease and local versions, so
-          # that guard rejected nothing in the cases it was written for. Listing the
-          # complement -- anything containing a character other than a digit or a dot,
-          # or the empty string -- is the version that actually holds.
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
           case "$SETUPTOOLS_VERSION" in
-            ''|*[!0-9.]*)
-              echo "::error::setuptools version from uv.lock is not a plain version: $SETUPTOOLS_VERSION" >&2
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
               exit 1
               ;;
           esac

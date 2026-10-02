@@ -98,8 +98,17 @@ otel = [
 # (base + test + bridge + lint + analysis + dev) publish a wheel usable on
 # linux-x86_64 at their locked version. The only sdist-only distributions in
 # uv.lock are demucs, dora-search and antlr4-python3-runtime, and all three
-# are reachable only through the `stems` extra, which no guarded workflow
-# installs. Before adding a dependency here, confirm it publishes a wheel:
+# are reachable only through the `stems` extra.
+#
+# An earlier version of this comment ended "...which no guarded workflow
+# installs", and that clause had become wrong: gpu-smoke.yml did install
+# `stems`, via --all-extras. It no longer does -- it exports `--extra test
+# --extra analysis` -- but the clause was not carried along, so the guarded
+# workflows relying on it for `--only-binary :all:` were citing a reason that
+# no longer held. The invariant that is actually true, and that those
+# workflows rely on now, is the narrowing itself: each guarded workflow
+# requests only the extras it needs, and none of them request `stems`.
+# Before adding a dependency here, confirm it publishes a wheel:
 #   python -c "import json,urllib.request as u;d=json.load(u.urlopen('https://pypi.org/pypi/<name>/<version>/json'));print([f['packagetype'] for f in d['urls']])"
 [dependency-groups]
 dev = [
@@ -186,13 +195,43 @@ omit = []
 # Target: >=75% kill-score (see ../../.qgate.toml [mutation].target_score).
 # -----------------------------------------------------------------------------
 [tool.mutmut]
-paths_to_mutate = ["src/melosviz/"]
-tests_dir = ["tests/"]
-# Type-check on surviving mutants — mypy catches more than tests alone.
-type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
+# mutmut 3.x keys. `paths_to_mutate` and `tests_dir` were REMOVED in mutmut 3
+# and each emits a UserWarning on every run; the replacements are
+# `source_paths` and `pytest_add_cli_args_test_selection`. Verified against the
+# installed mutmut 3.8.0 configuration module.
+source_paths = ["src/melosviz/"]
+pytest_add_cli_args_test_selection = ["tests/"]
+# The mutmut 2.x `--runner "python -m pytest -q --tb=no -x"` has no mutmut 3
+# equivalent. mutmut 3 assembles its own pytest invocation and appends these to
+# it, so they carry the same intent: keep mutant runs short and output terse.
+pytest_add_cli_args = ["-q", "--tb=no", "-x"]
 # Skip CLI entry-points, re-export stubs, and package __init__ modules.
+#
+# These are GLOBS, not regexes. mutmut 3 matches them with fnmatch.fnmatch
+# (configuration.Config._should_ignore_for_mutation), so the previous regex
+# forms such as "src/melosviz/cli/.*\.py$" matched nothing at all: verified
+# against this tree, they excluded 0 of 80 files, so the sweep was mutating
+# every __init__.py and the CLI entry-points it was meant to skip.
+#
+# fnmatch's `*` does NOT cross path separators, so the depths are spelled out:
+# `src/melosviz/*/__init__.py` covers one directory down and
+# `src/melosviz/__init__.py` the package root, which together exclude all 18
+# __init__.py files in this tree. Verified: 20 of 80 files excluded -- the 18
+# __init__.py files plus cli/__init__.py's sibling main.py and
+# partial_rerender.py -- and nothing outside those two groups.
 do_not_mutate = [
-    "src/melosviz/cli/.*\\.py$",
-    "src/melosviz/runtime/touchdesigner/__init__\\.py$",
-    "src/melosviz/.*/__init__\\.py$",
+    "src/melosviz/cli/*.py",
+    "src/melosviz/runtime/touchdesigner/__init__.py",
+    "src/melosviz/*/__init__.py",
+    "src/melosviz/__init__.py",
 ]
+# type_check_command deliberately unset.
+#
+# It used to run `python -m mypy`, but mypy lives in the `lint` extra and is
+# not installed by the mutation job, which installs from
+# `uv export --extra test --extra bridge`. Verified against that export: mypy is
+# absent, while bandit, pip-audit, pytest and mutmut are present. mutmut 3 runs
+# the command through subprocess and raises when it produces no JSON, so
+# leaving it configured would fail the run before any mutant is generated. Set
+# it in an environment that actually has mypy if type-check-based killing is
+# wanted there.
