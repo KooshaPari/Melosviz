@@ -46,8 +46,24 @@ jobs:
           # including these extras, so re-resolving per package would discard
           # the version pinning this step exists to enforce.
           set -euo pipefail
+          # `--extra analysis` is required, not optional. Dispatched run
+          # 36953771336 against 9dd2e22 got past ffmpeg and then failed on the
+          # next missing import:
+          #   FAILED tests/cli/test_gpu_smoke.py::test_studio_pipeline_offline_mode_produces_artifact_topology
+          #     ModuleNotFoundError: No module named 'numpy'
+          # numpy arrives with the `analysis` extra. Every mutant inherits that
+          # failure, so the score was 0.0% (0/26506 killed) for the second
+          # reason in a row -- a missing dependency, not a measurement.
+          #
+          # The right set is whatever the suite under mutation actually imports.
+          # `quality-gate-reusable.yml:172` runs this same backend suite with
+          # `--extra test --extra lint --extra analysis --extra bridge --group dev`,
+          # and that job is green, so those are the extras the tests need.
+          # `stems` is deliberately absent: its three distributions
+          # (demucs, dora-search, antlr4-python3-runtime) are sdist-only in
+          # uv.lock, which --only-binary :all: below refuses to build.
           uv export --locked --no-emit-project \
-            --extra test --extra bridge \
+            --extra test --extra analysis --extra bridge \
             --output-file "$RUNNER_TEMP/uv-requirements.txt"
           uv venv
           uv pip install --only-binary :all: --require-hashes --no-deps \
