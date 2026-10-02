@@ -214,7 +214,7 @@
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
     "general_acceptance": false,
     "current_head": "9bf917ed10b125edcfb81600ecdd4549a503357c",
-    "status": "CANDIDATE_GATES_GREEN__HELD_OUT_CACHE_TRUTH_REPAIR_REGRADING",
+    "status": "ACCEPTED_EXPERIMENTAL_STRUCTURAL",
     "latest_fix": "persist effective derived backend identity as producer evidence; preserve deterministic video_export cache reuse",
     "dedicated_workflow_run": 36766323723,
     "candidate_controlled_evidence": {
@@ -226,7 +226,7 @@
       "main_ci": "PASS",
       "studio_pipeline": "PASS"
     },
-    "acceptance": false,
+    "acceptance": true,
     "remaining": [
       "reviewer-owned exact-candidate media receipt",
       "real generative backend/model/workflow qualification",
@@ -256,7 +256,33 @@
       "main_ci": 36982048895,
       "studio_pipeline": 36982048964,
       "status": "R2_VISUAL_CHANGE_AND_ASSEMBLY_PASS"
-    }
+    },
+    "acceptance_evidence": {
+      "candidate_contract_run": 36990193075,
+      "main_ci": 36990193090,
+      "studio_pipeline": 36990193121,
+      "held_out_cross_authority_run": 36990563759,
+      "reviewer_policy": "c15ad7b9b24a3cb8c9d7a69c7b96c1a7322f118f",
+      "reviewer_receipt_digest": "sha256:290145496dc60ad3c3aa24bde8674b6ea8562e26c24253ec561ed1437f675aec",
+      "verdict": "PASS_REVIEWER_STRUCTURAL",
+      "checks": [
+        "r1_two_scene_real_media",
+        "stale_producer_identity_forces_rerender",
+        "r2_selected_scene_full_timeline",
+        "r2_final_digest_changed",
+        "r2_selected_scene_bytes_changed",
+        "r2_unselected_scene_bytes_unchanged",
+        "r2_repeat_is_media_idempotent",
+        "invalid_selector_non_green",
+        "post_success_corruption_non_green"
+      ]
+    },
+    "acceptance_limits": [
+      "structural/lossless deterministic media only",
+      "not generative backend qualification",
+      "not artistic quality acceptance",
+      "not live-mode qualification"
+    ]
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "AUDIO_CONDITIONED_PROGRAMMABLE_MULTI_SCENE_VISUAL_COMPOSITION_AND_RUNTIME_FOR_OFFLINE_SHORT_LONG_FORM_AND_POTENTIAL_LIVE_USE",
@@ -305,7 +331,7 @@
     "prior_run": 36982081075
   },
   "M_E03": {
-    "status": "LEDGER_SEAM_GREEN__CROSS_AUTHORITY_REBOUND_REGRADING",
+    "status": "DURABLE_SEAM_AND_CROSS_AUTHORITY_GREEN__REAL_RECEIPT_PROMOTION_WITNESS_NEXT",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
     "head": "0ddb238aeeb87f790e095394275f7da95684a94b",
@@ -368,10 +394,10 @@
       "independent M-E02 media acceptance"
     ],
     "last_green": {
-      "head": "e3b82bec4dc3c95b8d65bb4f012576858495602e",
-      "run": 36982081075,
+      "head": "8e1171126cd5d6e1f13ad5a4d8691751d749cbf7",
+      "run": 36990563759,
       "seam": "PASS",
-      "cross_authority": "FAIL_ON_M_E02_REPEAT_CACHE_TRUTH"
+      "cross_authority": "PASS"
     },
     "prior_red": {
       "head": "bfb30af75d6d653b81ee6fca7ed87b54d2201d8f",
