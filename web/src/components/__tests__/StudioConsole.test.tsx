@@ -354,7 +354,6 @@ describe("StudioConsole (Director\u2019s Console)", () => {
       body.audio_wav_path || body.audio_path || body.audio || body.wav_path,
     ).toBeTruthy();
   });
-});
 
 
   it("opens the click-to-edit modal when a scene row is clicked", async () => {
