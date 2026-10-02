@@ -588,7 +588,7 @@ def test_studio_validate_reports_overlap_issue(tmp_path) -> None:
     assert "scene_overlap" in codes
 
 
-def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp_path, monkeypatch):
+def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp_path, monkeypatch, client: TestClient):
     from melosviz.analysis.models import RenderSpec
     from melosviz.project_ledger import ProjectLedger
     db=tmp_path/"project.sqlite"
