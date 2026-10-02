@@ -436,25 +436,22 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "ACCEPTED_EXPERIMENTAL_BRIDGE_RESTART_TRUTH",
-    "head": "e358aa9e4d9ecd9b8716d070606a84d18486f7b6",
-    "evidence": {
+    "status": "GENERATE_WRITE_THROUGH_RESTART_TRUTH_ACTIVE",
+    "head": "5ee234e48b1fffa92a9212a7fe7b314d82b5c214",
+    "last_green": {
       "m_e03": 37037958871,
       "studio": 37037958528,
-      "ci_ts_js": "PASS",
-      "bridge_endpoint": "PASS",
-      "web": "PASS",
-      "desktop": "PASS"
+      "ci": 37037958488
     },
     "scope": [
-      "durable project status survives reopen",
-      "bridge exposes canonical project/revision/spec/attempt/candidate/job truth",
-      "cache provenance remains verification-pending in UI"
+      "bridge generate optionally persists immutable revision + exact candidate-bound attempt",
+      "generate response returns durable project identity",
+      "separate project-status request reopens ledger and recovers candidate/job/revision"
     ],
     "limits": [
-      "generate endpoint not yet ledger-authoritative",
-      "Electrobun process replacement journey not yet held-out",
-      "accepted evidence not yet fully projected into UI"
+      "generate currently persists execution completion, not independent media acceptance",
+      "shipping Electrobun restart not yet proven",
+      "project fields opt-in until canonical project lifecycle is wired"
     ]
   }
 }
