@@ -213,8 +213,8 @@
     "held_out_cache_identity": "PATCHED_REQUIRES_NEW_EXACT_HEAD_GREEN",
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
     "general_acceptance": false,
-    "current_head": "1c694905bda41d04887e9f2321927591dbaf4e36",
-    "status": "HELD_OUT_R2_FALSIFICATION_REPAIRED__EXACT_HEAD_REGRADING",
+    "current_head": "9bf917ed10b125edcfb81600ecdd4549a503357c",
+    "status": "CANDIDATE_GATES_GREEN__HELD_OUT_CACHE_TRUTH_REPAIR_REGRADING",
     "latest_fix": "persist effective derived backend identity as producer evidence; preserve deterministic video_export cache reuse",
     "dedicated_workflow_run": 36766323723,
     "candidate_controlled_evidence": {
@@ -241,15 +241,21 @@
       "consequence": "prior candidate-controlled structural pass did not establish R2 recovery"
     },
     "latest_repair": {
-      "candidate": "1c694905bda41d04887e9f2321927591dbaf4e36",
-      "reviewer_policy": "3499ee72ce05e9ac6716e9480b0cffb9f85d05df",
+      "candidate": "9bf917ed10b125edcfb81600ecdd4549a503357c",
+      "reviewer_policy": "feeb9ed212fdb4652d901c8252849d4043d4d1b7",
+      "finding": "repeat R2 cache hit was surfaced as ordinary render work",
       "changes": [
-        "video_export consumes per-scene visual palette",
-        "R2 held-out edit changes prompt + palette",
-        "mounted candidate test requires final digest change and S0 byte stability",
-        "reviewer requires selected S1 byte change",
-        "promotion receipt uses actual R2 scene bytes"
+        "per_scene_results carries from_cache",
+        "CLI scene manifest projects from_cache",
+        "repeat R2 requires from_cache=true + identical selected artifact digest + identical final digest"
       ]
+    },
+    "last_candidate_green": {
+      "head": "1c694905bda41d04887e9f2321927591dbaf4e36",
+      "contract_run": 36982048818,
+      "main_ci": 36982048895,
+      "studio_pipeline": 36982048964,
+      "status": "R2_VISUAL_CHANGE_AND_ASSEMBLY_PASS"
     }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
@@ -293,16 +299,16 @@
     ]
   },
   "reviewer_grade": {
-    "candidate": "1c694905bda41d04887e9f2321927591dbaf4e36",
-    "policy_head": "3499ee72ce05e9ac6716e9480b0cffb9f85d05df",
-    "status": "EXACT_REPAIR_REGRADING",
-    "prior_falsification_run": 36927843686
+    "candidate": "9bf917ed10b125edcfb81600ecdd4549a503357c",
+    "policy_head": "feeb9ed212fdb4652d901c8252849d4043d4d1b7",
+    "status": "EXACT_CACHE_TRUTH_REGRADING",
+    "prior_run": 36982081075
   },
   "M_E03": {
-    "status": "SCHEMA_MIGRATION_AND_CROSS_AUTHORITY_REVIEW_ACTIVE",
+    "status": "LEDGER_SEAM_GREEN__CROSS_AUTHORITY_REBOUND_REGRADING",
     "branch": "experiment/m-e03-ledger-seam",
     "pr": 305,
-    "head": "7a85869c110acc651642781c34e289526c4018f2",
+    "head": "0ddb238aeeb87f790e095394275f7da95684a94b",
     "workflow_run": 36854769275,
     "base_dependency": "stacked on M-E02 candidate; not independently mergeable against frozen main",
     "scope": [
@@ -362,11 +368,10 @@
       "independent M-E02 media acceptance"
     ],
     "last_green": {
-      "head": "98a51da632bf919a0ad1c7e0bd5ba767283580eb",
-      "dedicated_run": 36899758153,
-      "main_ci": 36899758029,
-      "studio_pipeline": 36899757991,
-      "status": "ASSEMBLY_EXECUTION_ACCEPTANCE_SEPARATION_PASS"
+      "head": "e3b82bec4dc3c95b8d65bb4f012576858495602e",
+      "run": 36982081075,
+      "seam": "PASS",
+      "cross_authority": "FAIL_ON_M_E02_REPEAT_CACHE_TRUTH"
     },
     "prior_red": {
       "head": "bfb30af75d6d653b81ee6fca7ed87b54d2201d8f",
