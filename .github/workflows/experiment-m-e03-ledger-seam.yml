@@ -51,6 +51,10 @@ jobs:
       REVIEWER_SHA: c15ad7b9b24a3cb8c9d7a69c7b96c1a7322f118f
       CANDIDATE_SHA: 9bf917ed10b125edcfb81600ecdd4549a503357c
     steps:
+      - name: Checkout M-E03 witness
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          path: m-e03
       - name: Checkout pinned reviewer policy
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -76,7 +80,7 @@ jobs:
         run: test -s reviewer-evidence.json
       - name: Replay real reviewer receipt through durable ledger
         run: |
-          PYTHONPATH=candidate/backend/src python candidate/backend/tests/tools/replay_real_reviewer_receipt.py --receipt reviewer-evidence.json --candidate "$CANDIDATE_SHA"
+          PYTHONPATH=m-e03/backend/src python m-e03/backend/tests/tools/replay_real_reviewer_receipt.py --receipt reviewer-evidence.json --candidate "$CANDIDATE_SHA"
       - name: Upload cross-authority receipt
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
