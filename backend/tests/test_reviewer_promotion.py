@@ -5,7 +5,7 @@ from melosviz.reviewer_promotion import apply_reviewer_receipt
 def test_reviewer_receipt_promotes_only_matching_observed_bytes(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
     s="a"*64; f="f"*64
     l.record_evidence(a,"scene",s,"conductor:scene:0","rejected")
     l.promote_scene_evidence(a,s,"precheck:v1")
@@ -18,7 +18,7 @@ def test_reviewer_receipt_promotes_only_matching_observed_bytes(tmp_path):
 def test_reviewer_receipt_cannot_promote_unobserved_or_wrong_final_digest(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
     s="a"*64; f="f"*64
     l.record_evidence(a,"scene",s,"conductor:scene:0","rejected")
     l.promote_scene_evidence(a,s,"precheck:v1"); asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
@@ -33,7 +33,7 @@ def test_reviewer_receipt_cannot_promote_unobserved_or_wrong_final_digest(tmp_pa
 def test_real_shaped_reviewer_receipt_roundtrip_to_attempt_and_final_acceptance(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
     scene_bytes=b"scene-real"; final_bytes=b"final-real"
     import hashlib
     s=hashlib.sha256(scene_bytes).hexdigest(); f=hashlib.sha256(final_bytes).hexdigest()
@@ -59,7 +59,7 @@ def test_real_shaped_reviewer_receipt_roundtrip_to_attempt_and_final_acceptance(
 def test_reviewer_candidate_must_match_durable_attempt(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"actual-sha"); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"actual-sha"); l.finish_attempt(a,"J")
     s="a"*64; f="f"*64
     l.record_evidence(a,"scene",s,"conductor","rejected"); l.promote_scene_evidence(a,s,"precheck")
     asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
@@ -73,7 +73,7 @@ def test_reviewer_candidate_must_match_durable_attempt(tmp_path):
 def test_reviewer_revision_must_match_durable_attempt(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r1=l.commit("P",RenderSpec(scene_segments=[])); r2=l.commit("P",RenderSpec(scene_segments=[]),parent_revision=r1)
+    r1=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); r2=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]),parent_revision=r1)
     a=l.start_attempt("P",r2,"candidate-sha"); l.finish_attempt(a,"J")
     s="a"*64; f="f"*64
     l.record_evidence(a,"scene",s,"conductor","rejected"); l.promote_scene_evidence(a,s,"precheck")
@@ -88,7 +88,7 @@ def test_reviewer_revision_must_match_durable_attempt(tmp_path):
 def test_attempt_without_candidate_identity_cannot_receive_reviewer_promotion(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
     s="a"*64; f="f"*64
     l.record_evidence(a,"scene",s,"conductor","rejected"); l.promote_scene_evidence(a,s,"precheck")
     asm=l.freeze_assembly(a,[(0,s)]); l.complete_assembly(asm,f); l.close()
@@ -102,7 +102,7 @@ def test_attempt_without_candidate_identity_cannot_receive_reviewer_promotion(tm
 def test_bad_final_digest_leaves_no_partial_scene_promotions(tmp_path):
     db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
     from melosviz.analysis.models import RenderSpec
-    r=l.commit("P",RenderSpec(scene_segments=[])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}])); a=l.start_attempt("P",r,"candidate-sha"); l.finish_attempt(a,"J")
     s="a"*64; final="f"*64
     l.record_evidence(a,"scene",s,"conductor","rejected")
     l.promote_scene_evidence(a,s,"precheck")
