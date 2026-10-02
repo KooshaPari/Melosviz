@@ -147,4 +147,23 @@ def main():
     result["verdict"]="PASS_REVIEWER_STRUCTURAL" if all(result["checks"].values()) else "FAIL"
     a.out.write_text(json.dumps(result,indent=2)+"\n");print(json.dumps(result,indent=2))
     return 0 if result["verdict"].startswith("PASS") else 1
-if __name__=="__main__":raise SystemExit(main())
+if __name__=="__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:
+        # A red reviewer run is still evidence. Persist the exact candidate,
+        # exception type/message, and FAIL verdict before propagating nonzero.
+        try:
+            argv=sys.argv
+            out=Path(argv[argv.index("--out")+1])
+            expected=argv[argv.index("--expected-sha")+1]
+            out.write_text(json.dumps({
+                "candidate":expected,
+                "subject":"REVIEWER_OWNED_M_E02_MOUNTED_STRUCTURE",
+                "verdict":"FAIL_EXCEPTION",
+                "error_type":type(exc).__name__,
+                "error":str(exc),
+            },indent=2)+"\\n")
+        except Exception:
+            pass
+        raise
