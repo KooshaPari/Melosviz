@@ -230,11 +230,30 @@ class StudioValidateRequest(BaseModel):
     require_continuity: bool = False
 
 
+class StudioProjectStatusRequest(BaseModel):
+    ledger_path: str
+    project_id: str
+
+
 class StudioPipelineStatus(BaseModel):
     storyboard: dict[str, object] | None = None
     generate: dict[str, object] | None = None
     master: dict[str, object] | None = None
     ship: dict[str, object] | None = None
+
+
+@app.post("/api/studio/project-status")
+async def studio_project_status(req: StudioProjectStatusRequest) -> dict[str, object]:
+    """Read canonical durable project truth after bridge/process replacement."""
+    ledger_path=_check_inside(req.ledger_path)
+    from melosviz.project_ledger import ProjectLedger
+    ledger=ProjectLedger(ledger_path)
+    try:
+        return ledger.project_status(req.project_id)
+    except KeyError:
+        raise HTTPException(status_code=404,detail="project not found")
+    finally:
+        ledger.close()
 
 
 # ---------------------------------------------------------------------------
