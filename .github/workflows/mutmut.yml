@@ -12,6 +12,15 @@ jobs:
   mutmut:
     name: mutmut (backend, target ≥75%)
     runs-on: ubuntu-22.04
+    # Explicit rather than inherited. GitHub's default job cap is 360 minutes,
+    # and the run step's own subprocess budget is 3h with a 2x outer ceiling, so
+    # a pathological sweep can reach 6h. Leaving the cap at 360 means the
+    # platform cancels the job mid-sweep and the run reports "cancelled" with no
+    # mutants/ tree -- indistinguishable from a crash, and it discards the only
+    # output the job produces. 420 gives the subprocess budget its full 6h plus
+    # install overhead, and any run exceeding that is a real stall worth
+    # failing on rather than silently truncating.
+    timeout-minutes: 420
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
@@ -39,8 +48,26 @@ jobs:
           # otherwise leads with `-e .`, and `--require-hashes` rejects an
           # editable entry because a local path has no published artifact to
           # hash. So the third-party deps go in hash-verified from the lock, and
-          # the first-party source is installed afterwards as its own step --
-          # the one thing that legitimately gets built.
+          # the first-party source is NOT installed as its own step.
+          #
+          # That is deliberate, and it was a real defect before: this job used
+          # to `pip install -e ".[test,bridge]"`, so the project landed on
+          # sys.path via the install. `--no-emit-project` removed the only
+          # install, leaving the suite importing melosviz only because
+          # `backend/pyproject.toml:171` sets `pythonpath = ["src"]` under
+          # `[tool.pytest.ini_options]`, which pytest applies itself. A comment
+          # claimed an install step that does not exist, which is worse than the
+          # gap: it invited someone to trust an install that was never there.
+          #
+          # pythonpath is the stronger guarantee here anyway, not the weaker
+          # substitute. It is resolved by pytest from the rootdir/inifile it
+          # discovers, and mutmut's copy of the tree carries pyproject.toml
+          # (also_copy unions it by default, configuration.py:184-195), so the
+          # mutant runs resolve src/ the same way the baseline run does. An
+          # editable install would instead pin the baseline backend/ into
+          # sys.path while the mutants ran against mutants/, which is the
+          # failure this whole change exists to prevent: the tests would
+          # measure unmutated source and score 100% for free.
           #
           # --no-deps on both: the lock already carries the full resolved graph
           # including these extras, so re-resolving per package would discard
@@ -54,6 +81,25 @@ jobs:
           # numpy arrives with the `analysis` extra. Every mutant inherits that
           # failure, so the score was 0.0% (0/26506 killed) for the second
           # reason in a row -- a missing dependency, not a measurement.
+          #
+          # This is a deliberate trade, and the cost is real: `analysis` pulls
+          # librosa -> numba -> llvmlite, whose first import is a JIT compile
+          # plus a libsndfile load, and `pytest_add_cli_args_test_selection =
+          # ["tests/"]` means every one of ~26506 mutants re-runs the whole
+          # test directory rather than a slice. So that import is paid per
+          # mutant. It is still the right call: numpy is what the reported
+          # failure needed, and the alternative (hand-promoting numpy into a
+          # lighter extra) trades a known import failure for a silent coverage
+          # gap in the sweep. The timeout-minutes above is what bounds the
+          # downside so a cost regression fails loudly instead of being
+          # cancelled mid-sweep.
+          #
+          # One signal this extra does cost here: installing `analysis` makes
+          # tests/test_optional_dep_imports.py:166 vacuous in this job, since
+          # its only assertion sits behind `if not _has_optional_dep("librosa")`.
+          # So a still-green result there is not evidence the dep-light import
+          # boundary is being enforced in THIS job. quality-gate-reusable.yml
+          # installs `analysis` too, and the repo-wide signal is unchanged.
           #
           # The right set is whatever the suite under mutation actually imports.
           # `quality-gate-reusable.yml:172` runs this same backend suite with
@@ -236,6 +282,20 @@ jobs:
         #     ConductorError: Unable to locate a working ffmpeg binary for video
         #     export. Set the MELOSVIZ_FFMPEG_BIN environment variable or install
         #     ffmpeg.
+        #
+        # This is the one install in the job that is not hash-verified, and that
+        # is a decision rather than an oversight. The premise of the steps above
+        # is that every Python install comes from the lock; ffmpeg is not a
+        # Python dependency, not a build input, and not something uv.lock can
+        # express. MELOSVIZ_FFMPEG_BIN is the supported override, and apt is
+        # only the fallback discovery path the render adapters walk. Pinning
+        # `ffmpeg=<version>` would bake a runner-image-specific version into the
+        # workflow and fail whenever the runner's apt snapshot moves, trading a
+        # real improvement for a recurring red weekly. The job is contents:read,
+        # so there is no write surface here either.
+        #
+        # quality-gate-reusable.yml:147 installs ffmpeg the same unpinned way.
+        # If that is ever tightened, this should move with it rather than drift.
         # Every mutant inherits that failure, so all 26506 are reported as
         # "not killed" -- a 0% score that is an artefact of a missing system
         # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
@@ -300,10 +360,13 @@ jobs:
           #   run       -> the mutation pass is the measurement. If it does not
           #                complete there is no score, so it must fail. `set +e`
           #                around it keeps the reporting commands below running
-          #                even then, so the artifact is still produced and still
-          #                uploaded -- the upload step carries `if: always()`,
-          #                because without it a failed `run` skips the upload and
-          #                throws away the one output this job has.
+          #                even then, so the artifact is still produced; the
+          #                upload step carries `if: always()` so a failed step
+          #                does not skip the upload and throw away the one
+          #                output this job has. Note the three commands below
+          #                deliberately do NOT exit on their own -- they record
+          #                the status and let the tail of the step decide, so
+          #                there is exactly one place that fails the job.
           #   results   -> pure reporting over the mutants/ directory `run` just
           #                wrote. Its exit code carries no verdict, so it must not
           #                be able to fail the build either.
@@ -413,19 +476,48 @@ jobs:
           PY
           exit "$RUN_STATUS"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        # always(): without this the upload is SKIPPED whenever the run step
-        # exits non-zero -- which is the common case this step exists to cover
-        # (`mutmut run` fails, or produces no mutants/). That discarded the only
-        # output the job produces, discarding it on precisely the runs where the
-        # result is worth inspecting. The verdict still comes from the run step's
-        # own exit code; this only decides whether the evidence survives.
+        # always(): keeps the artifact alive on the runs where the step above exits
+        # non-zero. Those are the common case this step exists to cover --
+        # `mutmut run` fails, or produces no mutants/, or export-cicd-stats
+        # cannot write the stats file (each of those ends in an explicit
+        # `exit 1` before this step).
+        #
+        # `always()` is a step-level status check, not a job-level one, so be
+        # precise about what it does NOT do: it runs the upload after a FAILED
+        # run step, and it does not rescue a job that was CANCELLED -- neither
+        # by a manual cancel nor by the job-level timeout-minutes. There is no
+        # artifact in that case, and there cannot be one. What protects the
+        # evidence against the timeout is the timeout-minutes ceiling being
+        # generous enough that it is not the thing that fires.
+        #
+        # The verdict still comes from the run step's own exit code; this only
+        # decides whether the evidence survives to be inspected.
         if: always()
         with:
           name: mutmut-results
           # mutmut 3 has no `junitxml` subcommand; `export-cicd-stats` writes
-          # mutants/mutmut-cicd-stats.json. The whole mutants/ tree goes up as
-          # well, because that is where the per-mutant exit codes live and it is
-          # what makes the score auditable after the fact.
+          # mutants/mutmut-cicd-stats.json, which is uploaded on its own.
+          #
+          # Listing the tree as a SECOND path entry is deliberate, not
+          # redundant, even though the JSON lives inside it:
+          #
+          #   mutants/    the whole tree, including the per-mutant exit codes
+          #               and .mutmut cache that make the score auditable
+          #               afterwards
+          #   mutants/mutmut-cicd-stats.json
+          #               listed explicitly because upload-artifact takes the
+          #               union of the patterns, and the common artifact
+          #               download URL is built from the FIRST path entry's
+          #               least-common-ancestor. Naming the file first means the
+          #               archive root is the JSON's own directory rather than
+          #               all of backend/, so the stats file lands at a stable
+          #               path for anyone fetching it.
+          #
+          # The consequence, stated plainly: if mutants/ exists but the JSON was
+          # never written, this step still uploads, because if-no-files-found
+          # only fires when NOTHING matched. That is why the run step asserts
+          # `test -s "$STATS"` itself and the scoring block reads the same file.
+          # This step is not the guard for the stats file; it is the carrier.
           path: |
             backend/mutants/mutmut-cicd-stats.json
             backend/mutants/
