@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import find_repo_root
+from repo_paths import find_repo_root
 
 # Walk up to the repo root rather than assuming a fixed depth. mutmut runs
 # pytest from mutants/, where tests/ sits one level deeper and parents[2]

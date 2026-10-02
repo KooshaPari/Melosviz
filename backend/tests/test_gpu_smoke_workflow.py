@@ -14,7 +14,7 @@ PR will be blocked.
 
 from __future__ import annotations
 
-from conftest import find_repo_root
+from repo_paths import find_repo_root
 
 # Marker walk instead of parents[2]: under mutmut the tests/ directory is one
 # level deeper, so a fixed depth resolves to backend/ instead of the repo root.

@@ -9,56 +9,22 @@ This conftest installs an :func:`autouse` fixture that resets the cached locale
 before every test, so each test starts from the default behaviour driven only
 by the ``MELOSVIZ_LOCALE`` environment variable.
 
-It also exposes :func:`find_repo_root` for the tests that need to reach
-repository-level files (docs, workflows, the Cargo workspace).
+It also re-exports :func:`find_repo_root` for tests that need to reach
+repository-level files (docs, workflows, the Cargo workspace). The
+implementation lives in ``tests/repo_paths.py`` rather than here: ``from
+conftest import ...`` resolves only under pytest's default ``prepend`` import
+mode, so binding seven modules to this file would break them together if
+``tests/__init__.py`` were ever added or ``--import-mode=importlib`` used. The
+re-export stays so existing call sites keep working.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
+from repo_paths import find_repo_root
 
-def find_repo_root(start: Path | str | None = None) -> Path:
-    """Return the repository root, from any nesting depth.
-
-    Tests that assert on repository-level files must not compute their location
-    with a fixed ``parents[N]``. The depth is only correct when pytest happens
-    to run from ``backend/``. mutmut copies the tree into ``backend/mutants/``
-    and runs pytest from there, so ``tests/`` sits one level deeper and every
-    such path silently shifts: ``parents[2]`` lands on ``backend/`` instead of
-    the repo root, which produced ``backend/backend`` and broke
-    ``test_e2e_3min_pipeline.py`` (run 36956679068).
-
-    Instead walk up looking for a marker pair that only the repo root has:
-    ``Cargo.toml`` (the Rust workspace root) together with ``backend/``. Using
-    the Rust marker avoids ambiguity, since ``pyproject.toml`` exists under
-    both the root and ``backend/``.
-
-    Raises:
-        RuntimeError: When no ancestor of ``start`` carries both markers.
-            Returning a fallback would be worse than failing: by the time the
-            walk gives up, ``cur`` is the last ancestor reached, normally ``/``
-            or one of its ancestors rather than the backend directory, so every
-            caller would build repository-level paths (``REPO_ROOT / "docs" /
-            "intent" / "MelosViz.md"``, ``REPO_ROOT / ".github" /
-            "workflows"``, ``BACKEND / "src"``) from a root that has none of
-            them, and a missing marker would surface as a confusing
-            ``FileNotFoundError`` instead of the structural error it is.
-    """
-    cur = (Path(start) if start is not None else Path(__file__)).resolve()
-    for _ in range(8):  # bounded walk; CI can nest deeper than expected
-        if (cur / "Cargo.toml").is_file() and (cur / "backend").is_dir():
-            return cur
-        parent = cur.parent
-        if parent == cur:
-            break
-        cur = parent
-    raise RuntimeError(
-        f"repo root not found: no ancestor of {cur!r} has both Cargo.toml "
-        f"and backend/ (walked up to 8 levels)"
-    )
+__all__ = ["find_repo_root"]
 
 
 @pytest.fixture(autouse=True)

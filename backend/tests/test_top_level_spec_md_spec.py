@@ -32,11 +32,9 @@ Or via the project root::
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
-from conftest import find_repo_root
+from repo_paths import find_repo_root
 
 # ---------------------------------------------------------------------------
 # Path resolution — robust to both repo-root and backend/ working dirs, and to

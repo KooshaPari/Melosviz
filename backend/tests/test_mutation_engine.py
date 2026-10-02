@@ -27,7 +27,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import pytest
-from conftest import find_repo_root
+
+from repo_paths import find_repo_root
 
 # Marker walk instead of parents[2]: under mutmut the tests/ directory is one
 # level deeper, so a fixed depth resolves to backend/ instead of the repo root.
@@ -47,6 +48,9 @@ TARGETS = [
     SRC / "melosviz" / "analysis" / "audio.py",
     SRC / "melosviz" / "bridge" / "server.py",
 ]
+# Mutations applied per target file. Read by BOTH the loop below and
+# SUBPROCESS_CEILING_S, so the budget cannot drift from the work.
+MAX_PER_FILE = 60
 TIMEOUT_S = 60
 TARGET_SCORE = 75.0
 # Ceiling on the share of mutants that produced no verdict at all. A single
@@ -62,7 +66,7 @@ MAX_TIMEOUT_RATIO = 0.10
 # targets, and every mutation is a separate pytest subprocess over four test
 # files, each capped at TIMEOUT_S. The hard ceiling on subprocess time alone is
 # therefore
-#     len(TARGETS) * max_per_file * TIMEOUT_S = 3 * 60 * 60 = 10800s = 3h
+#     len(TARGETS) * MAX_PER_FILE * TIMEOUT_S = 3 * 60 * 60 = 10800s = 3h
 # and the per-mutation AST re-parse, file write/restore, and the JSON report
 # writes all count against the outer budget on top of that. Setting the budget
 # equal to the ceiling leaves zero headroom, so a run in which every mutant
@@ -70,12 +74,29 @@ MAX_TIMEOUT_RATIO = 0.10
 # mid-measurement -- exactly the "reports Timeout instead of a kill score, with
 # no partial results" failure this change exists to eliminate.
 #
-# So the budget is sized ABOVE the ceiling, at 2x, and the per-subprocess caps
+# So the budget is sized ABOVE the ceiling, at 1.5x, and the per-subprocess caps
 # remain the thing that actually bounds the run. On healthy hardware the
 # measured average is ~48s per subprocess (~320 tests, dominated by the audio
 # tests), giving a real runtime around 65s for the three targets -- well inside
 # even the old 300s, so this is headroom for the pathological case, not a
 # slower gate.
+
+#
+# The ordering this depends on, which is not automatic: the budget must
+# fire BEFORE the platform kills the job, or it never produces the
+# diagnostic it exists to produce. Inside GitHub Actions,
+#     pytest-timeout (this value)  <  job `timeout-minutes`  <  360min default
+# and the gate job runs this test with NO `timeout-minutes` of its own, so it
+# inherits the 360-minute default. That makes 2x (exactly 360) unusable as a
+# budget: it would sit exactly on the platform cap and pytest-timeout could never
+# fire first.
+#
+# A budget of exactly 6h is the trap: that is the 360-minute default, so
+# the outer timeout could never fire first and this marker would be
+# silently redundant rather than load-bearing. This test does not run in
+# `.github/workflows/mutmut.yml`, which is a separate scheduled job with
+# its own 420 cap; if that job ever adopts this test, the two numbers have
+# to move together.
 #
 # The old budget was @pytest.mark.timeout(300) -- 5 minutes for work that can
 # legitimately take hours. It only ever passed because killed mutants exit early
@@ -85,7 +106,10 @@ MAX_TIMEOUT_RATIO = 0.10
 #       - Failed: Timeout (>300.0s) from pytest-timeout
 # The bar being enforced is the 75% kill score, not a duration, so a budget that
 # fires before the measurement completes destroys the thing it protects.
-KILL_SCORE_TIMEOUT_S = 2 * 3 * 60 * 60
+# The subprocess ceiling, named so the multiplier below cannot drift away
+# from the work it is sizing. 3 targets * 60 mutations * 60s = 10800s = 3h.
+SUBPROCESS_CEILING_S = 3 * MAX_PER_FILE * TIMEOUT_S
+KILL_SCORE_TIMEOUT_S = SUBPROCESS_CEILING_S * 3 // 2  # 16200s = 270min
 
 
 # ----------------------- AST mutation plan -------------------------------
@@ -291,11 +315,10 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         "score": 0.0,
         "per_file": {},
     }
-    max_per_file = 60  # cap to keep CI runtime bounded
     for target in TARGETS:
         if not target.exists():
             continue
-        plan = _plan(target)[:max_per_file]
+        plan = _plan(target)[:MAX_PER_FILE]
         if not plan:
             continue
         src_text = target.read_text()
@@ -306,6 +329,10 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
             for i, mutation in enumerate(plan):
                 mutated = _apply_one(src_text, mutation, i)
                 target.write_text(mutated)
+                # Per-mutant, not a running total: `report.timeout` is
+                # cumulative, so it cannot answer "did THIS mutant time out?"
+                # which is the only question the survivor branch needs to ask.
+                timed_out = False
                 try:
                     rc = subprocess.run(
                         [
@@ -334,6 +361,7 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                     # met by real kills and can bound how much of the run was
                     # unmeasured.
                     killed = False
+                    timed_out = True
                     report.timeout += 1
                 finally:
                     if backup.exists():
@@ -344,6 +372,16 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
                 report.total += 1
                 if killed:
                     report.killed += 1
+                elif timed_out:
+                    # Unmeasured, not survived. A timed-out mutant never reached a
+                    # verdict, so listing it under `survived` would assert that
+                    # the suite ran to completion and still passed -- the exact
+                    # unproven claim this change set out to remove. It stays out
+                    # of `survived` and out of the `survivors` triage list, so
+                    # that list holds only mutants the suite genuinely finished
+                    # and escaped. The score arithmetic is unaffected: it is
+                    # killed / total, and total still counts every mutant.
+                    pass
                 else:
                     report.survived += 1
                     report.survivors.append(
@@ -365,15 +403,14 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
             else:
                 target.write_text(src_text)
         report.score = (report.killed / report.total * 100.0) if report.total else 0.0
-        # A timeout is NOT a kill. Scoring it as one lets a systematically
-        # uncollectable suite -- a bad `pythonpath`, a missing test module, an
-        # import cycle -- turn every mutant into a 60s hang, score 100%, and
-        # pass the 75% bar without a single assertion ever having run. That is
-        # the vacuous green the gate exists to prevent, so the bar is applied to
-        # real kills only, and a file that times out on every mutant fails
-        # outright instead of scoring full marks.
-        if report.total and report.timeout == report.total:
-            report.score = 0.0
+        # A timeout is NOT a kill, which is why `killed` is False on that path
+        # above. That single fact is what closes the vacuous-green hole: an
+        # uncollectable suite (a bad `pythonpath`, a missing test module, an
+        # import cycle) turns every mutant into a 60s hang, every mutant counts
+        # as unmeasured, killed stays 0, and this expression yields 0.0 rather
+        # than the 100% it used to score. No separate `timeout == total` branch
+        # is needed or present -- it would have duplicated a guarantee the
+        # arithmetic already makes.
         MUTATIONS_DIR.mkdir(exist_ok=True)
         (MUTATIONS_DIR / f"{target.parent.name}_{target.stem}.json").write_text(
             json.dumps(asdict(report), indent=2)

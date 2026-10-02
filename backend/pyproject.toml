@@ -155,6 +155,12 @@ ignore = [
     "UP042",
 ]
 
+[tool.ruff.lint.isort]
+# repo_paths is a module inside backend/tests/, not a distribution.
+# Without this, ruff classifies it third-party and groups it with
+# `import pytest`, failing I001 in all seven modules that import it.
+known-first-party = ["repo_paths"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]  # asserts are fine in tests
 
@@ -168,7 +174,16 @@ ignore_missing_imports = true
 disable_error_code = ["method-assign"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+# `tests` is here so `from repo_paths import find_repo_root` resolves under
+# every pytest import mode. The `pythonpath` ini option inserts into
+# sys.path unconditionally, whereas `from conftest import ...` depends on
+# pytest's default `prepend` mode inserting this directory. Seven test
+# modules import that helper, so the difference between the two is a
+# seven-module collection error whenever tests/__init__.py is added or
+# importlib mode is used. Under `prepend` the entry is redundant, since
+# pytest already puts the directory at sys.path[0]; it exists to make that
+# true under `importlib` and `append` too.
+pythonpath = ["src", "tests"]
 markers = [
     "flaky: quarantined / known-flaky; exclude with -m 'not flaky'",
     "slow: full pipeline integration tests (3-min track end-to-end)",
