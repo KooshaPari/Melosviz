@@ -12,15 +12,27 @@ jobs:
   mutmut:
     name: mutmut (backend, target ≥75%)
     runs-on: ubuntu-22.04
-    # Explicit rather than inherited. GitHub's default job cap is 360 minutes,
-    # and the run step's own subprocess budget is 3h with a 2x outer ceiling, so
-    # a pathological sweep can reach 6h. Leaving the cap at 360 means the
-    # platform cancels the job mid-sweep and the run reports "cancelled" with no
-    # mutants/ tree -- indistinguishable from a crash, and it discards the only
-    # output the job produces. 420 gives the subprocess budget its full 6h plus
-    # install overhead, and any run exceeding that is a real stall worth
-    # failing on rather than silently truncating.
-    timeout-minutes: 420
+    # Explicit rather than inherited, and 360 is the ceiling the platform
+    # actually enforces -- not a round number that happens to match the default.
+    #
+    # Two different limits are in play, and this key sits under the job-level one:
+    #   * jobs.<id>.steps[*].timeout-minutes is capped at 360 for both GitHub-
+    #     hosted and self-hosted runners.
+    #   * jobs.<id>.timeout-minutes has a documented default of 360 and is then
+    #     bounded by the runner's execution time limit, which GitHub's limits page
+    #     gives as "All GitHub-hosted runners -- Job execution time -- 6 hours".
+    #
+    # So 360 is the most this job can be granted. An earlier revision set 420 to
+    # try to clear a 6h sweep, which the platform would not honour anyway: the
+    # job would still be cancelled at 6h, reporting "cancelled" with no mutants/
+    # tree, which is indistinguishable from a crash.
+    #
+    # 360 now fits the real worst case with room to spare. The subprocess loop's
+    # ceiling is 3 targets * 60 mutants * 60s = 3h, the kill-score budget is
+    # 1.5x that = 4.5h, and install and setup add roughly 0.25h -- about 4.75h
+    # total, inside 6h. A run that still exceeds 6h is a genuine stall rather
+    # than a budget that was simply set above the platform's ceiling.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
