@@ -213,8 +213,8 @@
     "held_out_cache_identity": "PATCHED_REQUIRES_NEW_EXACT_HEAD_GREEN",
     "external_oracle": "NOT_RUN_ON_CANDIDATE_OUTPUT",
     "general_acceptance": false,
-    "current_head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
-    "status": "CANDIDATE_CONTROLLED_STRUCTURAL_PASS__REVIEWER_MEDIA_PENDING",
+    "current_head": "1c694905bda41d04887e9f2321927591dbaf4e36",
+    "status": "HELD_OUT_R2_FALSIFICATION_REPAIRED__EXACT_HEAD_REGRADING",
     "latest_fix": "persist effective derived backend identity as producer evidence; preserve deterministic video_export cache reuse",
     "dedicated_workflow_run": 36766323723,
     "candidate_controlled_evidence": {
@@ -231,7 +231,26 @@
       "reviewer-owned exact-candidate media receipt",
       "real generative backend/model/workflow qualification",
       "real app persistence/restart integration"
-    ]
+    ],
+    "held_out_falsification": {
+      "reviewer_policy": "b977d5de7f6d99db6d8f5a660cf286e06b49c7ec",
+      "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
+      "run": 36927843686,
+      "finding": "selective R2 produced final assembly digest identical to R1",
+      "classification": "PRODUCT_CONTRACT_DEFECT",
+      "consequence": "prior candidate-controlled structural pass did not establish R2 recovery"
+    },
+    "latest_repair": {
+      "candidate": "1c694905bda41d04887e9f2321927591dbaf4e36",
+      "reviewer_policy": "3499ee72ce05e9ac6716e9480b0cffb9f85d05df",
+      "changes": [
+        "video_export consumes per-scene visual palette",
+        "R2 held-out edit changes prompt + palette",
+        "mounted candidate test requires final digest change and S0 byte stability",
+        "reviewer requires selected S1 byte change",
+        "promotion receipt uses actual R2 scene bytes"
+      ]
+    }
   },
   "authoritative_intent": "AUTHORITATIVE-INTENT-20260930.md",
   "product_horizon": "AUDIO_CONDITIONED_PROGRAMMABLE_MULTI_SCENE_VISUAL_COMPOSITION_AND_RUNTIME_FOR_OFFLINE_SHORT_LONG_FORM_AND_POTENTIAL_LIVE_USE",
@@ -274,23 +293,10 @@
     ]
   },
   "reviewer_grade": {
-    "policy_branch": "docs/mature-recovery-20260929",
-    "policy_head": "b977d5de7f6d99db6d8f5a660cf286e06b49c7ec",
-    "candidate": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
-    "new_negative_controls": [
-      "stored producer identity corruption forces rerender",
-      "R2 final digest differs from R1 after S2 edit",
-      "post-success final media corruption is non-green",
-      "selective R2 leaves unselected S0 bytes unchanged",
-      "exact repeated R2 produces no scene work and identical final digest"
-    ],
-    "status": "NUMERIC_REVISION_PROMOTION_RECEIPT",
-    "cross_authority": {
-      "status": "QUEUED_BY_M_E03_WORKFLOW",
-      "reviewer_sha": "b977d5de7f6d99db6d8f5a660cf286e06b49c7ec",
-      "candidate_sha": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
-      "authority_caveat": "workflow shell is on M-E03 branch; reviewer code and candidate are separately pinned; not equivalent to independent default-branch reviewer workflow"
-    }
+    "candidate": "1c694905bda41d04887e9f2321927591dbaf4e36",
+    "policy_head": "3499ee72ce05e9ac6716e9480b0cffb9f85d05df",
+    "status": "EXACT_REPAIR_REGRADING",
+    "prior_falsification_run": 36927843686
   },
   "M_E03": {
     "status": "SCHEMA_MIGRATION_AND_CROSS_AUTHORITY_REVIEW_ACTIVE",
