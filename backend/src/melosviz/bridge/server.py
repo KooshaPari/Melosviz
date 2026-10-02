@@ -58,7 +58,8 @@ try:
 except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
-        "Install with:  pip install 'melosviz[bridge]'\n"
+        "Install with:  pip install 'melosviz[bridge]'
+"
         "The desktop app will use the CLI subprocess fallback.",
         file=sys.stderr,
     )
@@ -186,6 +187,9 @@ class StudioGenerateRequest(BaseModel):
     # Optional correlation ID forwarded to the render event bus so the
     # Director's Console SSE stream can subscribe to per-scene events.
     job_id: str | None = None
+    ledger_path: str | None = None
+    project_id: str | None = None
+    candidate_sha: str | None = None
 
 
 class StudioMasterRequest(BaseModel):
@@ -448,7 +452,8 @@ async def ready() -> dict[str, object]:
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics() -> str:
     """Prometheus-text metrics for request counts, errors, latency, and RSS."""
-    lines = [obs.metrics_prometheus().rstrip("\n")]
+    lines = [obs.metrics_prometheus().rstrip("
+")]
     rss = memory_cap.current_rss_mb()
     if rss is not None:
         lines.append("# HELP melosviz_memory_rss_mb Current bridge process RSS (MiB)")
@@ -457,7 +462,9 @@ async def metrics() -> str:
     lines.append("# HELP melosviz_memory_cap_mb Configured hard memory cap (MiB); 0 = disabled")
     lines.append("# TYPE melosviz_memory_cap_mb gauge")
     lines.append(f"melosviz_memory_cap_mb {max(memory_cap.hard_cap_mb, 0)}")
-    return "\n".join(lines) + "\n"
+    return "
+".join(lines) + "
+"
 
 
 @app.get("/debug/profile")
@@ -796,6 +803,23 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
     if not isinstance(manifest, dict) or not isinstance(manifest.get("scenes"), list):
         raise HTTPException(status_code=500, detail="generate scene manifest is malformed")
     manifest["out_dir"] = str(out)
+    if req.ledger_path or req.project_id or req.candidate_sha:
+        if not (req.ledger_path and req.project_id and req.candidate_sha):
+            raise HTTPException(status_code=400,detail="ledger_path, project_id, and candidate_sha must be supplied together")
+        ledger_path=_check_inside(req.ledger_path)
+        from melosviz.analysis.models import RenderSpec
+        from melosviz.project_ledger import ProjectLedger
+        storyboard=json.loads(sb.read_text(encoding="utf-8"))
+        scenes=storyboard.get("scenes") or storyboard.get("scene_segments") or []
+        spec=RenderSpec(scene_segments=scenes)
+        ledger=ProjectLedger(ledger_path)
+        try:
+            revision=ledger.commit(req.project_id,spec,parent_revision=ledger.latest_revision(req.project_id))
+            attempt=ledger.start_attempt(req.project_id,revision,req.candidate_sha)
+            ledger.finish_attempt(attempt,req.job_id)
+            manifest["project"]={"project_id":req.project_id,"revision":revision,"attempt_id":attempt,"candidate_sha":req.candidate_sha}
+        finally:
+            ledger.close()
     return json.dumps(manifest, indent=2)
 
 
@@ -1012,7 +1036,9 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
 
     Clients (web StudioConsole, desktop Director's Console) open an
     ``EventSource('/api/render/events?job_id=...')`` and receive one
-    ``data: <json>\\n\\n`` SSE frame per RenderEvent. Frames are flushed
+    ``data: <json>\
+\
+`` SSE frame per RenderEvent. Frames are flushed
     every 250ms while the connection is open and the bus has new events.
 
     Query params:
@@ -1033,14 +1059,18 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
         # fired while it was offline.
         for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
             last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-            yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+            yield f"data: {_json.dumps(evt.to_dict())}
+
+"
 
         while True:
             # Drain anything emitted since last flush, then sleep briefly
             await asyncio.sleep(0.25)
             for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
                 last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-                yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+                yield f"data: {_json.dumps(evt.to_dict())}
+
+"
 
     return StreamingResponse(
         event_stream(),
