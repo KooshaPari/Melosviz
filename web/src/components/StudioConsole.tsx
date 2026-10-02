@@ -36,6 +36,7 @@ export interface StudioScene {
   /** Path to the emitted workflow.json / job_spec.json / plan.json */
   artifactPath?: string;
   errorMessage?: string;
+  fromCache?: boolean;
 }
 
 export interface StudioMasterDeliverable {
@@ -80,6 +81,7 @@ interface GenerateSceneMeta {
   outcome?: string | null;
   artifact_path?: string | null;
   artifact_sha256?: string | null;
+  from_cache?: boolean;
 }
 
 interface GeneratePayload {
@@ -393,6 +395,7 @@ export function StudioConsole({
             // independent product acceptance.
             status: "produced" as const,
             artifactPath: meta.artifact_path,
+            fromCache: meta.from_cache === true,
             errorMessage: undefined,
           };
         }),
