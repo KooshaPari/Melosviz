@@ -861,7 +861,10 @@ export function StudioConsole({
                   tr("studio.queue.badge.queued", "queued")}
                 {s.status === "rendering" &&
                   tr("studio.queue.badge.rendering", "rendering")}
-                {s.status === "produced" && "produced · verification pending"}
+                {s.status === "produced" &&
+                  (s.fromCache
+                    ? "reused · verification pending"
+                    : "produced · verification pending")}
                 {s.status === "accepted" && "accepted"}
                 {s.status === "error" &&
                   tr("studio.queue.badge.error", "error")}
