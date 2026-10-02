@@ -436,8 +436,8 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "GENERATE_WRITE_THROUGH_RESTART_TRUTH_ACTIVE",
-    "head": "5ee234e48b1fffa92a9212a7fe7b314d82b5c214",
+    "status": "WRITE_THROUGH_BRIDGE_SYNTAX_REPAIRED_REGRADING",
+    "head": "8512f29781c4005601ea465df012f922689da969",
     "last_green": {
       "m_e03": 37037958871,
       "studio": 37037958528,
@@ -452,6 +452,14 @@
       "generate currently persists execution completion, not independent media acceptance",
       "shipping Electrobun restart not yet proven",
       "project fields opt-in until canonical project lifecycle is wired"
-    ]
+    ],
+    "prior_grade": {
+      "m_e03": 37052548396,
+      "ci": 37052548566,
+      "studio": 37052548621,
+      "classification": "M_E03_AND_CI_GREEN__STUDIO_IMPORT_RED",
+      "detail": "pre-existing optional-dependency diagnostic string in bridge/server.py had an unterminated literal exposed by backend import"
+    },
+    "latest_repair": "bridge optional dependency diagnostic string restored to valid Python"
   }
 }
