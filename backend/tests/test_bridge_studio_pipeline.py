@@ -586,3 +586,20 @@ def test_studio_validate_reports_overlap_issue(tmp_path) -> None:
     body = r.json()
     codes = {i["code"] for i in body["issues"]}
     assert "scene_overlap" in codes
+
+
+def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp_path, monkeypatch):
+    from melosviz.analysis.models import RenderSpec
+    from melosviz.project_ledger import ProjectLedger
+    db=tmp_path/"project.sqlite"
+    ledger=ProjectLedger(db)
+    r=ledger.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]))
+    a=ledger.start_attempt("P",r,"candidate-sha")
+    ledger.finish_attempt(a,"job-1")
+    ledger.close()
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    response=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"})
+    assert response.status_code==200,response.text
+    body=response.json()
+    assert body["project_id"]=="P" and body["revision"]==1
+    assert body["attempts"]==[{"attempt_id":a,"state":"completed","job_id":"job-1","candidate_sha":"candidate-sha","started_at":body["attempts"][0]["started_at"],"completed_at":body["attempts"][0]["completed_at"]}]
