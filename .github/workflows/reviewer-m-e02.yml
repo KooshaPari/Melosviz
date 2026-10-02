@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      CANDIDATE_SHA: 7684530aed90316fa2a08a32839458fae0388fd7
+      CANDIDATE_SHA: 1c694905bda41d04887e9f2321927591dbaf4e36
     steps:
       - name: Checkout reviewer policy
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
