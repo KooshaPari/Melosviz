@@ -174,6 +174,21 @@ class _VideoExportAdapter:
     def render(self, render_spec: Any, *, output_path: Any = None, **_: Any) -> Any:
         from melosviz.render.video_exporter import export_video
 
+        # The conductor passes a one-scene RenderSpec. Project visual scene
+        # parameters consumed by this deterministic fallback onto the export
+        # spec; otherwise cache-invalidating scene edits can rerender identical
+        # bytes and selective R2 assembly cannot demonstrate the edit.
+        segments = getattr(render_spec, "scene_segments", None) or []
+        if len(segments) == 1 and isinstance(segments[0], dict):
+            scene = segments[0]
+            palette = scene.get("palette")
+            if palette:
+                if hasattr(render_spec, "model_copy"):
+                    render_spec = render_spec.model_copy(update={"palette": list(palette)})
+                elif isinstance(render_spec, dict):
+                    render_spec = dict(render_spec)
+                    render_spec["palette"] = list(palette)
+
         if output_path is not None:
             import pathlib
 
