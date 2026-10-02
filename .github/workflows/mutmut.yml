@@ -190,6 +190,29 @@ jobs:
             > "$RUNNER_TEMP/mutmut-req.txt"
           uv pip install --only-binary :all: --require-hashes --no-deps \
             -r "$RUNNER_TEMP/mutmut-req.txt"
+      - name: Install ffmpeg (mutant tests need a video-export backend)
+        # Dispatched run 36953135710 against ac2ed72 reached the mutation pass
+        # and generated 26506 mutants, then scored 0.0% because the suite the
+        # mutants are tested against cannot run:
+        #   FAILED tests/conductor/test_events.py::test_orchestrator_emits_events_for_each_scene
+        #     ConductorError: Unable to locate a working ffmpeg binary for video
+        #     export. Set the MELOSVIZ_FFMPEG_BIN environment variable or install
+        #     ffmpeg.
+        # Every mutant inherits that failure, so all 26506 are reported as
+        # "not killed" -- a 0% score that is an artefact of a missing system
+        # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
+        # ffmpeg. `quality-gate-reusable.yml` and `timing-budgets.yml` both run
+        # this same backend suite and both install it with this exact line;
+        # this job now does too, so there is one answer to "how does CI get
+        # ffmpeg" rather than three.
+        #
+        # `ffmpeg -version | head -n 1` fails the step if the binary is absent,
+        # so a future runner-image change that drops the package is reported as
+        # "ffmpeg missing" rather than as a mysterious 0% mutation score.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -n 1
       - name: Run mutmut (bounded)
         working-directory: backend
         # Full suite is slow; mutate a high-value slice and report score.
