@@ -434,5 +434,21 @@
       "not generative/artistic/live qualification"
     ],
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
+  },
+  "M_E03A": {
+    "status": "APPLICATION_BRIDGE_RESTART_TRUTH_ACTIVE",
+    "branch": "experiment/m-e03-ledger-seam",
+    "head": "6287425117780c19a1a00db0964bbf95e4b8a635",
+    "scope": [
+      "canonical project_status from durable ledger",
+      "bridge endpoint reads status after ledger/process reopen",
+      "project/revision/spec/attempt/candidate/job state surfaced without directory guessing"
+    ],
+    "not_yet": [
+      "generate endpoint writes ledger directly",
+      "Electrobun restart recovery",
+      "accepted evidence projected to UI",
+      "shipping app restart acceptance"
+    ]
   }
 }
