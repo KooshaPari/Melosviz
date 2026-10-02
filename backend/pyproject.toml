@@ -205,6 +205,30 @@ pytest_add_cli_args_test_selection = ["tests/"]
 # equivalent. mutmut 3 assembles its own pytest invocation and appends these to
 # it, so they carry the same intent: keep mutant runs short and output terse.
 pytest_add_cli_args = ["-q", "--tb=no", "-x"]
+# Copy the non-Python data the tests read into mutants/ alongside the source.
+#
+# mutmut 3 rebuilds the tree under `mutants/` and runs pytest from there, so a
+# test that resolves a data file against the working directory looks inside
+# `mutants/` and finds nothing. Dispatched run 36954491966 against fa31b74 is
+# the proof, on a suite that otherwise runs green in quality-gate-reusable:
+#   ConductorError: adapter for scene_type='comfyui_image' failed:
+#     Workflow template not found:
+#     .../backend/mutants/workflows/sdxl_image.json
+#   . Set $MELOSVIZ_COMFYUI_WORKFLOWS_DIR or ship the file.
+#
+# This is not specific to mutmut: `copy_src_dir` (utils/file_utils.py:50)
+# copies every source file, but `setup_source_paths` (line 80) only puts the
+# `.`, `src` and `source` trees on sys.path. Nothing copies data files, so
+# every CWD-relative data dependency in the test suite breaks under mutation.
+# `workflows/` holds the six Jinja2 templates the render adapters load; it is
+# the only data directory in backend/, so it is the only entry needed.
+#
+# The alternative -- exporting MELOSVIZ_COMFYUI_WORKFLOWS_DIR to the real tree
+# -- would fix this one variable and leave the next bare-CWD reference
+# unresolved. also_copy is the general fix, and it is the option mutmut
+# provides for exactly this case (configuration.py:184, invoked from
+# __main__.py:957).
+also_copy = ["workflows/"]
 # Skip CLI entry-points, re-export stubs, and package __init__ modules.
 #
 # These are GLOBS, not regexes. mutmut 3 matches them with fnmatch.fnmatch
