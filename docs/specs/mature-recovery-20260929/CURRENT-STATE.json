@@ -436,12 +436,13 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "BRIDGE_R1_RESTART_R2_LINEAGE_ACTIVE",
-    "head": "9cbcc3ef40d347d2f502137bd4b1212f236ed574",
+    "status": "BRIDGE_R2_LINEAGE_GREEN__EVIDENCE_ASSEMBLY_TRUTH_ACTIVE",
+    "head": "97f39147c5a496567c36341b0672067d77b2aeb9",
     "last_green": {
-      "m_e03": 37037958871,
-      "studio": 37037958528,
-      "ci": 37037958488
+      "m_e03": 37111738903,
+      "studio": 37111739014,
+      "ci": "pending/no jobs returned at harvest",
+      "scope": "R1 restart edited R2 restart lineage + full studio matrix"
     },
     "scope": [
       "bridge generate optionally persists immutable revision + exact candidate-bound attempt",
@@ -450,7 +451,10 @@
       "bridge R1 generate persists revision 1",
       "separate project-status reopen recovers R1",
       "edited storyboard generates revision 2 with parent_revision=1",
-      "second reopen recovers R2 while R1 remains loadable"
+      "second reopen recovers R2 while R1 remains loadable",
+      "project-status projects exact attempt evidence rows",
+      "project-status projects assembly frozen/completed/accepted state separately",
+      "completed assembly without reviewer acceptance remains completed, not accepted"
     ],
     "limits": [
       "generate currently persists execution completion, not independent media acceptance",
