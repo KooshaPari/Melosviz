@@ -624,3 +624,28 @@ def test_generate_persists_project_attempt_then_status_recovers_after_reopen(tmp
     assert body["revision"]==1
     assert body["attempts"][0]["candidate_sha"]=="candidate-r1"
     assert body["attempts"][0]["job_id"]=="job-r1"
+
+
+def test_bridge_r1_restart_edit_r2_restart_preserves_revision_lineage(tmp_path, monkeypatch, client: TestClient):
+    wav=tmp_path/"track.wav"; _write_test_wav(wav)
+    sb=tmp_path/"storyboard.json"; out=tmp_path/"out"; db=tmp_path/"project.sqlite"
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    monkeypatch.setattr(server,"_run_studio_subprocess",lambda args:{"returncode":0,"stdout":json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","outcome":"render","artifact_path":str(out/"s0.mkv"),"artifact_sha256":"a"*64,"from_cache":False}]}),"stderr":""})
+    def write(prompt):
+        sb.write_text(json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","start_sec":0,"end_sec":1,"prompt":prompt}]}))
+    write("R1")
+    r1=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r1","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r1"})
+    assert r1.status_code==200,r1.text
+    assert r1.json()["project"]["revision"]==1
+    assert client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()["revision"]==1
+    write("R2 edited")
+    r2=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r2","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r2"})
+    assert r2.status_code==200,r2.text
+    assert r2.json()["project"]["revision"]==2
+    status=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()
+    assert status["revision"]==2 and status["parent_revision"]==1
+    assert status["attempts"][0]["candidate_sha"]=="candidate-r2"
+    from melosviz.project_ledger import ProjectLedger
+    l=ProjectLedger(db)
+    assert l.load("P",1).scene_segments[0]["prompt"]=="R1"
+    assert l.load("P",2).scene_segments[0]["prompt"]=="R2 edited"
