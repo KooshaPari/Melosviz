@@ -1055,18 +1055,14 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
         # fired while it was offline.
         for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
             last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-            yield f"data: {_json.dumps(evt.to_dict())}
-
-"
+            yield f"data: {_json.dumps(evt.to_dict())}\\n\\n"
 
         while True:
             # Drain anything emitted since last flush, then sleep briefly
             await asyncio.sleep(0.25)
             for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
                 last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-                yield f"data: {_json.dumps(evt.to_dict())}
-
-"
+                yield f"data: {_json.dumps(evt.to_dict())}\\n\\n"
 
     return StreamingResponse(
         event_stream(),
