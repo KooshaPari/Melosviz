@@ -50,3 +50,19 @@ def test_existing_v1_render_attempt_schema_migrates_without_losing_rows(tmp_path
     assert l.schema_version()==2
     assert "candidate_sha" in {row[1] for row in l.db.execute("PRAGMA table_info(render_attempt)")}
     assert l.db.execute("SELECT job_id,candidate_sha FROM render_attempt WHERE id=1").fetchone()==("J",None)
+
+
+def test_project_status_projects_evidence_and_assembly_without_acceptance_inference(tmp_path):
+    from melosviz.analysis.models import RenderSpec
+    l=ProjectLedger(tmp_path/"p.sqlite")
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]))
+    a=l.start_attempt("P",r,"candidate"); l.finish_attempt(a,"job")
+    d="a"*64; final="f"*64
+    l.record_evidence(a,"scene",d,"candidate-observation","rejected")
+    l.promote_scene_evidence(a,d,"reviewer:v1")
+    asm=l.freeze_assembly(a,[(0,d)]); l.complete_assembly(asm,final)
+    status=l.project_status("P"); view=status["attempts"][0]
+    assert {e["state"] for e in view["evidence"]}=={"rejected","accepted"}
+    assert view["assembly"]["state"]=="completed"
+    assert view["assembly"]["artifact_sha256"]==final
+    assert not any(e["kind"]=="assembly" and e["state"]=="accepted" for e in view["evidence"])
