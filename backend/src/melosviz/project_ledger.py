@@ -184,15 +184,28 @@ class ProjectLedger:
             "SELECT id,state,job_id,candidate_sha,started_at,completed_at FROM render_attempt WHERE project_id=? AND project_revision=? ORDER BY id",
             (project_id,revision),
         ).fetchall()
+        attempt_views=[]
+        for a in attempts:
+            evidence=self.db.execute(
+                "SELECT kind,artifact_sha256,verifier,state FROM attempt_evidence WHERE attempt_id=? ORDER BY id",
+                (a[0],),
+            ).fetchall()
+            assembly=self.db.execute(
+                "SELECT id,state,ordered_inputs_json,artifact_sha256 FROM assembly_attempt WHERE render_attempt_id=? ORDER BY id DESC LIMIT 1",
+                (a[0],),
+            ).fetchone()
+            attempt_views.append({
+                "attempt_id":a[0],"state":a[1],"job_id":a[2],"candidate_sha":a[3],
+                "started_at":a[4],"completed_at":a[5],
+                "evidence":[{"kind":e[0],"artifact_sha256":e[1],"verifier":e[2],"state":e[3]} for e in evidence],
+                "assembly":None if not assembly else {"assembly_id":assembly[0],"state":assembly[1],"ordered_inputs":json.loads(assembly[2]),"artifact_sha256":assembly[3]},
+            })
         return {
             "project_id":project_id,
             "revision":revision,
             "parent_revision":rev[0],
             "spec_sha256":rev[1],
-            "attempts":[
-                {"attempt_id":a[0],"state":a[1],"job_id":a[2],"candidate_sha":a[3],"started_at":a[4],"completed_at":a[5]}
-                for a in attempts
-            ],
+            "attempts":attempt_views,
         }
 
     def latest_revision(self,project_id:str)->int|None:
