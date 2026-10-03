@@ -436,8 +436,8 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "WRITE_THROUGH_BRIDGE_SYNTAX_REPAIRED_REGRADING",
-    "head": "8512f29781c4005601ea465df012f922689da969",
+    "status": "BRIDGE_R1_RESTART_R2_LINEAGE_ACTIVE",
+    "head": "9cbcc3ef40d347d2f502137bd4b1212f236ed574",
     "last_green": {
       "m_e03": 37037958871,
       "studio": 37037958528,
@@ -446,7 +446,11 @@
     "scope": [
       "bridge generate optionally persists immutable revision + exact candidate-bound attempt",
       "generate response returns durable project identity",
-      "separate project-status request reopens ledger and recovers candidate/job/revision"
+      "separate project-status request reopens ledger and recovers candidate/job/revision",
+      "bridge R1 generate persists revision 1",
+      "separate project-status reopen recovers R1",
+      "edited storyboard generates revision 2 with parent_revision=1",
+      "second reopen recovers R2 while R1 remains loadable"
     ],
     "limits": [
       "generate currently persists execution completion, not independent media acceptance",
@@ -460,6 +464,12 @@
       "classification": "M_E03_AND_CI_GREEN__STUDIO_IMPORT_RED",
       "detail": "pre-existing optional-dependency diagnostic string in bridge/server.py had an unterminated literal exposed by backend import"
     },
-    "latest_repair": "bridge optional dependency diagnostic string restored to valid Python"
+    "latest_repair": "bridge optional dependency diagnostic string restored to valid Python",
+    "last_grade": {
+      "m_e03": 37063669464,
+      "ci": 37063669321,
+      "studio": 37063669448,
+      "classification": "M_E03_AND_CI_GREEN__STUDIO_SSE_NEWLINE_IMPORT_RED"
+    }
   }
 }
