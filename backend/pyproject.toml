@@ -241,18 +241,24 @@ pytest_add_cli_args_test_selection = ["tests/"]
 #   2. Its signal is not lost, it is enforced elsewhere. qgate.yml:73 sets
 #      run-baseline-checks: true and quality-gate-reusable.yml:273 runs a bare
 #      `pytest` with no path, no testpaths and no addopts, so it collects all
-#      1601 tests INCLUDING this one -- verified with `pytest --collect-only -q`,
+#      1617 tests INCLUDING this one -- verified with `pytest --collect-only -q`,
 #      which lists it. The gate asserting TARGET_SCORE is met still runs, on
 #      unmutated source, which is the only context where a mutation-SCORE
 #      threshold is meaningful at all.
-#   3. Exactly one test is dropped, and only inside this sweep. Verified:
-#        pytest tests/ --collect-only --deselect <this test>
-#          1600/1601 tests collected (1 deselected)
+#   3. Exactly one test is dropped, and only inside this sweep. Verified by
+#      test_meta_test_deselect_still_matches_exactly_one_test, which runs
+#      `pytest tests/ --collect-only` twice -- with and without this nodeid --
+#      and asserts the delta is exactly 1 (1616/1617 collected, 1 deselected).
+#      That test exists because `--deselect` is a FILTER: a nodeid matching
+#      nothing is ignored silently, so a rename here would restore the whole
+#      recursion with no error reported anywhere.
 #      No other selection loses anything.
 #
 # The earlier warning not to widen this to the whole file is moot: the module
-# holds exactly ONE test (`pytest tests/test_mutation_engine.py --collect-only`
-# -> 1 test collected), so "the other tests in that module" are not a real set.
+# holds exactly TWO tests -- the gate itself and the deselect guard above
+# (`pytest tests/test_mutation_engine.py --collect-only` -> 2 collected) -- and
+# the guard must run inside the sweep, because verifying that the recursion is
+# guarded is the whole point of running it there.
 pytest_add_cli_args = [
     "-q",
     "--tb=no",
