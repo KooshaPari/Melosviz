@@ -32,10 +32,11 @@ export interface StudioScene {
   prompt: string;
   palette: string[];
   seed: number;
-  status: "queued" | "rendering" | "done" | "error";
+  status: "queued" | "rendering" | "produced" | "accepted" | "error";
   /** Path to the emitted workflow.json / job_spec.json / plan.json */
   artifactPath?: string;
   errorMessage?: string;
+  fromCache?: boolean;
 }
 
 export interface StudioMasterDeliverable {
@@ -75,11 +76,12 @@ interface StoryboardPayload {
 }
 
 interface GenerateSceneMeta {
-  name?: string;
-  scene_dir?: string;
-  workflow_json?: string;
-  job_spec_json?: string;
-  plan_json?: string;
+  scene_index?: number;
+  scene_type?: string;
+  outcome?: string | null;
+  artifact_path?: string | null;
+  artifact_sha256?: string | null;
+  from_cache?: boolean;
 }
 
 interface GeneratePayload {
@@ -229,9 +231,15 @@ export function StudioConsole({
           artifact_path?: string;
           error_message?: string;
           duration_ms?: number;
+          extras?: { outcome?: string };
         };
         const idx = payload.scene_index;
-        const next = payload.state;
+        const next: StudioScene["status"] | undefined =
+          payload.state === "done"
+            ? payload.extras?.outcome === "render"
+              ? "produced"
+              : "error"
+            : payload.state;
         if (typeof idx !== "number" || !next) return;
         setScenes((prev) => {
           if (idx >= prev.length) return prev;
@@ -243,7 +251,11 @@ export function StudioConsole({
               ...cur,
               status: next,
               artifactPath: payload.artifact_path ?? cur.artifactPath,
-              errorMessage: payload.error_message ?? cur.errorMessage,
+              errorMessage:
+                payload.error_message ??
+                (next === "error" && payload.state === "done"
+                  ? `Render finished with non-production outcome: ${payload.extras?.outcome ?? "unknown"}`
+                  : cur.errorMessage),
             },
             ...prev.slice(idx + 1),
           ];
@@ -352,30 +364,39 @@ export function StudioConsole({
         offline,
         job_id: generatedJobId,
       });
-      // Mark every scene done + attach emitted artifact path
-      const emitted = new Map<string, GenerateSceneMeta>();
+      // Consume conductor identity/outcome directly; do not infer truth from
+      // filenames or directory layout.
+      const emitted = new Map<number, GenerateSceneMeta>();
       for (const sceneMeta of payload.scenes ?? []) {
-        const stem = sceneMeta.name ?? "";
-        if (stem) emitted.set(stem, sceneMeta);
+        if (typeof sceneMeta.scene_index === "number") {
+          emitted.set(sceneMeta.scene_index, sceneMeta);
+        }
       }
       setScenes((prev) =>
         prev.map((s, i) => {
-          const meta = emitted.get(`scene_${i}`);
+          const meta = emitted.get(i);
           if (!meta) {
             return {
               ...s,
               status: "error" as const,
-              errorMessage: "No artifact emitted",
+              errorMessage: "No structured scene result returned",
+            };
+          }
+          if (meta.outcome !== "render" || !meta.artifact_path) {
+            return {
+              ...s,
+              status: "error" as const,
+              errorMessage: `Non-production render outcome: ${meta.outcome ?? "unknown"}`,
             };
           }
           return {
             ...s,
-            status: "done" as const,
-            artifactPath:
-              meta.workflow_json ??
-              meta.job_spec_json ??
-              meta.plan_json ??
-              meta.scene_dir,
+            // A conductor render outcome means produced media, not
+            // independent product acceptance.
+            status: "produced" as const,
+            artifactPath: meta.artifact_path,
+            fromCache: meta.from_cache === true,
+            errorMessage: undefined,
           };
         }),
       );
@@ -485,10 +506,11 @@ export function StudioConsole({
   }, [stage, tr]);
 
   const totalScenes = scenes.length;
-  const completedScenes = scenes.filter((s) => s.status === "done").length;
+  const acceptedScenes = scenes.filter((s) => s.status === "accepted").length;
+  const producedScenes = scenes.filter((s) => s.status === "produced").length;
   const errorScenes = scenes.filter((s) => s.status === "error").length;
   const queueProgress =
-    totalScenes === 0 ? 0 : Math.round((completedScenes / totalScenes) * 100);
+    totalScenes === 0 ? 0 : Math.round((acceptedScenes / totalScenes) * 100);
 
   return (
     <section
@@ -771,17 +793,19 @@ export function StudioConsole({
             data-state={
               errorScenes > 0
                 ? "error"
-                : completedScenes === totalScenes && totalScenes > 0
-                  ? "done"
-                  : stage === "generate"
-                    ? "running"
-                    : "queued"
+                : acceptedScenes === totalScenes && totalScenes > 0
+                  ? "accepted"
+                  : producedScenes === totalScenes && totalScenes > 0
+                    ? "produced"
+                    : stage === "generate"
+                      ? "running"
+                      : "queued"
             }
           >
             {totalScenes === 0
               ? tr("studio.queue.empty", "No scenes yet")
-              : tr("studio.queue.progress", "{completed} / {total} done{error}")
-                  .replace("{completed}", String(completedScenes))
+              : tr("studio.queue.progress", "{completed} / {total} accepted{error}")
+                  .replace("{completed}", String(acceptedScenes))
                   .replace("{total}", String(totalScenes))
                   .replace(
                     "{error}",
@@ -837,7 +861,11 @@ export function StudioConsole({
                   tr("studio.queue.badge.queued", "queued")}
                 {s.status === "rendering" &&
                   tr("studio.queue.badge.rendering", "rendering")}
-                {s.status === "done" && tr("studio.queue.badge.done", "done")}
+                {s.status === "produced" &&
+                  (s.fromCache
+                    ? "reused · verification pending"
+                    : "produced · verification pending")}
+                {s.status === "accepted" && "accepted"}
                 {s.status === "error" &&
                   tr("studio.queue.badge.error", "error")}
               </span>

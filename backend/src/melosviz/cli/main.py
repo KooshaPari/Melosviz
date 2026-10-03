@@ -529,6 +529,19 @@ def _cmd_direct(args: argparse.Namespace) -> int:
     return 0
 
 
+def _assembly_execution_state(assembly_result: object | None) -> str:
+    """Classify assembly execution without pretending a job spec is media."""
+    if assembly_result is None:
+        return "not_attempted"
+    used_ffmpeg = getattr(assembly_result, "used_ffmpeg_fallback", False) is True
+    ffmpeg_output = getattr(assembly_result, "ffmpeg_output_path", None)
+    if used_ffmpeg and ffmpeg_output and Path(ffmpeg_output).is_file():
+        return "produced_unverified"
+    # MEAdapter's AME path emits a job spec for an external worker; an object
+    # return therefore does not mean a master/delivery file was produced.
+    return "plan_only"
+
+
 def _cmd_generate(args: argparse.Namespace) -> int:
     """Run ComfyUI / C4D / Unreal / AE per scene based on a storyboard."""
     from melosviz.analysis.audio import spec_from_wav_rich
@@ -643,12 +656,41 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         print(t("cli.error.generate_failed", error=str(exc)), file=sys.stderr)
         return 1
 
+    scene_results = []
+    for scene_index, scene_result in sorted(result.per_scene_results.items()):
+        if isinstance(scene_result, dict):
+            scene_results.append(
+                {
+                    "scene_index": int(scene_index),
+                    "scene_type": scene_result.get("scene_type"),
+                    "outcome": scene_result.get("outcome"),
+                    "artifact_sha256": scene_result.get("artifact_sha256"),
+                    "artifact_path": (
+                        str(scene_result.get("artifact_path"))
+                        if scene_result.get("artifact_path")
+                        else None
+                    ),
+                }
+            )
+        else:
+            scene_results.append(
+                {
+                    "scene_index": int(scene_index),
+                    "scene_type": None,
+                    "outcome": None,
+                    "artifact_sha256": None,
+                    "artifact_path": None,
+                }
+            )
     summary = {
         "job_id": job_id,
         "output_dir": str(result.output_dir),
         "dispatched_scenes": sorted(result.per_scene_results.keys()),
         "only_scenes": sorted(only_scenes) if only_scenes else None,
-        "assembly_ok": result.assembly_result is not None,
+        # Object existence means the assembly adapter returned, not that an
+        # independent verifier accepted final media.
+        "assembly_state": _assembly_execution_state(result.assembly_result),
+        "scenes": scene_results,
     }
     print(json.dumps(summary, indent=2, default=str))
     return 0
