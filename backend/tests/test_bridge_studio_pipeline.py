@@ -649,3 +649,22 @@ def test_bridge_r1_restart_edit_r2_restart_preserves_revision_lineage(tmp_path, 
     l=ProjectLedger(db)
     assert l.load("P",1).scene_segments[0]["prompt"]=="R1"
     assert l.load("P",2).scene_segments[0]["prompt"]=="R2 edited"
+
+
+def test_project_status_projects_scene_evidence_and_assembly_acceptance_after_restart(tmp_path, monkeypatch, client: TestClient):
+    from melosviz.analysis.models import RenderSpec
+    from melosviz.project_ledger import ProjectLedger
+    db=tmp_path/"accepted.sqlite"; monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    l=ProjectLedger(db)
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]))
+    a=l.start_attempt("P",r,"candidate"); l.finish_attempt(a,"job")
+    d="a"*64; f="f"*64
+    l.record_evidence(a,"scene",d,"candidate-observation","rejected")
+    l.promote_scene_evidence(a,d,"reviewer:v1")
+    asm=l.freeze_assembly(a,[(0,d)]); l.complete_assembly(asm,f); l.accept_assembly(asm,f,"reviewer:v1"); l.close()
+    body=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()
+    attempt=body["attempts"][0]
+    assert any(e["kind"]=="scene" and e["artifact_sha256"]==d and e["state"]=="accepted" for e in attempt["evidence"])
+    assert attempt["assembly"]["state"]=="accepted"
+    assert attempt["assembly"]["artifact_sha256"]==f
+    assert attempt["assembly"]["ordered_inputs"]==[[0,d]]
