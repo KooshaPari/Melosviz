@@ -305,15 +305,20 @@ def classify_exit_code(returncode: int) -> str:
     Measured on this platform, that default is reachable rather than
     theoretical. `os._exit(7)` and `os._exit(255)` both come back as themselves,
     so a subprocess exiting 7 -- outside pytest's enum entirely -- was booked as
-    a mutant that survived. (Windows fault codes such as 0xC0000005 do NOT reach
-    here: CPython truncates them to 1, which is why hard crashes masquerade as
-    kills rather than as survivors. That is a separate, narrower problem.)
+    a mutant that survived. (Windows fault codes DO reach here intact, as
+    unsigned values: an access violation, 0xC0000005, comes back from
+    `subprocess.run` as 3221225477. They are not truncated to 1. That does not
+    make them a scoring hazard, because they fall through every branch to the
+    raise below rather than matching a kill, and a crashed process has run no
+    assertion that could be counted. Observed here in practice: the baseline
+    subprocess died that way once, under load from concurrent probes, and the
+    gate reported it as an unmeasurable measurement rather than a score.)
 
     The final raise is deliberate. An unclassifiable code means this function
-    and pytest's enum have diverged, and a gate that quietly books a diverged
-    code as a survivor would report a confident, wrong number. Refusing to score
-    is the honest response to a measurement whose own vocabulary no longer
-    matches.
+    and pytest's enum have diverged, or the process died outside pytest's
+    control, and a gate that quietly booked such a code as a survivor would
+    report a confident, wrong number. Refusing to score is the honest response
+    to a measurement whose own vocabulary no longer matches.
     """
     if returncode == CLEAN_EXIT_CODE:
         return EXIT_CODE_SURVIVED
