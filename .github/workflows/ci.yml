@@ -14,6 +14,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The three release workflows each validate $VERSION with an inlined SemVer
+  # pattern, and that pattern guards $GITHUB_ENV against a malformed tag. This
+  # job runs scripts/check-semver.sh, which extracts those three deployed
+  # patterns out of the workflow files themselves, asserts they are
+  # byte-identical, and runs the accept/reject cases plus the pre-grep guards
+  # and the matcher cost bound against them. No continue-on-error: a validator
+  # that stops rejecting 1.2.3-01 must fail the build.
+  semver:
+    name: Release SemVer validator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Verify the deployed SemVer pattern
+        run: bash scripts/check-semver.sh
+
   detect:
     name: Detect Languages
     runs-on: ubuntu-latest
@@ -129,7 +144,11 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install ruff
-        run: pip install ruff
+        # Exact pins: an unpinned tool can be silently upgraded under CI, and a
+        # sdist build runs arbitrary setup code. Every pin here is verified to
+        # publish a wheel, so the --only-binary guard resolves without a build.
+        run: >-
+          pip install ruff==0.16.9 --only-binary :all:
       - name: ruff check
         run: ruff check . 2>&1 || echo "::warning::ruff issues (advisory)"
       - name: ruff format --check
@@ -175,7 +194,7 @@ jobs:
           cache: "npm"
           # There is no root lockfile, so the cache must be told where it is.
           cache-dependency-path: web/package-lock.json
-      - run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund --ignore-scripts
       - name: lint
         run: |
           if [ -f package.json ] && grep -q '"lint"' package.json; then

@@ -12,31 +12,651 @@ jobs:
   mutmut:
     name: mutmut (backend, target ≥75%)
     runs-on: ubuntu-22.04
+    # Explicit rather than inherited, and 360 is the ceiling the platform
+    # actually enforces -- not a round number that happens to match the default.
+    #
+    # Two different limits are in play, and this key sits under the job-level one:
+    #   * jobs.<id>.steps[*].timeout-minutes is capped at 360 for both GitHub-
+    #     hosted and self-hosted runners.
+    #   * jobs.<id>.timeout-minutes has a documented default of 360 and is then
+    #     bounded by the runner's execution time limit, which GitHub's limits page
+    #     gives as "All GitHub-hosted runners -- Job execution time -- 6 hours".
+    #
+    # So 360 is the most this job can be granted. An earlier revision set 420 to
+    # try to clear a 6h sweep, which the platform would not honour anyway: the
+    # job would still be cancelled at 6h, reporting "cancelled" with no mutants/
+    # tree, which is indistinguishable from a crash.
+    #
+    # 360 is the most this job can be granted, and the budget below is sized against
+    # what THIS job actually does rather than against a sibling test's constants.
+    # An earlier revision borrowed `3 targets * 60 mutants * 60s = 3h` and the
+    # `1.5x` kill-score multiplier from backend/tests/test_mutation_engine.py.
+    # Those are that test's TARGETS / MAX_PER_FILE / TIMEOUT_S, and this job runs
+    # `uv run mutmut run`, whose scope comes from [tool.mutmut]
+    # source_paths = ["src/melosviz/"] -- 80 files named, 60 mutated after
+    # do_not_mutate, 26506 mutants (counted from a real run's export-cicd-stats),
+    # not three files.
+    #
+    # What mutmut MUTATES is governed by source_paths = ["src/melosviz/"], and all
+    # three of those files ARE inside it -- src/melosviz/analysis/models.py,
+    # .../analysis/audio.py and .../bridge/server.py. Two earlier revisions of
+    # this comment said they were "not in that set"; both were wrong, and the
+    # error mattered, because it argued the nested sweep could not be affected
+    # by a mutant of the code it reads. It can. What mutmut RUNS is governed by
+    # pytest_add_cli_args_test_selection = ["tests/"], and that DOES collect
+    # tests/test_mutation_engine.py -- verified, not assumed:
+    #     pytest tests/ --collect-only
+    #     tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar
+    # An earlier revision of this comment asserted the opposite ("it is not
+    # collected here"). That was wrong, and it mattered: it implied this job's
+    # runtime budget was entirely independent of that test's cost, when in fact
+    # the test runs once per mutant inside this job.
+    #
+    # So the honest statement is that mutmut's real bound is per-mutant pytest
+    # time multiplied by the whole mutant population, which no arithmetic here
+    # can honestly compress into a figure that fits under 6h. What this job can
+    # state truthfully is the shape of the outcome:
+    #
+    #   * A sweep that completes reports a real score, and the job uploads
+    #     mutants/mutmut-cicd-stats.json every time.
+    #   * A sweep that exceeds 6h is cancelled with no mutants/ tree, and the
+    #     upload step's `if: always()` cannot rescue it -- GitHub does not run
+    #     steps of a timed-out job. That is indistinguishable from a crash, and
+    #     the fix is the same in both cases: read the run's log for how far it got.
+    #
+    # 360 therefore buys the maximum the platform allows rather than a budget
+    # derived from numbers that do not describe this job. Because the real bound
+    # is (per-mutant pytest time) x 26506, whether any given sweep completes
+    # inside 6h is an empirical question, not something this file can assert: if
+    # it does not, the job is cancelled with no artifact and the run's log is
+    # the only evidence of how far it got. Read the weekly artifact as a partial
+    # measurement whose coverage must come from that log, never as a whole-suite
+    # verdict. The 75% comparison below applies to whatever mutants the run did
+    # evaluate.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
           cache: pip
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        # Needed to read the locked mutmut version below. Pinned to the same
+        # version the other workflows in this repo use, so the export
+        # understands the committed uv.lock.
+        with:
+          version: "0.5"
       - name: Install
         working-directory: backend
         run: |
-          pip install -e ".[test,bridge]"
-          pip install mutmut
-      - name: Run mutmut (bounded)
-        working-directory: backend
-        # Full suite is slow; mutate a high-value slice and report score.
+          # githubactions:S8544 -- "dependencies without locking resolved
+          # versions is security-sensitive". This job used to start with a bare
+          # `pip install -e ".[test,bridge]"`, which resolves every dependency
+          # against the live index at run time: the exact wheel is chosen by
+          # whatever PyPI serves that week, with no hash check. The five guarded
+          # smoke workflows in this repo already install this way instead, and
+          # this job now uses the identical shape so there is one install story.
+          #
+          # `--no-emit-project` is what makes it hash-verifiable: the export
+          # otherwise leads with `-e .`, and `--require-hashes` rejects an
+          # editable entry because a local path has no published artifact to
+          # hash. So the third-party deps go in hash-verified from the lock, and
+          # the first-party source is NOT installed as its own step.
+          #
+          # That is deliberate, and it was a real defect before: this job used
+          # to `pip install -e ".[test,bridge]"`, so the project landed on
+          # sys.path via the install. `--no-emit-project` removed the only
+          # install, leaving the suite importing melosviz only because
+          # `backend/pyproject.toml:171` sets `pythonpath = ["src"]` under
+          # `[tool.pytest.ini_options]`, which pytest applies itself. A comment
+          # claimed an install step that does not exist, which is worse than the
+          # gap: it invited someone to trust an install that was never there.
+          #
+          # pythonpath is the stronger guarantee here anyway, not the weaker
+          # substitute. It is resolved by pytest from the rootdir/inifile it
+          # discovers, and mutmut's copy of the tree carries pyproject.toml
+          # (also_copy unions it by default, configuration.py:184-195), so the
+          # mutant runs resolve src/ the same way the baseline run does. An
+          # editable install would instead pin the baseline backend/ into
+          # sys.path while the mutants ran against mutants/, which is the
+          # failure this whole change exists to prevent: the tests would
+          # measure unmutated source and score 100% for free.
+          #
+          # --no-deps on both: the lock already carries the full resolved graph
+          # including these extras, so re-resolving per package would discard
+          # the version pinning this step exists to enforce.
+          set -euo pipefail
+          # `--extra analysis` is required, not optional. Dispatched run
+          # 36953771336 against 9dd2e22 got past ffmpeg and then failed on the
+          # next missing import:
+          #   FAILED tests/cli/test_gpu_smoke.py::test_studio_pipeline_offline_mode_produces_artifact_topology
+          #     ModuleNotFoundError: No module named 'numpy'
+          # numpy arrives with the `analysis` extra. Every mutant inherits that
+          # failure, so the score was 0.0% (0/26506 killed) for the second
+          # reason in a row -- a missing dependency, not a measurement.
+          #
+          # This is a deliberate trade, and the cost is real: `analysis` pulls
+          # librosa -> numba -> llvmlite, whose first import is a JIT compile
+          # plus a libsndfile load, and `pytest_add_cli_args_test_selection =
+          # ["tests/"]` means every one of ~26506 mutants re-runs the whole
+          # test directory rather than a slice. So that import is paid per
+          # mutant. It is still the right call: numpy is what the reported
+          # failure needed, and the alternative (hand-promoting numpy into a
+          # lighter extra) trades a known import failure for a silent coverage
+          # gap in the sweep. The timeout-minutes above is what bounds the
+          # downside so a cost regression fails loudly instead of being
+          # cancelled mid-sweep.
+          #
+          # One signal this extra does cost here: installing `analysis` makes
+          # tests/test_optional_dep_imports.py:166 vacuous in this job, since
+          # its only assertion sits behind `if not _has_optional_dep("librosa")`.
+          # So a still-green result there is not evidence the dep-light import
+          # boundary is being enforced in THIS job. quality-gate-reusable.yml
+          # installs `analysis` too, and the repo-wide signal is unchanged.
+          #
+          # The right set is whatever the suite under mutation actually imports.
+          # `quality-gate-reusable.yml:172` runs this same backend suite with
+          # `--extra test --extra lint --extra analysis --extra bridge --group dev`.
+          # This job deliberately narrows that to `--extra test --extra analysis
+          # --extra bridge`: `--extra lint` is omitted because ruff and mypy are
+          # not imported by any test, and `--group dev` is omitted because
+          # mutmut is installed below from its own locked record with its own
+          # hash check (and pytest-cov/bandit/pip-audit are irrelevant to a
+          # mutation sweep). Naming the narrowing so a future reader can tell a
+          # decision from an oversight.
+          #
+          # `stems` is deliberately absent, and the reason is download size, not
+          # wheel availability. `stems` is ["demucs>=4.0", "torch>=2.0"], and
+          # uv.lock carries 24 torch wheel records plus 28 for torchaudio, so
+          # `--only-binary :all:` and `--require-hashes` would both be
+          # satisfied by torch. What would not be satisfied is the mutants
+          # install budget: a multi-GB CUDA/torch wheel pulled into every
+          # mutation run buys nothing, because no test under mutation imports
+          # the stems chain. The genuinely sdist-only records are demucs and
+          # its transitive deps (dora-search, antlr4-python3-runtime), but
+          # omitting `stems` avoids that whole graph either way.
+          uv export --locked --no-emit-project \
+            --extra test --extra analysis --extra bridge \
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
+          # The build backend has to be in the venv before the editable install
+          # below, because --no-build-isolation means uv will not provision one.
+          # `uv venv` on a Linux runner produces a bare venv: it contains no
+          # setuptools and no pip, so `import setuptools` fails and the build
+          # dies with
+          #   ModuleNotFoundError: No module named 'setuptools'
+          # before this job ever reaches mutmut. backend/pyproject.toml declares
+          # build-system requires = ["setuptools>=61", "wheel"], but uv.lock has
+          # no `wheel` record at all, so only setuptools can come from the lock.
+          # Take both its version and its wheel digest out of the lock rather
+          # than writing a literal pin here, for the same reason as mutmut
+          # below: a literal is a second source of truth that drifts silently.
+          # Reading it from the lock also keeps this step off githubactions:S8544.
+          # The awk `exit` stops at the first py3-none-any wheel so a second
+          # matching record cannot contribute a second hash; the sdist hash
+          # deliberately does not match, and --only-binary :all: means the
+          # sdist is never fetched anyway.
+          #
+          # `wheel` not being in the lock is not a problem: setuptools 83 ships
+          # its own bdist_wheel, so the declared-but-unused `wheel` requirement
+          # is satisfied by setuptools alone under --no-build-isolation.
+          # Verified: with setuptools==83.0.0 from this lock and no wheel
+          # present, the editable install builds and exits 0.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "::error::could not read the locked setuptools version from backend/uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as an
+          # opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid one,
+          # which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || { echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2; exit 1; }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
+          # mutmut is declared in the dev group in backend/pyproject.toml
+          # and pinned by backend/uv.lock. This job installs with uv, which
+          # cannot read the dev group through the extras above, so read the
+          # pinned version out of it instead of hard-coding one here: a literal
+          # pin is a second source of truth that drifts from the lock the moment
+          # someone re-resolves, and the drift is invisible until the two
+          # disagree. `uv export` needs the group named explicitly; it emits no
+          # dependency-groups unless asked.
+          #
+          # --no-hashes is required, not cosmetic. Without it `uv export`
+          # emits `mutmut==3.8.0 \` (the backslash continues onto the hash
+          # lines), so `cut -d'=' -f3` scrapes "3.8.0 \" and the version-shape
+          # guard below rejects it, failing this job on every run. The
+          # trailing `tr -d '[:space:]\\'` is belt-and-braces for the same
+          # reason: it makes the scrape correct whether or not hashes are
+          # present, so a future change to the export flags cannot silently
+          # reintroduce this.
+          #
+          # The export is captured before the grep/cut so a failing `uv
+          # export` (a lock that no longer matches pyproject.toml under
+          # --locked, a renamed dependency group) aborts here, instead of
+          # yielding an empty string that surfaces much later as the
+          # unrelated-looking "could not read the locked mutmut version".
+          set -o pipefail
+          EXPORT_OUT="$(uv export --locked --only-group dev --no-hashes)" || {
+            echo "::error::uv export failed: backend/uv.lock no longer satisfies backend/pyproject.toml, or the dev group is gone" >&2
+            exit 1
+          }
+          # grep must not be allowed to fail the step: mutmut missing from the
+          # dev group is the case the diagnostic below exists to report, and
+          # under pipefail a bare `grep` returning 1 aborts this step right
+          # here with no ::error:: and no context. Verified: with the
+          # `|| true` removed, the pipeline below exits 1 and the next command
+          # never runs. Tolerant grep, strict everything else.
+          MUTMUT_VERSION="$(printf '%s\n' "$EXPORT_OUT" | { grep -E '^mutmut==' || true; } | cut -d'=' -f3 | tr -d '[:space:]\\')"
+          test -n "$MUTMUT_VERSION" || {
+            echo "::error::could not read the locked mutmut version from backend/uv.lock (mutmut is no longer declared in the dev group)"
+            printf '%s\n' "$EXPORT_OUT" | tail -20 >&2
+            exit 1
+          }
+          # Same allowlist as the setuptools guard above, and for the same
+          # reason: `[!0-9.]` rejects legitimate PEP 440 prerelease and local
+          # versions (3.9.0rc1, 3.9.0-rc1, 3.9.0+local), so a routine
+          # `uv lock --upgrade mutmut` landing on a prerelease would turn this
+          # weekly job red with a diagnostic that points at the workflow rather
+          # than at the lockfile. This value is interpolated into
+          # `mutmut==%s --hash=%s` identically to setuptools, so the same
+          # character set applies verbatim.
+          case "$MUTMUT_VERSION" in
+            *[!0-9A-Za-z.+-]*|'')
+              echo "::error::locked mutmut version is not a single safe version token: $MUTMUT_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          echo "installing mutmut==${MUTMUT_VERSION} (from backend/uv.lock)"
+          # Hash-verify the wheel too. Reading the version out of the lock stops
+          # the *version* drifting, but pip/uv still fetches whatever artifact the
+          # index serves for it, unchecked -- so a substituted wheel would install
+          # cleanly. Take the digest from the same lock record and install via
+          # --require-hashes. The awk resets its flag at every '^name = ' so the
+          # hash can only come from the mutmut record, not a later package's
+          # wheel.
+          MUTMUT_HASH="$(awk '/^name = /{f=0} /^name = "mutmut"$/{f=1} f && /\.whl"/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$MUTMUT_HASH" || {
+            echo "::error::no mutmut wheel hash in backend/uv.lock" >&2
+            exit 1
+          }
+          printf 'mutmut==%s --hash=%s\n' "$MUTMUT_VERSION" "$MUTMUT_HASH" \
+            > "$RUNNER_TEMP/mutmut-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/mutmut-req.txt"
+      - name: Install ffmpeg (mutant tests need a video-export backend)
+        # Dispatched run 36953135710 against ac2ed72 reached the mutation pass
+        # and generated 26506 mutants, then scored 0.0% because the suite the
+        # mutants are tested against cannot run:
+        #   FAILED tests/conductor/test_events.py::test_orchestrator_emits_events_for_each_scene
+        #     ConductorError: Unable to locate a working ffmpeg binary for video
+        #     export. Set the MELOSVIZ_FFMPEG_BIN environment variable or install
+        #     ffmpeg.
+        #
+        # This is the one install in the job that is not hash-verified, and that
+        # is a decision rather than an oversight. The premise of the steps above
+        # is that every Python install comes from the lock; ffmpeg is not a
+        # Python dependency, not a build input, and not something uv.lock can
+        # express. MELOSVIZ_FFMPEG_BIN is the supported override, and apt is
+        # only the fallback discovery path the render adapters walk. Pinning
+        # `ffmpeg=<version>` would bake a runner-image-specific version into the
+        # workflow and fail whenever the runner's apt snapshot moves, trading a
+        # real improvement for a recurring red weekly. The job is contents:read,
+        # so there is no write surface here either.
+        #
+        # Every mutant inherits that failure, so all 26506 are reported as
+        # "not killed" -- a 0% score that is an artefact of a missing system
+        # package, not a measurement. ubuntu-22.04 GitHub runners do not ship
+        # ffmpeg.
+        #
+        # Five workflows install ffmpeg. Only THIS one uses the two-line
+        # apt-get pair AND a pipeline-free version check; the other four each
+        # miss at least one of those:
+        #
+        #   site                              apt-get pair   version check
+        #   mutmut.yml (this step)            two-line       ffmpeg -version > /dev/null
+        #   quality-gate-reusable.yml:145-147 two-line       ffmpeg -version | head -n 1
+        #   studio-tests.yml:32-33            two-line       none
+        #   gpu-smoke.yml:55                  && on one line none
+        #   timing-budgets.yml:143            -qq, && one line  none
+        #
+        # So this is not a count with exceptions, it is a single site. Earlier
+        # revisions of this comment got it wrong twice: once by naming
+        # quality-gate-reusable.yml the only identical site (wrong by two), and
+        # once by naming timing-budgets.yml as both an identical site and the
+        # exception in consecutive sentences. gpu-smoke.yml:55 was also missed
+        # entirely even though it differs in exactly the two ways attributed to
+        # timing-budgets.yml: chained with `&&` on one line, and no version check
+        # at all. The set of sites moves independently of this job, so the claim
+        # worth keeping is the property, not the roster.
+        #
+        # The version check has to be the pipeline-free form to be load-bearing.
+        # This step does not set `set -o pipefail`, and GitHub's default Linux
+        # shell for `run:` is `bash -e {0}`, which has no pipefail, so
+        # `ffmpeg -version | head -n 1` exits with head's status -- 0 whether or
+        # not ffmpeg exists. With the binary missing the step would print
+        # "ffmpeg: command not found" and go green, which is precisely the
+        # mysterious 0% mutation score this check exists to prevent.
+        # `ffmpeg -version > /dev/null` has no pipeline, so the exit status is
+        # ffmpeg's own. quality-gate-reusable.yml:147 has the same
+        # non-load-bearing line; see that file.
+        #
+        # The apt package is deliberately unpinned, which is the one install here
+        # that is not hash-verified from uv.lock. That is unavoidable and not a
+        # build input: ffmpeg is not a Python dependency, it is the video-export
+        # backend the test suite shells out to, and MELOSVIZ_FFMPEG_BIN is the
+        # supported override for anything that needs a specific build. Pinning
+        # it in this file would drift from the runner image for no security gain
+        # on a read-only, contents:read job.
         run: |
-          mutmut run \
-            --paths-to-mutate src/melosviz/bridge/security.py \
-            --tests-dir tests/ \
-            --runner "python -m pytest -q --tb=no -x" \
-            || true
-          mutmut results || true
-          mutmut junitxml --suspicious-policy=ignore --untested-policy=ignore > mutmut.xml || true
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version > /dev/null
+      - name: Run mutmut (bounded)
+        # continue-on-error and the threshold check below genuinely DO contradict
+        # each other, and the resolution is stated here rather than left for a
+        # reader to trip over:
+        #
+        #   * The `python - "$STATS" "$TARGET_SCORE"` block below exits non-zero on
+        #     a below-threshold score. That is a real comparison against
+        #     .qgate.toml, and it is the reason the number is load-bearing enough
+        #     to report at all.
+        #   * `continue-on-error: true` on this step then swallows that exit code,
+        #     so the number cannot currently fail the STEP, and therefore cannot
+        #     fail the JOB either. It is reported, not enforced.
+        #
+        # An earlier revision of this comment claimed the score "fails the STEP
+        # on a below-threshold result ... it is what makes the number
+        # load-bearing" while the same step carried continue-on-error. That was
+        # self-contradictory and it misdescribed the job.
+        #
+        # Why the score is still worth computing and reporting while unenforced:
+        #   on: is schedule + workflow_dispatch only, so this is not a required
+        #   check and cannot block a merge;
+        #   nothing reads mutants/mutmut-cicd-stats.json, so no consumer depends
+        #   on the exit status;
+        #   a red weekly job nobody acts on trains everyone to ignore it. The
+        #   score is published in the log and the artifact on every run instead.
+        #
+        # What this does NOT paper over: a harness failure (`mutmut run` crashes,
+        # leaves no mutants/, or export-cicd-stats cannot write) is also
+        # downgraded to a green job by this line, and that IS a real loss of
+        # signal. It is accepted deliberately, for the reason above, and the
+        # score block's `::error::` annotations remain the thing a reader greps
+        # for. Making the gate enforce is a one-line change: delete
+        # continue-on-error. Nothing else needs to move -- the comparison, the
+        # error annotations and the artifact upload all still run, and the
+        # upload step's `if: always()` already survives a non-zero exit.
+        continue-on-error: true
+        working-directory: backend
+        # There is no slice of the sweep to select: the 2.x flags that chose
+        # paths and tests (`--paths-to-mutate`, `--tests-dir`, `--runner`) were
+        # removed in mutmut 3, so WHAT gets mutated comes only from
+        # [tool.mutmut] source_paths and do_not_mutate. `mutmut run` is not
+        # option-free -- verified against the installed source:
+        # `def run(mutant_names, *, max_children)`. But neither option narrows
+        # SCOPE in the way a flag like `--paths-to-mutate` did:
+        #
+        #   * mutant-name arguments name WHICH mutants to run, so they can select
+        #     a subset. Nothing else on the command line changes the population.
+        #   * `--max-children` is CONCURRENCY, not scope. It defaults to
+        #     os.cpu_count() and bounds how many pytest children run in
+        #     parallel; raising it makes the same mutants finish sooner and
+        #     lowering it makes them finish later. Describing it as narrowing
+        #     "how much runs" is the wrong axis, and it is why the conclusion
+        #     below still holds.
+        #
+        # source_paths names the whole package, 80 files, and do_not_mutate
+        # excludes 20 of them (18 __init__.py plus cli/main.py and
+        # cli/partial_rerender.py; verified with fnmatch, the exact call mutmut
+        # makes), so this sweep mutates 60 files -- not 80. Both numbers are
+        # worth stating because "the whole package" reads as 80. The 26506 in the
+        # header is a count over those 60 mutated files, not over all 80.
+        #
+        # The only levers that reduce what is swept are therefore the
+        # do_not_mutate globs, which skip files entirely rather than reduce
+        # coverage, and the 6h job ceiling.
+        #
+        # `uv run --locked --no-sync --no-build`, matching how the other
+        # workflows in this repo invoke python after `uv venv`. Without it the
+        # bare `mutmut` on PATH is whatever setup-python put on PATH, not the
+        # venv the Install step just populated -- so the install hardening above
+        # would be bypassed at run time and the mutation run could silently use a
+        # different interpreter. --locked --no-sync keeps uv from re-resolving
+        # the graph that was just installed hash-verified.
+        run: |
+          # These commands used to end in `|| true`, which made the whole job
+          # unfailable: a mutmut that cannot start, a missing binary, a crash in
+          # the runner -- all reported green, and the artifact was simply absent
+          # because `if-no-files-found: warn` only warns. A mutation job that
+          # cannot fail is worse than no mutation job, because it reads as a
+          # signal.
+          #
+          # Two of the three commands here were the mutmut 2.x CLI, which mutmut
+          # 3 removed. Dispatched run 36951224244 against 0e7143d proved it on a
+          # real ubuntu-22.04 runner:
+          #   Error: No such option '--paths-to-mutate'.
+          #   Error: No such command 'junitxml'.
+          # mutmut 3.8.0's `cli` group offers only mutant-name filters and
+          # `--max-children`, neither of which sets WHAT is mutated, so scope is
+          # read from backend/pyproject.toml [tool.mutmut] only. Hence the bare
+          # `mutmut run` below, with the scope in that file rather than here.
+          #
+          #   run       -> the mutation pass is the measurement. If it does not
+          #                complete there is no score, so it must fail. `set +e`
+          #                around it keeps the reporting commands below running
+          #                even then, so the artifact is still produced; the
+          #                upload step carries `if: always()` so a failed step
+          #                does not skip the upload and throw away the one
+          #                output this job has. Note the three commands below
+          #                deliberately do NOT exit on their own -- they record
+          #                the status and let the tail of the step decide, so
+          #                there is exactly one place that fails the job.
+          #   results   -> pure reporting over the mutants/ directory `run` just
+          #                wrote. Its exit code carries no verdict, so it must not
+          #                be able to fail the build either.
+          #   export-cicd-stats -> writes the uploaded artifact. If it cannot,
+          #                the artifact is missing and the run is worthless, so
+          #                it must fail.
+          #
+          # `mutmut junitxml` is gone in mutmut 3; `export-cicd-stats` is the
+          # supported replacement and writes
+          # mutants/mutmut-cicd-stats.json with killed / survived / total /
+          # no_tests / skipped / suspicious / timeout counts. No JUnit consumer
+          # exists in this repo for the old file, so nothing downstream breaks.
+          set -uo pipefail
+          set +e
+          uv run --locked --no-sync --no-build mutmut run 2>&1
+          RUN_STATUS=$?
+          set -e
+          uv run --locked --no-sync --no-build mutmut results || true
+          # A failed `run` and a run that produced no results are both useless,
+          # so both fail here. The `results` call above is reporting only; this
+          # is the verdict.
+          if [ "$RUN_STATUS" -ne 0 ]; then
+            echo "::error::mutmut run failed with status $RUN_STATUS" >&2
+          fi
+          if [ ! -d mutants ] || [ -z "$(ls -A mutants 2>/dev/null)" ]; then
+            echo "::error::mutmut left no mutants/ results; the mutation pass produced nothing to report" >&2
+            if [ "$RUN_STATUS" -eq 0 ]; then
+              RUN_STATUS=1
+            fi
+          fi
+          # Report the score, and fail if the score file is missing or has no
+          # mutants in it. mutmut 3's export prints "No previous mutation data
+          # found" and exits 0 in that case, so exit status alone cannot tell
+          # success from an empty sweep.
+          set +e
+          uv run --locked --no-sync --no-build mutmut export-cicd-stats 2>&1
+          EXPORT_STATUS=$?
+          set -e
+          STATS=mutants/mutmut-cicd-stats.json
+          if [ "$EXPORT_STATUS" -ne 0 ]; then
+            echo "::error::mutmut export-cicd-stats failed with status $EXPORT_STATUS" >&2
+            exit 1
+          fi
+          test -s "$STATS" || {
+            echo "::error::mutmut export-cicd-stats wrote no $STATS; the mutation pass produced no reportable data" >&2
+            exit 1
+          }
+          # Parse the score out of the JSON rather than grepping the human log, and
+          # fail if the file has no total, so a structurally wrong artifact
+          # cannot pass as a result.
+          #
+          # Required keys are read with no default, so a key rename in a future
+          # mutmut release raises KeyError naming the key instead of silently
+          # scoring 0 and blaming "no mutants were tested" for what is actually
+          # a schema change.
+          #
+          # The score is compared against the target rather than merely printed.
+          # The job name advertises "target >=75%" and .qgate.toml sets
+          # `mutation_threshold = 75`, but the only failure this block used to
+          # raise was `tested <= 0`, so a sweep that killed 1 of 26506 mutants
+          # printed "mutation score: 0.0%" and exited green. Reporting the
+          # number made the miss visible in the log while leaving the gate open,
+          # which is the worst of both.
+          #
+          # The threshold is scraped from .qgate.toml rather than hardcoded, so
+          # this workflow and the qgate evaluator cannot drift apart. Note the
+          # key is `mutation_threshold`, NOT `target_score`: qgate's config is
+          # flat keys with deny_unknown_fields, and the `target_score = 75` that
+          # appears in that file is inside a documentation comment block, not a
+          # real setting. Verified against the parsed TOML. An unreadable value
+          # is a hard error rather than a silent default, because defaulting to
+          # 75 would quietly stop the gate being a gate if the file ever moved.
+          TARGET_SCORE="$(sed -n 's/^[[:space:]]*mutation_threshold[[:space:]]*=[[:space:]]*\([0-9.]\+\).*/\1/p' \
+            "$GITHUB_WORKSPACE/.qgate.toml" | head -n 1)"
+          if [ -z "$TARGET_SCORE" ]; then
+            echo "::error::could not read mutation_threshold from .qgate.toml" >&2
+            exit 1
+          fi
+          python - "$STATS" "$TARGET_SCORE" <<'PY'
+          import json, pathlib, sys
+
+          stats = json.loads(pathlib.Path(sys.argv[1]).read_text("utf-8"))
+          # No .get defaults: a renamed key is a schema change and must say so.
+          total = int(stats["total"])
+          skipped = int(stats["skipped"])
+          killed = int(stats["killed"])
+          timeout = int(stats["timeout"])
+          survived = int(stats["survived"])
+
+          tested = total - skipped
+          # Timeouts are mutants the harness could not resolve, so they are
+          # reported but not credited as kills: crediting them is what lets an
+          # uncollectable suite score 100% without a single assertion running.
+          score = (killed / tested * 100) if tested > 0 else 0.0
+          target = float(sys.argv[2])
+          print(f"mutation score: {score:.1f}% (target >= {target:.0f}%) "
+                f"{killed}/{tested} of {total} mutants killed "
+                f"survived={survived} timeout={timeout} "
+                f"no_tests={stats['no_tests']} skipped={skipped}")
+          if tested <= 0:
+              print("::error::no mutants were actually tested, so the score is not a result", file=sys.stderr)
+              sys.exit(1)
+          if score < target:
+              print(f"::error::mutation kill-score {score:.1f}% is below the "
+                    f"{target:.0f}% target ({killed}/{tested} killed)", file=sys.stderr)
+              sys.exit(1)
+          PY
+          exit "$RUN_STATUS"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        # always(): keeps the artifact alive on the runs where the step above exits
+        # non-zero. Those are the common case this step exists to cover --
+        # `mutmut run` fails, or produces no mutants/, or export-cicd-stats
+        # cannot write the stats file (each of those ends in an explicit
+        # `exit 1` before this step).
+        #
+        # `always()` is a step-level status check, not a job-level one, so be
+        # precise about what it does NOT do: it runs the upload after a FAILED
+        # run step, and it does not rescue a job that was CANCELLED -- neither
+        # by a manual cancel nor by the job-level timeout-minutes. There is no
+        # artifact in that case, and there cannot be one. What protects the
+        # evidence against the timeout is the timeout-minutes ceiling being
+        # generous enough that it is not the thing that fires.
+        #
+        # The verdict still comes from the run step's own exit code; this only
+        # decides whether the evidence survives to be inspected.
+        if: always()
         with:
           name: mutmut-results
-          path: backend/mutmut.xml
-          if-no-files-found: warn
+          # mutmut 3 has no `junitxml` subcommand; `export-cicd-stats` writes
+          # mutants/mutmut-cicd-stats.json, which is uploaded on its own.
+          #
+          # Listing the tree as a SECOND path entry is deliberate, not
+          # redundant, even though the JSON lives inside it:
+          #
+          #   mutants/    the whole tree, including the per-mutant exit codes
+          #               and .mutmut cache that make the score auditable
+          #               afterwards
+          #   mutants/mutmut-cicd-stats.json
+          #               listed explicitly because upload-artifact takes the
+          #               union of the patterns, and the common artifact
+          #               download URL is built from the FIRST path entry's
+          #               least-common-ancestor. Naming the file first means the
+          #               archive root is the JSON's own directory rather than
+          #               all of backend/, so the stats file lands at a stable
+          #               path for anyone fetching it.
+          #
+          # The consequence, stated plainly: if mutants/ exists but the JSON was
+          # never written, this step still uploads, because if-no-files-found
+          # only fires when NOTHING matched. That is why the run step asserts
+          # `test -s "$STATS"` itself and the scoring block reads the same file.
+          # This step is not the guard for the stats file; it is the carrier.
+          path: |
+            backend/mutants/mutmut-cicd-stats.json
+            backend/mutants/
+          # warn -> error. This artifact is the only output the job produces, and
+          # a missing upload used to be indistinguishable from a successful run
+          # while the three `|| true` were in place. Now that the step can fail, a
+          # missing artifact is a real loss of the job's result.
+          #
+          # `if-no-files-found: error` only fires when NOTHING matched, so it
+          # still fails a run where the score file is absent; it cannot fail a
+          # run where mutants/ exists but the JSON is missing, which is why the
+          # run step asserts the JSON itself rather than relying on this.
+          if-no-files-found: error
           retention-days: 14

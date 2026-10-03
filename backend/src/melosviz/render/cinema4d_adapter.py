@@ -165,7 +165,6 @@ def scaffold_script(
     height = int(scene.get("height", 720))
     frames = int(scene.get("frames", 240))
     fps = int(scene.get("fps", 24))
-    scene.get("camera", "Camera")
     motion_text = scene.get("motion_text", "")
     renderer_enum = {
         "redshift": "c4d.REDSHIFT",

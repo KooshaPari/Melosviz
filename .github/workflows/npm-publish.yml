@@ -7,12 +7,41 @@ on:
 
 permissions:
   contents: read
-  id-token: write # for OIDC trusted publishing via npm provenance
+
+# The publish-cli-frontend job was removed here rather than fixed.
+#
+# It built and published packages/cli-frontend, a directory that
+# does not exist and never has: not on this branch, not on
+# origin/main, and no commit in any reachable ref ever added it.
+# The job therefore could not start -- a missing working-directory
+# fails the step before the command runs -- so every release and
+# every workflow_dispatch of this workflow went red on a path that
+# was never going to publish anything.
+#
+# Two things rule out "just repoint it at the real directory":
+#   - desktop/package.json is `private: true` (name melosviz-desktop),
+#     as is web/package.json. Publishing either would fail on the
+#     private flag.
+#   - @melosviz/cli-frontend has never existed on the npm registry
+#     (404), and there is no consumer of it anywhere in the tree --
+#     the only references to the string are the four lines of this
+#     job itself. So there is no package to resurrect, only a job to
+#     stop running.
+#
+# If a publishable frontend package is wanted later, it has to be
+# added to the tree first, with a non-private name and a bun
+# lockfile, and this job reintroduced pointing at it. Reinstating it
+# now would reintroduce a guaranteed-red job.
 
 jobs:
   publish-electron-app:
     name: "@melosviz/electron-app"
     runs-on: ubuntu-latest
+    # Scoped to the publishing jobs. At workflow level this would hand an OIDC
+    # token to every job in the file.
+    permissions:
+      contents: read
+      id-token: write # for OIDC trusted publishing via npm provenance
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -20,9 +49,15 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          bun-version: 1.3.14
 
       - name: Setup npm auth via OIDC provenance
+        # NOT SHA-pinned. githubactions:S7637 flags this, but the upstream
+        # `npm/login-action` repository is not resolvable from the public GitHub
+        # API (404 on the repo, its tags, and its refs), so there is no
+        # trustworthy commit to pin. Inventing a SHA would break publishing, so
+        # the tag is left as-is and the finding stays open rather than being
+        # silently closed with a wrong value.
         uses: npm/login-action@v3
         with:
           registry-url: https://registry.npmjs.org/
@@ -31,40 +66,27 @@ jobs:
 
       - name: Build
         working-directory: desktop
+        # Pinned to match studio-tests.yml and both release.yml desktop jobs.
+        # The pin is what makes the --frozen-lockfile below a real assertion:
+        # it is only meaningful at a bun version that reads desktop/bun.lock.
+        # Measured against a desktop/bun.lock whose electrobun entry was set
+        # to 99.99.99, --frozen-lockfile fails loudly at every version tested
+        # (1.3.14, 1.4.0, 1.4.2 — all exit 1 with a 404 on the tarball),
+        # and fails loudly on an unparseable lockfileVersion 3 at 1.3.14
+        # ("Unknown lockfile version", "warn: Ignoring lockfile",
+        # "lockfile had changes, but lockfile is frozen", exit 1). So the
+        # assertion degrades to a no-op only if the pin is dropped, not
+        # silently at the pinned version.
+        #
+        # Note this job is NOT the reason the other jobs needed pinning:
+        # release.yml's `bun install` has no --frozen-lockfile and silently
+        # regenerates an unparseable lock, which this job cannot catch.
         run: |
-          bun install --frozen-lockfile
+          bun install --frozen-lockfile --ignore-scripts
           bun run build
 
       - name: Publish
         working-directory: desktop
-        run: bunx npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  publish-cli-frontend:
-    name: "@melosviz/cli-frontend"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: latest
-
-      - uses: npm/login-action@v3
-        with:
-          registry-url: https://registry.npmjs.org/
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Build
-        working-directory: packages/cli-frontend
-        run: bun install --frozen-lockfile && bun run build
-
-      - name: Publish
-        working-directory: packages/cli-frontend
         run: bunx npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

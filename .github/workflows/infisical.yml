@@ -22,9 +22,81 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install Infisical CLI
+        env:
+          INFISICAL_VERSION: v0.43.138
+          # sha256 of infisical_0.43.138_linux_amd64.deb, copied verbatim from
+          # checksums.txt published with the release. Bumping INFISICAL_VERSION
+          # without updating this makes the install fail closed; renovate cannot
+          # do that automatically because the digest is not derivable from the
+          # tag, so it is deliberate friction rather than an oversight.
+          INFISICAL_AMD64_SHA256: 9651994ecaf3445770565422c5ca32714f98e110f9e684d0c2aa7dcacbe04b56
         run: |
-          curl -1sLf "https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh" | sudo -E bash
-          sudo apt-get install -y infisical
+          # Install the published .deb directly instead of executing
+          # dl.cloudsmith.io's setup.deb.sh with sudo. That script is fetched over
+          # the network and run as root, so an altered or MITM'd response gets
+          # arbitrary root code on the runner -- and it is the step that also
+          # has the Infisical token in scope. The signed release asset plus the
+          # digest below removes the shell entirely: there is no remote script
+          # to trust, only a byte-for-byte comparison against a pinned hash.
+          #
+          # The digest comes from the release's own checksums.txt, so this is
+          # the same artifact Cloudsmith's script would have installed, minus
+          # the trust-on-first-use in the script.
+          set -euo pipefail
+          ARCH="$(dpkg --print-architecture)"
+          # INFISICAL_AMD64_SHA256 describes the amd64 asset only, and ARCH
+          # comes from whatever runner we land on. Guard the mismatch here so an
+          # arm64 runner fails with the real reason instead of falling through
+          # to a "pinned digest does not match upstream" error, which reads as
+          # a tampered or stale pin.
+          if [ "$ARCH" != "amd64" ]; then
+            echo "::error::INFISICAL_AMD64_SHA256 is only valid for amd64; this runner is ${ARCH}" >&2
+            exit 1
+          fi
+          # The release tag is v0.43.138 but the asset filename drops the leading
+          # v: infisical_0.43.138_linux_amd64.deb, not infisical_v0.43.138_...
+          VER_NUM="${INFISICAL_VERSION#v}"
+          DEB="infisical_${VER_NUM}_linux_${ARCH}.deb"
+          BASE="https://github.com/Infisical/cli/releases/download/${INFISICAL_VERSION}"
+
+          curl -1sSfL --proto '=https' --tlsv1.2 "${BASE}/${DEB}" -o "/tmp/${DEB}"
+          curl -1sSfL --proto '=https' --tlsv1.2 "${BASE}/checksums.txt" -o /tmp/checksums.txt
+
+          # Cross-check the digest against the release's published checksums
+          # file as well as the pinned value, so a stale pin cannot silently
+          # differ from upstream without being noticed here.
+          #
+          # Verified layout for v0.43.138 is coreutils: `<sha256><space><space><file>`.
+          # The leading `*` strip additionally tolerates the binary-mode shape
+          # `<sha256> *<file>` that `sha256sum -b` and GoReleaser emit, so a
+          # format-only change upstream does not read as a tampered pin and take
+          # secret pull-down with it. It deliberately does NOT try to parse the
+          # `SHA256 (<file>) = <hex>` shape -- that layout puts the filename in
+          # field 3, not 2.
+          EXPECTED_UPSTREAM="$(awk -v f="${DEB}" '{ sub(/^\*/, "", $2); if ($2 == f) print $1 }' /tmp/checksums.txt)"
+          test -n "$EXPECTED_UPSTREAM" || {
+            echo "::error::${DEB} is not listed in the published checksums.txt" >&2
+            exit 1
+          }
+          test "$EXPECTED_UPSTREAM" = "$INFISICAL_AMD64_SHA256" || {
+            echo "::error::pinned digest does not match upstream checksums.txt for ${DEB}" >&2
+            echo "::error::pinned:   ${INFISICAL_AMD64_SHA256}" >&2
+            echo "::error::upstream: ${EXPECTED_UPSTREAM}" >&2
+            exit 1
+          }
+
+          echo "${INFISICAL_AMD64_SHA256}  /tmp/${DEB}" | sha256sum --check --strict
+          # apt-get, not dpkg --install: dpkg only unpacks and configures, so the
+          # moment the deb declares a Depends: the runner does not already satisfy,
+          # dpkg exits non-zero with "dependency problems prevent the
+          # configuration of infisical" and `infisical --version` never runs.
+          # Installing the local, already-digest-verified file through apt keeps
+          # the integrity guarantee (apt is handed a path, not a repo or a URL)
+          # while restoring dependency resolution that the old
+          # `apt-get install -y infisical` had.
+          sudo apt-get install -y "/tmp/${DEB}"
+
+          infisical --version
 
       - name: Pull secrets to .env
         env:

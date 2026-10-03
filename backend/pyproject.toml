@@ -75,6 +75,50 @@ otel = [
     "opentelemetry-exporter-otlp-proto-http>=1.25",
 ]
 
+# CI tooling that the library never imports but the quality gate installs
+# alongside the package. Declaring these here, instead of naming them ad
+# hoc in each workflow, is what lets uv.lock pin them. They were
+# previously absent from the lock, so every workflow had to spell out its
+# own versions, and SonarCloud's dependency-locking rule
+# (githubactions:S8544) flagged each `pip install -e ".[...]"` line.
+#
+# `uv sync --all-extras --dev` now resolves all of them from uv.lock.
+#
+# Every entry here is installed under `--only-binary :all:`, which forbids
+# building an sdist (S8541). That makes a wheel a hard requirement, so each
+# lower bound sits at or above the first release that actually publishes
+# one, checked against PyPI's file listings rather than assumed:
+#
+#   mutmut  3.0.3 and 3.0.4 are sdist-only; every 3.x release from 3.0.5 on
+#           ships py3-none-any. `>=3.0` would let a future re-resolve pick
+#           3.0.4 and turn the quality gate's install into a hard failure
+#           whose message reads like a resolution problem, not a policy one.
+#
+# Verified 2026-10-01: all 95 packages in the quality-gate install closure
+# (base + test + bridge + lint + analysis + dev) publish a wheel usable on
+# linux-x86_64 at their locked version. The only sdist-only distributions in
+# uv.lock are demucs, dora-search and antlr4-python3-runtime, and all three
+# are reachable only through the `stems` extra.
+#
+# An earlier version of this comment ended "...which no guarded workflow
+# installs", and that clause had become wrong: gpu-smoke.yml did install
+# `stems`, via --all-extras. It no longer does -- it exports `--extra test
+# --extra analysis` -- but the clause was not carried along, so the guarded
+# workflows relying on it for `--only-binary :all:` were citing a reason that
+# no longer held. The invariant that is actually true, and that those
+# workflows rely on now, is the narrowing itself: each guarded workflow
+# requests only the extras it needs, and none of them request `stems`.
+# Before adding a dependency here, confirm it publishes a wheel:
+#   python -c "import json,urllib.request as u;d=json.load(u.urlopen('https://pypi.org/pypi/<name>/<version>/json'));print([f['packagetype'] for f in d['urls']])"
+[dependency-groups]
+dev = [
+    "pytest-cov>=5.0",
+    "coverage>=7.4",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "mutmut>=3.0.5",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -111,6 +155,12 @@ ignore = [
     "UP042",
 ]
 
+[tool.ruff.lint.isort]
+# repo_paths is a module inside backend/tests/, not a distribution.
+# Without this, ruff classifies it third-party and groups it with
+# `import pytest`, failing I001 in all seven modules that import it.
+known-first-party = ["repo_paths"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["B011"]  # asserts are fine in tests
 
@@ -124,7 +174,16 @@ ignore_missing_imports = true
 disable_error_code = ["method-assign"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+# `tests` is here so `from repo_paths import find_repo_root` resolves under
+# every pytest import mode. The `pythonpath` ini option inserts into
+# sys.path unconditionally, whereas `from conftest import ...` depends on
+# pytest's default `prepend` mode inserting this directory. Seven test
+# modules import that helper, so the difference between the two is a
+# seven-module collection error whenever tests/__init__.py is added or
+# importlib mode is used. Under `prepend` the entry is redundant, since
+# pytest already puts the directory at sys.path[0]; it exists to make that
+# true under `importlib` and `append` too.
+pythonpath = ["src", "tests"]
 markers = [
     "flaky: quarantined / known-flaky; exclude with -m 'not flaky'",
     "slow: full pipeline integration tests (3-min track end-to-end)",
@@ -151,13 +210,134 @@ omit = []
 # Target: >=75% kill-score (see ../../.qgate.toml [mutation].target_score).
 # -----------------------------------------------------------------------------
 [tool.mutmut]
-paths_to_mutate = ["src/melosviz/"]
-tests_dir = ["tests/"]
-# Type-check on surviving mutants — mypy catches more than tests alone.
-type_check_command = ["python", "-m", "mypy", "--no-incremental", "--no-error-summary"]
-# Skip CLI entry-points, re-export stubs, and package __init__ modules.
-do_not_mutate = [
-    "src/melosviz/cli/.*\\.py$",
-    "src/melosviz/runtime/touchdesigner/__init__\\.py$",
-    "src/melosviz/.*/__init__\\.py$",
+# mutmut 3.x keys. `paths_to_mutate` and `tests_dir` were REMOVED in mutmut 3
+# and each emits a UserWarning on every run; the replacements are
+# `source_paths` and `pytest_add_cli_args_test_selection`. Verified against the
+# installed mutmut 3.8.0 configuration module.
+source_paths = ["src/melosviz/"]
+pytest_add_cli_args_test_selection = ["tests/"]
+# One module in that selection is itself a mutation driver, and this is the
+# reason the outer sweep needs a guard against itself.
+# tests/test_mutation_engine.py runs its OWN nested sweep of 3 targets x 60
+# mutants, each a separate pytest subprocess, and it took over 10 minutes on
+# clean source here. `pytest_add_cli_args_test_selection` runs it once per
+# OUTER mutant, for every one of the ~26506 mutants in the population, so the
+# outer sweep would pay the inner sweep's cost thousands of times over. That is
+# recursive work, not incidental overhead.
+#
+# What the deselect does NOT rest on. An earlier revision of this comment
+# argued the test "cannot hide a useful outer-mutant check" because
+# `source_paths` excludes backend/tests/. That premise is true of the MODULE
+# and false where it was used: all three TARGETS the test reads
+# (src/melosviz/analysis/models.py, .../analysis/audio.py,
+# src/melosviz/bridge/server.py) are inside source_paths, so they ARE mutated,
+# and a mutant of them can change what the test observes. The case has to be
+# made on other grounds, and these are the verified ones:
+#
+#   1. The test is not merely unmutated, it is non-orthogonal: its verdict is a
+#      threshold on a score it computes FROM mutated files. Under an outer
+#      mutant it measures a DIFFERENT quantity, so it can fail or pass for
+#      reasons unrelated to whether that mutant is caught.
+#   2. Its signal is not lost, it is enforced elsewhere. qgate.yml:73 sets
+#      run-baseline-checks: true and quality-gate-reusable.yml:273 runs a bare
+#      `pytest` with no path, no testpaths and no addopts, so it collects all
+#      1617 tests INCLUDING this one -- verified with `pytest --collect-only -q`,
+#      which lists it. The gate asserting TARGET_SCORE is met still runs, on
+#      unmutated source, which is the only context where a mutation-SCORE
+#      threshold is meaningful at all.
+#   3. Exactly one test is dropped, and only inside this sweep. Verified by
+#      test_meta_test_deselect_still_matches_exactly_one_test, which runs
+#      `pytest tests/ --collect-only` twice -- with and without this nodeid --
+#      and asserts the delta is exactly 1 (1616/1617 collected, 1 deselected).
+#      That test exists because `--deselect` is a FILTER: a nodeid matching
+#      nothing is ignored silently, so a rename here would restore the whole
+#      recursion with no error reported anywhere.
+#      No other selection loses anything.
+#
+# The earlier warning not to widen this to the whole file is moot: the module
+# holds exactly TWO tests -- the gate itself and the deselect guard above
+# (`pytest tests/test_mutation_engine.py --collect-only` -> 2 collected) -- and
+# the guard must run inside the sweep, because verifying that the recursion is
+# guarded is the whole point of running it there.
+pytest_add_cli_args = [
+    "-q",
+    "--tb=no",
+    "-x",
+    "--deselect",
+    "tests/test_mutation_engine.py::test_mutation_kill_score_meets_qgate_bar",
 ]
+# The mutmut 2.x `--runner "python -m pytest -q --tb=no -x"` has no mutmut 3
+# equivalent. mutmut 3 assembles its own pytest invocation and appends these to
+# it, so they carry the same intent: keep mutant runs short and output terse.
+# Copy the non-Python data the tests read into mutants/ alongside the source.
+#
+# mutmut 3 rebuilds the tree under `mutants/` and runs pytest from there, so a
+# test that resolves a data file against the working directory looks inside
+# `mutants/` and finds nothing. Dispatched run 36954491966 against fa31b74 is
+# the proof, on a suite that otherwise runs green in quality-gate-reusable:
+#   ConductorError: adapter for scene_type='comfyui_image' failed:
+#     Workflow template not found:
+#     .../backend/mutants/workflows/sdxl_image.json
+#   . Set $MELOSVIZ_COMFYUI_WORKFLOWS_DIR or ship the file.
+#
+# This is not specific to mutmut: `copy_src_dir` (utils/file_utils.py:50)
+# copies every source file, but `setup_source_paths` (line 80) only puts the
+# `.`, `src` and `source` trees on sys.path. Nothing copies data files, so
+# every CWD-relative data dependency in the test suite breaks under mutation.
+# `workflows/` holds the six Jinja2 templates the render adapters load.
+#
+# It is not the only non-Python data in backend/: `tests/fixtures/` is the other
+# (k.wav, test_tone.wav), and it needs no entry here because mutmut's own
+# loader always appends `tests/` to also_copy (configuration.py:184-195, which
+# unions the configured list with tests/, test/, setup.cfg, pyproject.toml,
+# uv.lock, poetry.lock, Pipfile.lock, pdm.lock and test*.py). So the fixtures
+# already ride along and both test_beat_track_isolation.py tests still collect.
+#
+# That default is load-bearing and worth stating, because those two tests are
+# guarded by `@pytest.mark.skipif(not K_WAV.exists(), ...)`: if mutmut ever
+# stopped copying `tests/`, they would skip silently and the sweep would report
+# green while running two fewer tests. Verified against this tree: those are
+# the only non-Python data files under backend/ outside the venv.
+#
+# The alternative -- exporting MELOSVIZ_COMFYUI_WORKFLOWS_DIR to the real tree
+# -- would fix this one variable and leave the next bare-CWD reference
+# unresolved. also_copy is the general fix, and it is the option mutmut
+# provides for exactly this case (configuration.py:184, invoked from
+# __main__.py:957).
+also_copy = ["workflows/"]
+# Skip CLI entry-points, re-export stubs, and package __init__ modules.
+#
+# These are GLOBS, not regexes. mutmut 3 matches them with fnmatch.fnmatch
+# (configuration.Config._should_ignore_for_mutation), so the previous regex
+# forms such as "src/melosviz/cli/.*\.py$" matched nothing at all: verified
+# against this tree, they excluded 0 of 80 files, so the sweep was mutating
+# every __init__.py and the CLI entry-points it was meant to skip.
+#
+# fnmatch's `*` DOES cross path separators: it translates to `.*`, and `/` is
+# not a special character. So `src/melosviz/*/__init__.py` matches an
+# `__init__.py` at ANY depth below `src/melosviz/`, not only one directory down,
+# and `src/melosviz/cli/*.py` covers nested files under `cli/` as well. That is
+# what makes the two globs sufficient on their own, and why the explicit
+# touchdesigner entry that used to sit between them was redundant.
+#
+# Verified against this tree with fnmatch.fnmatch, the exact call mutmut makes
+# (configuration.py:299). All 18 __init__.py files are matched by one of these
+# two patterns, including the two nested a level deeper (llm/critic/ and
+# render/audio_finishing/), which a non-crossing `*` would have missed.
+# Excluded total: 20 of 80 source files -- the 18 __init__.py files plus
+# cli/main.py and cli/partial_rerender.py -- and nothing outside those groups.
+do_not_mutate = [
+    "src/melosviz/cli/*.py",
+    "src/melosviz/*/__init__.py",
+    "src/melosviz/__init__.py",
+]
+# type_check_command deliberately unset.
+#
+# It used to run `python -m mypy`, but mypy lives in the `lint` extra and is
+# not installed by the mutation job, which installs from
+# `uv export --extra test --extra bridge`. Verified against that export: mypy is
+# absent, while bandit, pip-audit, pytest and mutmut are present. mutmut 3 runs
+# the command through subprocess and raises when it produces no JSON, so
+# leaving it configured would fail the run before any mutant is generated. Set
+# it in an environment that actually has mypy if type-check-based killing is
+# wanted there.

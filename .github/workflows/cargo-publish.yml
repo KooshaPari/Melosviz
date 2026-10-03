@@ -5,9 +5,13 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Token-based publishing: katyo/publish-crates is given CARGO_REGISTRY_TOKEN
+# explicitly, so no job needs id-token: write. The workflow-level
+# `contents: read` is the only permission any job requires, and removing the
+# per-job OIDC grants means a compromised build step cannot mint a crates.io
+# credential.
 permissions:
   contents: read
-  id-token: write # for OIDC trusted publishing via crates.io
 
 jobs:
   publish-demo:
