@@ -37,6 +37,7 @@ export interface StudioScene {
   artifactPath?: string;
   errorMessage?: string;
   fromCache?: boolean;
+  artifactSha256?: string;
 }
 
 export interface StudioMasterDeliverable {
@@ -52,6 +53,10 @@ export interface StudioConsoleProps {
   initialWavPath?: string;
   /** Optional auto-elevation via a global "open studio" signal. */
   autoOpenSignal?: number;
+  /** Durable project identity used to recover canonical state after app restart. */
+  projectId?: string;
+  /** Durable ledger path owned by the local bridge. */
+  ledgerPath?: string;
   /** Optional i18n override (defaults to the global `t()` helper). */
   i18n?: (key: string, fallback?: string) => string;
 }
@@ -124,6 +129,8 @@ export function StudioConsole({
   bridgeBase = "",
   initialWavPath = "",
   autoOpenSignal,
+  projectId,
+  ledgerPath,
   i18n,
 }: StudioConsoleProps): React.ReactElement {
   const tr = i18n ?? t;
@@ -201,6 +208,34 @@ export function StudioConsole({
     },
     [bridgeBase],
   );
+
+  /* ----- Durable restart hydration --------------------------------------- */
+  useEffect(() => {
+    if (!projectId || !ledgerPath) return;
+    let cancelled = false;
+    void post<{
+      attempts?: Array<{
+        evidence?: Array<{kind?:string;artifact_sha256?:string;state?:string}>;
+        assembly?: {state?:string}|null;
+      }>;
+    }>("/api/studio/project-status",{project_id:projectId,ledger_path:ledgerPath})
+      .then((status) => {
+        if (cancelled) return;
+        const attempt=status.attempts?.[status.attempts.length-1];
+        if (!attempt) return;
+        const accepted=new Set(
+          (attempt.evidence ?? [])
+            .filter((e)=>e.kind==="scene" && e.state==="accepted" && e.artifact_sha256)
+            .map((e)=>e.artifact_sha256 as string),
+        );
+        setScenes((prev)=>prev.map((scene)=>{
+          const digest=(scene as StudioScene & {artifactSha256?:string}).artifactSha256;
+          return digest && accepted.has(digest) ? {...scene,status:"accepted"} : scene;
+        }));
+      })
+      .catch(()=>{ /* absence of durable status must never manufacture acceptance */ });
+    return ()=>{cancelled=true;};
+  },[projectId,ledgerPath,post]);
 
   /* ----- SSE render event stream ---------------------------------------- */
   /** Per-scene state subscription via /api/render/events SSE.
@@ -395,6 +430,7 @@ export function StudioConsole({
             // independent product acceptance.
             status: "produced" as const,
             artifactPath: meta.artifact_path,
+            artifactSha256: meta.artifact_sha256 ?? undefined,
             fromCache: meta.from_cache === true,
             errorMessage: undefined,
           };
