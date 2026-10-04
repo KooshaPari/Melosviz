@@ -436,7 +436,7 @@
     "next": "M-E03A_APPLICATION_RESTART_AND_CANONICAL_TRUTH_PROJECTION"
   },
   "M_E03A": {
-    "status": "BRIDGE_R2_LINEAGE_GREEN__SCENE_EVIDENCE_RESTART_PROJECTION_ACTIVE",
+    "status": "ACCEPTED_EXPERIMENTAL_BRIDGE_RESTART_AND_EVIDENCE_PROJECTION",
     "head": "60a591dea5e259ca76dc34bd2cf2b8ec8a81f0f5",
     "last_green": {
       "m_e03": 37111738903,
@@ -476,6 +476,22 @@
       "ci": 37063669321,
       "studio": 37063669448,
       "classification": "M_E03_AND_CI_GREEN__STUDIO_SSE_NEWLINE_IMPORT_RED"
-    }
+    },
+    "acceptance": true,
+    "acceptance_evidence": {
+      "head": "8bc214b8c6d5659f462baec50561171727817681",
+      "m_e03": 37187941780,
+      "ci": 37187941806,
+      "studio": 37187941851
+    },
+    "proven": [
+      "generate writes immutable revision + candidate-bound attempt",
+      "separate bridge request reopens durable ledger",
+      "R1 remains loadable after R2",
+      "R2 parent_revision links R1",
+      "project status projects attempt evidence and assembly state",
+      "cache/produced state remains distinct from accepted"
+    ],
+    "next": "M-E03B_APPLICATION_CONSUMES_CANONICAL_RESTART_STATUS"
   }
 }
