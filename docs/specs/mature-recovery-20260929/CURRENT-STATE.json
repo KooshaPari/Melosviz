@@ -493,5 +493,21 @@
       "cache/produced state remains distinct from accepted"
     ],
     "next": "M-E03B_APPLICATION_CONSUMES_CANONICAL_RESTART_STATUS"
+  },
+  "M_E03B": {
+    "status": "APPLICATION_CANONICAL_RESTART_HYDRATION_ACTIVE",
+    "branch": "experiment/m-e03-ledger-seam",
+    "head": "169b8fa6cf40b1c6be6d60c9c5af1a1e025c4aef",
+    "scope": [
+      "StudioConsole accepts durable projectId+ledgerPath",
+      "on mount/restart reads /api/studio/project-status",
+      "only exact accepted scene digest can promote UI scene to accepted",
+      "missing/error/no-match durable evidence cannot manufacture acceptance"
+    ],
+    "next": [
+      "positive accepted-digest hydration witness",
+      "persist project identity in shipping Electrobun shell",
+      "R2 restart hydration across desktop process replacement"
+    ]
   }
 }
