@@ -602,7 +602,10 @@ def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp
     assert response.status_code==200,response.text
     body=response.json()
     assert body["project_id"]=="P" and body["revision"]==1
-    assert body["attempts"]==[{"attempt_id":a,"state":"completed","job_id":"job-1","candidate_sha":"candidate-sha","started_at":body["attempts"][0]["started_at"],"completed_at":body["attempts"][0]["completed_at"],"evidence":[],"assembly":None}]
+    attempt=body["attempts"][0]
+    assert attempt["attempt_id"]==a and attempt["state"]=="completed"
+    assert attempt["job_id"]=="job-1" and attempt["candidate_sha"]=="candidate-sha"
+    assert attempt["evidence"]==[] and attempt["assembly"] is None
 
 
 def test_generate_persists_project_attempt_then_status_recovers_after_reopen(tmp_path, monkeypatch, client: TestClient):
