@@ -385,4 +385,15 @@ describe("StudioConsole (Director\u2019s Console)", () => {
     expect(item?.getAttribute("data-state")).toBe("produced");
     expect(screen.queryByText("accepted")).toBeNull();
   });
+
+
+  it("does not infer accepted on restart without matching durable evidence", async () => {
+    fetchSpy.mockResolvedValueOnce({
+      ok:true,status:200,statusText:"OK",
+      text:()=>Promise.resolve(JSON.stringify({attempts:[{evidence:[],assembly:null}]})),
+    } as Response);
+    render(<StudioConsole initialWavPath="/tmp/a.wav" projectId="P" ledgerPath="/tmp/p.sqlite" />);
+    await waitFor(()=>expect(fetchSpy).toHaveBeenCalled());
+    expect(screen.queryByText("accepted")).toBeNull();
+  });
 });
