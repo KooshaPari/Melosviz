@@ -495,25 +495,25 @@
     "next": "M-E03B_APPLICATION_CONSUMES_CANONICAL_RESTART_STATUS"
   },
   "M_E03B": {
-    "status": "NEGATIVE_RESTART_HYDRATION_GREEN__SCENE_RESTORATION_GAP_EXPOSED",
+    "status": "SCENE_RESTORATION_AND_EXACT_ACCEPTANCE_HYDRATION_REGRADING",
     "branch": "experiment/m-e03-ledger-seam",
-    "head": "7ff76897dceca6e081c24a89d7c2de1bc2534c9b",
+    "head": "64be289c9d848541cc140ad43832e72de04f5f7c",
+    "last_green": {
+      "m_e03": 37233283897,
+      "ci": 37233283878,
+      "studio": 37233283899
+    },
     "scope": [
-      "StudioConsole accepts durable projectId+ledgerPath",
-      "on mount/restart reads /api/studio/project-status",
-      "only exact accepted scene digest can promote UI scene to accepted",
-      "missing/error/no-match durable evidence cannot manufacture acceptance"
+      "project-status returns persisted scene_segments",
+      "fresh StudioConsole reconstructs scene identity",
+      "assembly ordered_inputs restore scene digest identity",
+      "accepted UI requires exact digest in durable accepted evidence",
+      "negative and positive restart hydration tests"
     ],
     "next": [
-      "restore persisted storyboard/scene identity before acceptance hydration",
-      "then exact digest match may set accepted",
-      "persist project identity in Electrobun shell"
-    ],
-    "last_green": {
-      "m_e03": 37228879464,
-      "ci": 37228879410,
-      "studio": 37228879424
-    },
-    "finding": "accepted evidence alone cannot hydrate UI after fresh app mount because scene identity/artifact digest is not yet restored into StudioConsole scene state"
+      "persist projectId+ledgerPath in shipping Electrobun shell",
+      "prove process replacement restores R2 accepted scene state",
+      "then application-level independent reviewer journey"
+    ]
   }
 }
