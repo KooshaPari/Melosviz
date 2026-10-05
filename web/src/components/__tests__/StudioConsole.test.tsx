@@ -399,28 +399,19 @@ describe("StudioConsole (Director\u2019s Console)", () => {
 
 
   it("hydrates accepted only when durable evidence matches the exact scene digest", async () => {
-    fetchSpy
-      .mockResolvedValueOnce({
-        ok:true,status:200,statusText:"OK",
-        text:()=>Promise.resolve(JSON.stringify({scenes:[{name:"S0",start_sec:0,end_sec:1,scene_type:"video_export",prompt:"x",palette:["#000"],seed:1}]})),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok:true,status:200,statusText:"OK",
-        text:()=>Promise.resolve(JSON.stringify({scenes:[{scene_index:0,scene_type:"video_export",outcome:"render",artifact_path:"/tmp/s0.mkv",artifact_sha256:"a".repeat(64),from_cache:false}]})),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok:true,status:200,statusText:"OK",
-        text:()=>Promise.resolve(JSON.stringify({attempts:[{evidence:[{kind:"scene",artifact_sha256:"a".repeat(64),verifier:"reviewer:v1",state:"accepted"}],assembly:null}]})),
-      } as Response);
-    const view=render(<StudioConsole initialWavPath="/tmp/a.wav" />);
-    await act(async()=>{fireEvent.click(screen.getByTestId("studio-btn-storyboard"));});
-    await waitFor(()=>expect(document.querySelectorAll(".studio-queue-item").length).toBe(1));
-    await act(async()=>{fireEvent.click(screen.getByTestId("studio-btn-generate"));});
-    await waitFor(()=>expect(screen.getByText("produced · verification pending")).toBeTruthy());
-    view.unmount();
+    fetchSpy.mockResolvedValueOnce({
+      ok:true,status:200,statusText:"OK",
+      text:()=>Promise.resolve(JSON.stringify({
+        scene_segments:[{scene_index:0,name:"S0",start_sec:0,end_sec:1,scene_type:"video_export",prompt:"x",palette:["#000"],seed:1}],
+        attempts:[{
+          evidence:[{kind:"scene",artifact_sha256:"a".repeat(64),verifier:"reviewer:v1",state:"accepted"}],
+          assembly:{state:"accepted",ordered_inputs:[[0,"a".repeat(64)]],artifact_sha256:"f".repeat(64)}
+        }]
+      })),
+    } as Response);
     render(<StudioConsole initialWavPath="/tmp/a.wav" projectId="P" ledgerPath="/tmp/p.sqlite" />);
-    await waitFor(()=>expect(fetchSpy).toHaveBeenCalledTimes(3));
-    // Hydration cannot invent a scene that was not restored by storyboard/project state yet.
-    expect(screen.queryByText("accepted")).toBeNull();
+    await waitFor(()=>expect(screen.getByText("accepted")).toBeTruthy());
+    const item=document.querySelector(".studio-queue-item");
+    expect(item?.getAttribute("data-state")).toBe("accepted");
   });
 });
