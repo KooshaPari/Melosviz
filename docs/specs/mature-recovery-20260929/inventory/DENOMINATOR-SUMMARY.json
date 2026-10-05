@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Melosviz",
+  "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "observed_on": "2026-09-29",
+  "inventory_parts": [
+    "inventory/TRACKED-TREE-A.json",
+    "inventory/TRACKED-TREE-B.json"
+  ],
+  "unique_tracked_product_relevant_blobs": 688,
+  "duplicate_paths_between_parts": 0,
+  "semantic_denominator_state": "OPEN",
+  "semantic_resolved_high_risk_spine_only": true,
+  "high_risk_spine_file_count": 16,
+  "families": {
+    "support": 54,
+    "ci": 48,
+    "auxiliary": 1,
+    "api": 5,
+    "assets": 4,
+    "historical_audit": 13,
+    "analysis": 3,
+    "cli": 3,
+    "domain": 10,
+    "conductor": 8,
+    "render": 17,
+    "verification": 114,
+    "rust_support": 9,
+    "deployment": 7,
+    "human_interface": 210,
+    "documentation": 68,
+    "design_intent": 2,
+    "historical": 11,
+    "examples": 5,
+    "localization": 3,
+    "integration": 20,
+    "packaging": 7,
+    "automation": 31,
+    "root_contract_or_config": 35
+  },
+  "caveats": [
+    "Tracked-tree enumeration is not semantic resolution.",
+    "Conversation/Git history/external research remain separate denominators.",
+    "Historical/generated scorecards remain quarantined from grading until revalidated.",
+    "File counts are not requirements or completion percentages."
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-09-29",
+  "product": "KooshaPari/Melosviz",
+  "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "subject": "bridge loopback classification",
+  "source_file": "backend/src/melosviz/bridge/security.py",
+  "source_blob": "db2eed2c46bf878e388f6802db0b66ce02390957",
+  "mounted_caller": "backend/src/melosviz/bridge/server.py main() calls security.loopback_check(args.host) before uvicorn.run",
+  "execution_mode": "SOURCE_EQUIVALENT_FUNCTION_REPRODUCTION_NOT_FULL_MODULE_IMPORT",
+  "observations": [
+    {
+      "host": "127.0.0.1",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": true
+    },
+    {
+      "host": "::1",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": true
+    },
+    {
+      "host": "localhost",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": true
+    },
+    {
+      "host": "192.168.1.10",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": false,
+      "false_green": true
+    },
+    {
+      "host": "10.0.0.7",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": false,
+      "false_green": true
+    },
+    {
+      "host": "example.com",
+      "allowed": true,
+      "reason": "loopback",
+      "expected": false,
+      "false_green": true
+    },
+    {
+      "host": "0.0.0.0",
+      "allowed": false,
+      "expected": false
+    },
+    {
+      "host": "::",
+      "allowed": false,
+      "expected": false
+    },
+    {
+      "host": "*",
+      "allowed": false,
+      "expected": false
+    }
+  ],
+  "test_path": "pass6/test_bridge_bind_contract.py",
+  "full_checkout_test_executed": false,
+  "product_acceptance": "NOT_AWARDED",
+  "limitations": [
+    "Function logic was reproduced exactly from the inspected function body, but the full module/test suite was not imported from a checkout.",
+    "DNS resolution and interface ownership are architecture decisions for hostname policy; safest current contract is fail closed unless explicitly authorized.",
+    "Packaged desktop auth-on behavior does not eliminate manual/dev public-bind risk."
+  ]
+}
