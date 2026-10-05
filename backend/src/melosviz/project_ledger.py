@@ -205,6 +205,7 @@ class ProjectLedger:
             "revision":revision,
             "parent_revision":rev[0],
             "spec_sha256":rev[1],
+            "scene_segments":self.load(project_id,revision).scene_segments,
             "attempts":attempt_views,
         }
 
