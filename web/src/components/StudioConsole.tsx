@@ -214,24 +214,43 @@ export function StudioConsole({
     if (!projectId || !ledgerPath) return;
     let cancelled = false;
     void post<{
+      scene_segments?: Array<{
+        scene_index?: number; index?: number; name?: string; start_sec?: number; end_sec?: number;
+        scene_type?: string; camera_motion?: string; prompt?: string; palette?: string[]; seed?: number;
+      }>;
       attempts?: Array<{
         evidence?: Array<{kind?:string;artifact_sha256?:string;state?:string}>;
-        assembly?: {state?:string}|null;
+        assembly?: {state?:string;ordered_inputs?: Array<[number,string]>}|null;
       }>;
     }>("/api/studio/project-status",{project_id:projectId,ledger_path:ledgerPath})
       .then((status) => {
         if (cancelled) return;
         const attempt=status.attempts?.[status.attempts.length-1];
-        if (!attempt) return;
+        const digestByScene=new Map<number,string>(attempt?.assembly?.ordered_inputs ?? []);
         const accepted=new Set(
-          (attempt.evidence ?? [])
+          (attempt?.evidence ?? [])
             .filter((e)=>e.kind==="scene" && e.state==="accepted" && e.artifact_sha256)
             .map((e)=>e.artifact_sha256 as string),
         );
-        setScenes((prev)=>prev.map((scene)=>{
-          const digest=(scene as StudioScene & {artifactSha256?:string}).artifactSha256;
-          return digest && accepted.has(digest) ? {...scene,status:"accepted"} : scene;
-        }));
+        const restored=(status.scene_segments ?? []).map((seg,position):StudioScene=>{
+          const index=seg.scene_index ?? seg.index ?? position;
+          const digest=digestByScene.get(index);
+          return {
+            index,
+            name:seg.name ?? `Scene ${index+1}`,
+            startSec:seg.start_sec ?? 0,
+            endSec:seg.end_sec ?? 0,
+            sceneType:seg.scene_type ?? "unknown",
+            camera:seg.camera_motion ?? "",
+            prompt:seg.prompt ?? "",
+            palette:seg.palette ?? [],
+            seed:seg.seed ?? 0,
+            status:digest && accepted.has(digest) ? "accepted" : digest ? "produced" : "queued",
+            artifactSha256:digest,
+            fromCache:false,
+          };
+        });
+        if (restored.length) setScenes(restored);
       })
       .catch(()=>{ /* absence of durable status must never manufacture acceptance */ });
     return ()=>{cancelled=true;};
