@@ -58,7 +58,7 @@ try:
 except ImportError:  # pragma: no cover — only reachable without [bridge] extras installed
     print(
         "[melosviz bridge] FastAPI/uvicorn not installed. "
-        "Install with:  pip install 'melosviz[bridge]'\n"
+        "Install with: pip install 'melosviz[bridge]'. ",
         "The desktop app will use the CLI subprocess fallback.",
         file=sys.stderr,
     )
@@ -186,6 +186,9 @@ class StudioGenerateRequest(BaseModel):
     # Optional correlation ID forwarded to the render event bus so the
     # Director's Console SSE stream can subscribe to per-scene events.
     job_id: str | None = None
+    ledger_path: str | None = None
+    project_id: str | None = None
+    candidate_sha: str | None = None
 
 
 class StudioMasterRequest(BaseModel):
@@ -230,11 +233,30 @@ class StudioValidateRequest(BaseModel):
     require_continuity: bool = False
 
 
+class StudioProjectStatusRequest(BaseModel):
+    ledger_path: str
+    project_id: str
+
+
 class StudioPipelineStatus(BaseModel):
     storyboard: dict[str, object] | None = None
     generate: dict[str, object] | None = None
     master: dict[str, object] | None = None
     ship: dict[str, object] | None = None
+
+
+@app.post("/api/studio/project-status")
+async def studio_project_status(req: StudioProjectStatusRequest) -> dict[str, object]:
+    """Read canonical durable project truth after bridge/process replacement."""
+    ledger_path=_check_inside(req.ledger_path)
+    from melosviz.project_ledger import ProjectLedger
+    ledger=ProjectLedger(ledger_path)
+    try:
+        return ledger.project_status(req.project_id)
+    except KeyError:
+        raise HTTPException(status_code=404,detail="project not found")
+    finally:
+        ledger.close()
 
 
 # ---------------------------------------------------------------------------
@@ -659,6 +681,7 @@ def _run_studio_subprocess(args: list[str], *, cwd: str | None = None) -> dict[s
 
     return {
         "returncode": proc.returncode,
+        "stdout": proc.stdout,
         "stdout_tail": proc.stdout.splitlines()[-5:],
         "stderr_tail": proc.stderr.splitlines()[-5:] if proc.stderr else [],
     }
@@ -755,7 +778,7 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
     prior = {k: os.environ.get(k) for k in env_overlay}
     os.environ.update(env_overlay)
     try:
-        _run_studio_subprocess(cli_args)
+        generate_result = _run_studio_subprocess(cli_args)
     finally:
         for k, v in prior.items():
             if v is None:
@@ -763,25 +786,37 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
             else:
                 os.environ[k] = v
 
-    # Return a manifest of everything emitted (scoped by scene_type subfolders,
-    # e.g. comfyui_image/scene_*, comfyui_video/scene_*, plus any flat scene_* dirs).
-    scenes: list[dict[str, object]] = []
-    for scene_dir in sorted(out.glob("scene_*")):
-        if not scene_dir.is_dir():
-            continue
-        scene_meta: dict[str, object] = {"scene_dir": str(scene_dir), "name": scene_dir.name}
-        wf = scene_dir / "workflow.json"
-        js = scene_dir / "job_spec.json"
-        plan = scene_dir / "plan.json"
-        if wf.exists():
-            scene_meta["workflow_json"] = str(wf)
-        if js.exists():
-            scene_meta["job_spec_json"] = str(js)
-        if plan.exists():
-            scene_meta["plan_json"] = str(plan)
-        scenes.append(scene_meta)
-
-    return json.dumps({"out_dir": str(out), "scenes": scenes}, indent=2)
+    # The CLI/conductor owns scene identity and outcome. Do not reconstruct
+    # product truth by guessing a filesystem layout after the subprocess exits.
+    stdout = str(generate_result.get("stdout") or "").strip()
+    try:
+        manifest = json.loads(stdout)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="generate completed but did not return a structured scene manifest",
+        ) from exc
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("scenes"), list):
+        raise HTTPException(status_code=500, detail="generate scene manifest is malformed")
+    manifest["out_dir"] = str(out)
+    if req.ledger_path or req.project_id or req.candidate_sha:
+        if not (req.ledger_path and req.project_id and req.candidate_sha):
+            raise HTTPException(status_code=400,detail="ledger_path, project_id, and candidate_sha must be supplied together")
+        ledger_path=_check_inside(req.ledger_path)
+        from melosviz.analysis.models import RenderSpec
+        from melosviz.project_ledger import ProjectLedger
+        storyboard=json.loads(sb.read_text(encoding="utf-8"))
+        scenes=storyboard.get("scenes") or storyboard.get("scene_segments") or []
+        spec=RenderSpec(scene_segments=scenes)
+        ledger=ProjectLedger(ledger_path)
+        try:
+            revision=ledger.commit(req.project_id,spec,parent_revision=ledger.latest_revision(req.project_id))
+            attempt=ledger.start_attempt(req.project_id,revision,req.candidate_sha)
+            ledger.finish_attempt(attempt,req.job_id)
+            manifest["project"]={"project_id":req.project_id,"revision":revision,"attempt_id":attempt,"candidate_sha":req.candidate_sha}
+        finally:
+            ledger.close()
+    return json.dumps(manifest, indent=2)
 
 
 @app.post("/api/studio/master", response_class=PlainTextResponse)
@@ -997,7 +1032,9 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
 
     Clients (web StudioConsole, desktop Director's Console) open an
     ``EventSource('/api/render/events?job_id=...')`` and receive one
-    ``data: <json>\\n\\n`` SSE frame per RenderEvent. Frames are flushed
+    ``data: <json>\
+\
+`` SSE frame per RenderEvent. Frames are flushed
     every 250ms while the connection is open and the bus has new events.
 
     Query params:
@@ -1018,14 +1055,14 @@ async def render_events(job_id: str | None = None, since_ms: int = 0) -> object:
         # fired while it was offline.
         for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
             last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-            yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+            yield f"data: {_json.dumps(evt.to_dict())}\\n\\n"
 
         while True:
             # Drain anything emitted since last flush, then sleep briefly
             await asyncio.sleep(0.25)
             for evt in bus.recent(job_id=job_id, since_ms=last_seen_ms):
                 last_seen_ms = max(last_seen_ms, evt.ts_ms + 1)
-                yield f"data: {_json.dumps(evt.to_dict())}\n\n"
+                yield f"data: {_json.dumps(evt.to_dict())}\\n\\n"
 
     return StreamingResponse(
         event_stream(),
