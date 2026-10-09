@@ -310,19 +310,28 @@ def test_analyze_wav_32bit_notes_match_16bit(tmp_path: Path) -> None:
 
 
 def test_no_audioop_envelope_alignment_length(tmp_path: Path) -> None:
-    """audioop segments count = ceil(len / segment_size) (lines 157-167).
+    """audioop segments count = ceil(len / segment_size).
 
     A 1.0 s sine at bucket_count=120 has segment_size 366 bytes, so the
     audioop branch yields 121 buckets while the pure-Python branch yields
-    exactly 120.  The flag itself is asserted too (see the dedicated test).
+    exactly 120 (measured, both branches).  Each branch is pinned by its own
+    invariant -- the segment-alignment formula vs the exact bucket_count --
+    so the test holds on bare py3.13+ where ``audioop`` is gone and the
+    transitive ``audioop-lts`` backport (pulled in only via
+    standard-aifc/audioread/librosa) may be absent.  The flag itself is
+    asserted too (see the dedicated test).
     """
     wav = _write_wav(tmp_path / "sine1s.wav", _sine_samples(22050))
     result = audio_mod.analyze_wav(wav, bucket_count=120)
-    mono_len = 22050 * 2
-    raw_size = mono_len // 120
-    segment_size = max(2, raw_size // 2 * 2)
-    assert math.ceil(mono_len / segment_size) == 121
-    assert len(result.rms_envelope) == 121
+    if audio_mod._HAS_AUDIOOP:
+        mono_len = 22050 * 2
+        raw_size = mono_len // 120
+        segment_size = max(2, raw_size // 2 * 2)
+        assert math.ceil(mono_len / segment_size) == 121
+        assert len(result.rms_envelope) == 121
+    else:
+        # The fallback splits the input into exactly bucket_count buckets.
+        assert len(result.rms_envelope) == 120
 
 
 # ---------------------------------------------------------------------------
