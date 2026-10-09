@@ -206,16 +206,32 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #     server.py   32 killed, 27 survived,  1 unmeasured  (= 60)
 #     TOTAL       81 killed, 41 survived,  1 unmeasured  (= 123)
 #
-# 81/123 = 65.9%, clearing the 65.04% bar by one kill. The 12 audio survivors
-# include the four equivalent mutants argued above; the remaining 8 survive
-# under the widened selection and are genuine (weak-or-absent distinguishing
-# assertions on reachable lines). The 1 unmeasured is server.py:1084
-# (__name__ == '__main__' guard), which exits 3 on every attempt -- a
-# collection-path quirk that bounds MAX_UNMEASURED_RATIO headroom rather
-# than the score. With one kill of margin the bar is met but fragile: any
-# single kill-to-survivor regression (a flaky new test, an env change)
-# drops the score to exactly 80 or below. That fragility is real and is
-# why TARGET_SCORE stays at 65 rather than rising with the new rate.
+# PROVENANCE CAVEAT, added the same day: that sweep measured the WORKING
+# TREE, which at the time carried an uncommitted rewrite of audio.py
+# (741 insertions / 1024 deletions vs HEAD, including a duplicate-0 phrygian
+# table key that HEAD does not have). The mutation plan -- and therefore the
+# sampled 123 -- is computed from the file it mutates, so the numbers above
+# describe the edited tree, not the committed one. They established that the
+# assertion work moves the score far (47 -> 81 of 123 measured kills) but
+# they are NOT a claim about what CI measures on HEAD. The authoritative
+# committed-tree number is the qgate job itself; the committed audio.py also
+# has a reachable phrygian key, which this gate's tests now pin (see
+# test_audio_mutation_gaps.py SCALE_CASES). If the committed-tree rate comes
+# in short, the fix is the same direction as before: assertions that
+# distinguish mutants of HEAD, not movement of TARGET_SCORE.
+#
+# 81/123 = 65.9% on the measured tree, clearing the 65.04% bar. The 12 audio
+# survivors include the four equivalent mutants argued above (valid for the
+# edited tree; HEAD's reachable phrygian key changes that one case); the
+# remaining 8 survive under the widened selection and are genuine
+# (weak-or-absent distinguishing assertions on reachable lines). The 1
+# unmeasured is server.py:1084 (__name__ == '__main__' guard), which exits 3
+# on every attempt -- a collection-path quirk that bounds
+# MAX_UNMEASURED_RATIO headroom rather than the score. With one kill of
+# margin on the measured tree the bar is met but fragile: any single
+# kill-to-survivor regression (a flaky new test, an env change) drops the
+# score to exactly 80 or below. That fragility is real and is why
+# TARGET_SCORE stays at 65 rather than rising with the new rate.
 #
 # Each list is the set of test files that actually execute lines of that module,
 # so adding a test that reaches a new path lifts the ceiling without touching

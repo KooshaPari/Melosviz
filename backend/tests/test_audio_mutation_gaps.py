@@ -122,18 +122,23 @@ CHORD_CASES: dict[str, list[int]] = {
 
 # The reachable scale entries.  "C major" is deliberately absent: its table
 # key (1, 2, 4, ...) can never equal a rooted interval tuple (which always
-# starts with 0), so that entry is dead code.  The last case is a
-# characterization of the phrygian entry: its key (0, 0, 3, ...) duplicates
-# 0 and is likewise unreachable, so those pcs rotate to D# mixolydian today.
-# Pinning that name means a constant flip that *makes* the key reachable
-# (0, 1, 3, 5, 7, 8, 10) changes this result and fails the test.
+# starts with 0), so that entry is dead code.  "C phrygian" pins the
+# COMMITTED audio.py's phrygian key (0, 1, 3, 5, 7, 8, 10) -- the
+# musically-correct interval set, which IS reachable, so these pcs detect as
+# C phrygian under the tree CI measures.  (An in-progress uncommitted
+# working-tree rewrite of audio.py keys phrygian (0, 0, 3, ...) -- a
+# duplicate-0 regression that makes the entry unreachable and detection
+# falls through to "D# mixolydian".  A test cannot pin both trees; it pins
+# the shipped one, and that rewrite must restore the key before it lands.)
+# Pinning the name means a constant flip that makes the key unreachable
+# changes this result and fails the test.
 SCALE_CASES: dict[str, list[int]] = {
     "C minor": [0, 2, 3, 5, 7, 8, 10],
     "C harmonic minor": [0, 2, 3, 5, 7, 8, 11],
     "C melodic minor": [0, 2, 3, 5, 7, 9, 11],
     "C mixolydian": [0, 2, 4, 5, 7, 9, 10],
     "C dorian": [0, 2, 3, 5, 7, 9, 10],
-    "D# mixolydian": [0, 1, 3, 5, 7, 8, 10],  # phrygian pcs; key unreachable
+    "C phrygian": [0, 1, 3, 5, 7, 8, 10],  # committed key, reachable
 }
 
 
