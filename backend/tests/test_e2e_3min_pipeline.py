@@ -29,10 +29,15 @@ from pathlib import Path
 
 import pytest
 
-PYTHONPATH_ENV = "PYTHONPATH=" + str(Path(__file__).resolve().parents[1] / "src")
+from repo_paths import find_repo_root
 
-REPO = Path(__file__).resolve().parents[2]
+# Walk up to the repo root rather than assuming a fixed depth. mutmut runs
+# pytest from mutants/, where tests/ sits one level deeper and parents[2]
+# resolves to backend/ -- which is what produced backend/backend (run
+# 36956679068).
+REPO = find_repo_root(__file__)
 BACKEND = REPO / "backend"
+PYTHONPATH_ENV = "PYTHONPATH=" + str(BACKEND / "src")
 
 
 # ---------------------------------------------------------------------------
