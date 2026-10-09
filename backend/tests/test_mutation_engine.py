@@ -211,11 +211,16 @@ def test_mutation_kill_score_meets_qgate_bar() -> None:
         # children-before-parent and top-of-file first, so taking the first
         # MAX_PER_FILE entries measures the head of each file and says nothing
         # about the rest. That is not just imprecise, it breaks the denominator
-        # TARGET_SCORE is derived from: the 72.2% ceiling is over 597 PLANNED
-        # sites while the gate measures at most 3 + 60 + 60 = 123, and because
-        # the three files have very different reachability (server.py 38.2%,
-        # models.py 100%) an unrepresentative prefix can land the sampled score
-        # below the bar. Spreading the measured sites across the whole plan keeps the
+        # TARGET_SCORE is derived from: the 72.2% reachability figure is over
+        # 597 PLANNED sites while the gate measures at most 3 + 60 + 60 = 123,
+        # and because the three files have very different reachability (server.py
+        # 38.2%, models.py 100%) an unrepresentative prefix can land the sampled
+        # score below the bar. Note the figure bounds kills from below rather than
+        # capping them -- strict executed_lines matching undercounts, and a
+        # ground-truth run killed 5 of 16 mutants it called unreachable; see the
+        # re-derivation note in mutation_gate_config.py.
+        #
+        # Spreading the measured sites across the whole plan keeps the
         # set proportional to the file, so the sampled reachability tracks the
         # real one. The interval is recomputed per target because the plans
         # differ in size by two orders of magnitude.

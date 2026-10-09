@@ -16,11 +16,12 @@ Three concerns live here and they are deliberately not separated further:
     ``MUTMUT_*``, which mirror ``[tool.mutmut]`` so the two can be compared.
   * HOW MUCH -- ``MAX_PER_FILE``, ``TIMEOUT_S`` and the outer
     ``KILL_SCORE_TIMEOUT_S`` budget derived from them.
-  * WHY the bar is where it is -- the ceiling measurement and the gap to it.
+  * WHY the bar is where it is -- the reachability measurement, its known
+    limits, and the gap between them.
 
 The first two are inputs to the run; the third is the argument for the run
-existing. They change together, because changing the selection changes the
-ceiling and changing the ceiling changes the bar.
+existing. They change together: changing the selection changes what it can
+reach, and a change in measured kill performance is what moves the bar.
 """
 
 from __future__ import annotations
@@ -87,6 +88,13 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #     server.py 152 planned,  58 reachable  ->  38.2%
 #     overall   597 planned, 431 reachable  ->  72.2%
 #
+# Re-derived 2026-10-08 from the coverage artifacts on disk under strict
+# executed_lines matching: audio.py 370/442 and server.py 58/152 reproduce
+# exactly, models.py comes out 2 of 3 (line 339 sits in a multi-line statement
+# coverage records against line 337), giving 430/597 = 72.0%. The gate's own
+# configuration killed a mutant at models.py:339, so 3 of 3 -- and the 72.2%
+# total -- is the accurate count and strict line matching is what undercounts.
+#
 # The 83.7% and 38.2% match the earlier estimate exactly; models.py is the one
 # figure that moved, and it moved because TIMEOUT_S used to be too small for
 # that selection to even finish, so a mutant that was killable was being
@@ -95,10 +103,17 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #
 # Two things follow, and both are load-bearing:
 #
-# 1. A mutant on a line the selection never executes cannot be killed by any
-#    assertion, so selecting tests that do not reach the module caps the score
-#    below the bar no matter how the suite is written. Hence the per-module
-#    lists below.
+# 1. A mutant whose mutated code the selection never runs cannot be observed
+#    by any assertion, so the per-module lists below exist to keep each
+#    selection reaching its module. But "never runs" is decided by the
+#    coverage artifacts, not by matching the mutated line against
+#    executed_lines: that match undercounts (models.py:339 above), so strict
+#    reachability is a LOWER bound on what a selection observes. Ground truth,
+#    2026-10-08: of 51 sampled mutants strict matching called unreachable, 16
+#    were run under this gate's own configuration and 5 were KILLED (audio.py
+#    0 of 10, server.py 4 of 5, models.py 1 of 1). Unreachable-by-strict-match
+#    does not cap the score; only genuinely unexecuted code does, and that is
+#    settled by measurement, not by the table above.
 #
 # 2. This gate measures a PER-TARGET SELECTION, not the full suite, so its
 #    ceiling is not comparable to .qgate.toml's `mutation_threshold` (which
@@ -113,12 +128,17 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #    selection could not do better. It is removed rather than replaced with a
 #    better-sounding estimate.
 #
-#    What the measurement above DOES establish is a bound in the other
-#    direction: with the selections listed here, 27.8% of planned mutants sit on
-#    lines no selected test executes and are therefore unkillable. That is what
-#    keeps TARGET_SCORE below 75 for this harness. Whether 75 is reachable by
-#    writing new tests that reach those lines is a real question and is out of
-#    scope for a threshold this gate can measure today.
+#    What the measurement above establishes is narrower than this comment used
+#    to claim: with these selections, 27.8% of planned mutants sit on lines
+#    absent from strict executed_lines. An earlier revision called those
+#    "therefore unkillable" and used that to cap TARGET_SCORE below 75. The
+#    unkillable part was never measured, and the ground-truth run above
+#    falsified it -- 5 of 16 such mutants were killed by the existing
+#    selections. So the figure bounds the score from below, not from above.
+#    TARGET_SCORE stays at 65 as a standing decision; whether these selections
+#    can actually deliver 80 of 123 kills is the open measurement (the kill
+#    rate of the strict-reachable sample has not been measured yet), not
+#    something this reachability table decides.
 #
 # Each list is the set of test files that actually execute lines of that module,
 # so adding a test that reaches a new path lifts the ceiling without touching
@@ -344,24 +364,31 @@ def classify_exit_code(returncode: int) -> str:
 # `cargo mutants` over the Rust workspace, a completely separate sweep that
 # this Python harness does not and cannot stand in for (see mutmut.yml for that
 # job). This test measures AST mutation of three Python modules under four to
-# seven test files each, and its measured ceiling -- the best score reachable
-# even with perfect assertions -- is 72.2% (431 of 597 planned sites sit on a
-# line the selection executes). The residual is server.py: only 58 of its 152
-# sites are reachable at all.
+# seven test files each. Its STRICT reachability -- 431 of 597 planned sites
+# sit on a line the selection's coverage records as executed, 72.2% -- was
+# previously described here as "the best score reachable even with perfect
+# assertions". That claim was never measured and is now falsified: a
+# ground-truth run of this gate's own configuration killed 5 of 16 sampled
+# mutants strict reachability called unreachable. Coverage reachability
+# undercounts (models.py:339) and therefore bounds the score from below; it
+# does not cap it from above. The residual observation stands as a diagnostic
+# only: server.py's selection records 58 of its 152 planned sites executed,
+# the weakest of the three.
 #
-# Asserting 75% here would therefore be asserting something no code change can
-# deliver: the test would stay red no matter how the suite improved, which trains
-# the team to ignore it. Asserting the measured ceiling minus headroom keeps the
-# gate meaningful and falsifiable -- it still fails on a real regression, because
-# it is below the ceiling, so headroom is lost and the number falls.
+# 75% is accordingly not rejected as impossible -- that argument depended on
+# the ceiling reading and does not survive it. What keeps the bar at 65 is a
+# standing decision: the gate must clear 65% (80 of 123 sampled kills), and the
+# bar moves only when measurement shows the selections sustaining a higher
+# kill rate.
 #
 # Two denominators, and conflating them is the second way this was wrong. The
-# 72.2% ceiling is over 597 PLANNED sites across the three modules. This gate
-# measures at most 3 + 60 + 60 = 123 of them, because MAX_PER_FILE caps each
-# target and the driver samples across the plan rather than taking a prefix. So
-# "65 sits ~7 points under the ceiling" is a statement about the PLANNED
-# population, not about the score this test actually computes; the sampled score
-# is an estimate of that population, and it moves when the sample does.
+# 72.2% reachability figure is over 597 PLANNED sites across the three modules.
+# This gate measures at most 3 + 60 + 60 = 123 of them, because MAX_PER_FILE
+# caps each target and the driver samples across the plan rather than taking a
+# prefix. So "65 sits ~7 points under the reachability figure" is a statement
+# about the PLANNED population, not about the score this test actually
+# computes; the sampled score is an estimate of that population, and it moves
+# when the sample does.
 #
 # The estimate is unbiased rather than exact because the sample is proportional.
 # An earlier revision took a contiguous top-of-file prefix, which is NOT a
@@ -373,9 +400,11 @@ def classify_exit_code(returncode: int) -> str:
 # 7 points of headroom is what makes a regression in any one target's kill rate
 # show up as a failure rather than being absorbed as sampling noise.
 #
-# Standing rule for future edits: raise TARGET_SCORE whenever new tests raise the
-# 72.2% planned-population ceiling, and never above it. The bar's only job is to
-# sit just under a ceiling that moved for a real reason.
+# Standing rule for future edits: raise TARGET_SCORE only when a measurement
+# shows the selections killing at a higher rate, never on the strength of a
+# reachability figure alone -- reachability bounds kills from below (see the
+# ground-truth note above). The bar's only job is to sit under demonstrated
+# kill performance, so a real regression drops the score through it.
 TARGET_SCORE = 65.0
 # Ceiling on the share of mutants that produced no verdict at all. A single
 # mutant-induced hang is a legitimate kill signal (the mutation broke the
