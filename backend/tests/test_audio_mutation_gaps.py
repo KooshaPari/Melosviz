@@ -23,6 +23,15 @@ test_coverage_gaps.py.  Reference (golden-model) assertions recompute the
 expected value inside the test from the same inputs, so they are exact on
 the original source and platform-independent (both sides run in one
 process against the same libraries).
+
+Line-reference caveat: per-test docstrings cite ``line N`` of audio.py as
+recorded at authoring time (2026-10-08).  audio.py is under active rewrite,
+so those numbers can drift from any given revision -- in HEAD some land
+dozens of lines away.  The *function name* next to each reference is the
+authoritative anchor; treat the line number as a historical hint, not a
+coordinate.  The pinned behaviour itself is revision-stable: each test
+passes on the unmutated tree it runs against and fails under its mutant,
+which is what the gate scores.
 """
 
 from __future__ import annotations

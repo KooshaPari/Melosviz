@@ -608,26 +608,36 @@ MAX_UNMEASURED_RATIO = 0.10
 # test_bridge_studio_pipeline.py for server.py). Measured baseline ratios,
 # widened vs current, on an idle box: models 0.997, audio 1.471 (96.8s ->
 # 142.4s), server 1.004. Scaling the driver's per-mutant estimates by those
-# ratios:
+# ratios (sums shown so each row can be checked by hand):
 #
-#     measured mutants   3 * 56s + 60 * 168s + 60 * 70s = 12408s ~= 207min
-#     baseline runs      3 * TIMEOUT_S                  =   900s ~=  15min
-#                        ----------------------------------------------
-#     total                                               13308s ~= 222min
+#     mutants     3 * 56s + 60 * 168s + 60 * 70s =  14448s ~= 241min
+#     baselines              3 * TIMEOUT_S       =    900s ~=  15min
+#                            ------------------------------------
+#     mid total                                 =  15348s ~= 256min
 #
-# A conservative pass using observed mutant walls up to ~175s in the
-# verification sweeps puts audio near 175s:
+# A conservative pass uses the widest audio mutant wall observed in the
+# verification sweeps (~175s) instead of the scaled 168s estimate:
 #
-#     conservative       3 * 56s + 60 * 175s + 60 * 70s = 15345s ~= 256min
+#     conservative 3 * 56s + 60 * 175s + 60 * 70s =  14868s ~= 248min
+#     + baselines                                 =    900s ~=  15min
+#     conservative total                          =  15768s ~= 263min
 #
-# so 270min is ~1.05x that conservative case, leaving ~14min of margin. The
+# so 270min (16200s) is ~1.06x the mid total and ~1.03x the conservative
+# total, with 90min of platform headroom below the 360min cap. The
 # earlier 210min budget would have BREACHED: the widened audio selection alone
-# added 45.6s per baseline run, projecting a ~256min worst case against a
+# added 45.6s per baseline run, projecting a ~256min mid case against a
 # 210min cap, and the gate would have aborted mid-sweep reporting no score.
+# (The ratios and totals above are restatements of the measured run
+# `pr296_gate/measure_runtime.py` output; an earlier revision of this table
+# transposed 14448s as 12408s and mistook the mid total for the conservative
+# mutants-only row -- corrected 2026-10-09 after review.)
 #
 # The baseline runs are in this figure because they are three more subprocess
 # invocations of the same selections, each inheriting TIMEOUT_S, and an earlier
 # version of this comment sized the budget from the mutant runs alone. That made
+# the budget blind to the baseline phase: three full selections at TIMEOUT_S are
+# 900s, and a budget sized only from mutant walls could be consumed by the
+# baselines before the first mutant ran.
 SUBPROCESS_CEILING_S = 3 * MAX_PER_FILE * TIMEOUT_S
 KILL_SCORE_TIMEOUT_S = 270 * 60
 
