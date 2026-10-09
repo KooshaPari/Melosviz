@@ -149,6 +149,74 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #    TARGET_SCORE stays at 65 as a standing decision; the gap is closed by
 #    stronger assertions and selection widening, never by moving the bar.
 #
+# Assertion pass, 2026-10-08 (kill records: pr296_gate/assert_work/kills.jsonl,
+# scratch, not committed). tests/test_audio_mutation_gaps.py was written to
+# attack the 32 reachable audio.py survivors of the COMPLETED measurement
+# above, with reference-style assertions: each test recomputes its expected
+# value from the same inputs inside the test, so it is exact on the original
+# source (golden-model pattern, no platform-dependent golden constants).
+# Every survivor was re-run one site at a time under the gate's own exit-code
+# semantics, including every candidate site behind ambiguous (line, op)
+# pairs (the chord/scale tables and the boundary/stem constants have several
+# same-line same-op sites, and the measurement identified them only by line
+# and op): 45 of 49 mutation cycles now fail with pytest exit 1. The cycles
+# that still pass are equivalent mutants, not assertion gaps:
+#
+#   * audio.py:677 `len(beat_times) > 2` -> `>=`: with exactly two beats the
+#     computed regularity is 1.0 -- the same value as the default the guard
+#     skips to -- so no input can distinguish the two;
+#   * audio.py:206 the 32-bit `int.from_bytes(...) * 2**31` rescale is
+#     scale-invariant for the harmonic argmax that the exposed notes are
+#     derived from; only float tie-ordering at the top-8 boundary could
+#     differ, and pinning that would be platform-dependent (libm), so no
+#     deterministic distinguishing input was found;
+#   * audio.py:430 `np.diff(..., prepend=0)` -> `prepend=1`: the pre-clip
+#     value is provably <= 0 (power_to_db with ref=np.max), so both
+#     constants clip to 0 and the novelty is identical;
+#   * audio.py:54 first constant of the phrygian table key: the key
+#     duplicates 0 and can never equal a set of distinct pitch classes, so
+#     flipping it is unobservable. (The flip that makes that key reachable
+#     IS killed, via the pinned rotation result.)
+#
+# For audio.py:54 and audio.py:430 the surviving entry was only measured at
+# (line, op) granularity: all candidate sites were run, the equivalent ones
+# are the ones listed above, and every other candidate is killed. The
+# end-to-end gate kill rate has NOT been re-run since this change: the
+# 15/50 = 30% figure above still describes the configuration WITHOUT this
+# file. Do not infer a new rate from this note -- re-measure instead.
+#
+# models.py also gains the new file: measured with coverage after writing
+# it, that file alone executes 83/83 (100%) of models.py's statements via
+# the RenderSpec / SceneSegment / MIRSummary round-trips, so the entry is
+# not stale. server.py does NOT gain it: the new file never imports the
+# bridge (0 statements executed), and a selection entry that reaches no
+# lines of its target is exactly the silent cap this table exists to avoid.
+#
+# END-TO-END RE-MEASUREMENT, 2026-10-09 (the re-measure this note asked for).
+# Every one of the gate's 123 sampled mutants was re-run under driver
+# semantics with the widened selections -- audio.py: 9 files (+ gaps, +
+# beat_track_isolation), server.py: 8 files (+ studio_pipeline, whose
+# selection entry the residue sweep's 14 kills were measured with and which
+# therefore MUST ship with them), models.py: 5 files (+ gaps). One vote per
+# sampled mutant, later measurement wins, load flakes retried on an idle
+# box until resolved:
+#
+#     models.py    1 killed,  2 survived,  0 unmeasured  ( = 3)
+#     audio.py    48 killed, 12 survived,  0 unmeasured  (= 60)
+#     server.py   32 killed, 27 survived,  1 unmeasured  (= 60)
+#     TOTAL       81 killed, 41 survived,  1 unmeasured  (= 123)
+#
+# 81/123 = 65.9%, clearing the 65.04% bar by one kill. The 12 audio survivors
+# include the four equivalent mutants argued above; the remaining 8 survive
+# under the widened selection and are genuine (weak-or-absent distinguishing
+# assertions on reachable lines). The 1 unmeasured is server.py:1084
+# (__name__ == '__main__' guard), which exits 3 on every attempt -- a
+# collection-path quirk that bounds MAX_UNMEASURED_RATIO headroom rather
+# than the score. With one kill of margin the bar is met but fragile: any
+# single kill-to-survivor regression (a flaky new test, an env change)
+# drops the score to exactly 80 or below. That fragility is real and is
+# why TARGET_SCORE stays at 65 rather than rising with the new rate.
+#
 # Each list is the set of test files that actually execute lines of that module,
 # so adding a test that reaches a new path lifts the ceiling without touching
 # this table. Deriving the lists by measurement rather than by hand is what keeps
@@ -159,6 +227,7 @@ PER_TARGET_TESTS: dict[str, list[str]] = {
         "tests/test_mutation_kill_score.py",
         "tests/test_coverage_100.py",
         "tests/test_coverage_gaps.py",
+        "tests/test_audio_mutation_gaps.py",
     ],
     "audio.py": [
         "tests/test_render_spec_v2.py",
@@ -168,6 +237,8 @@ PER_TARGET_TESTS: dict[str, list[str]] = {
         "tests/test_audio_ml_paths.py",
         "tests/test_bpm_key.py",
         "tests/test_spectrum.py",
+        "tests/test_audio_mutation_gaps.py",
+        "tests/test_beat_track_isolation.py",
     ],
     "server.py": [
         "tests/test_render_spec_v2.py",
@@ -177,6 +248,7 @@ PER_TARGET_TESTS: dict[str, list[str]] = {
         "tests/test_bridge_api.py",
         "tests/test_bridge_b7_error_paths.py",
         "tests/test_bridge_http_integration.py",
+        "tests/test_bridge_studio_pipeline.py",
     ],
 }
 
@@ -466,7 +538,7 @@ MAX_UNMEASURED_RATIO = 0.10
 # inherits the 360-minute cap. A budget at or above 360min is therefore
 # unusable: it would sit on or past the platform cap, and pytest-timeout could
 # never fire first, leaving this marker silently redundant rather than
-# load-bearing. The budget below is set to 210min for that reason.
+# load-bearing. The budget below is set to 270min for that reason.
 #
 # What does NOT set this budget: `.github/workflows/mutmut.yml`. That job has
 # its own `timeout-minutes: 360` and its real bound is unrelated to the
@@ -510,23 +582,38 @@ MAX_UNMEASURED_RATIO = 0.10
 # budget: 1.5x of it is 22.5h, past the 360min platform cap, where
 # pytest-timeout could never fire first and the marker stops being load-bearing.
 #
-# The budget is therefore pinned to 210min, below the cap with real headroom.
+# The budget is therefore pinned to 270min, below the cap with real headroom.
 # The worst case is computed from the ACCEPTED counts this budget actually has
 # to cover, not from MAX_PER_FILE per target: models.py accepts 3 mutants
 # (it has only 3 sites), audio.py and server.py accept the full 60 each.
 #
-#     measured mutants   3 * 56s + 60 * 114s + 60 * 70s = 11208s ~= 187min
-#     baseline runs      3 * TIMEOUT_S                =   900s ~=  15min
-#                        --------------------------------------------
-#     total                                                 12108s ~= 202min
+# RE-DERIVED 2026-10-09 when the selections widened (test_audio_mutation_gaps.py
+# for models.py+audio.py, test_beat_track_isolation.py for audio.py,
+# test_bridge_studio_pipeline.py for server.py). Measured baseline ratios,
+# widened vs current, on an idle box: models 0.997, audio 1.471 (96.8s ->
+# 142.4s), server 1.004. Scaling the driver's per-mutant estimates by those
+# ratios:
 #
-# so 210min is ~1.04x that measured worst case, leaving ~8min of margin.
+#     measured mutants   3 * 56s + 60 * 168s + 60 * 70s = 12408s ~= 207min
+#     baseline runs      3 * TIMEOUT_S                  =   900s ~=  15min
+#                        ----------------------------------------------
+#     total                                               13308s ~= 222min
+#
+# A conservative pass using observed mutant walls up to ~175s in the
+# verification sweeps puts audio near 175s:
+#
+#     conservative       3 * 56s + 60 * 175s + 60 * 70s = 15345s ~= 256min
+#
+# so 270min is ~1.05x that conservative case, leaving ~14min of margin. The
+# earlier 210min budget would have BREACHED: the widened audio selection alone
+# added 45.6s per baseline run, projecting a ~256min worst case against a
+# 210min cap, and the gate would have aborted mid-sweep reporting no score.
 #
 # The baseline runs are in this figure because they are three more subprocess
 # invocations of the same selections, each inheriting TIMEOUT_S, and an earlier
 # version of this comment sized the budget from the mutant runs alone. That made
 SUBPROCESS_CEILING_S = 3 * MAX_PER_FILE * TIMEOUT_S
-KILL_SCORE_TIMEOUT_S = 210 * 60
+KILL_SCORE_TIMEOUT_S = 270 * 60
 
 
 # ----------------------- Driver ------------------------------------------
