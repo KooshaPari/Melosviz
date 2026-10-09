@@ -135,10 +135,19 @@ MUTMUT_TEST_SELECTION_ARGS: Final[tuple[str, ...]] = ("tests/",)
 #    unkillable part was never measured, and the ground-truth run above
 #    falsified it -- 5 of 16 such mutants were killed by the existing
 #    selections. So the figure bounds the score from below, not from above.
-#    TARGET_SCORE stays at 65 as a standing decision; whether these selections
-#    can actually deliver 80 of 123 kills is the open measurement (the kill
-#    rate of the strict-reachable sample has not been measured yet), not
-#    something this reachability table decides.
+#
+#    COMPLETED 2026-10-08: all 72 strict-reachable sampled mutants were then
+#    measured under this configuration, alongside the residue sample. Kill
+#    rates per target: server.py 13/20 = 65.0%, audio.py 15/50 = 30.0%,
+#    models.py 0/2 (n<5). Combined with the residue measurement, the score's
+#    absolute ceiling -- granting every unmeasured mutant as a kill -- is
+#    71/123 = 57.7%, so THIS CONFIGURATION cannot clear 65.04% (short by 9)
+#    regardless of what the 35 unmeasured residue mutants do. audio.py kills
+#    at 30% on lines its own selection executes: its 32 reachable survivors
+#    are an assertion gap, not a coverage gap, which is why widening the
+#    selection without adding discriminating assertions cannot move them.
+#    TARGET_SCORE stays at 65 as a standing decision; the gap is closed by
+#    stronger assertions and selection widening, never by moving the bar.
 #
 # Each list is the set of test files that actually execute lines of that module,
 # so adding a test that reaches a new path lifts the ceiling without touching
