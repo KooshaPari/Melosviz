@@ -20,11 +20,14 @@ and GREEN once the artifact satisfies the contract.
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from repo_paths import find_repo_root
+
+# Marker walk instead of parents[2]: under mutmut the tests/ directory is one
+# level deeper, so a fixed depth resolves to backend/ instead of the repo root.
+REPO_ROOT = find_repo_root(__file__)
 INTENT_DOC = REPO_ROOT / "docs" / "intent" / "MelosViz.md"
 SPEC_DOC = REPO_ROOT / "docs" / "specs" / "intent_doc_spec.md"
 MIN_LOC = 50

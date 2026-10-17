@@ -24,8 +24,8 @@ jobs:
       - name: Install package + pip-audit
         working-directory: backend
         run: |
-          pip install -e ".[bridge,analysis]"
-          pip install pip-audit
+          pip install -e ".[bridge,analysis]" --only-binary :all:
+          pip install pip-audit==2.10.1 --only-binary :all:
       - name: Run pip-audit
         working-directory: backend
         # Fail on known vulnerable deps in the installed environment.
@@ -162,8 +162,8 @@ jobs:
       - name: Generate Python CycloneDX SBOM
         working-directory: backend
         run: |
-          pip install 'cyclonedx-bom>=4.0'
-          pip install -e .
+          pip install cyclonedx-bom==7.4.0 cyclonedx-py==1.0.1 --only-binary :all:
+          pip install -e . --only-binary :all:
           cyclonedx-py environment -o ../sbom-python.cdx.json
       - name: Generate Cargo CycloneDX SBOM
         run: |
@@ -174,7 +174,9 @@ jobs:
           cp sbom-python.cdx.json sbom-out/ 2>/dev/null || true
           find . -maxdepth 3 -name '*.cdx.json' -o -name 'bom.xml' -o -name '*cyclonedx*' | head -20
           cp -v crates/*/melosviz*.cdx.json sbom-out/ 2>/dev/null || true
-          cp -v *.cdx.json sbom-out/ 2>/dev/null || true
+          # The ./ prefix anchors the glob to the working directory so a
+          # leading-dash filename cannot be parsed by cp as an option.
+          cp -v ./*.cdx.json sbom-out/ 2>/dev/null || true
           ls -la sbom-out || ls -la
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

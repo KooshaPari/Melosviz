@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --global prettier@3.6.2
+          npm install --global prettier@3.6.2 --ignore-scripts --no-audit --no-fund
           prettier --version
 
       - name: prettier check

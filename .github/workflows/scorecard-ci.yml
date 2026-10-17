@@ -13,12 +13,16 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  statuses: write
 
 jobs:
   scorecard:
     runs-on: ubuntu-latest
+    # Scorecard needs to write a check result. Scoping to the job keeps the
+    # write permission off anything else that might later share this workflow.
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
     outputs:
       score: ${{ steps.audit.outputs.score }}
       total: ${{ steps.audit.outputs.total }}

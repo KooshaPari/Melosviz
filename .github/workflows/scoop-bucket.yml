@@ -19,17 +19,66 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify release exists
+        # inputs.version is supplied by whoever triggers the workflow, so it is
+        # passed through the environment and validated as semver rather than
+        # interpolated into the shell text.
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          [ -n "$VERSION" ] || VERSION="${{ inputs.version }}"
-          echo "VERSION=${VERSION#v}" >> $GITHUB_ENV
+          set -euo pipefail
+          VERSION="${EVENT_TAG:-$INPUT_VERSION}"
+          VERSION="${VERSION#v}"
+          # Reject CR/LF first: grep anchors ^ and $ per line, so a value with
+          # an embedded newline would otherwise satisfy the semver pattern.
+          case "$VERSION" in
+            *$'\n'*|*$'\r'*)
+              echo "::error::refusing version containing a newline" >&2
+              exit 1
+              ;;
+          esac
+          # Bound the input before the regex runs. The pattern below has a
+          # star inside a star over an overlapping character class
+          # ([0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]* inside (...)*), so a
+          # backtracking matcher does O(n^2) work on a non-matching input of
+          # length n. Measured on this exact pattern: 64 chars -> 0.3 ms,
+          # 512 -> 18 ms, 4096 -> 1.1 s. $VERSION comes from a release tag
+          # or a workflow_dispatch input and is not length-capped upstream,
+          # so cap it here: 128 characters holds the worst case to ~1 ms.
+          # Rejecting out-of-charset characters first also fails the cheap
+          # linear case, and the error names the actual problem.
+          if [ "${#VERSION}" -gt 128 ]; then
+            echo "::error::version is ${#VERSION} characters, over the 128 limit" >&2
+            exit 1
+          fi
+          case "$VERSION" in
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::version has a character outside [0-9A-Za-z.+-]: '$VERSION'" >&2
+              exit 1
+              ;;
+          esac
+          # Full SemVer 2.0.0 grammar, not the looser pattern that
+          # accepted any 0+.-style string. major/minor/patch forbid
+          # leading zeros, prerelease numeric ids forbid leading
+          # zeros, and both the prerelease and the build id lists are
+          # dot-separated with no empty segments, so 1.2.3-01 and
+          # 1.2.3-foo..bar are rejected. Build metadata keeps its
+          # permissive charset: the spec places no leading-zero rule
+          # on build ids. Verified by scripts/check-semver.sh, which
+          # extracts this pattern and these guards out of this file and
+          # runs the accept/reject cases against them.
+          if ! printf '%s' "$VERSION" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'; then
+            echo "::error::refusing non-semver version: '$VERSION'" >&2
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
       - name: Compute SHA256 for Windows zip
         id: sha-win
         run: |
-          VERSION="${VERSION#v}"
-          URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/melosviz-cli-windows-x86_64.zip"
-          curl -fsSL "$URL" -o /tmp/cli.zip
+          set -euo pipefail
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/v${VERSION}/melosviz-cli-windows-x86_64.zip"
+          curl -fsSL --proto '=https' --tlsv1.2 "$URL" -o /tmp/cli.zip
           SHA=$(sha256sum /tmp/cli.zip | awk '{print $1}')
           echo "sha=${SHA}" >> $GITHUB_OUTPUT
           echo "url=${URL}" >> $GITHUB_OUTPUT

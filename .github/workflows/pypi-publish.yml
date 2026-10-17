@@ -10,13 +10,17 @@ on:
         required: true
 
 permissions:
-  id-token: write # for OIDC trusted publishing
   contents: read
 
 jobs:
   build-sdist:
     name: Build sdist + wheel
     runs-on: ubuntu-latest
+    # Deliberately no id-token here. This job only builds and uploads an
+    # artifact; granting it OIDC at workflow level would let the build step
+    # mint a PyPI trusted-publishing token it has no use for.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -45,6 +49,9 @@ jobs:
     name: Publish to PyPI
     needs: build-sdist
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # for OIDC trusted publishing
     environment:
       name: pypi
       url: https://pypi.org/p/melosviz

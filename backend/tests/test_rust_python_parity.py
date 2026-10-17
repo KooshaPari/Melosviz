@@ -19,7 +19,11 @@ from typing import Any
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from repo_paths import find_repo_root
+
+# Marker walk instead of parents[2]: under mutmut the tests/ directory is one
+# level deeper, so a fixed depth resolves to backend/ instead of the repo root.
+REPO_ROOT = find_repo_root(__file__)
 
 
 def _make_wav(path: Path, duration_s: float = 1.0, freq: float = 440.0, sr: int = 44100) -> Path:

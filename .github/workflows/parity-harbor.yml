@@ -25,17 +25,124 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-          cache: pip
+          # No `cache: pip` here: this job installs with `uv pip install`, and
+          # setup-python's pip cache hard-errors at post-job time when pip never
+          # runs and its cache dir was never created. astral-sh/setup-uv caches
+          # the uv store from uv.lock instead.
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Build melosviz-mir
         run: cargo build --release -p melosviz-mir
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[test]"
+        # --only-binary :all: means no third-party source distribution may be
+        # built, so no package setup.py can run at install time (S8541). The
+        # package set comes from the committed uv.lock via `uv export`, and
+        # --no-deps installs exactly those pinned versions without resolving
+        # anything, so the install stays lock-exact (S8544).
+        #
+        # The hashes stay in the exported file and the install runs with
+        # --require-hashes, so uv re-verifies every downloaded wheel against
+        # the sha256 digests recorded in uv.lock. Dropping --no-hashes here
+        # would silently remove that check: --no-deps pins the VERSIONS, but
+        # without hashes a substituted wheel for a pinned version installs
+        # without complaint.
+        # These flags are verified against the uv version pinned above,
+        # not a globally installed one: `uv export --format` alone has
+        # already changed its accepted value across uv releases.
+        run: |
+          uv export --locked --no-emit-project \
+            --extra test \
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
+          # --no-build-isolation means uv will NOT provision a build
+          # environment, so the setuptools backend has to already be in
+          # the venv. `uv venv` on a Linux runner gives a bare venv with
+          # no setuptools, so without this the editable install dies with
+          # "No module named 'setuptools'".
+          #
+          # The version is read out of uv.lock instead of being written
+          # here: `uv export` never emits build-system requirements, so it
+          # cannot ride in on the requirements file, and naming a version in
+          # the workflow is precisely what githubactions:S8544 flags. This
+          # keeps the lock authoritative and pins the backend the same way
+          # as every other dependency. It is a py3-none-any wheel, so
+          # --only-binary :all: accepts it and no sdist is built for it
+          # either.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "could not read the locked setuptools version from uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as
+          # an opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid
+          # one, which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          # The wheel is hash-verified too. `uv export --no-emit-project`
+          # omits build-system requirements, so setuptools cannot ride in on
+          # the hash-verified requirements file and has to be installed
+          # separately -- which meant the one package whose integrity nothing
+          # checked was the build backend for the whole install. Read the wheel
+          # hash straight out of uv.lock (the same file the version came from)
+          # and install through --require-hashes, so this is no weaker than the
+          # rest of the install. The awk `exit` stops at the first
+          # py3-none-any wheel so a second matching record cannot contribute a
+          # second hash; the sdist hash deliberately does not match, and
+          # --only-binary :all: means the sdist is never fetched anyway.
+          SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || {
+            echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2
+            exit 1
+          }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
       - name: Parity tests
         working-directory: backend
         env:
           MELOSVIZ_MIR_BIN: ${{ github.workspace }}/target/release/melosviz-mir
-        run: python -m pytest tests/test_rust_python_parity.py -q --tb=short
+        run: uv run --locked --no-sync --no-build python -m pytest tests/test_rust_python_parity.py -q --tb=short
 
   harbor-runner:
     name: Harbor emit + verify (live runner smoke)
@@ -45,16 +152,126 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.12"
-          cache: pip
+          # No `cache: pip` here: this job installs with `uv pip install`, and
+          # setup-python's pip cache hard-errors at post-job time when pip never
+          # runs and its cache dir was never created. astral-sh/setup-uv caches
+          # the uv store from uv.lock instead.
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.5"
       - name: Install backend
         working-directory: backend
-        run: pip install -e ".[test,bridge]"
+        # --only-binary :all: means no third-party source distribution may be
+        # built, so no package setup.py can run at install time (S8541). The
+        # package set comes from the committed uv.lock via `uv export`, and
+        # --no-deps installs exactly those pinned versions without resolving
+        # anything, so the install stays lock-exact (S8544).
+        #
+        # The hashes stay in the exported file and the install runs with
+        # --require-hashes, so uv re-verifies every downloaded wheel against
+        # the sha256 digests recorded in uv.lock. Dropping --no-hashes here
+        # would silently remove that check: --no-deps pins the VERSIONS, but
+        # without hashes a substituted wheel for a pinned version installs
+        # without complaint.
+        # These flags are verified against the uv version pinned above,
+        # not a globally installed one: `uv export --format` alone has
+        # already changed its accepted value across uv releases.
+        run: |
+          uv export --locked --no-emit-project \
+            --extra test \
+            --extra bridge \
+            --output-file "$RUNNER_TEMP/uv-requirements.txt"
+          uv venv
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/uv-requirements.txt"
+          # --no-build-isolation means uv will NOT provision a build
+          # environment, so the setuptools backend has to already be in
+          # the venv. `uv venv` on a Linux runner gives a bare venv with
+          # no setuptools, so without this the editable install dies with
+          # "No module named 'setuptools'".
+          #
+          # The version is read out of uv.lock instead of being written
+          # here: `uv export` never emits build-system requirements, so it
+          # cannot ride in on the requirements file, and naming a version in
+          # the workflow is precisely what githubactions:S8544 flags. This
+          # keeps the lock authoritative and pins the backend the same way
+          # as every other dependency. It is a py3-none-any wheel, so
+          # --only-binary :all: accepts it and no sdist is built for it
+          # either.
+          SETUPTOOLS_VERSION="$(grep -A1 '^name = "setuptools"$' uv.lock | grep '^version' | cut -d'"' -f2)"
+          test -n "$SETUPTOOLS_VERSION" || { echo "could not read the locked setuptools version from uv.lock" >&2; exit 1; }
+          # A multi-line value means uv.lock now holds more than one setuptools
+          # entry (uv splits packages that resolve differently per marker or
+          # per Python version). `test -n` cannot catch that, because a
+          # multi-line string is still non-empty; it would instead surface as
+          # an opaque "Invalid version" pointing at the install line. Fail here,
+          # naming the real problem, and say which file has to change.
+          # Count the newlines in the scraped value. ${V//[!$'\n']/} strips
+          # every character except newlines, so its length is the newline
+          # count: 0 for a single version, >0 once the lock is ambiguous.
+          # Do NOT write this as `case "$V" in *"$(printf '\n')"*)`: command
+          # substitution in an unquoted case pattern is word-split, the pattern
+          # collapses to `**`, and it matches every value including a valid
+          # one, which would fail this job on a perfectly good lockfile.
+          SETUPTOOLS_NEWLINES="${SETUPTOOLS_VERSION//[!$'\n']/}"
+          if [ "${#SETUPTOOLS_NEWLINES}" -ne 0 ]; then
+            echo "::error::uv.lock holds more than one setuptools entry; the scrape produced:" >&2
+            printf '%s\n' "$SETUPTOOLS_VERSION" >&2
+            exit 1
+          fi
+          # Reject anything that cannot safely be interpolated into a
+          # `setuptools==<version>` requirement line: the empty string, anything
+          # containing whitespace (including the newline of a multi-record
+          # scrape above), or any shell metacharacter / path separator.
+          #
+          # The obvious-looking `[!0-9]*` pattern does not do this: it tests
+          # only the FIRST character, so a real version like 83.0.0-rc1 passes.
+          # The obvious over-correction, rejecting everything outside [0-9.],
+          # also does not do this: uv.lock legitimately holds PEP 440
+          # prerelease and local versions (83.0.0-rc1, 83.0.0+local, 1.0.0.post1),
+          # so that guard would turn a routine `uv lock --upgrade setuptools`
+          # that lands on a prerelease into a red release workflow whose only
+          # remedy is editing workflow files instead of the lockfile. The
+          # allowlist below is the version character set of PEP 440 plus the
+          # `+` local separator, and the character class rejects everything
+          # else -- including a value that would append a second requirement
+          # line to the file this writes.
+          case "$SETUPTOOLS_VERSION" in
+            ''|*[!0-9A-Za-z.+-]*)
+              echo "::error::setuptools version from uv.lock is not a single safe version token: $SETUPTOOLS_VERSION" >&2
+              exit 1
+              ;;
+          esac
+          # The wheel is hash-verified too. `uv export --no-emit-project`
+          # omits build-system requirements, so setuptools cannot ride in on
+          # the hash-verified requirements file and has to be installed
+          # separately -- which meant the one package whose integrity nothing
+          # checked was the build backend for the whole install. Read the wheel
+          # hash straight out of uv.lock (the same file the version came from)
+          # and install through --require-hashes, so this is no weaker than the
+          # rest of the install. The awk `exit` stops at the first
+          # py3-none-any wheel so a second matching record cannot contribute a
+          # second hash; the sdist hash deliberately does not match, and
+          # --only-binary :all: means the sdist is never fetched anyway.
+          SETUPTOOLS_HASH="$(awk '/^name = /{f=0} /^name = "setuptools"$/{f=1} f && /py3-none-any\.whl/{match($0,/sha256:[0-9a-f]+/); print substr($0,RSTART,RLENGTH); exit}' uv.lock)"
+          test -n "$SETUPTOOLS_HASH" || {
+            echo "::error::no setuptools py3-none-any wheel hash in backend/uv.lock" >&2
+            exit 1
+          }
+          printf 'setuptools==%s --hash=%s\n' "$SETUPTOOLS_VERSION" "$SETUPTOOLS_HASH" \
+            > "$RUNNER_TEMP/setuptools-req.txt"
+          uv pip install --only-binary :all: --require-hashes --no-deps \
+            -r "$RUNNER_TEMP/setuptools-req.txt"
+          # First-party source: the one thing that legitimately gets built.
+          uv pip install --no-deps --no-build-isolation -e .
       - name: Emit Harbor task trees
-        run: python eval/harbor/adapter.py --out eval/harbor/out
+        # Runs from the repo root, so point uv at the backend project
+        # that holds the lock.
+        run: uv run --locked --no-sync --no-build --project backend python eval/harbor/adapter.py --out eval/harbor/out
       - name: Run Harbor verifiers
         working-directory: backend
         run: |
-          python -m pytest \
+          uv run --locked --no-sync --no-build python -m pytest \
             ../eval/harbor/out/melosviz-analyze-sine/tests/test_analyze_sine.py \
             ../eval/harbor/out/melosviz-bridge-health/tests/test_bridge_health.py \
             -q --tb=short

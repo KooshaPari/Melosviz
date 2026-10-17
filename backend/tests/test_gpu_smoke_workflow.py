@@ -14,9 +14,11 @@ PR will be blocked.
 
 from __future__ import annotations
 
-from pathlib import Path
+from repo_paths import find_repo_root
 
-REPO = Path(__file__).resolve().parents[2]
+# Marker walk instead of parents[2]: under mutmut the tests/ directory is one
+# level deeper, so a fixed depth resolves to backend/ instead of the repo root.
+REPO = find_repo_root(__file__)
 WORKFLOW = REPO / ".github" / "workflows" / "gpu-smoke.yml"
 
 

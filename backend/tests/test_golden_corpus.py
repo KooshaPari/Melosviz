@@ -21,7 +21,11 @@ from typing import Any
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+from repo_paths import find_repo_root
+
+# Marker walk instead of parents[2]: under mutmut the tests/ directory is one
+# level deeper, so a fixed depth resolves to backend/ instead of the repo root.
+REPO_ROOT = find_repo_root(__file__)
 GOLDEN_DIR = REPO_ROOT / "eval" / "golden"
 EXPECTED_DIR = GOLDEN_DIR / "expected"
 WAV_DIR = GOLDEN_DIR / "wav"

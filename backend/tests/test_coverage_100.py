@@ -281,9 +281,19 @@ class TestResolveFFmpegBinary:
             _resolve_ffmpeg_binary,
         )
 
+        # Narrow env patch on purpose: this function is mutated, so mutmut's
+        # trampoline reads os.environ.get("MUTMUT_DEPENDENCY_DEPTH") around every
+        # traced call. Patching os.environ.get wholesale hands that read a None,
+        # and int(None) raises TypeError inside the tracer instead of the code
+        # under test. This pins only MELOSVIZ_FFMPEG_BIN, the one key that
+        # _resolve_ffmpeg_binary consults, so the test still means "no ffmpeg
+        # configured" without blinding the tracer. The key is blanked rather
+        # than deleted, so an inherited value cannot satisfy the resolver.
+        # _resolve_ffmpeg_binary reads no other variable, so this test is
+        # unaffected by ambient env such as MELOSVIZ_COMFYUI_OFFLINE.
         with (
             patch("shutil.which", return_value=None),
-            patch("os.environ.get", return_value=None),
+            patch.dict("os.environ", {"MELOSVIZ_FFMPEG_BIN": ""}),
             pytest.raises(FFMpegNotFoundError),
         ):
             _resolve_ffmpeg_binary()
@@ -1976,7 +1986,7 @@ class TestBlenderExporterCoverage:
 
         assert isinstance(is_blender_available(), bool)
 
-    def test_export_blender_missing_binary(self, tmp_path):
+    def test_export_blender_missing_binary(self, tmp_path, monkeypatch):
         from melosviz.analysis.models import RenderSpec
         from melosviz.render.blender_exporter import (
             BlenderNotFoundError,
@@ -1985,9 +1995,19 @@ class TestBlenderExporterCoverage:
         )
 
         spec = RenderSpec(metadata={"duration": 0.1})
+        # export_blender consults MELOSVIZ_COMFYUI_OFFLINE *before* it resolves
+        # the Blender binary. With it set to "1" the function returns a render
+        # plan and never reaches _resolve_blender_binary, so this test would see
+        # no exception at all and fail with DID NOT RAISE. The gpu-smoke job sets
+        # that variable at job level, so pin it off here rather than inheriting
+        # whatever the ambient environment happens to say.
+        monkeypatch.delenv("MELOSVIZ_COMFYUI_OFFLINE", raising=False)
+        # Narrow env patch for the same reason as TestResolveFFmpegBinary:
+        # a global os.environ.get patch breaks mutmut's trampoline, which reads
+        # MUTMUT_DEPENDENCY_DEPTH through os.environ.get on every traced call.
         with (
             patch("shutil.which", return_value=None),
-            patch("os.environ.get", return_value=None),
+            patch.dict("os.environ", {"MELOSVIZ_BLENDER_BIN": ""}),
             pytest.raises((BlenderNotFoundError, BlenderRenderError)),
         ):
             export_blender(spec, output_dir=tmp_path)

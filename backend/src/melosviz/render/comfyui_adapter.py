@@ -252,7 +252,6 @@ def _generate_placeholder_clip(
         )
 
     duration = _scene_duration(scene)
-    scene.get("label", scene.get("name", f"scene_{scene_index:03d}"))
     # Pick colour from palette or cycle defaults.
     palette = scene.get("palette", [])
     if isinstance(palette, str):

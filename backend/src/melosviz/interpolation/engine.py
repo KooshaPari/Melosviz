@@ -263,11 +263,26 @@ def _ffmpeg_minterpolate_cmd(
     from_path: Path,
     to_path: Path,
     output_path: Path,
-    frames_to_insert: int,
     fps: int = 24,
 ) -> list[str]:
-    """Build the ffmpeg argv for motion-compensated minterpolate."""
-    max(1, int(frames_to_insert))
+    """Build the ffmpeg argv for motion-compensated minterpolate.
+
+    ffmpeg's ``minterpolate`` has no frame-count option: output length is driven
+    by ``fps`` and the input clip duration, so the caller's frame budget cannot
+    be passed here.
+
+    The budget is still reported by :func:`interpolate_pair`, in its
+    ``frames_inserted`` key -- but on this path that key is the *requested*
+    budget echoed back, not a measured count of frames in the produced file.
+    The real output length follows ``fps`` and the input clip duration.
+
+    No manifest is written on this path. ``_write_manifest`` runs only on the
+    ``missing_backend`` / ``fallback_manifest`` branches, which are exactly the
+    branches that report ``frames_inserted: 0``, so the budget reaches a
+    manifest only when frames were not rendered. The manifest records the
+    budget under its own ``frames_to_insert`` key; the two are never populated
+    together.
+    """
     filter_chain = (
         f"[0:v]minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:me=epzs:vsbmc=1[outv]"
     )
@@ -314,6 +329,17 @@ def interpolate_pair(
     Returns:
         Dict with status, frames_inserted, output_path, and (if applicable)
         backend + ffmpeg_filter.
+
+        ``frames_inserted`` has status-dependent meaning, so do not read it
+        as a frame count in general:
+
+        - on ``status: "ok"`` it is the *requested* frame budget echoed back,
+          not a measured count. On the ffmpeg path ffmpeg's ``minterpolate``
+          takes no frame-count option, so the real output length follows
+          ``fps`` and the input clip duration.
+        - on every other status it is hardcoded ``0``, regardless of what was
+          requested -- meaning nothing was produced, not that nothing was
+          asked for.
 
     Status semantics:
         - "ok": frames written to output_path
@@ -421,7 +447,7 @@ def interpolate_pair(
             "manifest": str(manifest),
         }
 
-    cmd = _ffmpeg_minterpolate_cmd(ffmpeg_bin, from_path, to_path, out_mp4, frames_to_insert, fps)
+    cmd = _ffmpeg_minterpolate_cmd(ffmpeg_bin, from_path, to_path, out_mp4, fps)
     LOG.debug("ffmpeg minterpolate: %s", " ".join(cmd))
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
