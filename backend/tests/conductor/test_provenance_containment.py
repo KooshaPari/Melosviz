@@ -25,6 +25,7 @@ every sidecar lands inside the render output directory.
 from __future__ import annotations
 
 import json
+import wave
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -65,6 +66,14 @@ def _mock_adapter_cls(render_return: Any) -> MagicMock:
     return cls
 
 
+def _write_real_wav(path: Path) -> None:
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x01\x00" * 256)
+
+
 class _RelativePathAdapter:
     """Adapter that reports a relative artifact path (no directory part)."""
 
@@ -74,8 +83,8 @@ class _RelativePathAdapter:
         # Write the clip under the scene output dir but report it *relative*, so
         # the resolution path is what is under test. Without the write the
         # artifact is unusable and is (correctly) rejected as malformed.
-        (out / "clip.mp4").write_bytes(b"\x00" * 16)
-        return [Path("clip.mp4")]
+        _write_real_wav(out / "clip.wav")
+        return [Path("clip.wav")]
 
 
 def _cwd_sidecars() -> list[str]:
@@ -110,12 +119,12 @@ def test_mock_result_sidecar_is_contained_in_output_dir(tmp_path: Path, monkeypa
 
 
 def test_relative_artifact_is_resolved_inside_output_dir(tmp_path: Path, monkeypatch) -> None:
-    """`clip.mp4` must not resolve to `<cwd>/clip.mp4.provenance.json`."""
+    """A relative real-media path must resolve inside the dispatch output root."""
     monkeypatch.setitem(registry_mod.ADAPTER_REGISTRY, "video_export", _RelativePathAdapter)
     _orch(tmp_path).render(_spec())
-    stray = Path.cwd() / "clip.mp4.provenance.json"
+    stray = Path.cwd() / "clip.wav.provenance.json"
     assert not stray.exists(), f"sidecar escaped to {stray}"
-    contained = sorted((tmp_path / "out").rglob("clip.mp4.provenance.json"))
+    contained = sorted((tmp_path / "out").rglob("clip.wav.provenance.json"))
     assert len(contained) == 1, f"expected a contained sidecar, got {contained}"
 
 

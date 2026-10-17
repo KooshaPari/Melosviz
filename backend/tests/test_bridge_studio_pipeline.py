@@ -150,11 +150,27 @@ def test_studio_generate_returns_scene_manifest(tmp_path: Path, client: TestClie
     sb.write_text(json.dumps({"scenes": []}))
     out_dir = tmp_path / "generate"
 
-    # Pre-create the scene_* dirs the manifest expects
-    (out_dir / "scene_0").mkdir(parents=True)
-    (out_dir / "scene_0" / "workflow.json").write_text("{}")
+    cli_manifest = {
+        "job_id": "test-job",
+        "output_dir": str(out_dir),
+        "dispatched_scenes": [0],
+        "only_scenes": None,
+        "assembly_state": "not_attempted",
+        "scenes": [
+            {
+                "scene_index": 0,
+                "scene_type": "comfyui_image",
+                "outcome": "render",
+                "artifact_path": str(out_dir / "comfyui_image" / "dispatch_000" / "clip.mp4"),
+            }
+        ],
+    }
 
-    with patch.object(server, "_run_studio_subprocess", return_value={"returncode": 0}):
+    with patch.object(
+        server,
+        "_run_studio_subprocess",
+        return_value={"returncode": 0, "stdout": json.dumps(cli_manifest)},
+    ):
         res = client.post(
             "/api/studio/generate",
             json={
@@ -170,8 +186,10 @@ def test_studio_generate_returns_scene_manifest(tmp_path: Path, client: TestClie
     assert "out_dir" in body
     assert isinstance(body["scenes"], list)
     assert len(body["scenes"]) == 1
-    assert body["scenes"][0]["name"] == "scene_0"
-    assert body["scenes"][0]["workflow_json"].endswith("workflow.json")
+    assert body["scenes"][0]["scene_index"] == 0
+    assert body["scenes"][0]["scene_type"] == "comfyui_image"
+    assert body["scenes"][0]["outcome"] == "render"
+    assert body["scenes"][0]["artifact_path"].endswith("clip.mp4")
 
 
 # ---------------------------------------------------------------------------
