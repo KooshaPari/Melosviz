@@ -52,6 +52,7 @@ boundary is auditable without FastAPI/Pydantic in the loop.
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import json
 import os
 import threading
@@ -102,28 +103,41 @@ def max_upload_bytes() -> int:
 # ---------------------------------------------------------------------------
 
 
-# Hosts that would expose the bridge to the LAN if bound.
-_PUBLIC_HOSTS = frozenset({"0.0.0.0", "::", "*"})
-
-
 def loopback_check(host: str) -> tuple[bool, str]:
-    """Return ``(ok, reason)``. ``ok=False`` means main() must exit non-zero.
+    """Return whether the host is safe to bind under the current policy.
 
-    A host is considered loopback when it parses as a loopback IP literal
-    (``127.0.0.0/8`` or ``::1``) or matches ``localhost``. Anything else,
-    including ``0.0.0.0`` and ``::``, requires
-    ``MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1``.
+    True loopback IP literals (the entire 127.0.0.0/8 range and ::1) plus the
+    exact hostname localhost are allowed by default. Everything else fails
+    closed unless the operator explicitly sets MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1.
+
+    Hostnames other than localhost are deliberately not DNS-resolved here:
+    startup authorization must not depend on mutable DNS answers or a TOCTOU
+    between validation and Uvicorn binding.
     """
-    if host in _PUBLIC_HOSTS:
-        if os.environ.get("MELOSVIZ_BRIDGE_ALLOW_PUBLIC") == "1":
+    raw = host.strip()
+    allow_public = os.environ.get("MELOSVIZ_BRIDGE_ALLOW_PUBLIC") == "1"
+
+    if raw.lower() == "localhost":
+        return True, "loopback"
+
+    try:
+        address = ipaddress.ip_address(raw)
+    except ValueError:
+        if allow_public:
             return True, "ALLOW_PUBLIC=1"
         return False, (
-            f"Refusing to bind {host}: loopback only by default. "
-            "Set MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1 to bind a public interface."
+            f"Refusing to bind {host}: not a literal loopback address. "
+            "Set MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1 to authorize a non-loopback bind."
         )
-    # Anything else (127.0.0.1, ::1, localhost) is treated as loopback.
-    return True, "loopback"
 
+    if address.is_loopback:
+        return True, "loopback"
+    if allow_public:
+        return True, "ALLOW_PUBLIC=1"
+    return False, (
+        f"Refusing to bind {host}: loopback only by default. "
+        "Set MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1 to authorize a non-loopback bind."
+    )
 
 # ---------------------------------------------------------------------------
 # 2. Bearer auth
@@ -643,8 +657,18 @@ def install_middleware(
     from starlette.responses import JSONResponse
 
     limiter = rate_limiter or RateLimiter()
-    protected = set(protected_paths)
+    protected = {path.rstrip("/") or "/" for path in protected_paths}
     _LIVE_LIMITERS[id(app)] = limiter
+
+    def is_protected_path(path: str, method: str) -> bool:
+        """Match an exact protected path or one of its descendants."""
+        prefix_match = any(
+            path == root or (root != "/" and path.startswith(root + "/"))
+            for root in protected
+        )
+        return prefix_match or (
+            method == "POST" and path.startswith(("/analyze", "/build", "/render"))
+        )
 
     class SecurityMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request: Request, call_next):  # type: ignore[override]
@@ -652,9 +676,7 @@ def install_middleware(
             method = request.method
             path = request.url.path
             ip = request.client.host if request.client else "unknown"
-            is_protected = path in protected or (
-                method == "POST" and path.startswith(("/analyze", "/build", "/render"))
-            )
+            is_protected = is_protected_path(path, method)
 
             # Body / upload size cap (JSON vs multipart upload use separate limits).
             if method == "POST" and is_protected:
@@ -699,9 +721,7 @@ def install_middleware(
             return response
 
         def _audit(self, ip: str, method: str, path: str, status: int, start: float) -> None:
-            protected_now = path in protected or (
-                method == "POST" and path.startswith(("/analyze", "/build", "/render"))
-            )
+            protected_now = is_protected_path(path, method)
             if not protected_now:
                 return
             dur = (time.monotonic() - start) * 1000.0
