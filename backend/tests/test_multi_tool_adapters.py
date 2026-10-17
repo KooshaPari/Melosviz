@@ -618,7 +618,8 @@ class TestOrchestrator:
             _minimal_spec(),
             scene_types=["motion_graphics_beat_sync"],
         )
-        assert "motion_graphics_beat_sync" in result.per_scene_results
+        assert list(result.per_scene_results) == [0]
+        assert result.per_scene_results[0]["scene_type"] == "motion_graphics_beat_sync"
 
     def test_orchestrator_assembly_result_present_when_not_skipped(self, tmp_path: Path) -> None:
         from melosviz.conductor.orchestrator import Orchestrator
@@ -635,9 +636,11 @@ class TestOrchestrator:
         from melosviz.conductor.orchestrator import Orchestrator
 
         orch = Orchestrator(output_dir=tmp_path, skip_assembly=True)
+        # Keep this regression scoped to assembly control rather than making it
+        # depend on an external ComfyUI process being reachable in CI.
         result = orch.render(
             _minimal_spec(),
-            scene_types=["generative_asset"],
+            scene_types=["motion_graphics_beat_sync"],
         )
         assert result.assembly_result is None
 
@@ -711,8 +714,9 @@ def test_orchestrator_dispatches_scene_types_when_segs_lack_match(tmp_path) -> N
     out = tmp_path / "out"
     orch = Orchestrator(output_dir=out, skip_assembly=True)
     result = orch.render(spec, scene_types=["motion_graphics_beat_sync"])
-    # motion_graphics_beat_sync adapter should have been invoked.
-    assert "motion_graphics_beat_sync" in result.per_scene_results
+    # The requested adapter should have been invoked for scene identity 0.
+    assert list(result.per_scene_results) == [0]
+    assert result.per_scene_results[0]["scene_type"] == "motion_graphics_beat_sync"
 
 
 def test_orchestrator_raises_for_unknown_scene_type_even_with_segs(tmp_path) -> None:

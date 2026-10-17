@@ -211,6 +211,9 @@ class RenderCache:
             "artifact_name": (meta or {}).get("artifact_name") or src.name,
             "artifact_relpath": (meta or {}).get("artifact_relpath"),
             "outcome": (meta or {}).get("outcome"),
+            # Bind stored evidence to the renderer/model/workflow/tool identity
+            # that actually produced it; current declarations alone are not evidence.
+            "backend_identity": (meta or {}).get("backend_identity") or dict(key.extra).get("backend_identity"),
         }
         meta_path.write_text(json.dumps(meta_obj, ensure_ascii=False, indent=2), encoding="utf-8")
         return target
@@ -264,6 +267,30 @@ def scene_cache_key(seg: dict, cache_root: Path) -> SceneCacheKey:
     return replace(key, extra={**key.extra, "_scene_identity": identity})
 
 
+def scene_cache_backend_identity(seg: Mapping[str, Any]) -> str | None:
+    """Return the renderer identity required to reuse a real-render cache entry.
+
+    Deterministic in-repo exporters may declare a stable built-in identity. Tool/model
+    driven backends must supply cache_extra.backend_identity from the adapter/workflow
+    configuration. Missing identity is fail-closed for OUTCOME_RENDER reuse, while
+    non-production placeholders may still use the ordinary scene cache.
+    """
+    extra = seg.get("cache_extra") or {}
+    if isinstance(extra, Mapping):
+        explicit = str(extra.get("backend_identity") or "").strip()
+        if explicit:
+            return explicit
+    scene_type = str(seg.get("scene_type") or "")
+    if scene_type == "video_export":
+        return "video_export:ffmpeg:v1"
+    return None
+
+
+def scene_cache_identity_qualified(seg: Mapping[str, Any]) -> bool:
+    """Whether real-render evidence for *seg* is safe to reuse across runs."""
+    return scene_cache_backend_identity(seg) is not None
+
+
 def scene_cache_meta(seg: dict, cache_root: Path | None) -> dict:
     """Return the stored metadata for `seg` under `cache_root` (empty when absent)."""
     if cache_root is None:
@@ -287,7 +314,20 @@ def scene_render_cached(seg: dict, cache_root: Path) -> Path | None:
         return None
     key = scene_cache_key(seg, cache_root)
     cache = RenderCache(cache_dir=Path(cache_root))
-    return cache.lookup(key)
+    hit = cache.lookup(key)
+    if hit is None:
+        return None
+    meta = cache.meta_for(key)
+    # A historical real-render artifact without renderer/model/workflow identity
+    # cannot qualify unchanged-scene reuse. Placeholder/job-spec cache entries are
+    # not production evidence and retain their existing development-cache behavior.
+    if meta.get("outcome") == "render":
+        current_identity = scene_cache_backend_identity(seg)
+        if current_identity is None:
+            return None
+        if meta.get("backend_identity") != current_identity:
+            return None
+    return hit
 
 
 __all__ = [
