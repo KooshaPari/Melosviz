@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "pass": 6,
+  "observed_on": "2026-09-29",
+  "product_source": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "subject": "ISOLATED_IDENTITY_ASSEMBLY_SHIPPING_COUNTEREXAMPLES",
+  "observed_environment": "Python sandbox; no Melosviz product process",
+  "findings": {
+    "cache_identity": [
+      "reference_image change => same fingerprint",
+      "reference_image_strength change => same fingerprint",
+      "model change => same fingerprint",
+      "workflow change => same fingerprint"
+    ],
+    "standalone_assemble": {
+      "intended": [
+        "comfyui_image/scene_000.mp4",
+        "comfyui_video/scene_001.mp4",
+        "comfyui_image/scene_002.mp4",
+        "comfyui_video/scene_003.mp4"
+      ],
+      "observed": [
+        "comfyui_image/scene_000.mp4",
+        "comfyui_image/scene_002.mp4",
+        "comfyui_video/scene_001.mp4",
+        "comfyui_video/scene_003.mp4"
+      ]
+    },
+    "shipping": "64-byte garbage.mp4 is extension-discovered media, therefore package mode becomes online"
+  },
+  "source_analysis": {
+    "only_scenes_occurrences_in_full_orchestrator": 1,
+    "only_scenes_occurrence_is_constructor_assignment_only": true,
+    "direct_rerender_subprocess_invoked": false,
+    "direct_rerender_behavior": "prints a generate command hint; re_render_invoked remains false",
+    "direct_index_contract": "bridge/OpenAPI document 0-based; CLI requires 1..N and uses scenes[index-1]",
+    "provenance_input_hash_set_by_orchestrator": false,
+    "event_done_carries_acceptance_outcome": false
+  },
+  "product_e2e_executed": false,
+  "product_acceptance": "NOT_AWARDED"
+}

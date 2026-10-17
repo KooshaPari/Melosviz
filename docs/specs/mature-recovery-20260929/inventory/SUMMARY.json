@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Melosviz",
+  "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "tracked_tree_status": "ALL_TOP_LEVEL_TREES_ENUMERATED_WITH_UNTRUNCATED_GIT_TREE_RESPONSES",
+  "parts": {
+    "A": {
+      "file": "TRACKED-TREE-A.json",
+      "blob_rows": 278
+    },
+    "B": {
+      "file": "TRACKED-TREE-B.json",
+      "blob_rows": 410
+    }
+  },
+  "exact_blob_inventory_rows": 688,
+  "source_family_denominator": "OPEN_SEMANTIC_RESOLUTION",
+  "warning": "Every top-level tree at the frozen source is covered by A or B and all recursive responses were untruncated. This closes tracked-file enumeration only; history, deleted/moved predecessors, conversations, registry and external research remain separate source families."
+}

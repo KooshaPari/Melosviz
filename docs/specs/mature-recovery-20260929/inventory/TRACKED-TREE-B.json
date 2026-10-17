@@ -1,0 +1,3322 @@
+{
+  "schema_version": 1,
+  "product": "KooshaPari/Melosviz",
+  "source_snapshot": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "part": "B",
+  "enumeration": "COMPLETE_FOR_LISTED_SUBTREES_AND_ROOT_FILES",
+  "subtrees": [
+    "desktop",
+    "docs",
+    "eval",
+    "examples",
+    "fuzz",
+    "i18n",
+    "packages",
+    "packaging",
+    "scripts",
+    "sdk",
+    "showcase",
+    "src-tauri",
+    "web"
+  ],
+  "blob_counts": {
+    "desktop": 44,
+    "docs": 81,
+    "eval": 13,
+    "examples": 4,
+    "fuzz": 5,
+    "i18n": 3,
+    "packages": 10,
+    "packaging": 7,
+    "scripts": 31,
+    "sdk": 10,
+    "showcase": 1,
+    "src-tauri": 62,
+    "web": 104,
+    "<root-files>": 35
+  },
+  "total_blobs": 410,
+  "semantic_resolved": 0,
+  "rows": [
+    {
+      "path": "desktop/assets/brand/favicon-32.png",
+      "object_id": "14a906b9c97a2392e2d357f5e05998680caa9f89",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/favicon.ico",
+      "object_id": "609b416b0f5756247594413a818c7b4d20db176c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/gfx/empty-state.svg",
+      "object_id": "f086c55185a1ad3d7a829cfe37c7c519a0523639",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/logo-256.png",
+      "object_id": "21d61f9dc9c10a3ea56f2bdc6d259a3eb0958c5e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/logo-512.png",
+      "object_id": "97321cb1465ab924e21f42028806d309f3f9626f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/logo-mark-64.png",
+      "object_id": "0c9a89df1243a82c33b53082c7119058b3b59802",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/logo-mark.svg",
+      "object_id": "d6935d0daacbbac703fc09f5736b59ec9fee5fd6",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/logo.svg",
+      "object_id": "1be352bbafb036740207bf0279353c5ca36b63db",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/motion.css",
+      "object_id": "57aa99b8977f7fbac08bbb4abf4e3ec0c899c776",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/brand/tokens.css",
+      "object_id": "a52c94feab60253350b71ead72a8fcd5e61c3260",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icon.png",
+      "object_id": "7d7b01f2b51cb44d9804f39bcf66a8cab3e9ab10",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.icns",
+      "object_id": "460164c792e7984752477c535bbafbec2ec904c6",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_1024x1024.png",
+      "object_id": "647434c97d1cf3143a4e7ae65aaea5f20a211592",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_128x128.png",
+      "object_id": "b91ac008298bd09e56e298f348953688875d2280",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_128x128@2x.png",
+      "object_id": "21d61f9dc9c10a3ea56f2bdc6d259a3eb0958c5e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_16x16.png",
+      "object_id": "5e94fda3e029e0536ae7502b143b6b4501ecd67c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_16x16@2x.png",
+      "object_id": "14a906b9c97a2392e2d357f5e05998680caa9f89",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_256x256.png",
+      "object_id": "21d61f9dc9c10a3ea56f2bdc6d259a3eb0958c5e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_256x256@2x.png",
+      "object_id": "97321cb1465ab924e21f42028806d309f3f9626f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_32x32.png",
+      "object_id": "14a906b9c97a2392e2d357f5e05998680caa9f89",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_32x32@2x.png",
+      "object_id": "42134d9c64abcfa0e2304aa618e7fac4eb7737cd",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_512x512.png",
+      "object_id": "97321cb1465ab924e21f42028806d309f3f9626f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_512x512@2x.png",
+      "object_id": "647434c97d1cf3143a4e7ae65aaea5f20a211592",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/assets/icons/MelosViz.iconset/icon_64x64.png",
+      "object_id": "42134d9c64abcfa0e2304aa618e7fac4eb7737cd",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/bun.lock",
+      "object_id": "d744fe530d4839e9fdd5c606e11f0d646297a547",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/electrobun.config.ts",
+      "object_id": "3f915f6e0bf5a36880bfd0b4ad99815573d15c8c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/locales/en.json",
+      "object_id": "68681c03e2568cf01ed2216a01c1efc772172398",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/locales/es.json",
+      "object_id": "d64e4a1c06f5389dc9da5025fd16931e43e433b0",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/package.json",
+      "object_id": "596598491eee63c7302972910c4ff21e0247288c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/scripts/postBuild.ts",
+      "object_id": "c407e05361010e2707bfd5d5cd9ff94c1c02b667",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/src/i18n.ts",
+      "object_id": "d575234cd80246933c662ff2da60e9f0ed87056e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/src/index.ts",
+      "object_id": "4db901c9d73d9b409d044af0ebc1b058e4db090c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/src/renderBinary.test.ts",
+      "object_id": "9a40cb072a01e1786fd2c532c8f0731a32dd03ca",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/src/renderBinary.ts",
+      "object_id": "0e0d4abf117e80553e2ce273aa4fdebcfd3a8ea2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/src/rpc.ts",
+      "object_id": "0eb018fe9061c9976126fd41a01b6a004de73ac9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/tests/README.md",
+      "object_id": "15b30449ecf70ecd17c93b30cbb5733d887b0da9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/tests/e2e_desktop.test.ts",
+      "object_id": "ec5704f4520564bdcb8014d3e1f87be6bcac7756",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/tests/run_bridge_e2e.sh",
+      "object_id": "d01815e201322b2f722c19e09ca44e55973eb5b3",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/tsconfig.json",
+      "object_id": "31a3fa05b59d11dd03a2f6af730c98d89132cc00",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/views/main/i18n.ts",
+      "object_id": "c12ad1242a569ab4173a8895be74b223cf091094",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/views/main/index.html",
+      "object_id": "3aa72032b10333bc3561f8f263fe1f6636ec8cf8",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/views/main/index.ts",
+      "object_id": "6fe7602db74fa40df3a630e41b11e4683c64c3fd",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/views/main/splash.html",
+      "object_id": "6bc5d65eada05ed6bcf5ff476a1362f64ea61ed5",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "desktop/views/tsconfig.json",
+      "object_id": "088527baedd3b9427a94355997508ae774f30c56",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/AGENT_QUICKSTART.md",
+      "object_id": "98dd74ed5f78c52b0248beb4916c5d085502a70c",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/AIRGAP.md",
+      "object_id": "6cb5e9ff94421464333194532b4e4666ecd6e27c",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "object_id": "2fff84cca8b7369bec2e44684aa99095a12403a4",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/COMMIT_SIGNING.md",
+      "object_id": "1661239ad6af3356864792512d900beb5b39219c",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/COMPLETENESS.md",
+      "object_id": "38876596359df724ad12c76677abb3527a5ff1eb",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/DEPTH_LAYER.md",
+      "object_id": "023d475d61882939ca1a80eca3dc4853aec7bf0d",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/DISTRIBUTION_POLICY.md",
+      "object_id": "c78975194ce5e0e1c249f37d8843d320ed84f28e",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/ENV.md",
+      "object_id": "542505c0ad62315fd1b25c2439f56a5b3e5c7a81",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/EVAL.md",
+      "object_id": "58b24353ad361ed9eee6908a4896979abd472ec5",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/GAP_AUDIT_QA_MATRIX.md",
+      "object_id": "ff4734d04147193c97c13fb2ff3443014ef45eaf",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/GLOBAL_HANDBOOK.md",
+      "object_id": "ea6a43bcd520bfc8d9cc0dfaeee0cfd760c2f4fe",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/GOVERNANCE.md",
+      "object_id": "99fd6dd608b66deda5a599a0845d4c784ea97418",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/I18N.md",
+      "object_id": "b226778d171826755693da8f874a9ec849dc93fb",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/KEY_ROTATION.md",
+      "object_id": "8a0a69f064658a8f414a4884e5e9b5495c43a250",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/LOCAL_RUN.md",
+      "object_id": "0d07054569c75d37a94193b6abadad8dc0f80ba3",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/MIGRATION_V1_V2.md",
+      "object_id": "8857ce1fa7e362bac1cb5c914a13a78bf946b963",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/MUSIC_VIDEO_GUIDE.md",
+      "object_id": "14ec544793403980c60a4a51453fb982706b0b12",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/OBSERVABILITY.md",
+      "object_id": "57d12b6a7f5cd9c954742b5a948bab33e73deeee",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/PACKAGING.md",
+      "object_id": "4fae788e39cb540c009e31075f4f4cf504887cb5",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/PARALLEL_AGENTS.md",
+      "object_id": "c9a0d755be7beb17a72f407857056da0d627d565",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/PERF_BENCHMARK.md",
+      "object_id": "e53ad22ee23275f84dc0ae1540511b11d11854c1",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/PRIVACY.md",
+      "object_id": "f19db7a93f167bcee6af02f8e4d664dea5baaae1",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/QGATE_BASELINE.md",
+      "object_id": "ce5474ae2783e8dd863395bfe742e7218f2ab7f2",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/RENDER_ENGINE_DECISION.md",
+      "object_id": "1f643705e9ea188df1d49cd0e7c7915aafeee20b",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/SIGNING.md",
+      "object_id": "2342e072436916979307865c672fc9b27fe20bd9",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/SLO.md",
+      "object_id": "1d133e2ee46612b4d819d6dde1fa9147bf496f57",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/STUDIO_PIPELINE.md",
+      "object_id": "e35e1c982c2e80bd272f9de9e2c3db11e00c1f90",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/SUPPLY_CHAIN.md",
+      "object_id": "f65835d45f6aef125fa2a5bb0a87068d4f88a54a",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/TAURI_SETUP.md",
+      "object_id": "850e91fcc05119123d7bda4dcc5959a8a41329d3",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/TIMING_BUDGETS.md",
+      "object_id": "ac4f00300893358f2c68a14cf60b0067744b8712",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/TRACEABILITY.md",
+      "object_id": "c704769c5186de6028039efecb66e9c2c6c8c3ae",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/UNINSTALL.md",
+      "object_id": "7bdd8bca5745884939cb1f4fbf93bee0c391665a",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/USER_JOURNEYS.md",
+      "object_id": "f3925a657dfa3993a9189b7a625919ff3d271d92",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/VISUAL_SPEC.md",
+      "object_id": "6c9164d06697226b44c4a36d057641354587e3d6",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/WAVE_P1PQ_MERGE_STATUS.md",
+      "object_id": "1385b965f3c3d57dd46b5208613ffb32c87eeb0a",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/WBS_PHASED.md",
+      "object_id": "80e3a0e942f5acc3b819a81d7d32cd894fb11328",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/WORK_DAG.md",
+      "object_id": "e91cca8ab8ae015c58279aba0dd793d944304efa",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/a11y/CANVAS_SR.md",
+      "object_id": "89c9bddbbb5b68d23a368697067722d022afeec2",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/a11y/CONTRAST.md",
+      "object_id": "02083974e8a1f5751090a6ce32bc188b3697bddc",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/a11y/FOCUS.md",
+      "object_id": "7fc51cc1419e7068bb29417500162e02751ed2ec",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/adr/0003-spec-first-conductor.md",
+      "object_id": "7275005d8fa59ab97de70f5db9aff48907b89136",
+      "mode": "100644",
+      "family": "design-intent",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/api/openapi.json",
+      "object_id": "1ad824572a38565a4c5fee1f03ec091ec514f32d",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/assets/identity/README.md",
+      "object_id": "33aa35288d289be85fbc530bde051906dabc34aa",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/assets/identity/demo.mp4",
+      "object_id": "ca67e8ed377db2b2223318914423c8bee9fb3f40",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/assets/identity/demo.svg",
+      "object_id": "f2efa855cc2745347428d129b3ecbfcb86e4f1a1",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/fr-status.yaml",
+      "object_id": "12b1971e82d21b7f9525663668e3852fbb5b3532",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/functional_requirements.md",
+      "object_id": "fc28265fe0f7bcc915ca1e3637df8b6687d7c209",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/guides/quick-start/VERCEL_DEPLOY.md",
+      "object_id": "1285c6d581a4fd23c37c075feeba55fe14e36c39",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/index.md",
+      "object_id": "b6a11da63d0c748930cc3d4d62361c7e5e6136c6",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/intent/MelosViz.md",
+      "object_id": "60e6902539b99fd07395c049d8f9f4f4598446cf",
+      "mode": "100644",
+      "family": "design-intent",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/motion-design.md",
+      "object_id": "8f95adb9818c21f838fb76b69005ce5deb054663",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/observability/grafana-bridge.json",
+      "object_id": "75a0a0ff7a5128ee4bbcf4302ff98452e12bf764",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/ops/ML_COVERAGE.md",
+      "object_id": "93b9e7944d8dff92bef3a5e50773494b6951b9d0",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/ops/ML_INSTALL.md",
+      "object_id": "14929dcf149af252d8dbfc0ea172acb7a6873bd4",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sdk/README.md",
+      "object_id": "b5ba3571d00c3935549c8bad4b54a3481f90cbe1",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/security/BRIDGE_THREAT_MODEL.md",
+      "object_id": "b876961de1af982a22dbe7de05afaa356f46d7ec",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/security/DEPENDENCY-ADVISORIES.md",
+      "object_id": "f6c8b2c5e7bd5191071b0dbffe6304a09b91b636",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/security/DESKTOP_WEB_THREAT_MODEL.md",
+      "object_id": "b40bd6b23888c87d414c6a8a13d3fdeb9661f8da",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/security/THREAT_MODEL.md",
+      "object_id": "67e120551464823f77e55c9c15b557f0bf252528",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260630-antigame-spectrum/00_SESSION_OVERVIEW.md",
+      "object_id": "661fb9419f32b8e2ba18154d5a56436ef8368736",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260630-antigame-spectrum/01_RESEARCH.md",
+      "object_id": "e3c641e131795517203ea71d5c6c1e17adaef71a",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260630-antigame-spectrum/05_KNOWN_ISSUES.md",
+      "object_id": "189705e237a9999ce83b6314b7d12d33dd92d370",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260630-antigame-spectrum/06_TESTING_STRATEGY.md",
+      "object_id": "976424971791470d792b5e0e3be9c6515ba564df",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260916-m2-happy-path-design/00_HAPPY_PATH_DESIGN.md",
+      "object_id": "e9bbbb5641ccab8c7471145cca48dc7cd6639d90",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260916-m2-m3-happy-path/WBS-21_DIRECTOR_PROMPTS.md",
+      "object_id": "bd6515f0541c5c4d98076c1e6ddd08664e665dbe",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260918-desktop-findings/FINDINGS.md",
+      "object_id": "16a22daddb97706217814a518bb0ac05e2e093c9",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/sessions/20260918-owner-handoff/HANDOFF.md",
+      "object_id": "c9647271b2ac979be11507416a41ce1d24151e33",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/SPEC.md",
+      "object_id": "98dbb4f2d56f84242af8b6b436e8ddd5481f624c",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/diagnose.feature",
+      "object_id": "31e3e22296b60294d6d4ea1c2a0ec33aa9a0ed65",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/presets.feature",
+      "object_id": "1e8a54b72f0fc8aa9c4f37887a1c4bcd76588cf6",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/production_delivery_extensions.feature",
+      "object_id": "d27ebeb2fb1e520e9c757730c6378998880cfb72",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/test_presets_acceptance.py",
+      "object_id": "c88eee4121967cf2646dec832c29c06bc960ea1b",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/test_video_exporter_acceptance.py",
+      "object_id": "3c7fe9068b3b83e2536280ae5dd13a8c9a24cf9e",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/acceptance/video_exporter.feature",
+      "object_id": "7f65c39eede3b9f4a07da94ea1cd32dc2452c1e8",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/intent_doc_spec.md",
+      "object_id": "4322bbcb4eb040ee144c1cb6ad89341a50af70fe",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/specs/top_level_spec_md_spec.md",
+      "object_id": "c46f7ccb6d42ee05c2cde2563678a2e6fdfeff55",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/superpowers/handoffs/2026-09-01-glm-handoff.md",
+      "object_id": "d48954ec5cfc313d3da3b75284386ceea1be7eda",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-31-production-delivery-extensions.md",
+      "object_id": "f5081ab7c86fbf921ddb94c2162e25999ab9c405",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-31-production-delivery-extensions-design.md",
+      "object_id": "ba53ee7e54301cadd7399c2200dcda9512816d2a",
+      "mode": "100644",
+      "family": "historical",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/visual/IDENTITY.md",
+      "object_id": "28180ec421d17b17b6957f0b4ff0ed4b5a4e120a",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "docs/visual/PROVENANCE.md",
+      "object_id": "485aaaa5e7dd3debc71b51d05820950dee0513fe",
+      "mode": "100644",
+      "family": "documentation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/MANIFEST.md",
+      "object_id": "2625f9148207a6bb7205653fb53b207b7fc3e22a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/chord_cmaj_1s.json",
+      "object_id": "50919d44e6d7d7267b3aef0f49d978ae0beb6c99",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/kick_pattern_2s.json",
+      "object_id": "d741333bf2e6456fc1072b9a1ec4c1d3c92faacd",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/noise_burst_1s.json",
+      "object_id": "839bfed6f20fe73202e05fa5a35718689b3295cc",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/silence_1s.json",
+      "object_id": "7aa88bcc9f62c97146f11d2a4b7c40c200e6b39d",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/sine_220hz_2s.json",
+      "object_id": "b30ededade93970f9ceb6df4b594045498574b51",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/expected/sine_440hz_1s.json",
+      "object_id": "4586635961965d06b82b36763fb5eb68b9e63dd2",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/screenshots/README.md",
+      "object_id": "fcc06f0564fab9500e35e39eb160448a37ce3dcd",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/screenshots/a11y-fixture.baseline.png",
+      "object_id": "7aab0e1c33363f9f873e112879219dfdcd72718a",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/screenshots/desktop-splash.baseline.png",
+      "object_id": "f1c57d57d340f36ac10c31df1e651dae16719085",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/golden/screenshots/r3f-canvas.baseline.png",
+      "object_id": "7d3ce526ddb61ed1db4a1f09c341cc165931a9a7",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/harbor/README.md",
+      "object_id": "844dd733fe7806565183f439ac61c2832979b7a8",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "eval/harbor/adapter.py",
+      "object_id": "75fc4e9d60faf3b90a4a827fe0874169e1532f3d",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "examples/NeonTide/README.md",
+      "object_id": "648cf23015eb129094f6e1d64b081328a1132e42",
+      "mode": "100644",
+      "family": "examples",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "examples/NeonTide/moodboard.json",
+      "object_id": "6625e95a050583d54cfbebdb0d49ca78cc940a37",
+      "mode": "100644",
+      "family": "examples",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "examples/NeonTide/render_pipeline.sh",
+      "object_id": "7cc33c7caf3df0407b8f527b3ee32465b9805b7e",
+      "mode": "100755",
+      "family": "examples",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "examples/NeonTide/song.lrc",
+      "object_id": "e1aaa79e3921d1eccdd85183fdbcc027e1b1b2dc",
+      "mode": "100644",
+      "family": "examples",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "fuzz/Cargo.toml",
+      "object_id": "17200e2890bc5b943ad80a9af691821e356fc939",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "fuzz/README.md",
+      "object_id": "db2c9ad11f9062b0ba44bb88446c6309074fbb84",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "fuzz/atheris_renderspec.py",
+      "object_id": "0b0ee18f81430053aab228eef665fed998a8a03d",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "fuzz/fuzz_targets/renderspec_json.rs",
+      "object_id": "73504f20cfe28c1c113bd7cedd93234dbf5cca22",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "fuzz/fuzz_targets/wav_header.rs",
+      "object_id": "9341a76da4545b2694f8ad13285a28a8833c3b6c",
+      "mode": "100644",
+      "family": "verification",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "i18n/messages/en.json",
+      "object_id": "d9b166d41bdfc960f710b54c4054b84f92823b76",
+      "mode": "100644",
+      "family": "localization",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "i18n/messages/es.json",
+      "object_id": "31cc97381d56663660d46d86eb811c14a708ee97",
+      "mode": "100644",
+      "family": "localization",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "i18n/schema.json",
+      "object_id": "471e3022fdd9d053f0c99fe82b2d06be4d0f9872",
+      "mode": "100644",
+      "family": "localization",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/brand-tokens/README.md",
+      "object_id": "d87407bffdeefcedd087e5cb21403d747f21e286",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/brand-tokens/package.json",
+      "object_id": "2f8c61124bbfd3218880d20f3cafe2e3ca3e86a6",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/brand-tokens/tokens.css",
+      "object_id": "3f97f4169b381fe1f8a824546694c10f6be0711b",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/README.md",
+      "object_id": "d100ebec6756ab5af6d3d6e6cb9caac7ac4c401a",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/package-lock.json",
+      "object_id": "6388e34cc3a82ddd9741c7a92dae714288b22c09",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/package.json",
+      "object_id": "4e4546ffcda58017100a7766b4f5f36333b879ff",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/src/Button.tsx",
+      "object_id": "f4b288c85a6c749a5e415b0fc8c700c92e727644",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/src/EmptyState.tsx",
+      "object_id": "83c57644933479eec83aef7143fee4e956cb347e",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/src/Skeleton.tsx",
+      "object_id": "eb748b586ccfa2798721034f2ca9f219cade0599",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packages/ui/src/index.ts",
+      "object_id": "4b046f7c227e1887fd15c50603004432bede6e7e",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/README.md",
+      "object_id": "2dcbc3f4cd477e9285a553170855c1f076508eb2",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/cross.toml",
+      "object_id": "2faaa9b368c99d2f6b7873abee42d4faa02e1b04",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/homebrew-tap/Formula/melosviz.rb.template",
+      "object_id": "0f68abf75064b8b62d30315cda894eaa82fcf5c0",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/launchd/ai.melosviz.bridge.plist",
+      "object_id": "166e5f6195bf8ed7aaf47f7cf945d3271b6f4466",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/scoop-bucket/melosviz.json.template",
+      "object_id": "f9bb056e8b346e621d011044ea2a79564e9752a4",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/winget/manifests/kooshapari/Melosviz/melosviz.installer.yaml.template",
+      "object_id": "354b5bc99f0520c281039087f52891f6cb18c44a",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "packaging/winget/manifests/kooshapari/Melosviz/melosviz.yaml.template",
+      "object_id": "434cde628fcc98825d6bfb819dc11ad14c43d23b",
+      "mode": "100644",
+      "family": "packaging",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/airgap_bundle.sh",
+      "object_id": "7b117260bc2f65191663b98bdbd8323e32311cfe",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/airgap_fetch_desktop.sh",
+      "object_id": "4ea9abc22e0af33c7a1cbf1cdf0b18390c30c420",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_flaky_quarantine.py",
+      "object_id": "3adf92025696a22cade319d0381c7b142df4c348",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_fr_status.py",
+      "object_id": "29c3886cc739d94fc613be918dfca1012aa847bb",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_gap_matrix.py",
+      "object_id": "148e604b7d795cd7cf18a4d9b6e83301b7943753",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_hermetic_python_smoke.sh",
+      "object_id": "e221d625d9857bea3177269ca27a7237cd88e4a9",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_hermetic_smoke.sh",
+      "object_id": "7237f53c806a1a3278785df54b80bbd01457186b",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_journeys.py",
+      "object_id": "dbf50eb5b98d914b06e7a86dc52102a82556e337",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_locale_parity.py",
+      "object_id": "d06b5fb1fca99b45a8323582d5006829a1cdb274",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_portability_smoke.py",
+      "object_id": "2193dcd0bcc53d7f40aa16f4f2a6d562e7025953",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_repro_smoke.sh",
+      "object_id": "13f36d3daf4801c525d8779c5de73f1e25dfea2f",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_reserved_names.py",
+      "object_id": "01985b3484c80165f3b6a4c1b11ea8c0cffda8ca",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_sdk_pack_smoke.sh",
+      "object_id": "78fd3dcffed3e4ab29ff5513eebd6d6d2ea1735d",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_timing_budgets.py",
+      "object_id": "3f06366d894e5b5bc4fb09a8bee6569feda6acc3",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/check_wbs.py",
+      "object_id": "2547783ccaedb4dda0a43e25cf419d46cda00e83",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/dev_bridge.ps1",
+      "object_id": "53a293dc5b79ddf61f602102540b501a84062053",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/dev_bridge.sh",
+      "object_id": "13a7f2f3794e51e3adf6ab433c21bd72447bde2e",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/diagnose.py",
+      "object_id": "a7e0ed623cc4b1f78fcdbbd30f4f650ad54e4023",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/export_openapi.py",
+      "object_id": "e5cabbe774452918a06b3d680fe8a46488491244",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/generate_icon.py",
+      "object_id": "e60a76f9798c8bcabdb068c89f31a0adca0696dd",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/happy_path_smoke.sh",
+      "object_id": "21804c962ca2547d6e5d391a9dd8d05da1b62758",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/pilot_measurements.sh",
+      "object_id": "0ad33f77344d662ef0c2f7e75fd5c72b0fcad449",
+      "mode": "100755",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/profile_bridge_sidecar.ps1",
+      "object_id": "d937f5dfc1f450810f54dd659fce8170e4956a62",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/profile_bridge_sidecar.sh",
+      "object_id": "10112cf8f08d74c98cefc150ad0a9d6a3d21b7f8",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/publish_sdk_packages.sh",
+      "object_id": "a30909d1d7f218a77f804b14b20fb6bf32de7a0d",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/scorecard_ci.py",
+      "object_id": "cabf24be27bddebda4846ef31979a2dffc5bd9a0",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/sdk_pack_smoke.mjs",
+      "object_id": "e9e2ff919a8653d4eefc67f03fd9cc85e789c2f7",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/verify_pins.py",
+      "object_id": "49ab169934f46e6088086bda15d2f2b1f7ce1a54",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/visual-gate/compare.mjs",
+      "object_id": "962026b45da04e90e7de9997ee8ef595c922a32e",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/visual-gate/package-lock.json",
+      "object_id": "eb80582d18d0a4493546095a69f9d2f98afe96f5",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "scripts/visual-gate/package.json",
+      "object_id": "4a7c43a6815315485e04920c827c3ebf84a2ec8d",
+      "mode": "100644",
+      "family": "automation",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/Cargo.toml",
+      "object_id": "a238d09f5801396270bc4b30bcb1cf03d5502956",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/client.rs",
+      "object_id": "99b894d05a148aa501de73935bf395e7f785d559",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/discovery.rs",
+      "object_id": "1ec76af4b25c97482be68f5caefb75de108e119b",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/error.rs",
+      "object_id": "61b8dcc9eda13a82a4ef08b8d29e467a5c969c76",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/heartbeat.rs",
+      "object_id": "c0c4a0452208e4253e74897270ce5c3a8dbb7d0f",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/lib.rs",
+      "object_id": "97f3b1f3bebf34b2ec7d42e875ea265b16a670c1",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/rust/src/types.rs",
+      "object_id": "4933d0584692df869d0a368709464c61f094d5a1",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/ts/README.md",
+      "object_id": "58ef7019adb945e8562bba5442dc9664af2ff5ef",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/ts/package.json",
+      "object_id": "507401100ae0543acddb784744fc08524e0a39f0",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "sdk/ts/src/index.ts",
+      "object_id": "923868d4fc31fa7700fb88c770652891ec064b23",
+      "mode": "100644",
+      "family": "integration",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "showcase/README.md",
+      "object_id": "6b7c5e48d02b84e15052af8e744e709306946a9b",
+      "mode": "100644",
+      "family": "examples",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/Cargo.lock",
+      "object_id": "68bb4602d212fa8d9eb8f915343c9cc93bf0b69b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "object_id": "4689d93c0237df3d6b697267579f40a8bd1778b3",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/build.rs",
+      "object_id": "d860e1e6a7cac333c3cc0bc9cb67faf286b07d69",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/gen/schemas/acl-manifests.json",
+      "object_id": "f43b85280ca4e94ac7243a1fc2ed8f987edc4912",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/gen/schemas/capabilities.json",
+      "object_id": "9e26dfeeb6e641a33dae4961196235bdb965b21b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/gen/schemas/desktop-schema.json",
+      "object_id": "d1e536142fb32e9ab611d0b2dde8016ca280fda2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/gen/schemas/macOS-schema.json",
+      "object_id": "d1e536142fb32e9ab611d0b2dde8016ca280fda2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/128x128.png",
+      "object_id": "5c36f8b120cb85197ff0ed5d7b3d9fa3447a748e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/128x128@2x.png",
+      "object_id": "52c2a1199f33e69926e07e747fe8605392c604dc",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/32x32.png",
+      "object_id": "9d87c76ed5dd1085ab25f3ee98f2e3c16c595b63",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/64x64.png",
+      "object_id": "fb647cf80e8ac6a78c97ccca0415c07824ad502e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square107x107Logo.png",
+      "object_id": "bdf29291a7f6b6f2562c89e4ed728ce04ea4bc8b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square142x142Logo.png",
+      "object_id": "8f5cdb8157b4095ebfd8d791389fa5c3849b747a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square150x150Logo.png",
+      "object_id": "7f919b14ab171fe35d61cd20a3dd22d90a23eb11",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square284x284Logo.png",
+      "object_id": "00cee87029bab163387bdef657d9ef69830d2774",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square30x30Logo.png",
+      "object_id": "4f0127de0fc8c675b169c9622bd711b43a5a5642",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square310x310Logo.png",
+      "object_id": "e2c5a6de08ef6407d9acc9b6014f3688016b5f50",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square44x44Logo.png",
+      "object_id": "973dfa0e48159a4c39c9bd792c65e99e8817af3e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square71x71Logo.png",
+      "object_id": "e65c6ccdec18924d15bdf80d4d803dea883a7946",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/Square89x89Logo.png",
+      "object_id": "f139865d1ec46bc26a271dbd827153b3b1610e54",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/StoreLogo.png",
+      "object_id": "2995acdd8e3c82db8a444ecb68a1a1e38e8fa115",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-anydpi-v26/ic_launcher.xml",
+      "object_id": "2ffbf24b68988bd935f5c695a59753fcb1a5de0e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-hdpi/ic_launcher.png",
+      "object_id": "f6a14f6e78eba9d37c3acf73faa3b6c3e21c7299",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-hdpi/ic_launcher_foreground.png",
+      "object_id": "5b7727e357ef6f7ecba65e2012a1bb366e5e169c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-hdpi/ic_launcher_round.png",
+      "object_id": "d0c9aac504b5b9177eb82bcc801b2a6db4a307ac",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-mdpi/ic_launcher.png",
+      "object_id": "c97c0d7e1e0efff2018e96db3696839950646bbf",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-mdpi/ic_launcher_foreground.png",
+      "object_id": "453ded5f8365d45caf0425e16a8d1c8fd08a773a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-mdpi/ic_launcher_round.png",
+      "object_id": "abdadbad3b9cd252e32342b7bccaabee75bfb7a0",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xhdpi/ic_launcher.png",
+      "object_id": "bcedc66071816d13c2ed3a23657fbb7c254410ab",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xhdpi/ic_launcher_foreground.png",
+      "object_id": "f3b15aefa7330f80f9fdc9040937020a2b2f8699",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xhdpi/ic_launcher_round.png",
+      "object_id": "b50425c1c56c5f62d783f7d7a08dfb8fec437297",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxhdpi/ic_launcher.png",
+      "object_id": "00c43b1dfa45605b763e55b037c30d328254f6b5",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxhdpi/ic_launcher_foreground.png",
+      "object_id": "abca068595ccd9ef054dc2d47a3646d401de14f9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxhdpi/ic_launcher_round.png",
+      "object_id": "991d1cbc45532ad1d1537c8bce5d673ea34ec6a0",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher.png",
+      "object_id": "b7f099eb99f68d2eed1b991a383c09d7814ff367",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher_foreground.png",
+      "object_id": "7c30472e9e85e7ce2ad676c7dc99b4b06667f6a3",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher_round.png",
+      "object_id": "2f664b556bd8c7d3570384a91d2a648a77f8618b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/android/values/ic_launcher_background.xml",
+      "object_id": "ea9c223a6cbab0465000584a9d5dd052adffe3c2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/icon.icns",
+      "object_id": "7505b2a84b58617cbd7d09cf5a118d0c5649175b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "object_id": "30e29a39b67af44466d8df3aca488526076bea4a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/icon.png",
+      "object_id": "4b68597a5bccbc4d9481ad7131cc77bc561da5c4",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-20x20@1x.png",
+      "object_id": "ca87a04913f7dff9a3b469e030f5ec4518064399",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-20x20@2x-1.png",
+      "object_id": "99acfce4b5ea2289c9fbc949d5b1a76b65577fe2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-20x20@2x.png",
+      "object_id": "99acfce4b5ea2289c9fbc949d5b1a76b65577fe2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-20x20@3x.png",
+      "object_id": "41d6db6d3e2213f4adf0af0cb0773bc66645758f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-29x29@1x.png",
+      "object_id": "3bc3fb26df5a3df9df584d5207604d563d96afce",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-29x29@2x-1.png",
+      "object_id": "b33f9412d12cf709c2073b3612d557690f6e3ba8",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-29x29@2x.png",
+      "object_id": "b33f9412d12cf709c2073b3612d557690f6e3ba8",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-29x29@3x.png",
+      "object_id": "d4217f3a52502ea4bfa5a38468221eab2c6a6f69",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-40x40@1x.png",
+      "object_id": "99acfce4b5ea2289c9fbc949d5b1a76b65577fe2",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-40x40@2x-1.png",
+      "object_id": "a8160ba43c15d0a69e4ae5dc163cc4dbfccb886e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-40x40@2x.png",
+      "object_id": "a8160ba43c15d0a69e4ae5dc163cc4dbfccb886e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-40x40@3x.png",
+      "object_id": "bca9886df1a6049236ae62102d431a3ed4d06b4c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-512@2x.png",
+      "object_id": "a8cf82af83f5afba4e2261c9ae1cb891c56a97ac",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-60x60@2x.png",
+      "object_id": "bca9886df1a6049236ae62102d431a3ed4d06b4c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-60x60@3x.png",
+      "object_id": "f5e655420b9e6f3fbcd16372d3c882818e67cd35",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-76x76@1x.png",
+      "object_id": "404367f451270d73b0d14307e941943118f04fad",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-76x76@2x.png",
+      "object_id": "4b6897007725332a429604fd1432d8af6ee4057f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/icons/ios/AppIcon-83.5x83.5@2x.png",
+      "object_id": "6a3ac56a6d494f495cace4c29f0bcba3ed38e0f6",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/src/lib.rs",
+      "object_id": "b027168bd983d5e9cfd222a7c948c23185adc0ca",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "object_id": "6a2fc18045b2c8066358b3ed9d10ec5759706dc5",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "object_id": "bf5486905001d6b17b0547fb19962afd197feee6",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/.env.example",
+      "object_id": "26c975cff796466017a04575660737bce7c1cf23",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/.gitignore",
+      "object_id": "f06235c460c2de3d97efc8371125594b7b761b08",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/README.md",
+      "object_id": "5d25526ad360f02db1bae73c1d53a1311a0285db",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/a11y/fixture.html",
+      "object_id": "222604faff3725045265dbb38ee004236ffd4608",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/bun.lock",
+      "object_id": "e147b41af8370c590fbb3c9f072b6f2dcb5d7ef4",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/e2e/viewer.spec.ts",
+      "object_id": "94cf26839c3519f3e1ae3d8de40c82a5f0bbd071",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/fixtures/r3f-canvas.html",
+      "object_id": "9b6cca3ce03a89837f2c6399a2cbe2441a5982a0",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/index.html",
+      "object_id": "faa5fdbdf1ee00a571d6e03b5e06d8d284bf9edd",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/package-lock.json",
+      "object_id": "45d5ad41e475811b11de455ddf17df93b268b73c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/package.json",
+      "object_id": "1f01947ea86b420e0ac5b22621621653fcebdc64",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/playwright.config.ts",
+      "object_id": "9660a5e98bd4486b5b12c9b2ab9c3e6848dbcc3f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/App.tsx",
+      "object_id": "2371134c951838a67bd82089e8c2d24fa8291b74",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/__tests__/App.a11y.test.tsx",
+      "object_id": "70fb508d6d46a36886b07d30ea8893db261e5046",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/__tests__/polish.test.ts",
+      "object_id": "13cb1d8f9760a2515c6f8226f89a69c321cb0153",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/audioAdapter.ts",
+      "object_id": "505dde12ef9adf26f4397b8e735971ebf8f3b88f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/AudioDropzone.tsx",
+      "object_id": "311496ea4b0537ad379c776682667a256385c994",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/BeatPulse.tsx",
+      "object_id": "d770933d0b988679277fab4f5671cb870c21462e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/CommandPalette.tsx",
+      "object_id": "27bb633b453dc0f6e825c6137c877639f429c63f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/Confetti.tsx",
+      "object_id": "3ea801f0970661208812cb51f8f16bddaee57e5d",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/Dialog.tsx",
+      "object_id": "29c129d162b7b0455d3f5b6863e58049d7e4be49",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/ErrorBoundary.tsx",
+      "object_id": "08300b0717ea2352fbc0477bf39870fef80b4c62",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/FullscreenToggle.tsx",
+      "object_id": "7b3c8672cd1c5f410edc7899d43bb982c01583bf",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/InspectabilityPanel.tsx",
+      "object_id": "50a19067900231fabe4ac2b4120bafafdd15da6e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/KeyboardHelp.tsx",
+      "object_id": "7a73382999363071dea7d07f731486d47cab8556",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/LoadingOverlay.tsx",
+      "object_id": "0078fef9cdfc880cd584befab692ed341011ea4b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/LocaleSwitcher.tsx",
+      "object_id": "d0eb52048d68ad8ddcd51d02f6d27b32eacef4c1",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/OnboardingBanner.tsx",
+      "object_id": "90c448dcb9d9eb231c65e02800e0812905484953",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/PlaybackTransport.tsx",
+      "object_id": "9e495d6038c39bb14d35cb86334f2fe9ca538e45",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/PlaylistPanel.tsx",
+      "object_id": "31c204ecd0b17907710b624a192b9c1d1d56ad94",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/PresetEditor.tsx",
+      "object_id": "72a88e3bd067987c859393e3caa9aab6806abc71",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/PresetQuickApply.tsx",
+      "object_id": "8561f1e3d6864b8a58211507b0d36b3368f4e1bf",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/ProgressBar.tsx",
+      "object_id": "f4e71dcc6baabd235c876026422c2f7c09162e8a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/SceneJumpPanel.tsx",
+      "object_id": "1606d9e90ef0339737156fa132d09c6d77dead3a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/SceneSummary.tsx",
+      "object_id": "31210cf7a2b00973dc5cca00ebd942e33d8d984e",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/Skeleton.tsx",
+      "object_id": "07a64f0caff7be0539ec0af591ad2d6c97888636",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/SpecViewer.tsx",
+      "object_id": "f6cfe62186c5112f4c27c7797de82dc8ab56b9e9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/SplashScreen.tsx",
+      "object_id": "8bf706e816be2567ffa8d8b32750bfaa102a4814",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/StudioConsole.tsx",
+      "object_id": "16fcab942354dc5266b078521ad7e033730c7717",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/Toast.tsx",
+      "object_id": "b03e8215e49ab63f35708290e18280fa367f975b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/WaveformDisplay.tsx",
+      "object_id": "1696a64cdcb10b4c4aab1b79f5de2de8bcb26254",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/AudioDropzone.test.tsx",
+      "object_id": "8c3a8aab2e8c72bf26d869420ba3e7542ddd4def",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/BeatPulse.test.tsx",
+      "object_id": "3b52648c22b3551036928629f4f03b2845868899",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/Dialog.test.tsx",
+      "object_id": "500a14c8cbbceba947750a11be04eeb572c518f1",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/KeyboardShortcuts.test.tsx",
+      "object_id": "921b3c72806e1d60cc9f766b4b003e9ac2f50c9d",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/LoadingOverlay.test.tsx",
+      "object_id": "78df108157d66b76b50c1705780e190a52c0c2ad",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/LocaleSwitcher.test.tsx",
+      "object_id": "8f22c3f9b8b6f68973132897ef6c56399cdad231",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/PlaybackTransport.test.tsx",
+      "object_id": "0a17ab4e73998ce2fa44d3f2b4cd79536268f60a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/PlaylistPanel.test.tsx",
+      "object_id": "57dcd0868fc4cbca4b97d3e085eb5a2842466c7f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/PresetEditor.test.tsx",
+      "object_id": "19c109c10a096eff4c304c0cdb38981528d33f42",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/PresetQuickApply.test.tsx",
+      "object_id": "3b7332465378db7ba731081721e67946bf06b5d5",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/SpecViewer.test.tsx",
+      "object_id": "3197d611ebf71db4670a19ebc9c23bfb2e998d69",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/StudioConsole.test.tsx",
+      "object_id": "d3230e9d14d8ec30eac5ac73324943d2385276d4",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/Toast.test.tsx",
+      "object_id": "7057c2cb0e741c71d05987d2c78074a6186f2533",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/components/__tests__/WaveformDisplay.test.tsx",
+      "object_id": "335228aba700107d2165c3c84ae82fb9f6298642",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/fixtures/r3fCanvasFixture.tsx",
+      "object_id": "73dd471897083b5974ed80a613d8584a5339f9ec",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/autosave.ts",
+      "object_id": "31dd50ec9116b3cdb5a0070d1432f3340a06ce7a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/motion-hooks.ts",
+      "object_id": "d2c8f0d91e7900a2fe2b03dc01a4ec48f22d66bf",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/motion.ts",
+      "object_id": "bfe9f000bd98ca269113b6b999901b546798457a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/undoRedo.ts",
+      "object_id": "7810df3fc2d6cc6ceba046089ad5ec138bb60cc8",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/useAnalysis.ts",
+      "object_id": "c155e56b2a2849beaaec30e239031aee689ca253",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/useIsMobile.ts",
+      "object_id": "b8857d190ef74d1028638499f5ef3e47d1aad8a9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/useKeyboardShortcuts.ts",
+      "object_id": "0e571ab61deadd7c12c9b747efc06cacb2d77d3f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/usePlaylist.ts",
+      "object_id": "ce369e5ee6d2bef7c410558df4db174d0995a743",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/hooks/usePrefersReducedMotion.ts",
+      "object_id": "87e26bb18d18698d67226cc66a9dce60cb3b433a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/i18n/LocaleProvider.tsx",
+      "object_id": "9b3cbe1cd06e5e5fa0b604f81f6eb4950b544562",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/i18n/index.ts",
+      "object_id": "7b722106fd1a5c94326e153027d3d7a7328d3be9",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/i18n/locales/en.json",
+      "object_id": "fabb404bda087a1ac92709c514918d39d3b0444a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/i18n/locales/es.json",
+      "object_id": "db0753edc5484188bfd1b5f58ee3657bffdf9b21",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/__tests__/playbackLoop.test.ts",
+      "object_id": "36f81aa91abad93086c7fb545e1b322ed16324c6",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/__tests__/playbackRate.test.ts",
+      "object_id": "09c6bdccc210175392e5743000d67746f2142074",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/__tests__/playbackVolume.test.ts",
+      "object_id": "e49946c55accf87204ab06ad233cb897bd96e503",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/__tests__/recentAudioFiles.test.ts",
+      "object_id": "3f648ea6c896f780605712260dfa92307d7ef71c",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/playbackLoop.ts",
+      "object_id": "0f7a97b8c763360b8bbcfd475211a2aa89406db3",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/playbackRate.ts",
+      "object_id": "f6a04278375270308a864478649147ec5e12b413",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/playbackVolume.ts",
+      "object_id": "5458b01ad80393c7a076514a200b66bf15f01cfb",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/lib/recentAudioFiles.ts",
+      "object_id": "197305bd529963a5429b47f0c89137db1e0205bc",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/main.tsx",
+      "object_id": "668b262fcf262b47e7f4cb316c21b59888f16ae1",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/mapAnalysisSpec.ts",
+      "object_id": "7048e4b808d49ddc0540e57d322a2042a56bbc84",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/r3fRenderer.tsx",
+      "object_id": "caaa9818ee40ccccb4dc3316257f244159aa3565",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/renderSpec.ts",
+      "object_id": "bed2244ba7cb61d90e27ef879bd47fe1446bf565",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/sceneTemplates.ts",
+      "object_id": "8e70abb8ca852574ace2d741c799aa5f206ef158",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/shortcuts.ts",
+      "object_id": "bd2578f02ed6cbe49c13df813c08c285a0ec798b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/styles/brand.css",
+      "object_id": "21038373d84cd005649c1374d3e5f8050764670b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/i18n.test.ts",
+      "object_id": "dcd95596bb73c6b6d44784c8d581307d61b9c83f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/renderSpec.test.ts",
+      "object_id": "c4a85006e7c580bd98cb50f1d43d1825ab52bb32",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/sceneCompose.test.ts",
+      "object_id": "b12eb05933cec194aa3ef46e212f6f8267d78e67",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/sceneSummary.test.ts",
+      "object_id": "d4d8feef2050330ca7a5ed8811269b979d968ec1",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/setup.ts",
+      "object_id": "b0efd6a5e26c5744a1a79501f8cdc2abd63989ef",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/useAnalysis.test.ts",
+      "object_id": "1b19a04657a246361de5f231435800ab28e55230",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/test/usePlaylist.test.ts",
+      "object_id": "dbdfe5f200421686c1a63210a483494ce01c6480",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/theme/ThemeProvider.tsx",
+      "object_id": "63e65e74437b2e10bd65fe5da6f1b3861212bf35",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/theme/__tests__/ThemeProvider.test.tsx",
+      "object_id": "73cc34d952f00ab044767bc62b298c96c9707bf3",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/a11y.ts",
+      "object_id": "2eca844db2b7fe33164f84fbbf7b9aa66a36ab85",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/interpolate.ts",
+      "object_id": "77a85f1f489d936cc1c2de84de6023e036a9047b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/mcpClient.ts",
+      "object_id": "8cb7a680b793f762030357ab42652faa5149229b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/pluginRegistry.ts",
+      "object_id": "029e7e396a1641461ab709760ac1f039d9690fba",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/sceneBlend.ts",
+      "object_id": "914bb1c27a65c7cfad5fd72ee4e3df9535184b87",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/sceneSummary.ts",
+      "object_id": "62d3f3bbe616c2cd09d502789744a685bf8c3cfe",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/utils/sound.ts",
+      "object_id": "7bfa6d6c9d95ea0ee80de6183ba7d39b0c5c445a",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/src/vite-env.d.ts",
+      "object_id": "41f8c1ba9c412e2e81cf42e3229076dedf94173f",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/tsconfig.json",
+      "object_id": "6365ab74d539e5e90e2d7c52fcf58de4dac6bd45",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/tsconfig.node.json",
+      "object_id": "97ede7ee6f2d37bd2d76e60c0b6a447bee718b05",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/vercel.json",
+      "object_id": "e4f9616bd859730a9d94a5952e3eab2b82601d9b",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "web/vite.config.ts",
+      "object_id": "329b4cbcdb97ae215233a9522fc16760ba657dfb",
+      "mode": "100644",
+      "family": "human-interface",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".editorconfig",
+      "object_id": "4324601b371cd4c349862a82f7939c1075eeb63f",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".gitattributes",
+      "object_id": "29b5671ac9716a6373768518ea770a23f9f2f6a0",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".gitignore",
+      "object_id": "d32a54b27bcc2949db0d44130dd5a7704f735726",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".gitleaks.toml",
+      "object_id": "5474857313550fc4833978cc61bcf25990440a3d",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".mergify.yml",
+      "object_id": "2f1892cd408c31f0b52b26fafd01feea67dbfa68",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "object_id": "0d4ed6201417e6c6bfee17a5a702baead46cc6f2",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": ".qgate.toml",
+      "object_id": "9a1221bf9e9dfe652de272702f13d2aa85adf9ed",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "AGENTS.md",
+      "object_id": "48c27ebde7523dd5fcefb2636c69ff6316df4df3",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "object_id": "a09f4d49638d09cf65900131bf2703fe9fbba4bf",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "CLAUDE.md",
+      "object_id": "9333cc844c12cddd7afc865937a52371579cdc95",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "CODEOWNERS",
+      "object_id": "d5a11d045eaab76a88155a511b6347deaadb4466",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "object_id": "3449146c6d4f81ac8238d28d5fb9be22cdb00c4a",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "object_id": "87d0c5d088806f5180061f2089a43395239d7b05",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "Cargo.lock",
+      "object_id": "e771cbcc7073beafff80727e757e759f10e8ca7d",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "Cargo.toml",
+      "object_id": "1d905979299169d023ddad33de4875c9e3401b7e",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "Dockerfile",
+      "object_id": "b092e634e1d7094f5cabed8a22b4cdcca580c27d",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "Entitlements.plist",
+      "object_id": "650c91ebd350ace1b1e21894404f7461c07bb450",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "LICENSE",
+      "object_id": "88a5768e738ad50e1bd6050747ced572da252306",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "MELOSVIZ_HANDOFF.md",
+      "object_id": "afafcab2d7f3e57bb0597b260db783606e7af210",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "README.md",
+      "object_id": "8489968676c2fe53fadbafa88444644fa93da6c8",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "SECURITY.md",
+      "object_id": "4db8eec226eefc940671b133a2ca1a848c952528",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "SPEC.md",
+      "object_id": "4dfb05bab8b415a40cd2bd5dfde4faec461cd08c",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "Taskfile.yml",
+      "object_id": "160c8156313dbc617772775431c845f285fc459c",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "WBS.md",
+      "object_id": "52562ce9d96d4d307f0d762600b3a6573d7e3aa6",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "audit_scorecard.json",
+      "object_id": "3cd1da70104de265cabf745bb6f7c2205528345a",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "cliff.toml",
+      "object_id": "75c22988abbf670a7659b61e248b9acec5bbde95",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "codecov.yml",
+      "object_id": "9eb85963362b804a828e5fb80d2f334d58791e4e",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "deny.toml",
+      "object_id": "6204f7ded9a8345ed2818d958f3bc594d2ee7705",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "gitleaks.toml",
+      "object_id": "4f51ee9150489b9ee15d7d40b9f0ce6e394b8960",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "mutants.toml",
+      "object_id": "dbd0a35c99b1d7ead3bdba6af3fbbb3a56f144f5",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "renovate.json",
+      "object_id": "17d940a05c5708ff8a637663b780c621dd918ef2",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "object_id": "20e88fdd223bb2b0922f04f8b13b33cfe2a74a87",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "trace-gate.toml",
+      "object_id": "49f6ee38a5145abe684384b48b26e9270d7e74c6",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "trunk.yaml",
+      "object_id": "2f8ea1ac551ae25b43bdc4a695fb56f0e7254c37",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    },
+    {
+      "path": "user-scorecard.json",
+      "object_id": "396803157126219387a6fb6671227aa89c5c4b33",
+      "mode": "100644",
+      "family": "root-contract-or-config",
+      "authority": "UNCLASSIFIED",
+      "semantic_resolution": "OPEN"
+    }
+  ]
+}
