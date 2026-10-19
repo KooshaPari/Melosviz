@@ -659,6 +659,7 @@ def _run_studio_subprocess(args: list[str], *, cwd: str | None = None) -> dict[s
 
     return {
         "returncode": proc.returncode,
+        "stdout": proc.stdout,
         "stdout_tail": proc.stdout.splitlines()[-5:],
         "stderr_tail": proc.stderr.splitlines()[-5:] if proc.stderr else [],
     }
@@ -755,7 +756,7 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
     prior = {k: os.environ.get(k) for k in env_overlay}
     os.environ.update(env_overlay)
     try:
-        _run_studio_subprocess(cli_args)
+        generate_result = _run_studio_subprocess(cli_args)
     finally:
         for k, v in prior.items():
             if v is None:
@@ -763,25 +764,20 @@ async def studio_generate(req: StudioGenerateRequest, request: Request) -> str:
             else:
                 os.environ[k] = v
 
-    # Return a manifest of everything emitted (scoped by scene_type subfolders,
-    # e.g. comfyui_image/scene_*, comfyui_video/scene_*, plus any flat scene_* dirs).
-    scenes: list[dict[str, object]] = []
-    for scene_dir in sorted(out.glob("scene_*")):
-        if not scene_dir.is_dir():
-            continue
-        scene_meta: dict[str, object] = {"scene_dir": str(scene_dir), "name": scene_dir.name}
-        wf = scene_dir / "workflow.json"
-        js = scene_dir / "job_spec.json"
-        plan = scene_dir / "plan.json"
-        if wf.exists():
-            scene_meta["workflow_json"] = str(wf)
-        if js.exists():
-            scene_meta["job_spec_json"] = str(js)
-        if plan.exists():
-            scene_meta["plan_json"] = str(plan)
-        scenes.append(scene_meta)
-
-    return json.dumps({"out_dir": str(out), "scenes": scenes}, indent=2)
+    # The CLI/conductor owns scene identity and outcome. Do not reconstruct
+    # product truth by guessing a filesystem layout after the subprocess exits.
+    stdout = str(generate_result.get("stdout") or "").strip()
+    try:
+        manifest = json.loads(stdout)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="generate completed but did not return a structured scene manifest",
+        ) from exc
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("scenes"), list):
+        raise HTTPException(status_code=500, detail="generate scene manifest is malformed")
+    manifest["out_dir"] = str(out)
+    return json.dumps(manifest, indent=2)
 
 
 @app.post("/api/studio/master", response_class=PlainTextResponse)

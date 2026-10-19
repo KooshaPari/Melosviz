@@ -136,7 +136,7 @@ def test_render_empty_spec_falls_back_to_video_export(tmp_path):
         finally:
             reg_mod.ADAPTER_REGISTRY = original
 
-    assert "video_export" in result.per_scene_results
+    assert 0 in result.per_scene_results
 
 
 def test_render_unknown_scene_type_raises_conductor_error(tmp_path):
@@ -181,7 +181,7 @@ def test_render_with_known_scene_type_dispatches_adapter(tmp_path):
     finally:
         reg_mod.ADAPTER_REGISTRY = original
 
-    assert result.per_scene_results["video_export"] is mock_result
+    assert result.per_scene_results[0]["adapter_result"] is mock_result
     mock_adapter_cls.assert_called_once()
     mock_adapter_instance.render.assert_called_once()
 
@@ -260,7 +260,7 @@ def test_render_assembly_encode_scene_type_skipped_in_dispatch(tmp_path):
         reg_mod.ADAPTER_REGISTRY = original
 
     # assembly_encode should NOT appear in per_scene_results (it's skipped inline)
-    assert "assembly_encode" not in result.per_scene_results
+    assert result.per_scene_results == {}
     # And the assembly_cls should not have been called for per-scene dispatch
     # (skip_assembly=True so it won't be called at all)
     assembly_cls.assert_not_called()
@@ -271,10 +271,10 @@ def test_orchestrator_result_attributes(tmp_path):
     from melosviz.conductor.orchestrator import OrchestratorResult
 
     r = OrchestratorResult(
-        per_scene_results={"video_export": "ok"},
+        per_scene_results={0: "ok"},
         assembly_result="assembled",
         output_dir=tmp_path,
     )
-    assert r.per_scene_results == {"video_export": "ok"}
+    assert r.per_scene_results == {0: "ok"}
     assert r.assembly_result == "assembled"
     assert r.output_dir == tmp_path

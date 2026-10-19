@@ -261,14 +261,18 @@ def _dispatch_segment(
     """Route a single segment through the real conductor adapter."""
     from melosviz.conductor.orchestrator import Orchestrator
 
-    orch = Orchestrator(skip_assembly=True)
     scene_type = asgn["scene_type"]
+    scene_index = int(asgn["index"])
+    orch = Orchestrator(skip_assembly=True, only_scenes=[scene_index])
     try:
         orch_result = orch.render(
             render_spec,
             scene_types=[scene_type],
         )
-        return orch_result.per_scene_results.get(scene_type, {"dispatched": True})
+        return orch_result.per_scene_results.get(
+            scene_index,
+            {"dispatched": False, "scene_index": scene_index, "scene_type": scene_type},
+        )
     except Exception as exc:
         logger.warning("_dispatch_segment: adapter %r failed: %s", scene_type, exc)
         return {"error": str(exc), "scene_type": scene_type}
