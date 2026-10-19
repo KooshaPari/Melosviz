@@ -1,0 +1,182 @@
+from pathlib import Path
+from melosviz.analysis.models import RenderSpec
+from melosviz.project_ledger import ProjectLedger,canonical_spec
+from melosviz.conductor.revision_bound import RevisionBoundConductor
+
+def _spec(marker):
+    return RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture","marker":marker}])
+
+def test_conductor_loads_exact_persisted_revision_after_reopen(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db)
+    r1=l.commit("P",_spec("R1")); r2=l.commit("P",_spec("R2"),parent_revision=r1); l.close()
+    seen=[]
+    class FakeOrchestrator:
+        def __init__(self,**kwargs):pass
+        def render(self,spec):
+            seen.append(spec.scene_segments[0]["marker"])
+            return type("R",(),{"job_id":"job-123"})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",FakeOrchestrator)
+    c=RevisionBoundConductor(db)
+    out=c.render_revision("P",r1)
+    assert seen==["R1"]
+    assert out.project_id=="P" and out.project_revision==r1
+    assert out.project_attempt_id==1
+    l=ProjectLedger(db); assert out.project_spec_sha256==canonical_spec(l.load("P",r1))[1]; l.close()
+    c.render_revision("P",r2); assert seen==["R1","R2"]
+
+def test_unknown_revision_fails_before_orchestrator_creation(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); l.commit("P",_spec("R1")); l.close()
+    made=[]
+    class Fake:
+        def __init__(self,**kwargs):made.append(True)
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    try: RevisionBoundConductor(db).render_revision("P",99)
+    except KeyError: pass
+    else: raise AssertionError("unknown revision rendered")
+    assert made==[]
+
+
+def test_attempt_lifecycle_is_durable_and_bound_to_spec_digest(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); expected=canonical_spec(l.load("P",r))[1]; l.close()
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): return type("R",(),{"job_id":"J"})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    row=l.db.execute("SELECT project_revision,spec_sha256,state,job_id FROM render_attempt WHERE id=?",(out.project_attempt_id,)).fetchone()
+    assert row==(r,expected,"completed","J")
+    l.close()
+
+def test_failed_conductor_attempt_is_durable(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    class Boom:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): raise RuntimeError("renderer failed")
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Boom)
+    try: RevisionBoundConductor(db).render_revision("P",r)
+    except RuntimeError as e: assert "renderer failed" in str(e)
+    else: raise AssertionError("renderer failure swallowed")
+    l=ProjectLedger(db)
+    assert l.db.execute("SELECT state FROM render_attempt").fetchone()==("failed",)
+    l.close()
+
+
+def test_attempt_evidence_and_assembly_lineage_are_bound_to_completed_attempt(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): return type("R",(),{"job_id":"J"})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    digest="a"*64
+    l.record_evidence(out.project_attempt_id,"scene",digest,"reviewer:v1","accepted")
+    asm=l.freeze_assembly(out.project_attempt_id,[(0,digest)])
+    state,raw=l.db.execute("SELECT state,ordered_inputs_json FROM assembly_attempt WHERE id=?",(asm,)).fetchone()
+    assert state=="frozen" and __import__("json").loads(raw)==[[0,digest]]
+    assert l.db.execute("SELECT verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()==("reviewer:v1","accepted")
+
+def test_failed_or_running_attempt_cannot_freeze_assembly(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r)
+    try:l.freeze_assembly(a,[(0,"abc")])
+    except RuntimeError:pass
+    else:raise AssertionError("running attempt froze assembly")
+    l.fail_attempt(a)
+    try:l.freeze_assembly(a,[(0,"abc")])
+    except RuntimeError:pass
+    else:raise AssertionError("failed attempt froze assembly")
+
+
+def test_accepted_evidence_requires_completed_attempt_valid_digest_and_verifier(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r)
+    good="a"*64
+    try:l.record_evidence(a,"scene",good,"reviewer:v1","accepted")
+    except RuntimeError:pass
+    else:raise AssertionError("running attempt accepted evidence")
+    l.finish_attempt(a,"J")
+    for digest,verifier in [("abc","reviewer:v1"),(good,"")]:
+        try:l.record_evidence(a,"scene",digest,verifier,"accepted")
+        except ValueError:pass
+        else:raise AssertionError((digest,verifier))
+    l.record_evidence(a,"scene",good,"reviewer:v1","accepted")
+    assert l.db.execute("SELECT state FROM attempt_evidence").fetchone()==("accepted",)
+
+
+def test_assembly_rejects_unaccepted_or_duplicate_scene_inputs(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    d="b"*64
+    try:l.freeze_assembly(a,[(0,d)])
+    except RuntimeError as e: assert "accepted evidence" in str(e)
+    else:raise AssertionError("unaccepted scene entered assembly")
+    l.record_evidence(a,"scene",d,"reviewer:v1","accepted")
+    try:l.freeze_assembly(a,[(0,d),(0,d)])
+    except RuntimeError as e: assert "duplicate" in str(e)
+    else:raise AssertionError("duplicate scene identity entered assembly")
+
+
+def test_assembly_completion_and_acceptance_are_distinct_and_digest_bound(tmp_path):
+    l=ProjectLedger(tmp_path/"p.sqlite"); r=l.commit("P",_spec("R1")); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    scene="a"*64; final="f"*64
+    l.record_evidence(a,"scene",scene,"reviewer:v1","accepted")
+    asm=l.freeze_assembly(a,[(0,scene)])
+    try:l.accept_assembly(asm,final,"reviewer:v1")
+    except RuntimeError:pass
+    else:raise AssertionError("frozen assembly accepted before completion")
+    l.complete_assembly(asm,final)
+    try:l.accept_assembly(asm,"e"*64,"reviewer:v1")
+    except RuntimeError:pass
+    else:raise AssertionError("wrong final digest accepted")
+    l.accept_assembly(asm,final,"reviewer:v1")
+    assert l.db.execute("SELECT state FROM assembly_attempt WHERE id=?",(asm,)).fetchone()==("accepted",)
+    assert l.db.execute("SELECT kind,artifact_sha256,state FROM attempt_evidence WHERE attempt_id=? AND kind='assembly'",(a,)).fetchone()==("assembly",final,"accepted")
+
+
+def test_conductor_observes_scene_bytes_but_cannot_self_accept_them(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"SCENE")
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec):
+            return type("R",(),{"job_id":"J","per_scene_results":{0:{"artifact_path":str(artifact)}}})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    row=l.db.execute("SELECT kind,verifier,state FROM attempt_evidence WHERE attempt_id=?",(out.project_attempt_id,)).fetchone()
+    assert row==("scene","conductor:scene:0","rejected")
+    assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE state='accepted'").fetchone()==(0,)
+
+
+def test_independent_verifier_can_promote_only_observed_scene_digest(tmp_path,monkeypatch):
+    db=tmp_path/"p.sqlite"; l=ProjectLedger(db); r=l.commit("P",_spec("R1")); l.close()
+    artifact=tmp_path/"scene.bin"; artifact.write_bytes(b"SCENE")
+    digest=__import__("hashlib").sha256(b"SCENE").hexdigest()
+    class Fake:
+        def __init__(self,**kwargs):pass
+        def render(self,spec): return type("R",(),{"job_id":"J","per_scene_results":{0:{"artifact_path":str(artifact)}}})()
+    monkeypatch.setattr("melosviz.conductor.revision_bound.Orchestrator",Fake)
+    out=RevisionBoundConductor(db).render_revision("P",r)
+    l=ProjectLedger(db)
+    try:l.promote_scene_evidence(out.project_attempt_id,"e"*64,"reviewer:v1")
+    except RuntimeError:pass
+    else:raise AssertionError("unobserved digest promoted")
+    l.promote_scene_evidence(out.project_attempt_id,digest,"reviewer:v1")
+    assert l.db.execute("SELECT COUNT(*) FROM attempt_evidence WHERE attempt_id=? AND artifact_sha256=? AND state='accepted'",(out.project_attempt_id,digest)).fetchone()==(1,)
+
+
+def test_assembly_requires_full_persisted_scene_denominator(tmp_path):
+    from melosviz.analysis.models import RenderSpec
+    l=ProjectLedger(tmp_path/"p.sqlite")
+    spec=RenderSpec(scene_segments=[
+      {"scene_index":0,"scene_type":"fixture"},
+      {"scene_index":1,"scene_type":"fixture"},
+    ])
+    r=l.commit("P",spec); a=l.start_attempt("P",r); l.finish_attempt(a,"J")
+    d0="a"*64; d1="b"*64
+    l.record_evidence(a,"scene",d0,"reviewer","accepted")
+    l.record_evidence(a,"scene",d1,"reviewer","accepted")
+    try:l.freeze_assembly(a,[(0,d0)])
+    except RuntimeError as e: assert "denominator" in str(e)
+    else:raise AssertionError("partial storyboard froze assembly")
+    asm=l.freeze_assembly(a,[(0,d0),(1,d1)])
+    assert asm>0

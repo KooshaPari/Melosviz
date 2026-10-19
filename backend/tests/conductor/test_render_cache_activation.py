@@ -63,7 +63,7 @@ def test_second_render_is_served_from_cache_and_recorded(tmp_path: Path, monkeyp
     orch = _orch(tmp_path)
     orch.render(_spec())
     out = tmp_path / "out"
-    cold_path = out / "comfyui_image" / "scene_000" / "clip.mp4"
+    cold_path = out / "comfyui_image" / "dispatch_000" / "scene_000" / "clip.mp4"
     assert cold_path.is_file(), "the cold render did not write the artifact"
 
     result = orch.render(_spec())

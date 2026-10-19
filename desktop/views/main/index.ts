@@ -71,8 +71,8 @@ let lastMasterDir: string | null = null;
 let lastFinalZip: string | null = null;
 
 // Render queue state — one entry per scene, indexed by scene number.
-// Status lifecycle: queued → rendering → done | error.
-type QueueStatus = "queued" | "rendering" | "done" | "error";
+// Status lifecycle: queued → rendering → produced → accepted | error.\n// `produced` is worker/conductor output and MUST NOT be displayed as independent acceptance.
+type QueueStatus = "queued" | "rendering" | "produced" | "accepted" | "error";
 interface QueueEntry {
   index: number;
   sceneName: string;
@@ -435,7 +435,7 @@ function renderRenderQueue() {
     listEl.appendChild(li);
   }
   // Footer summary
-  const done = renderQueue.filter((e) => e.status === "done").length;
+  const done = renderQueue.filter((e) => e.status === "accepted").length;
   const total = renderQueue.length;
   qs("#queue-progress-summary").textContent = `${done}/${total} scenes complete`;
 }
@@ -469,12 +469,12 @@ function updateQueueEntry(
     renderRenderQueue();
   }
   // Footer counter
-  const done = renderQueue.filter((e) => e.status === "done").length;
+  const done = renderQueue.filter((e) => e.status === "accepted").length;
   qs("#queue-progress-summary").textContent = `${done}/${renderQueue.length} scenes complete`;
 }
 
 /** Set the queue header status pill. */
-function setQueueHeaderState(state: "idle" | "queued" | "running" | "done" | "error") {
+function setQueueHeaderState(state: "idle" | "queued" | "running" | "produced" | "accepted" | "error") {
   const el = qs<HTMLElement>("#queue-status");
   (el as HTMLElement).dataset["state"] = state === "idle" ? "" : state;
   el.textContent = state;
@@ -755,27 +755,55 @@ async function onStudioGenerate() {
       storyboardPath,
       outDir: outPath ?? undefined,
     });
-    // After the orchestrator returns, mark every scene done with the
-    // orchestrator output as the per-scene message.
-    const trimmed = (out ?? "").trim().split("\n")[0] || "";
+    let manifest: {
+      out_dir?: string;
+      assembly_state?: string;
+      scenes?: Array<{
+        scene_index?: number;
+        scene_type?: string;
+        outcome?: string | null;
+        artifact_path?: string | null;
+      }>;
+    };
+    try {
+      manifest = JSON.parse(out);
+    } catch {
+      throw new Error("Orchestrator returned a non-JSON scene manifest");
+    }
+    const byIndex = new Map(
+      (manifest.scenes ?? [])
+        .filter((s) => typeof s.scene_index === "number")
+        .map((s) => [s.scene_index as number, s]),
+    );
+    let allRealMedia = true;
     for (const entry of renderQueue) {
+      // Queue display is 1-based; conductor scene_index is 0-based.
+      const scene = byIndex.get(entry.index - 1);
+      const producedRealMedia = scene?.outcome === "render" && !!scene.artifact_path;
+      allRealMedia &&= producedRealMedia;
       updateQueueEntry(entry.index, {
-        status: "done",
-        progressPct: 100,
-        message: trimmed,
+        status: producedRealMedia ? "produced" : "error",
+        progressPct: producedRealMedia ? 100 : entry.progressPct,
+        message: producedRealMedia
+          ? `Produced, not independently accepted: ${scene?.artifact_path ?? ""}`
+          : `Non-production or missing scene outcome: ${scene?.outcome ?? "missing"}`,
       });
     }
-    setQueueHeaderState("done");
-    setProgress(100, t("shell.progress.studio_generate_done"));
-    setStatus(t("shell.status.studio_generate_done"), "ready");
+    setQueueHeaderState(allRealMedia ? "produced" : "error");
+    setProgress(allRealMedia ? 100 : 0, allRealMedia
+      ? t("shell.progress.studio_generate_done")
+      : "Generate completed with non-production scene outcomes");
+    setStatus(
+      allRealMedia ? "Generate produced media; verification pending" : "Generate requires review",
+      allRealMedia ? "ready" : "error",
+    );
     lastMasterDir = pathJoinSafe(
       outPath ?? wavPath.replace(/[^/]+$/, ""),
       "master"
     );
     syncStudioButtons();
-    // Reveal the output directory for the user.
-    if (trimmed.length > 0) {
-      await rpc.request.revealInFinder({ filePath: trimmed });
+    if (manifest.out_dir) {
+      await rpc.request.revealInFinder({ filePath: manifest.out_dir });
     }
   } catch (err) {
     setQueueHeaderState("error");
