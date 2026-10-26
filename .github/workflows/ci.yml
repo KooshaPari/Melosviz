@@ -167,7 +167,7 @@ jobs:
     # aggregate gate can see it. `lint` stays advisory via its own echo.
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           # jsdom 30 requires Node ^22.22.2 || ^24.15.0 || >=26. Pin 22 so this
           # matches a11y.yml / publish-sdk-packages.yml, which already run on 22.
