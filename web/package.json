@@ -28,7 +28,7 @@
     "react-dom": "19.2.8",
     "react-router-dom": "^7.18.3",
     "three": "^0.186.1",
-    "wavesurfer.js": "^7.12.12"
+    "wavesurfer.js": "^8.0.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
