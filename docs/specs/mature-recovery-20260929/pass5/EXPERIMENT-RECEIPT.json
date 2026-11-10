@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "pass": 5,
+  "observed_on": "2026-09-29",
+  "product_source": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "environment": {"python": "3.13.5", "ffmpeg": "7.1.5-0+deb13u1", "ffprobe": "7.1.5-0+deb13u1", "os": "Linux x86_64"},
+  "helper_probes": {
+    "mode": "EXTRACTED_FUNCTION_EXECUTION",
+    "full_repository_or_blob_replay_executed": false,
+    "source_blob_claim": "549e70a5741f43546af3d068b5444d54d47affc2",
+    "raw_report_sha256": "894909208ba6192917f8e1108a5a267a7da788906982f74daffea46a87e07d7c",
+    "defects_reproduced": ["nonempty zero-byte-content MP4 is not rejected", "malformed nonempty WAV is not rejected", "equal-size OLD! target survives NEW! cache materialization"],
+    "controls": ["empty file rejected", "zero-frame WAV rejected", "different-size target replaced"],
+    "interpretation": "The diagnostic harness behaved as expected; product criteria fail. This is not a passing product test."
+  },
+  "oracle": {
+    "version": "mv-oracle-0.2-experimental",
+    "code_sha256": "1701af11f371776d5169946d0a9dacca4417048efa0b25b0d226ccbe2b79cb78",
+    "code_git_blob": "ac59f69a6b495a10c1e28a0306305422b94f9371",
+    "selftest_git_blob": "abd75d24ecba3383a62e9368dd0771607a6c3a48",
+    "raw_report_sha256": "5641bd91a5749f94f7589789ba5dd60545ce8e752410739aa3ef25d46bff0f95",
+    "expected_cases": 28,
+    "matched_cases": 28,
+    "cases": [["real_three_scene_positive","PASS"],["candidate","FAIL"],["project_revision","FAIL"],["contract","FAIL"],["configuration","FAIL"],["run_id","FAIL"],["collector_status","FAIL"],["missing_middle_scene","FAIL"],["duplicate_scene_identity","FAIL"],["reordered_receipts","FAIL"],["placeholder_is_not_production","FAIL"],["plan_only_assembly","FAIL"],["wrong_artifact_digest","FAIL"],["nonempty_garbage_mp4","FAIL"],["valid_wrong_scene_content","FAIL"],["valid_media_wrong_assembly_order","FAIL"],["valid_video_wrong_audio","FAIL"],["wrong_presentation_timeline","FAIL"],["path_escape","FAIL"],["collector_missing","BLOCKED"],["empty_receipt","FAIL"],["non_object_receipt","FAIL"],["malformed_scene_rows","FAIL"],["malformed_assembly_record","FAIL"],["audio_PTS_offset","FAIL"],["empty_trusted_denominator","FAIL"],["selective_S2_revision_positive","PASS"],["stale_R1_cannot_qualify_R2","FAIL"]],
+    "scope": "Real tiny FFV1/PCM media; verifier selftests only. Not creative quality, beat detection, product persistence or live renderer qualification.",
+    "trust_limit": "Identity claims are compared to trusted expected values, not authenticated. A separately controlled execution receipt is still required."
+  },
+  "product_cli_e2e_executed": false,
+  "desktop_gui_executed": false,
+  "render_service_executed": false,
+  "fresh_independent_review": false,
+  "product_acceptance": "NOT_AWARDED"
+}

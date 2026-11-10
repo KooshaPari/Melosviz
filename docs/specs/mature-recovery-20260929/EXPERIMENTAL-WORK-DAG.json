@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "program": "MR-20260929",
+  "status": "READY_FOR_EXPERIMENTAL_IMPLEMENTATION",
+  "general_dev_handoff": false,
+  "source": "1aec20a2ba41a01ed557d1c7f63f9a0089f842cf",
+  "nodes": [
+    {
+      "id": "M-E01",
+      "state": "READY_IN_PROGRESS",
+      "depends_on": [],
+      "parallel_group": "M-P1",
+      "purpose": "Mounted baseline reproduction and semantic closure",
+      "write_scope": [
+        "experiment tests",
+        "recovery receipts",
+        "temporary outputs"
+      ],
+      "forbidden": [
+        "mock called E2E",
+        "change candidate before baseline",
+        "weaken oracle"
+      ],
+      "exit": [
+        "full-source probe replay",
+        "real viz generate with repeated backend scenes",
+        "bridge manifest on real output",
+        "direct rerender baseline",
+        "cache reference-input controls",
+        "raw candidate/environment receipts"
+      ]
+    },
+    {
+      "id": "M-E02",
+      "state": "CANDIDATE_CONTROLLED_STRUCTURAL_PASS",
+      "depends_on": [
+        "M-E01"
+      ],
+      "parallel_group": "M-P2",
+      "purpose": "Typed scene/result/cache repair",
+      "write_scope": [
+        "conductor core + minimum adapter contract + focused tests"
+      ],
+      "exit": [
+        "one iteration owner",
+        "scene ID preserved",
+        "ordered artifacts feed assembly",
+        "complete cache identity",
+        "typed outcomes",
+        "oracle counterexamples no longer false-green"
+      ],
+      "candidate": {
+        "branch": "experiment/mature-recovery-m-e02",
+        "pr": 302,
+        "head": "2102db05ec5f5c77c3e1772fc1f9bbc7e261dda0",
+        "workflow_run": 36766323723,
+        "status": "STRUCTURAL_PASS_REVIEWER_PENDING"
+      },
+      "residual": [
+        "reviewer-owned media grade",
+        "real generative backend qualification",
+        "durable app restart integration"
+      ]
+    },
+    {
+      "id": "M-E03",
+      "state": "STACKED_PRODUCT_LEDGER_SEAM_ACTIVE",
+      "depends_on": [
+        "M-E02",
+        "result contract review"
+      ],
+      "parallel_group": "M-P3",
+      "purpose": "Consumer + durable revision/restart witness",
+      "write_scope": [
+        "CLI",
+        "bridge",
+        "Electrobun",
+        "web",
+        "consumer tests"
+      ],
+      "exit": [
+        "structured manifest",
+        "truthful direct edit/rerender",
+        "stable persisted job/revision identity",
+        "R1→edit S2→restart→R2 exact reuse/invalidation"
+      ],
+      "preparatory_experiment": {
+        "branch": "experiment/melosviz-durable-ledger-pass10",
+        "pr": 304,
+        "head": "f42320d030c3dfc11395da7fc66a4ed818349c01",
+        "workflow_run": 36854431337,
+        "status": "EXPERIMENTALLY_ACCEPTED_FEASIBILITY_SLICE"
+      },
+      "candidate": {
+        "branch": "experiment/m-e03-ledger-seam",
+        "pr": 305,
+        "head": "8fed57543bd9d9c27b93320a4c1258134f0200d1",
+        "workflow_run": 36854769275,
+        "status": "QUEUED",
+        "stacked_on": "M-E02 candidate"
+      }
+    },
+    {
+      "id": "M-ESEC",
+      "state": "READY_IN_PROGRESS",
+      "depends_on": [],
+      "parallel_group": "M-P1",
+      "purpose": "Fail-closed bridge bind classifier, public-bind auth/data-root policy, and protected Studio/render/profile route coverage",
+      "write_scope": [
+        "backend/src/melosviz/bridge/security.py",
+        "backend/src/melosviz/bridge/server.py",
+        "focused bridge startup/security tests",
+        "candidate-only focused CI workflow"
+      ],
+      "forbidden": [
+        "render/result-schema changes",
+        "claim source-equivalent probe as full checkout test",
+        "public bind without explicit authorization policy"
+      ],
+      "exit": [
+        "true-loopback positives",
+        "RFC1918/link-local/public IPv4/IPv6/hostname negatives",
+        "explicit-public positives",
+        "public bind requires auth token and explicit data root",
+        "Studio/render/profile routes bearer-protected when auth enabled",
+        "adjacent bridge regressions",
+        "candidate identity receipts"
+      ],
+      "candidate": {
+        "branch": "experiment/melosviz-bridge-security-pass6",
+        "pr": 300,
+        "status": "DRAFT_UNACCEPTED"
+      }
+    }
+  ],
+  "closed_prerequisites": [
+    "tracked-tree enumeration",
+    "release desktop identified as Electrobun",
+    "Tauri classified alternate/non-release",
+    "mounted source trace through CLI/bridge/UI/orchestrator/adapters"
+  ],
+  "remaining_general_blockers": [
+    "primary/supersession authority",
+    "semantic source resolution",
+    "M-E01..03 experiments",
+    "SOTA decisions",
+    "mature contract",
+    "trace/oracle completion",
+    "fresh independent review"
+  ]
+}
