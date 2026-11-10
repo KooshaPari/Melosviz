@@ -52,8 +52,10 @@ boundary is auditable without FastAPI/Pydantic in the loop.
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import json
 import os
+import socket
 import threading
 import time
 from collections import deque
@@ -102,27 +104,47 @@ def max_upload_bytes() -> int:
 # ---------------------------------------------------------------------------
 
 
-# Hosts that would expose the bridge to the LAN if bound.
-_PUBLIC_HOSTS = frozenset({"0.0.0.0", "::", "*"})
+def _host_is_loopback(host: str) -> bool:
+    """Return True only when every resolved address is loopback.
+
+    IP literals are checked directly. Hostnames must resolve successfully and
+    every returned address must be loopback; one non-loopback answer is enough
+    to make the host public. This fails closed for unknown/unresolvable names.
+    """
+    if not host or host == "*":
+        return False
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        pass
+
+    saw_loopback = False
+    for family in (socket.AF_INET, socket.AF_INET6):
+        try:
+            infos = socket.getaddrinfo(host, None, family, socket.SOCK_STREAM)
+        except socket.gaierror:
+            continue
+        for _family, _socktype, _proto, _canonname, sockaddr in infos:
+            try:
+                address = ipaddress.ip_address(sockaddr[0])
+            except ValueError:
+                return False
+            if not address.is_loopback:
+                return False
+            saw_loopback = True
+    return saw_loopback
 
 
 def loopback_check(host: str) -> tuple[bool, str]:
-    """Return ``(ok, reason)``. ``ok=False`` means main() must exit non-zero.
-
-    A host is considered loopback when it parses as a loopback IP literal
-    (``127.0.0.0/8`` or ``::1``) or matches ``localhost``. Anything else,
-    including ``0.0.0.0`` and ``::``, requires
-    ``MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1``.
-    """
-    if host in _PUBLIC_HOSTS:
-        if os.environ.get("MELOSVIZ_BRIDGE_ALLOW_PUBLIC") == "1":
-            return True, "ALLOW_PUBLIC=1"
-        return False, (
-            f"Refusing to bind {host}: loopback only by default. "
-            "Set MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1 to bind a public interface."
-        )
-    # Anything else (127.0.0.1, ::1, localhost) is treated as loopback.
-    return True, "loopback"
+    """Return ``(ok, reason)``; reject non-loopback binds by default."""
+    if _host_is_loopback(host):
+        return True, "loopback"
+    if os.environ.get("MELOSVIZ_BRIDGE_ALLOW_PUBLIC") == "1":
+        return True, "ALLOW_PUBLIC=1"
+    return False, (
+        f"Refusing to bind {host}: loopback only by default. "
+        "Set MELOSVIZ_BRIDGE_ALLOW_PUBLIC=1 to bind a public interface."
+    )
 
 
 # ---------------------------------------------------------------------------
