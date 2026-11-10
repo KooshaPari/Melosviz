@@ -85,7 +85,7 @@ Release artifacts land on GitHub Releases with SLSA-style attestations.
 Electrobun auto-update is wired via `release.baseUrl` in
 `desktop/electrobun.config.ts` pointing at:
 
-`https://github.com/<REDACTED>/Melosviz/releases/latest/download`
+`https://github.com/KooshaPari/Melosviz/releases/latest/download`
 
 Stable-channel builds (`bunx electrobun build --env=stable`) embed the
 updater channel; the desktop main process calls `Updater.checkForUpdate()`
