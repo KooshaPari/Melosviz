@@ -14,6 +14,7 @@ an adapter without an offline branch still reports ``render``.
 from __future__ import annotations
 
 import json
+import wave
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,14 @@ from melosviz.conductor import registry as registry_mod
 from melosviz.conductor.orchestrator import Orchestrator
 
 OFFLINE_ENV = "MELOSVIZ_COMFYUI_OFFLINE"
+
+
+def _write_real_wav(path: Path) -> None:
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x01\x00" * 256)
 
 
 class _OfflineCapableAdapter:
@@ -31,8 +40,8 @@ class _OfflineCapableAdapter:
     def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
         out = Path(str(kwargs["output_path"]))
         out.mkdir(parents=True, exist_ok=True)
-        clip = out / "placeholder.mp4"
-        clip.write_bytes(b"\x00" * 16)
+        clip = out / "placeholder.wav"
+        _write_real_wav(clip)
         return [clip]
 
 
@@ -42,8 +51,8 @@ class _NoOfflineBranchAdapter:
     def render(self, render_spec: Any, **kwargs: Any) -> list[Path]:
         out = Path(str(kwargs["output_path"]))
         out.mkdir(parents=True, exist_ok=True)
-        clip = out / "render.mp4"
-        clip.write_bytes(b"\x00" * 16)
+        clip = out / "render.wav"
+        _write_real_wav(clip)
         return [clip]
 
 
@@ -86,8 +95,8 @@ class _SinglePathAdapter:
     def render(self, render_spec: Any, **kwargs: Any) -> Path:
         out = Path(str(kwargs["output_path"]))
         out.mkdir(parents=True, exist_ok=True)
-        clip = out / "melosviz-render.mp4"
-        clip.write_bytes(b"\x00" * 16)
+        clip = out / "melosviz-render.wav"
+        _write_real_wav(clip)
         return clip
 
 
@@ -112,7 +121,7 @@ def test_single_path_result_is_surfaced_not_labelled_unavailable(
     assert payload["artifact_path"], (
         "a bare-path adapter result was dropped, so the sidecar has no artifact"
     )
-    assert payload["artifact_path"].endswith("melosviz-render.mp4")
+    assert payload["artifact_path"].endswith("melosviz-render.wav")
     assert payload["extra"]["outcome"] == "render", (
         f"media-producing scene labelled {payload['extra']['outcome']!r}"
     )
