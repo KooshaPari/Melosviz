@@ -150,11 +150,27 @@ def test_studio_generate_returns_scene_manifest(tmp_path: Path, client: TestClie
     sb.write_text(json.dumps({"scenes": []}))
     out_dir = tmp_path / "generate"
 
-    # Pre-create the scene_* dirs the manifest expects
-    (out_dir / "scene_0").mkdir(parents=True)
-    (out_dir / "scene_0" / "workflow.json").write_text("{}")
+    cli_manifest = {
+        "job_id": "test-job",
+        "output_dir": str(out_dir),
+        "dispatched_scenes": [0],
+        "only_scenes": None,
+        "assembly_state": "not_attempted",
+        "scenes": [
+            {
+                "scene_index": 0,
+                "scene_type": "comfyui_image",
+                "outcome": "render",
+                "artifact_path": str(out_dir / "comfyui_image" / "dispatch_000" / "clip.mp4"),
+            }
+        ],
+    }
 
-    with patch.object(server, "_run_studio_subprocess", return_value={"returncode": 0}):
+    with patch.object(
+        server,
+        "_run_studio_subprocess",
+        return_value={"returncode": 0, "stdout": json.dumps(cli_manifest)},
+    ):
         res = client.post(
             "/api/studio/generate",
             json={
@@ -170,8 +186,10 @@ def test_studio_generate_returns_scene_manifest(tmp_path: Path, client: TestClie
     assert "out_dir" in body
     assert isinstance(body["scenes"], list)
     assert len(body["scenes"]) == 1
-    assert body["scenes"][0]["name"] == "scene_0"
-    assert body["scenes"][0]["workflow_json"].endswith("workflow.json")
+    assert body["scenes"][0]["scene_index"] == 0
+    assert body["scenes"][0]["scene_type"] == "comfyui_image"
+    assert body["scenes"][0]["outcome"] == "render"
+    assert body["scenes"][0]["artifact_path"].endswith("clip.mp4")
 
 
 # ---------------------------------------------------------------------------
@@ -568,3 +586,88 @@ def test_studio_validate_reports_overlap_issue(tmp_path) -> None:
     body = r.json()
     codes = {i["code"] for i in body["issues"]}
     assert "scene_overlap" in codes
+
+
+def test_project_status_survives_ledger_reopen_and_reports_canonical_attempt(tmp_path, monkeypatch, client: TestClient):
+    from melosviz.analysis.models import RenderSpec
+    from melosviz.project_ledger import ProjectLedger
+    db=tmp_path/"project.sqlite"
+    ledger=ProjectLedger(db)
+    r=ledger.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]))
+    a=ledger.start_attempt("P",r,"candidate-sha")
+    ledger.finish_attempt(a,"job-1")
+    ledger.close()
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    response=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"})
+    assert response.status_code==200,response.text
+    body=response.json()
+    assert body["project_id"]=="P" and body["revision"]==1
+    attempt=body["attempts"][0]
+    assert attempt["attempt_id"]==a and attempt["state"]=="completed"
+    assert attempt["job_id"]=="job-1" and attempt["candidate_sha"]=="candidate-sha"
+    assert attempt["evidence"]==[] and attempt["assembly"] is None
+
+
+def test_generate_persists_project_attempt_then_status_recovers_after_reopen(tmp_path, monkeypatch, client: TestClient):
+    wav=tmp_path/"track.wav"; _write_test_wav(wav)
+    sb=tmp_path/"storyboard.json"
+    sb.write_text(json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","start_sec":0,"end_sec":1}]}))
+    out=tmp_path/"out"; db=tmp_path/"project.sqlite"
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    fake={"returncode":0,"stdout":json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","outcome":"render","artifact_path":str(out/"scene.mkv"),"artifact_sha256":"a"*64,"from_cache":False}]}),"stderr":""}
+    monkeypatch.setattr(server,"_run_studio_subprocess",lambda args:fake)
+    generated=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r1","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r1"})
+    assert generated.status_code==200,generated.text
+    p=generated.json()["project"]
+    assert p["project_id"]=="P" and p["revision"]==1 and p["candidate_sha"]=="candidate-r1"
+    # Separate HTTP request reopens the durable ledger through project-status.
+    status=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"})
+    assert status.status_code==200,status.text
+    body=status.json()
+    assert body["revision"]==1
+    assert body["attempts"][0]["candidate_sha"]=="candidate-r1"
+    assert body["attempts"][0]["job_id"]=="job-r1"
+
+
+def test_bridge_r1_restart_edit_r2_restart_preserves_revision_lineage(tmp_path, monkeypatch, client: TestClient):
+    wav=tmp_path/"track.wav"; _write_test_wav(wav)
+    sb=tmp_path/"storyboard.json"; out=tmp_path/"out"; db=tmp_path/"project.sqlite"
+    monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    monkeypatch.setattr(server,"_run_studio_subprocess",lambda args:{"returncode":0,"stdout":json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","outcome":"render","artifact_path":str(out/"s0.mkv"),"artifact_sha256":"a"*64,"from_cache":False}]}),"stderr":""})
+    def write(prompt):
+        sb.write_text(json.dumps({"scenes":[{"scene_index":0,"scene_type":"video_export","start_sec":0,"end_sec":1,"prompt":prompt}]}))
+    write("R1")
+    r1=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r1","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r1"})
+    assert r1.status_code==200,r1.text
+    assert r1.json()["project"]["revision"]==1
+    assert client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()["revision"]==1
+    write("R2 edited")
+    r2=client.post("/api/studio/generate",json={"wav_path":str(wav),"storyboard_path":str(sb),"out_dir":str(out),"job_id":"job-r2","ledger_path":str(db),"project_id":"P","candidate_sha":"candidate-r2"})
+    assert r2.status_code==200,r2.text
+    assert r2.json()["project"]["revision"]==2
+    status=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()
+    assert status["revision"]==2 and status["parent_revision"]==1
+    assert status["attempts"][0]["candidate_sha"]=="candidate-r2"
+    from melosviz.project_ledger import ProjectLedger
+    l=ProjectLedger(db)
+    assert l.load("P",1).scene_segments[0]["prompt"]=="R1"
+    assert l.load("P",2).scene_segments[0]["prompt"]=="R2 edited"
+
+
+def test_project_status_projects_scene_evidence_and_assembly_acceptance_after_restart(tmp_path, monkeypatch, client: TestClient):
+    from melosviz.analysis.models import RenderSpec
+    from melosviz.project_ledger import ProjectLedger
+    db=tmp_path/"accepted.sqlite"; monkeypatch.setenv("MELOSVIZ_BRIDGE_ALLOWED_DIR",str(tmp_path))
+    l=ProjectLedger(db)
+    r=l.commit("P",RenderSpec(scene_segments=[{"scene_index":0,"scene_type":"fixture"}]))
+    a=l.start_attempt("P",r,"candidate"); l.finish_attempt(a,"job")
+    d="a"*64; f="f"*64
+    l.record_evidence(a,"scene",d,"candidate-observation","rejected")
+    l.promote_scene_evidence(a,d,"reviewer:v1")
+    asm=l.freeze_assembly(a,[(0,d)]); l.complete_assembly(asm,f); l.accept_assembly(asm,f,"reviewer:v1"); l.close()
+    body=client.post("/api/studio/project-status",json={"ledger_path":str(db),"project_id":"P"}).json()
+    attempt=body["attempts"][0]
+    assert any(e["kind"]=="scene" and e["artifact_sha256"]==d and e["state"]=="accepted" for e in attempt["evidence"])
+    assert attempt["assembly"]["state"]=="accepted"
+    assert attempt["assembly"]["artifact_sha256"]==f
+    assert attempt["assembly"]["ordered_inputs"]==[[0,d]]
